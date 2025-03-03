@@ -1,0 +1,27 @@
+/* Ensure the html and body elements fill the viewport */
+html, body {
+    height: 100%;
+    width: 100%;/* Full height */
+    margin: 0;    /* Remove default margins */
+    padding: 0;   /* Remove default padding */
+    overflow: hidden; /* Prevent unnecessary scrollbars */
+  }
+  
+  /* Optional: Add any additional styles for your body or page */
+  body {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Optional: Center the content */
+    align-items: center;     /* Optional: Center the content */
+  }
+  
+  /* Optional: Center the content inside the #root */
+  #root {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
