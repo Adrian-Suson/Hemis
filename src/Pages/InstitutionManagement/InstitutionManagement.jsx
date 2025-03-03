@@ -1,195 +1,237 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-    Box,
-    Button,
-    Typography,
-    IconButton,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    TextField,
-    CircularProgress,
-} from "@mui/material";
-import {
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-} from "@mui/icons-material";
-import Handsontable from "handsontable";
-import "handsontable/dist/handsontable.full.css"; // Import Handsontable styles
+    import { useState, useEffect, useCallback } from "react";
+    import axios from "axios";
+    import * as XLSX from "xlsx";
+    import {
+        Box,
+        Button,
+        Typography,
+        Tabs,
+        Tab,
+        Breadcrumbs,
+        Link,
+    } from "@mui/material";
+    import { UploadFile as UploadIcon } from "@mui/icons-material";
+    import InstitutionTable from "./InstitutionTable"; // Import the table component
+    import { Link as RouterLink } from "react-router-dom";
+    import config from "../../utils/config";
 
-const InstitutionManagement = () => {
-    const [institutions, setInstitutions] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [openDialog, setOpenDialog] = useState(false);
-    const [currentInstitution, setCurrentInstitution] = useState(null);
-    const [name, setName] = useState("");
-    const [location, setLocation] = useState("");
-    const [accreditation, setAccreditation] = useState("");
-    const tableRef = useRef(null);
+    const InstitutionManagement = () => {
+        const [activeTab, setActiveTab] = useState(0);
+        const [institutions, setInstitutions] = useState([]);
 
-    // Sample data for testing
-    const sampleData = [
-        ["University of Example", "City A, Region 1", "Accredited"],
-        ["College of Education", "City B, Region 2", "Pending"],
-        ["Tech Institute", "City C, Region 3", "Accredited"],
-    ];
+        // Refetch when tab changes
+        const getInstitutionType = useCallback(() => {
+            switch (activeTab) {
+                case 0:
+                    return "SUC";
+                case 1:
+                    return "LUC";
+                case 2:
+                    return "PHEI";
+                default:
+                    return "Unknown";
+            }
+        }, [activeTab]);
 
-    useEffect(() => {
-        // Set initial data for Handsontable
-        const hot = new Handsontable(tableRef.current, {
-            data: sampleData,
-            rowHeaders: true,
-            colHeaders: ["Name", "Location", "Accreditation"],
-            columns: [
-                { data: 0 }, // Name
-                { data: 1 }, // Location
-                { data: 2 }, // Accreditation
-            ],
-            contextMenu: true, // Enable context menu for adding/removing rows
-            afterChange: (changes) => {
-                if (changes) {
-                    setInstitutions(hot.getData()); // Sync updated data
+        const fetchInstitutions = useCallback(async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const response = await axios.get(
+                    `${config.API_URL}/institutions?type=${getInstitutionType()}`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                setInstitutions(response.data);
+            } catch (error) {
+                console.error("Error fetching institutions:", error);
+            }
+        }, [getInstitutionType]);
+
+        const handleTabChange = (event, newValue) => {
+            setActiveTab(newValue);
+        };
+
+        useEffect(() => {
+            fetchInstitutions();
+        }, [activeTab, fetchInstitutions]);
+
+        const handleEdit = (institution) => {
+            console.log("Editing institution:", institution);
+            // Here you can open a modal or redirect to an edit form
+        };
+
+        const handleFileUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
+
+                const sheetA1 = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonDataA1 = XLSX.utils.sheet_to_json(sheetA1, { header: 1 });
+
+                const extractedInstitution = {
+                    name: String(jsonDataA1[4]?.[2] || "Unknown"),
+                    region: String(jsonDataA1[10]?.[2] || "Unknown"),
+                    address_street: String(jsonDataA1[7]?.[2] || "Unknown"),
+                    municipality_city: String(jsonDataA1[8]?.[2] || "Unknown"),
+                    province: String(jsonDataA1[9]?.[2] || "Unknown"),
+                    postal_code: String(jsonDataA1[11]?.[2] || "N/A"),
+                    institutional_telephone: String(jsonDataA1[12]?.[2] || "N/A"),
+                    institutional_fax: String(jsonDataA1[13]?.[2] || "N/A"),
+                    head_telephone: String(jsonDataA1[14]?.[2] || "N/A"),
+                    institutional_email: String(jsonDataA1[15]?.[2] || "N/A"),
+                    institutional_website: String(jsonDataA1[16]?.[2] || "N/A"),
+                    year_established: jsonDataA1[17]?.[2]
+                        ? String(jsonDataA1[17]?.[2])
+                        : "N/A",
+                    sec_registration: jsonDataA1[18]?.[2]
+                        ? String(jsonDataA1[18]?.[2])
+                        : "N/A",
+                    year_granted_approved: jsonDataA1[19]?.[2]
+                        ? String(jsonDataA1[19]?.[2])
+                        : "N/A",
+                    year_converted_college: jsonDataA1[20]?.[2]
+                        ? String(jsonDataA1[20]?.[2])
+                        : "N/A",
+                    year_converted_university: jsonDataA1[21]?.[2]
+                        ? String(jsonDataA1[21]?.[2])
+                        : "N/A",
+                    head_name: String(jsonDataA1[22]?.[2] || "Unknown"),
+                    head_title: String(jsonDataA1[23]?.[2] || "N/A"),
+                    head_education: String(jsonDataA1[24]?.[2] || "N/A"),
+                    institution_type: getInstitutionType(), // Assign dynamically
+                };
+
+                console.log("extractedInstitution:", extractedInstitution);
+
+                try {
+                    const token = localStorage.getItem("token");
+
+                    const institutionResponse = await axios.post(
+                        "http://localhost:8000/api/institutions",
+                        extractedInstitution,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+
+                    console.log(
+                        "Institution data sent successfully:",
+                        institutionResponse.data
+                    );
+                    const institutionId = institutionResponse.data.id;
+
+                    const sheetA2 = workbook.Sheets[workbook.SheetNames[1]];
+                    const jsonDataA2 = XLSX.utils.sheet_to_json(sheetA2, {
+                        header: 1,
+                    });
+
+                    const startRow = 13;
+                    const processedCampuses = jsonDataA2
+                        .slice(startRow)
+                        .filter((row) =>
+                            row.some((cell) => cell !== undefined && cell !== "")
+                        )
+                        .map((row) => ({
+                            suc_name: String(row[1] || "N/A"),
+                            campus_type: String(row[2] || "N/A"),
+                            institutional_code: String(row[3] || "N/A"),
+                            region: String(row[4] || "N/A"),
+                            municipality_city_province: String(row[5] || "N/A"),
+                            year_first_operation: row[6]
+                                ? String(parseInt(row[6], 10))
+                                : "N/A",
+                            land_area_hectares: row[7]
+                                ? String(parseFloat(row[7]))
+                                : "0.0",
+                            distance_from_main: row[8]
+                                ? String(parseFloat(row[8]))
+                                : "0.0",
+                            autonomous_code: String(row[9] || "N/A"),
+                            position_title: String(row[10] || "N/A"),
+                            head_full_name: String(row[11] || "N/A"),
+                            former_name: String(row[12] || "N/A"),
+                            latitude_coordinates: row[13]
+                                ? String(parseFloat(row[13]))
+                                : "0.0",
+                            longitude_coordinates: row[14]
+                                ? String(parseFloat(row[14]))
+                                : "0.0",
+                            institution_id: String(institutionId),
+                        }));
+
+                    console.log("Processed Campuses Data:", processedCampuses);
+
+                    await axios.post(
+                        "http://localhost:8000/api/campuses",
+                        processedCampuses,
+                        {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }
+                    );
+
+                    console.log("Campuses data sent successfully!");
+                } catch (error) {
+                    console.error("Error sending data to backend:", error);
                 }
-            },
-        });
+            };
 
-        return () => hot.destroy(); // Cleanup on unmount
-    }, []);
+            reader.readAsArrayBuffer(file);
+        };
 
-    // Open Dialog for Add/Edit
-    const openInstitutionDialog = (institution = null) => {
-        setCurrentInstitution(institution);
-        setName(institution ? institution[0] : "");
-        setLocation(institution ? institution[1] : "");
-        setAccreditation(institution ? institution[2] : "");
-        setOpenDialog(true);
-    };
+        return (
+            <Box sx={{ p: 3 }}>
+                {/* Breadcrumbs */}
+                <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+                <Link
+                        underline="hover"
+                        color="inherit"
+                        component={RouterLink}
+                        to="/dashboard"
+                    >
+                        Dashboard
+                    </Link>
+                    <Typography color="text.primary">
+                        Institution Management
+                    </Typography>
+                </Breadcrumbs>
 
-    // Close the dialog
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setCurrentInstitution(null);
-        setName("");
-        setLocation("");
-        setAccreditation("");
-    };
+                <Tabs value={activeTab} onChange={handleTabChange}>
+                    <Tab label="State Universities & Colleges (SUCs)" />
+                    <Tab label="Local Universities & Colleges (LUCs)" />
+                    <Tab label="Private Higher Education Institutions (PHEIs)" />
+                </Tabs>
 
-    // Add or Update Institution
-    const handleSaveInstitution = () => {
-        const hot = new Handsontable(tableRef.current);
-        const newInstitution = [name, location, accreditation];
-
-        if (currentInstitution) {
-            // Update institution
-            const rowIndex = institutions.findIndex(
-                (institution) => institution[0] === currentInstitution[0]
-            );
-            hot.setDataAtCell(rowIndex, 0, name);
-            hot.setDataAtCell(rowIndex, 1, location);
-            hot.setDataAtCell(rowIndex, 2, accreditation);
-        } else {
-            // Add new institution
-            hot.alter("insert_row", institutions.length);
-            hot.setDataAtCell(institutions.length, 0, name);
-            hot.setDataAtCell(institutions.length, 1, location);
-            hot.setDataAtCell(institutions.length, 2, accreditation);
-        }
-
-        handleCloseDialog();
-    };
-
-    // Delete Institution
-    const handleDeleteInstitution = () => {
-        const hot = new Handsontable(tableRef.current);
-        const rowIndex = institutions.findIndex(
-            (institution) => institution[0] === currentInstitution[0]
-        );
-        if (rowIndex !== -1) {
-            hot.alter("remove_row", rowIndex);
-            handleCloseDialog();
-        }
-    };
-
-    return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>
-                Institution Management
-            </Typography>
-
-            <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={() => openInstitutionDialog()}
-            >
-                Add New Institution
-            </Button>
-
-            {loading ? (
-                <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    mt={2}
-                >
-                    <CircularProgress />
-                </Box>
-            ) : (
-                <Box ref={tableRef} id="institution-table" sx={{ mt: 2 }} />
-            )}
-
-            {/* Institution Dialog */}
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>
-                    {currentInstitution
-                        ? "Edit Institution"
-                        : "Add New Institution"}
-                </DialogTitle>
-                <DialogContent>
-                    <TextField
-                        label="Institution Name"
-                        fullWidth
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        sx={{ mb: 2 }}
-                    />
-                    <TextField
-                        label="Location"
-                        fullWidth
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        sx={{ mb: 2 }}
-                    />
-                    <TextField
-                        label="Accreditation"
-                        fullWidth
-                        value={accreditation}
-                        onChange={(e) => setAccreditation(e.target.value)}
-                        sx={{ mb: 2 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSaveInstitution}>
-                        {currentInstitution
-                            ? "Save Changes"
-                            : "Add Institution"}
+                <Box sx={{ mt: 3 }}>
+                    <Typography variant="h6">
+                        Upload an Excel file for {getInstitutionType()}
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        component="label"
+                        startIcon={<UploadIcon />}
+                    >
+                        Upload Form A
+                        <input
+                            type="file"
+                            hidden
+                            accept=".xlsx, .xls"
+                            onChange={handleFileUpload}
+                        />
                     </Button>
-                    {currentInstitution && (
-                        <Button
-                            variant="outlined"
-                            color="error"
-                            onClick={handleDeleteInstitution}
-                        >
-                            Delete
-                        </Button>
-                    )}
-                </DialogActions>
-            </Dialog>
-        </Box>
-    );
-};
+                </Box>
 
-export default InstitutionManagement;
+                <InstitutionTable institutions={institutions} onEdit={handleEdit} />
+            </Box>
+        );
+    };
+
+    export default InstitutionManagement;

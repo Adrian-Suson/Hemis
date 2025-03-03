@@ -4,29 +4,31 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-use Exception;
+use App\Models\User;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthTokenMiddleware
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
-        try {
-            $authHeader = $request->header('Authorization');
+        $token = $request->bearerToken(); // Get the token from Authorization header
 
-            if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-                return response()->json(['error' => 'Unauthorized: Token missing'], 401);
-            }
-
-            $token = substr($authHeader, 7);
-            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
-
-            $request->attributes->set('userId', $decoded->user_id);
-
-            return $next($request);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Unauthorized: Invalid token'], 401);
+        if (!$token) {
+            return response()->json(['message' => 'Unauthorized. No token provided.'], 401);
         }
+
+        // Find the user by token
+        $user = User::whereHas('tokens', function ($query) use ($token) {
+            $query->where('token', hash('sha256', $token));
+        })->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized. Invalid token.'], 401);
+        }
+
+        // Set the authenticated user
+        $request->setUserResolver(fn() => $user);
+
+        return $next($request);
     }
 }

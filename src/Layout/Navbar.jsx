@@ -3,23 +3,19 @@ import {
     AppBar,
     IconButton,
     Toolbar,
-    Typography,
-    useTheme,
     Box,
 } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
 
 const Navbar = ({
     isNonMobile = true,
-    navTitle,
     isMinimized,
     setIsMinimized,
     isSidebarOpen,
     setIsSidebarOpen,
 }) => {
-    const theme = useTheme();
 
-    
+
 
     const handleToggle = () => {
         if (isNonMobile) {
@@ -54,27 +50,6 @@ const Navbar = ({
                         <MenuIcon />
                     </IconButton>
 
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            ml: "auto",
-                            height: "50px", // Match parent height
-                            alignItems: "center", // Center content vertically
-                        }}
-                    >
-                        <Typography
-                            variant="h6" // Changed from h3 for better fit
-                            color={theme.palette.primary.main}
-                            sx={{
-                                fontWeight: "bold",
-                                letterSpacing: 1,
-                                fontSize: "1.1rem", // Adjusted font size
-                            }}
-                        >
-                            {navTitle}
-                        </Typography>
-                    </Box>
 
                     {/* Right-side buttons */}
                     <Box

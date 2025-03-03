@@ -4,40 +4,38 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateInstitutionsTable extends Migration
+return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('institutions', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('region');
-            $table->string('accreditation_status');
-            $table->string('institution_code')->nullable();
-            $table->string('address_street')->nullable();
-            $table->string('municipality_city')->nullable();
-            $table->string('province')->nullable();
-            $table->string('postal_code')->nullable();
-            $table->string('institutional_telephone')->nullable();
-            $table->string('institutional_fax')->nullable();
-            $table->string('head_telephone')->nullable();
-            $table->string('institutional_email')->nullable();
-            $table->string('institutional_website')->nullable();
-            $table->year('year_established')->nullable();
-            $table->string('sec_registration')->nullable();
-            $table->year('year_granted_approved')->nullable();
-            $table->year('year_converted_college')->nullable();
-            $table->year('year_converted_university')->nullable();
-            $table->string('head_name')->nullable();
-            $table->string('head_title')->nullable();
-            $table->string('head_education')->nullable();
+            $table->string('name', 255)->notNullable();
+            $table->string('region', 255)->notNullable();
+            $table->string('address_street', 255)->nullable();
+            $table->string('municipality_city', 255)->nullable();
+            $table->string('province', 255)->nullable();
+            $table->string('postal_code', 10)->nullable();
+            $table->string('institutional_telephone', 20)->nullable();
+            $table->string('institutional_fax', 20)->nullable();
+            $table->string('head_telephone', 20)->nullable();
+            $table->string('institutional_email', 255)->nullable();
+            $table->string('institutional_website', 255)->nullable();
+            $table->integer('year_established')->nullable();
+            $table->string('sec_registration', 255)->nullable();
+            $table->integer('year_granted_approved')->nullable();
+            $table->integer('year_converted_college')->nullable();
+            $table->integer('year_converted_university')->nullable();
+            $table->string('head_name', 255)->nullable();
+            $table->string('head_title', 255)->nullable();
+            $table->string('head_education', 255)->nullable();
+            $table->string('institution_type', 255)->nullable();
             $table->timestamps();
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('institutions');
     }
-}
-
+};

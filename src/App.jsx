@@ -12,6 +12,8 @@ import Layout from "./Layout/Layout"; // Your Layout component
 import NotFound from "./utils/NotFound";
 import UserManagement from "./Pages/UserManagment/UserManagement ";
 import InstitutionManagement from "./Pages/InstitutionManagement/InstitutionManagement";
+import CampusManagement from "./Pages/CampusManagement/CampusManagement";
+import CurricularProgram from "./Pages/CurricularPrograms/CurricularProgram";
 
 function App() {
     return (
@@ -27,8 +29,23 @@ function App() {
                 <Route element={<ProtectedRoute />}>
                     <Route element={<Layout />}>
                         <Route path="/dashboard" element={<DashboardPage />} />
-                        <Route path="/admin/user-management" element={<UserManagement />} />
-                        <Route path="/admin/institution-management" element={<InstitutionManagement />} />
+                        <Route
+                            path="/admin/user-management"
+                            element={<UserManagement />}
+                        />
+                        <Route
+                            path="/admin/institutions"
+                            element={<InstitutionManagement />}
+                        />
+                        {/* Route for Campus Management */}
+                        <Route
+                            path="/admin/institutions/campuses/:institutionId"
+                            element={<CampusManagement />}
+                        />
+                        <Route
+                            path="/admin/institutions/curricular-programs/:institutionId"
+                            element={<CurricularProgram />}
+                        />
 
                         <Route path="*" element={<NotFound />} />
                     </Route>

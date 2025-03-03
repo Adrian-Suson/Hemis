@@ -17,35 +17,33 @@ import {
     Button,
 } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import HomeIcon from "@mui/icons-material/Home";
 import StorageIcon from "@mui/icons-material/Storage";
 import HistoryIcon from "@mui/icons-material/History";
-import SettingsIcon from "@mui/icons-material/Settings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import GroupIcon from "@mui/icons-material/Group";
 import PropTypes from "prop-types";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import { GrSystem } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
-import FlexBetween from "../Components/FlexBetween";
 import Logo from "../assets/ChedLogo.png";
 import DP from "../assets/Profile.png";
 import axios from "axios";
 import config from "../utils/config";
+import { MdAdminPanelSettings } from "react-icons/md";
+
 
 // Admin and New Sections in the Sidebar
 const adminNavItems = [
     { text: "Dashboard", icon: <HomeIcon /> },
-    { text: "Institution Management", icon: <StorageIcon /> },
-    { text: "Program Management", icon: <AssignmentIcon /> },
-    { text: "Faculty Management", icon: <PeopleAltIcon /> },
+    { text: "Institutions", icon: <StorageIcon /> },
+    { text: "Program", icon: <AssignmentIcon /> },
     { text: "Reports and Analytics", icon: <HistoryIcon /> },
 ];
 
 const managementItems = [
-    { text: "System Configuration", icon: <SettingsIcon /> },
-    { text: "Access Control", icon: <PeopleAltIcon /> },
+    { text: "System Configuration", icon: <GrSystem /> },
     { text: "User Management", icon: <GroupIcon /> },
 ];
 
@@ -54,7 +52,6 @@ const Sidebar = ({
     isSidebarOpen,
     setIsSidebarOpen,
     isNonMobile = true,
-    setNavTitle,
     isMinimized,
 }) => {
     const [active, setActive] = useState("");
@@ -63,10 +60,9 @@ const Sidebar = ({
     const theme = useTheme();
     const [user, setUser] = useState(null); // Store the dynamic user data
 
-    const handleNavigation = (path, title) => {
+    const handleNavigation = (path) => {
         navigate(path);
         setActive(path);
-        setNavTitle(title);
     };
 
     const fetchUsers = async () => {
@@ -167,7 +163,7 @@ const Sidebar = ({
                     <Box>
                         {/* Sidebar Header */}
                         <Box p={isMinimized ? 1.5 : 4}>
-                            <FlexBetween color={theme.palette.primary.main}>
+                            <Box justifyContent={"space-between"} color={theme.palette.primary.main}>
                                 <Box
                                     display="flex"
                                     alignItems="center"
@@ -201,7 +197,7 @@ const Sidebar = ({
                                         <ChevronLeftIcon />
                                     </IconButton>
                                 )}
-                            </FlexBetween>
+                            </Box>
                         </Box>
 
                         {/* Scrollable Nav Content */}
@@ -213,34 +209,10 @@ const Sidebar = ({
                             }}
                         >
                             <Divider sx={{ my: 2 }} />
-                            {!isMinimized && (
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        px: 2,
-                                        mt: 2,
-                                        color: theme.palette.text.primary,
-                                    }}
-                                >
-                                    Main Sections
-                                </Typography>
-                            )}
                             <List>{adminNavItems.map(renderNavItem)}</List>
 
                             {/* System Management - Dropdown */}
                             <Divider sx={{ my: 2 }} />
-                            {!isMinimized && (
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        px: 2,
-                                        mt: 2,
-                                        color: theme.palette.text.primary,
-                                    }}
-                                >
-                                    System Management
-                                </Typography>
-                            )}
                             <ListItem disablePadding>
                                 <ListItemButton
                                     onClick={() =>
@@ -261,10 +233,10 @@ const Sidebar = ({
                                             justifyContent: "center",
                                         }}
                                     >
-                                        <SettingsIcon />
+                                        <MdAdminPanelSettings fontSize={25} color="black" />
                                     </ListItemIcon>
                                     {!isMinimized && (
-                                        <ListItemText primary="Settings" />
+                                        <ListItemText primary="Admin" />
                                     )}
                                     {!isMinimized &&
                                         (openManagement ? (
@@ -359,9 +331,7 @@ const Sidebar = ({
                                             ? "8px"
                                             : "8px 16px",
                                         minWidth: 0,
-                                        justifyContent:"center"
-
-
+                                        justifyContent: "center",
                                     }}
                                 >
                                     <ExitToAppIcon />
