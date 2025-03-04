@@ -32,9 +32,12 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
+            'status' => 'success',
             'message' => 'User registered successfully',
-            'user' => $user,
-            'token' => $token
+            'data' => [
+                'user' => $user,
+                'token' => $token
+            ]
         ], 201);
     }
 
@@ -43,26 +46,37 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        // Validate the credentials (email and password)
         $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($validated)) {
-            $user = Auth::user();
-            $token = $user->createToken('auth_token');
+        // Check if the credentials are valid
+        $user = User::where('email', $validated['email'])->first();
 
+        // Check if user exists and password matches
+        if ($user && Hash::check($validated['password'], $user->password)) {
+            // Create a token for the user (no need to check authentication here)
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Return success response with the token
             return response()->json([
+                'status' => 'success',
                 'message' => 'Logged in successfully',
-                'user' => $user,
-                'token' => $token->plainTextToken, // Return the actual token
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                ]
             ]);
         }
 
+        // If credentials are incorrect, throw a validation error
         throw ValidationException::withMessages([
             'email' => ['The provided credentials are incorrect.'],
         ]);
     }
+
 
 
     /**
@@ -70,7 +84,10 @@ class AuthController extends Controller
      */
     public function profile(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'status' => 'success',
+            'data' => $request->user(),
+        ]);
     }
 
     /**
@@ -79,7 +96,10 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Logged out successfully'
+        ]);
     }
 
     /**
@@ -92,7 +112,10 @@ class AuthController extends Controller
         $status = Password::sendResetLink($request->only('email'));
 
         if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Password reset link sent']);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Password reset link sent',
+            ]);
         }
 
         throw ValidationException::withMessages([
@@ -120,7 +143,10 @@ class AuthController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Password reset successfully']);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Password reset successfully',
+            ]);
         }
 
         throw ValidationException::withMessages([

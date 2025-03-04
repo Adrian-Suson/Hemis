@@ -19,7 +19,7 @@ class AdminSeeder extends Seeder
         User::create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'password' => Hash::make('adminpassword'), // Set a strong password here
+            'password' => Hash::make('admin123'), // Set a strong password here
             'role' => 'admin',
             'status' => 'Active',
             'profile_image' => null, // Optional, you can set a base64 image string if needed
