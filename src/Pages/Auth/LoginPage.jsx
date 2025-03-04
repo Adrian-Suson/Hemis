@@ -150,6 +150,7 @@ const LoginPage = () => {
                                 color="textSecondary"
                                 sx={{
                                     fontSize: { xs: "0.75rem", sm: "0.875rem" }, // Responsive font size
+                                    mt: 0, // Margin top to separate from copyright
                                 }}
                             >
                                 Powered by:{" "}
