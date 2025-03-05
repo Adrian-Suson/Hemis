@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('institution_id');
             $table->string('program_name', 255)->notNullable();
             $table->integer('program_code')->nullable();
-            $table->string('major_name', 255)->notNullable();
+            $table->string('major_name', 255)->nullable();
             $table->integer('major_code')->nullable();
             $table->string('category', 100)->nullable();
             $table->integer('serial')->nullable();

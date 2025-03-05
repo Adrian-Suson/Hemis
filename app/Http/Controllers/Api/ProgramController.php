@@ -37,7 +37,7 @@ class ProgramController extends Controller
             'institution_id' => 'required|exists:institutions,id',
             'program_name' => 'required|string|max:255',
             'program_code' => 'nullable|numeric',
-            'major_name' => 'required|string|max:255',
+            'major_name' => 'nullable|string|max:255',
             'major_code' => 'nullable|numeric',
             'category' => 'nullable|string|max:255',
             'serial' => 'nullable|integer|max:255',
