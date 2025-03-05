@@ -13,6 +13,8 @@ class Program extends Model
         'institution_id',
         'program_name',
         'program_code',
+        'major_name',
+        'major_code',
         'category',
         'serial',
         'year',

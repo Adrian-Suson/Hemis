@@ -104,6 +104,7 @@ const Sidebar = ({
             // Clear local storage and redirect after successful logout
             localStorage.removeItem("token");
             localStorage.removeItem("user"); // Remove user data as well if stored
+            localStorage.clear();
             navigate("/", { replace: true });
             window.location.reload(false);
         } catch (error) {

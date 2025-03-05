@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import DetailDialog from "./DetailDialog"; // Import the updated dialog component
 import VisibilityIcon from "@mui/icons-material/Visibility";
-
+import React from "react";
 
 const InstitutionTable = ({ institutions, onEdit }) => {
     const navigate = useNavigate();
@@ -22,6 +22,9 @@ const InstitutionTable = ({ institutions, onEdit }) => {
     const [openDialog, setOpenDialog] = React.useState(false);
 
     const handleOpenDialog = (institution) => {
+        // Store the institution ID in localStorage
+        localStorage.setItem("institutionId", institution.id);
+
         setSelectedInstitution(institution);
         setOpenDialog(true);
     };
@@ -29,6 +32,8 @@ const InstitutionTable = ({ institutions, onEdit }) => {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedInstitution(null);
+        // Optional: Remove the institution ID from localStorage when dialog closes
+        // localStorage.removeItem("institutionId");
     };
 
     return (
@@ -122,9 +127,6 @@ const InstitutionTable = ({ institutions, onEdit }) => {
     );
 };
 
-// Add React import for useState
-import React from "react";
-
 InstitutionTable.propTypes = {
     institutions: PropTypes.arrayOf(
         PropTypes.shape({
@@ -148,7 +150,8 @@ InstitutionTable.propTypes = {
             head_name: PropTypes.string,
             head_title: PropTypes.string,
             head_education: PropTypes.string,
-            institution_type: PropTypes.oneOf(["SUC", "LUC", "PHEI"]).isRequired,
+            institution_type: PropTypes.oneOf(["SUC", "LUC", "PHEI"])
+                .isRequired,
         })
     ).isRequired,
     onEdit: PropTypes.func.isRequired,

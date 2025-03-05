@@ -12,6 +12,8 @@ return new class extends Migration {
             $table->unsignedBigInteger('institution_id');
             $table->string('program_name', 255)->notNullable();
             $table->string('program_code', 6)->unique()->nullable(); // 6-digit code
+            $table->string('major_name', 255)->notNullable();
+            $table->string('pmajor_code', 6)->unique()->nullable();
             $table->string('category', 100)->nullable();
             $table->integer('serial')->nullable();
             $table->integer('year')->nullable();
