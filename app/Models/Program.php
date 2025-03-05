@@ -27,6 +27,7 @@ class Program extends Model
         'total_units',
         'tuition_per_unit',
         'program_fee',
+        'program_type'
     ];
 
     public function institution()
