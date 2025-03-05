@@ -205,9 +205,9 @@
                 </Breadcrumbs>
 
                 <Tabs value={activeTab} onChange={handleTabChange}>
-                    <Tab label="State Universities & Colleges (SUCs)" />
-                    <Tab label="Local Universities & Colleges (LUCs)" />
-                    <Tab label="Private Higher Education Institutions (PHEIs)" />
+                    <Tab label="SUCs" />
+                    <Tab label="LUCs" />
+                    <Tab label="PHEIs" />
                 </Tabs>
 
                 <Box sx={{ mt: 3 }}>

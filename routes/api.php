@@ -15,6 +15,7 @@ Route::post('auth/login', [AuthController::class, 'login']);
 Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 
+
 // Protected routes - Require Authentication
 Route::middleware('auth:sanctum')->group(function () {
     // User Routes
@@ -28,8 +29,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Institution Routes
     Route::apiResource('institutions', InstitutionController::class);
-
-
     // Campus Routes
     Route::apiResource('campuses', CampusController::class);
     Route::apiResource('programs', ProgramController::class);

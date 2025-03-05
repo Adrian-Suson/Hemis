@@ -33,7 +33,6 @@ import axios from "axios";
 import config from "../utils/config";
 import { MdAdminPanelSettings } from "react-icons/md";
 
-
 // Admin and New Sections in the Sidebar
 const adminNavItems = [
     { text: "Dashboard", icon: <HomeIcon /> },
@@ -87,10 +86,35 @@ const Sidebar = ({
         fetchUsers();
     }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        navigate("/", { replace: true });
-        window.location.reload(false);
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem("token");
+
+            // Make API call to logout endpoint
+            await axios.post(
+                `${config.API_URL}/auth/logout`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // Clear local storage and redirect after successful logout
+            localStorage.removeItem("token");
+            localStorage.removeItem("user"); // Remove user data as well if stored
+            navigate("/", { replace: true });
+            window.location.reload(false);
+        } catch (error) {
+            console.error("Logout failed:", error);
+            // Optional: Handle error (e.g., show a notification)
+            // For now, we'll still clear local storage and redirect
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            navigate("/", { replace: true });
+            window.location.reload(false);
+        }
     };
 
     const renderNavItem = ({ text, icon }) => {
@@ -163,7 +187,10 @@ const Sidebar = ({
                     <Box>
                         {/* Sidebar Header */}
                         <Box p={isMinimized ? 1.5 : 4}>
-                            <Box justifyContent={"space-between"} color={theme.palette.primary.main}>
+                            <Box
+                                justifyContent={"space-between"}
+                                color={theme.palette.primary.main}
+                            >
                                 <Box
                                     display="flex"
                                     alignItems="center"
@@ -233,7 +260,10 @@ const Sidebar = ({
                                             justifyContent: "center",
                                         }}
                                     >
-                                        <MdAdminPanelSettings fontSize={25} color="black" />
+                                        <MdAdminPanelSettings
+                                            fontSize={25}
+                                            color="black"
+                                        />
                                     </ListItemIcon>
                                     {!isMinimized && (
                                         <ListItemText primary="Admin" />
