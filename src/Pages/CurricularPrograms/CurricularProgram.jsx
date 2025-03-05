@@ -4,7 +4,6 @@ import {
     Button,
     Tabs,
     Tab,
-    LinearProgress,
     Box,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -13,19 +12,21 @@ import axios from "axios";
 import config from "../../utils/config";
 import ProgramTables from "./ProgramTables";
 import CustomSnackbar from "../../Components/CustomSnackbar";
+import { useProgress } from "../../Context/ProgressContext"; // Added useProgress hook
 
 const CurricularProgram = () => {
     const [programs, setPrograms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mainTabValue, setMainTabValue] = useState(0);
     const [subTabValue, setSubTabValue] = useState(0);
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
         severity: "success",
     });
+
+    const { showProgress, hideProgress } = useProgress(); // Destructure progress functions
 
     const categories = useMemo(
         () => [
@@ -108,7 +109,7 @@ const CurricularProgram = () => {
         }
 
         setIsUploading(true);
-        setUploadProgress(0);
+        showProgress(0);  // Start global progress
 
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -118,14 +119,14 @@ const CurricularProgram = () => {
             console.log("Selected Sheet:", sheetName);
             const sheet = workbook.Sheets[sheetName];
 
-            setUploadProgress(10);
+            showProgress(10);
 
             const allData = XLSX.utils.sheet_to_json(sheet, {
                 header: 1,
                 range: 11,
             });
 
-            setUploadProgress(20);
+            showProgress(20);
 
             const parsedData = allData
                 .map((row) => {
@@ -209,7 +210,7 @@ const CurricularProgram = () => {
                     return true;
                 });
 
-            setUploadProgress(30);
+            showProgress(30);
             console.log("Parsed Data (after filtering):", parsedData);
 
             if (parsedData.length === 0) {
@@ -219,6 +220,7 @@ const CurricularProgram = () => {
                     severity: "warning",
                 });
                 setIsUploading(false);
+                hideProgress(); // Hide progress if nothing to upload
                 return;
             }
 
@@ -260,11 +262,11 @@ const CurricularProgram = () => {
                     processedRows += 1;
 
                     const progress = 30 + Math.round((60 * processedRows) / totalRows);
-                    setUploadProgress(progress);
+                    showProgress(progress);
                 }
 
                 setPrograms(createdPrograms);
-                setUploadProgress(100);
+                showProgress(100);
                 setSnackbar({
                     open: true,
                     message: "Data imported successfully!",
@@ -279,6 +281,7 @@ const CurricularProgram = () => {
                 });
             } finally {
                 setIsUploading(false);
+                hideProgress();
             }
         };
 
@@ -293,7 +296,7 @@ const CurricularProgram = () => {
     };
 
     return (
-        <Box sx={{p: 3}}>
+        <Box sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom>
                 Curricular Programs
             </Typography>
@@ -319,14 +322,7 @@ const CurricularProgram = () => {
                 </Button>
             </label>
 
-            {isUploading && (
-                <Box sx={{ width: "100%", mb: 2 }}>
-                    <LinearProgress variant="determinate" value={uploadProgress} />
-                    <Typography variant="body2" color="textSecondary" align="center">
-                        {uploadProgress}% Complete
-                    </Typography>
-                </Box>
-            )}
+            {/* The inline upload progress bar has been removed in favor of the global progress indicator */}
 
             <Tabs
                 value={mainTabValue}
