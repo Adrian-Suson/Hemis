@@ -9,9 +9,25 @@ use Illuminate\Http\JsonResponse;
 
 class ProgramController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $programs = Program::with(['institution', 'enrollments', 'statistics'])->get();
+        // Start the query with eager loading
+        $query = Program::with(['institution', 'enrollments', 'statistics']);
+
+        // Filter by institution_id if provided
+        if ($request->has('institution_id')) {
+            $query->where('institution_id', $request->query('institution_id'));
+        }
+
+        // Filter by program_type if provided
+        if ($request->has('program_type')) {
+            $query->where('program_type', $request->query('program_type'));
+        }
+
+        // Execute the query and get the results
+        $programs = $query->get();
+
+        // Return the filtered programs as JSON
         return response()->json($programs);
     }
 
@@ -20,18 +36,22 @@ class ProgramController extends Controller
         $validated = $request->validate([
             'institution_id' => 'required|exists:institutions,id',
             'program_name' => 'required|string|max:255',
-            'program_code' => 'nullable|string|max:6|unique:programs',
+            'program_code' => 'nullable|numeric',
             'major_name' => 'required|string|max:255',
-            'major_code' => 'nullable|string|max:6|unique:programs',
-            'is_thesis_dissertation_required' => 'nullable|in:2-OPTIONAL,3-NOT REQ',
-            'program_status' => 'nullable|in:ACTIVE,PHASED OUT,ABOLISHED,4-DISTANCE MODE',
-            'calendar_use_code' => 'nullable|in:1-SEM,2-TRISEM,3-QTR SEM',
+            'major_code' => 'nullable|numeric',
+            'category' => 'nullable|string|max:255',
+            'serial' => 'nullable|integer|max:255',
+            'year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'is_thesis_dissertation_required' => 'nullable|in:1,2,3',
+            'program_status' => 'nullable|in:1,2,3,4',
+            'calendar_use_code' => 'nullable|in:1,2,3',
             'program_normal_length_in_years' => 'nullable|integer',
             'lab_units' => 'nullable|numeric',
             'lecture_units' => 'nullable|numeric',
             'total_units' => 'nullable|numeric',
             'tuition_per_unit' => 'nullable|numeric',
             'program_fee' => 'nullable|numeric',
+            'program_type' => 'nullable|string|max:255',
         ]);
 
         $program = Program::create($validated);

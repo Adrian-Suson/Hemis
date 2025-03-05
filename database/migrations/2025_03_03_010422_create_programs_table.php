@@ -11,21 +11,22 @@ return new class extends Migration {
             $table->id();
             $table->unsignedBigInteger('institution_id');
             $table->string('program_name', 255)->notNullable();
-            $table->string('program_code', 6)->unique()->nullable(); // 6-digit code
+            $table->integer('program_code')->nullable();
             $table->string('major_name', 255)->notNullable();
-            $table->string('pmajor_code', 6)->unique()->nullable();
+            $table->integer('major_code')->nullable();
             $table->string('category', 100)->nullable();
             $table->integer('serial')->nullable();
             $table->integer('year')->nullable();
-            $table->enum('is_thesis_dissertation_required', ['2-OPTIONAL', '3-NOT REQ'])->nullable();
-            $table->enum('program_status', ['ACTIVE', 'PHASED OUT', 'ABOLISHED', '4-DISTANCE MODE'])->nullable();
-            $table->enum('calendar_use_code', ['1-SEM', '2-TRISEM', '3-QTR SEM'])->nullable();
+            $table->enum('is_thesis_dissertation_required', ['1', '2', '3'])->nullable();
+            $table->enum('program_status', ['1', '2', '3', '4'])->nullable();
+            $table->enum('calendar_use_code', ['1', '2', '3'])->nullable();
             $table->integer('program_normal_length_in_years')->nullable();
             $table->decimal('lab_units', 5, 2)->nullable();
             $table->decimal('lecture_units', 5, 2)->nullable();
             $table->decimal('total_units', 5, 2)->nullable();
             $table->decimal('tuition_per_unit', 10, 2)->nullable();
             $table->decimal('program_fee', 10, 2)->nullable();
+            $table->string ('program_type', 255)->nullable();
             $table->foreign('institution_id')->references('id')->on('institutions')->onDelete('cascade');
             $table->timestamps();
         });
@@ -59,9 +60,9 @@ return new class extends Migration {
         Schema::create('program_statistics', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('program_id');
-            $table->decimal('lecture_units_actual', 5, 2)->nullable(); // Lecture Units (Actual Enrolled Units 1st Sem)
-            $table->decimal('laboratory_units_actual', 5, 2)->nullable(); // Laboratory Units (Actual Enrolled Units 1st Sem)
-            $table->decimal('total_units_actual', 5, 2)->nullable(); // Total (Actual Enrolled Units 1st Sem)
+            $table->integer('lecture_units_actual')->nullable(); // Lecture Units (Actual Enrolled Units 1st Sem)
+            $table->integer('laboratory_units_actual' )->nullable(); // Laboratory Units (Actual Enrolled Units 1st Sem)
+            $table->integer('total_units_actual')->nullable(); // Total (Actual Enrolled Units 1st Sem)
             $table->integer('graduates_males')->nullable(); // Graduates 2023/24 (Sem1+Sem2+Summ+ER) - Males
             $table->integer('graduates_females')->nullable(); // Graduates 2023/24 (Sem1+Sem2+Summ+ER) - Females
             $table->integer('graduates_total')->nullable(); // Graduates 2023/24 (Sem1+Sem2+Summ+ER) - Total

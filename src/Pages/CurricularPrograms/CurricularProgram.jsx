@@ -1,32 +1,30 @@
-import { useState, useEffect } from "react";
-import {
-    Container,
-    Typography,
-    Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    IconButton,
-    Tooltip,
-    CircularProgress,
-} from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import { useState, useEffect, useMemo } from "react";
+import { Container, Typography, Button, Tabs, Tab } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import config from "../../utils/config";
+import ProgramTables from "./ProgramTables";
 
 const CurricularProgram = () => {
     const [programs, setPrograms] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
+    const [mainTabValue, setMainTabValue] = useState(0); // Main tab for program_type
+    const [subTabValue, setSubTabValue] = useState(0); // Subtab for Programs/Enrollments/Statistics
+
+    // Main tab categories for program_type
+    const categories = useMemo(() => [
+        "DOCTORATE",
+        "MASTERS",
+        "POST-BACCALAUREATE",
+        "BACCALAUREATE",
+        "PRE-BACCALAUREATE",
+        "VOC/TECH",
+        "BASIC EDUCATION",
+    ], []);
+
+    // Subtab categories
+    const subCategories = ["Programs", "Enrollments", "Statistics"];
 
     useEffect(() => {
         const fetchPrograms = async () => {
@@ -43,7 +41,10 @@ const CurricularProgram = () => {
 
                 const response = await axios.get(`${config.API_URL}/programs`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { institution_id: institutionId }, // Filter by institution_id
+                    params: {
+                        institution_id: institutionId,
+                        program_type: categories[mainTabValue], // Fetch by selected program_type
+                    },
                 });
                 console.log("API Response:", response.data);
 
@@ -62,7 +63,7 @@ const CurricularProgram = () => {
         };
 
         fetchPrograms();
-    }, []);
+    }, [mainTabValue, categories]); // Re-fetch when mainTabValue changes
 
     // Handle file upload and Excel parsing
     const handleFileUpload = async (event) => {
@@ -87,24 +88,22 @@ const CurricularProgram = () => {
         reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
+            const sheetName = workbook.SheetNames[mainTabValue];
             const sheet = workbook.Sheets[sheetName];
 
-            // Get all data as array starting from row 12 (index 11)
             const allData = XLSX.utils.sheet_to_json(sheet, {
                 header: 1,
                 range: 11,
             });
 
-            // Map the data into program, enrollment, and statistics sub-objects
             const parsedData = allData
                 .map((row) => ({
                     program: {
                         institution_id: institutionId,
-                        program_name: row[1] || null,
-                        program_code: row[2] || null,
-                        major_name: row[3] || null,
-                        major_code: row[4] || null,
+                        program_name: row[1] || "N/A",
+                        program_code: (row[2]) || 0,
+                        major_name: row[3] || "N/A",
+                        major_code: (row[4]) || 0,
                         category: row[5] || null,
                         serial: row[6] || null,
                         year: row[7] || null,
@@ -112,11 +111,12 @@ const CurricularProgram = () => {
                         program_status: row[9] || null,
                         calendar_use_code: row[10] || null,
                         program_normal_length_in_years: row[11] || null,
-                        lab_units: row[12] || null,
-                        lecture_units: row[13] || null,
-                        total_units: row[14] || null,
-                        tuition_per_unit: row[15] || null,
-                        program_fee: row[16] || null,
+                        lab_units: row[12] || 0,
+                        lecture_units: row[13] || 0,
+                        total_units: row[14] || 0,
+                        tuition_per_unit: row[15] || 0,
+                        program_fee: row[16] || 0,
+                        program_type: categories[mainTabValue],
                     },
                     enrollment: {
                         new_students_freshmen_male: row[17] || 0,
@@ -152,7 +152,6 @@ const CurricularProgram = () => {
                     },
                 }))
                 .filter((data) => {
-                    // Ensure required fields for program are present
                     return data.program.program_name && data.program.major_name;
                 });
 
@@ -161,7 +160,6 @@ const CurricularProgram = () => {
             try {
                 const createdPrograms = [];
                 for (const data of parsedData) {
-                    // Create the program
                     const programResponse = await axios.post(
                         `${config.API_URL}/programs`,
                         data.program,
@@ -169,11 +167,9 @@ const CurricularProgram = () => {
                     );
                     const programId = programResponse.data.id;
 
-                    // Add program_id to enrollment and statistics
                     data.enrollment.program_id = programId;
                     data.statistics.program_id = programId;
 
-                    // Create the enrollment if there’s any non-zero data
                     if (
                         Object.values(data.enrollment).some((val) => val !== 0)
                     ) {
@@ -187,7 +183,6 @@ const CurricularProgram = () => {
                         ];
                     }
 
-                    // Create the statistics if there’s any non-zero data
                     if (
                         Object.values(data.statistics).some((val) => val !== 0)
                     ) {
@@ -203,7 +198,6 @@ const CurricularProgram = () => {
                     createdPrograms.push(programResponse.data);
                 }
 
-                // Update state with created programs
                 setPrograms(createdPrograms);
                 alert("Data imported successfully!");
             } catch (error) {
@@ -223,19 +217,8 @@ const CurricularProgram = () => {
     return (
         <Container maxWidth="lg">
             <Typography variant="h4" gutterBottom>
-                Curricular Programs (HEMIS 2024)
+                Curricular Programs
             </Typography>
-
-            {/* Buttons for Adding New Program & Importing Excel */}
-            <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={() => navigate("/admin/curricular-programs/new")}
-                sx={{ mb: 2, mr: 2 }}
-            >
-                Add New Program
-            </Button>
 
             <input
                 type="file"
@@ -256,103 +239,36 @@ const CurricularProgram = () => {
                 </Button>
             </label>
 
-            <TableContainer component={Paper} elevation={3}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell sx={{ fontWeight: "bold" }}>
-                                Program Name
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>
-                                Program Code
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>
-                                Major Name
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>
-                                Status
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>
-                                Total Enrollment
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>
-                                Total Graduates
-                            </TableCell>
-                            <TableCell
-                                sx={{ fontWeight: "bold", textAlign: "center" }}
-                            >
-                                Actions
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={7} align="center">
-                                    <CircularProgress />
-                                </TableCell>
-                            </TableRow>
-                        ) : programs.length > 0 ? (
-                            programs.map((program) => (
-                                <TableRow key={program.id}>
-                                    <TableCell>
-                                        {program.program_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {program.program_code || "N/A"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {program.major_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {program.program_status || "N/A"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {program.enrollments?.[0]
-                                            ?.grand_total || 0}
-                                    </TableCell>
-                                    <TableCell>
-                                        {program.statistics?.graduates_total ||
-                                            0}
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <Tooltip title="View Details">
-                                            <IconButton
-                                                color="primary"
-                                                onClick={() =>
-                                                    navigate(
-                                                        `/admin/curricular-programs/${program.id}`
-                                                    )
-                                                }
-                                            >
-                                                <VisibilityIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Edit Program">
-                                            <IconButton
-                                                color="warning"
-                                                onClick={() =>
-                                                    navigate(
-                                                        `/admin/curricular-programs/edit/${program.id}`
-                                                    )
-                                                }
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={7} align="center">
-                                    No programs found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {/* Main Tabs based on program_type */}
+            <Tabs
+                value={mainTabValue}
+                onChange={(event, newValue) => setMainTabValue(newValue)}
+                sx={{ mb: 2 }}
+                variant="scrollable"
+                scrollButtons="auto"
+            >
+                {categories.map((category) => (
+                    <Tab key={category} label={category} />
+                ))}
+            </Tabs>
+
+            {/* Subtabs for Programs, Enrollments, Statistics */}
+            <Tabs
+                value={subTabValue}
+                onChange={(event, newValue) => setSubTabValue(newValue)}
+                sx={{ mb: 2 }}
+            >
+                {subCategories.map((subCategory) => (
+                    <Tab key={subCategory} label={subCategory} />
+                ))}
+            </Tabs>
+
+            {/* ProgramTables with both tab values */}
+            <ProgramTables
+                programs={programs}
+                loading={loading}
+                subTabValue={subTabValue}
+            />
         </Container>
     );
 };
