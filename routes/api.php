@@ -32,7 +32,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Campus Routes
     Route::apiResource('campuses', CampusController::class);
-
     Route::apiResource('programs', ProgramController::class);
     Route::apiResource('enrollments', EnrollmentController::class);
     Route::apiResource('program-statistics', ProgramStatisticController::class);
