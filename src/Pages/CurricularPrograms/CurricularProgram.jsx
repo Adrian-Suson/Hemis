@@ -1,20 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-    Container,
     Typography,
     Button,
     Tabs,
     Tab,
     LinearProgress,
     Box,
-    Snackbar,
-    Alert,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import config from "../../utils/config";
 import ProgramTables from "./ProgramTables";
+import CustomSnackbar from "../../Components/CustomSnackbar";
 
 const CurricularProgram = () => {
     const [programs, setPrograms] = useState([]);
@@ -26,7 +24,7 @@ const CurricularProgram = () => {
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
-        severity: "success", // 'success', 'error', 'warning', 'info'
+        severity: "success",
     });
 
     const categories = useMemo(
@@ -132,13 +130,9 @@ const CurricularProgram = () => {
             const parsedData = allData
                 .map((row) => {
                     const programCode =
-                        row[2] !== undefined && row[2] !== 0
-                            ? row[2]
-                            : 0;
+                        row[2] !== undefined && row[2] !== 0 ? String(row[2]) : 0;
                     const majorCode =
-                        row[4] !== undefined && row[4] !== 0
-                            ? row[4]
-                            : 0;
+                        row[4] !== undefined && row[4] !== 0 ? String(row[4]) : 0;
 
                     console.log("Raw Row Data:", row);
 
@@ -199,24 +193,16 @@ const CurricularProgram = () => {
                 })
                 .filter((data) => {
                     if (!data.program.program_name) {
-                        console.log(
-                            "Skipping row due to missing program_name:",
-                            data.program
-                        );
+                        console.log("Skipping row due to missing program_name:", data.program);
                         return false;
                     }
 
                     const hasValidCode =
-                        (data.program.program_code &&
-                            data.program.program_code !== 0) ||
-                        (data.program.major_code &&
-                            data.program.major_code !== 0);
+                        (data.program.program_code && data.program.program_code !== "0") ||
+                        (data.program.major_code && data.program.major_code !== "0");
 
                     if (!hasValidCode) {
-                        console.log(
-                            "Skipping row due to invalid program_code or major_code:",
-                            data.program
-                        );
+                        console.log("Skipping row due to invalid program_code or major_code:", data.program);
                         return false;
                     }
 
@@ -229,8 +215,7 @@ const CurricularProgram = () => {
             if (parsedData.length === 0) {
                 setSnackbar({
                     open: true,
-                    message:
-                        "No valid data found in the Excel sheet to import.",
+                    message: "No valid data found in the Excel sheet to import.",
                     severity: "warning",
                 });
                 setIsUploading(false);
@@ -253,36 +238,28 @@ const CurricularProgram = () => {
                     data.enrollment.program_id = programId;
                     data.statistics.program_id = programId;
 
-                    if (
-                        Object.values(data.enrollment).some((val) => val !== 0)
-                    ) {
+                    if (Object.values(data.enrollment).some((val) => val !== 0)) {
                         const enrollmentResponse = await axios.post(
                             `${config.API_URL}/enrollments`,
                             data.enrollment,
                             { headers: { Authorization: `Bearer ${token}` } }
                         );
-                        programResponse.data.enrollments = [
-                            enrollmentResponse.data,
-                        ];
+                        programResponse.data.enrollments = [enrollmentResponse.data];
                     }
 
-                    if (
-                        Object.values(data.statistics).some((val) => val !== 0)
-                    ) {
+                    if (Object.values(data.statistics).some((val) => val !== 0)) {
                         const statisticsResponse = await axios.post(
                             `${config.API_URL}/program-statistics`,
                             data.statistics,
                             { headers: { Authorization: `Bearer ${token}` } }
                         );
-                        programResponse.data.statistics =
-                            statisticsResponse.data;
+                        programResponse.data.statistics = statisticsResponse.data;
                     }
 
                     createdPrograms.push(programResponse.data);
                     processedRows += 1;
 
-                    const progress =
-                        30 + Math.round((60 * processedRows) / totalRows);
+                    const progress = 30 + Math.round((60 * processedRows) / totalRows);
                     setUploadProgress(progress);
                 }
 
@@ -294,14 +271,10 @@ const CurricularProgram = () => {
                     severity: "success",
                 });
             } catch (error) {
-                console.error(
-                    "Error importing data:",
-                    error.response?.data || error.message
-                );
+                console.error("Error importing data:", error.response?.data || error.message);
                 setSnackbar({
                     open: true,
-                    message:
-                        "Error importing data. Please check the console for details.",
+                    message: "Error importing data. Please check the console for details.",
                     severity: "error",
                 });
             } finally {
@@ -320,7 +293,7 @@ const CurricularProgram = () => {
     };
 
     return (
-        <Container maxWidth="lg">
+        <Box sx={{p: 3}}>
             <Typography variant="h4" gutterBottom>
                 Curricular Programs
             </Typography>
@@ -348,15 +321,8 @@ const CurricularProgram = () => {
 
             {isUploading && (
                 <Box sx={{ width: "100%", mb: 2 }}>
-                    <LinearProgress
-                        variant="determinate"
-                        value={uploadProgress}
-                    />
-                    <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        align="center"
-                    >
+                    <LinearProgress variant="determinate" value={uploadProgress} />
+                    <Typography variant="body2" color="textSecondary" align="center">
                         {uploadProgress}% Complete
                     </Typography>
                 </Box>
@@ -390,22 +356,13 @@ const CurricularProgram = () => {
                 subTabValue={subTabValue}
             />
 
-            {/* Custom Snackbar */}
-            <Snackbar
+            <CustomSnackbar
                 open={snackbar.open}
-                autoHideDuration={6000} // Auto-close after 6 seconds
+                message={snackbar.message}
+                severity={snackbar.severity}
                 onClose={handleSnackbarClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "center" }} // Position at bottom center
-            >
-                <Alert
-                    onClose={handleSnackbarClose}
-                    severity={snackbar.severity}
-                    sx={{ width: "100%" }}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
-        </Container>
+            />
+        </Box>
     );
 };
 

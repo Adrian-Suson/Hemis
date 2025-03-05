@@ -33,7 +33,6 @@ import axios from "axios";
 import config from "../utils/config";
 import { MdAdminPanelSettings } from "react-icons/md";
 
-// Admin and New Sections in the Sidebar
 const adminNavItems = [
     { text: "Dashboard", icon: <HomeIcon /> },
     { text: "Institutions", icon: <StorageIcon /> },
@@ -54,14 +53,15 @@ const Sidebar = ({
     isMinimized,
 }) => {
     const [active, setActive] = useState("");
-    const [openManagement, setOpenManagement] = useState(false); // System Management dropdown state
+    const [openManagement, setOpenManagement] = useState(false);
     const navigate = useNavigate();
     const theme = useTheme();
-    const [user, setUser] = useState(null); // Store the dynamic user data
+    const [user, setUser] = useState(null);
 
     const handleNavigation = (path) => {
         navigate(path);
         setActive(path);
+        if (!isNonMobile) setIsSidebarOpen(false); // Close sidebar on mobile after navigation
     };
 
     const fetchUsers = async () => {
@@ -77,8 +77,8 @@ const Sidebar = ({
             );
 
             setUser(response.data);
-        } catch {
-            alert("Failed to fetch users. Please login again.");
+        } catch (error) {
+            console.error("Failed to fetch user:", error);
         }
     };
 
@@ -89,30 +89,19 @@ const Sidebar = ({
     const handleLogout = async () => {
         try {
             const token = localStorage.getItem("token");
-
-            // Make API call to logout endpoint
             await axios.post(
                 `${config.API_URL}/auth/logout`,
                 {},
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
-
-            // Clear local storage and redirect after successful logout
-            localStorage.removeItem("token");
-            localStorage.removeItem("user"); // Remove user data as well if stored
             localStorage.clear();
             navigate("/", { replace: true });
             window.location.reload(false);
         } catch (error) {
             console.error("Logout failed:", error);
-            // Optional: Handle error (e.g., show a notification)
-            // For now, we'll still clear local storage and redirect
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
+            localStorage.clear();
             navigate("/", { replace: true });
             window.location.reload(false);
         }
@@ -125,7 +114,7 @@ const Sidebar = ({
         return (
             <ListItem key={text} disablePadding>
                 <ListItemButton
-                    onClick={() => handleNavigation(path, text)}
+                    onClick={() => handleNavigation(path)}
                     sx={{
                         backgroundColor:
                             active === path
@@ -140,7 +129,6 @@ const Sidebar = ({
                             color: theme.palette.primary.contrastText,
                         },
                         px: 2,
-                        display: "flex",
                         justifyContent: isMinimized ? "center" : "flex-start",
                     }}
                 >
@@ -163,217 +151,171 @@ const Sidebar = ({
     };
 
     return (
-        <Box component="nav">
-            {isSidebarOpen && (
-                <Drawer
-                    open={isSidebarOpen}
-                    onClose={() => setIsSidebarOpen(false)}
-                    variant="persistent"
-                    anchor="left"
+        <Drawer
+            open={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            variant={isNonMobile ? "persistent" : "temporary"}
+            anchor="left"
+            sx={{
+                width: isMinimized ? "64px" : drawerWidth,
+                "& .MuiDrawer-paper": {
+                    color: theme.palette.text.primary,
+                    backgroundColor: theme.palette.background.default,
+                    boxSizing: "border-box",
+                    width: isMinimized ? "64px" : drawerWidth,
+                    transition: "width 0.3s",
+                    overflowX: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                },
+            }}
+        >
+            <Box>
+                <Box p={isMinimized ? 1.5 : 4}>
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        gap="0.5rem"
+                        justifyContent="space-between"
+                    >
+                        <Box display="flex" alignItems="center" gap="0.5rem">
+                            <Box
+                                component="img"
+                                alt="logo"
+                                src={Logo}
+                                height={isMinimized ? "35px" : "50px"}
+                                width={isMinimized ? "35px" : "50px"}
+                                borderRadius="50%"
+                                sx={{ objectFit: "cover" }}
+                            />
+                            {!isMinimized && (
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={600}
+                                    color={theme.palette.text.primary}
+                                >
+                                    Information Management
+                                </Typography>
+                            )}
+                        </Box>
+                        {!isNonMobile && (
+                            <IconButton onClick={() => setIsSidebarOpen(false)}>
+                                <ChevronLeftIcon />
+                            </IconButton>
+                        )}
+                    </Box>
+                </Box>
+
+                <Box
                     sx={{
-                        width: isMinimized ? "70px" : drawerWidth,
-                        "& .MuiDrawer-paper": {
-                            color: theme.palette.text.primary,
-                            backgroundColor: theme.palette.background.default,
-                            boxSizing: "border-box",
-                            width: isMinimized ? "64px" : drawerWidth,
-                            transition: "width 0.3s",
-                            overflow: "hidden",
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "space-between",
-                        },
+                        flexGrow: 1,
+                        overflowY: "auto",
+                        maxHeight: "calc(90vh - 160px)",
                     }}
                 >
-                    <Box>
-                        {/* Sidebar Header */}
-                        <Box p={isMinimized ? 1.5 : 4}>
-                            <Box
-                                justifyContent={"space-between"}
-                                color={theme.palette.primary.main}
-                            >
-                                <Box
-                                    display="flex"
-                                    alignItems="center"
-                                    gap="0.5rem"
-                                >
-                                    <Box
-                                        component="img"
-                                        alt="logo"
-                                        src={Logo}
-                                        height={isMinimized ? "35px" : "50px"}
-                                        width={isMinimized ? "35px" : "50px"}
-                                        borderRadius="50%"
-                                        sx={{ objectFit: "cover" }}
-                                    />
-                                    {!isMinimized && (
-                                        <Typography
-                                            variant="h6"
-                                            fontWeight={600}
-                                            color={theme.palette.text.primary}
-                                        >
-                                            Information Management
-                                        </Typography>
-                                    )}
-                                </Box>
-                                {!isNonMobile && (
-                                    <IconButton
-                                        onClick={() =>
-                                            setIsSidebarOpen(!isSidebarOpen)
-                                        }
-                                    >
-                                        <ChevronLeftIcon />
-                                    </IconButton>
-                                )}
-                            </Box>
-                        </Box>
+                    <Divider sx={{ my: 2 }} />
+                    <List>{adminNavItems.map(renderNavItem)}</List>
 
-                        {/* Scrollable Nav Content */}
-                        <Box
+                    <Divider sx={{ my: 2 }} />
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            onClick={() => setOpenManagement(!openManagement)}
                             sx={{
-                                flexGrow: 1,
-                                overflowY: "auto",
-                                maxHeight: "calc(90vh - 160px)",
+                                justifyContent: isMinimized
+                                    ? "center"
+                                    : "flex-start",
                             }}
                         >
-                            <Divider sx={{ my: 2 }} />
-                            <List>{adminNavItems.map(renderNavItem)}</List>
-
-                            {/* System Management - Dropdown */}
-                            <Divider sx={{ my: 2 }} />
-                            <ListItem disablePadding>
-                                <ListItemButton
-                                    onClick={() =>
-                                        setOpenManagement(!openManagement)
-                                    }
-                                    sx={{
-                                        display: "flex",
-                                        justifyContent: isMinimized
-                                            ? "center"
-                                            : "flex-start",
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: isMinimized
-                                                ? "auto"
-                                                : "56px",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <MdAdminPanelSettings
-                                            fontSize={25}
-                                            color="black"
-                                        />
-                                    </ListItemIcon>
-                                    {!isMinimized && (
-                                        <ListItemText primary="Admin" />
-                                    )}
-                                    {!isMinimized &&
-                                        (openManagement ? (
-                                            <ExpandLess />
-                                        ) : (
-                                            <ExpandMore />
-                                        ))}
-                                </ListItemButton>
-                            </ListItem>
-                            <Collapse
-                                in={openManagement}
-                                timeout="auto"
-                                unmountOnExit
+                            <ListItemIcon
+                                sx={{
+                                    minWidth: isMinimized ? "auto" : "56px",
+                                    justifyContent: "center",
+                                }}
                             >
-                                <List sx={{ ml: isMinimized ? 0 : 4 }}>
-                                    {managementItems.map(renderNavItem)}
-                                </List>
-                            </Collapse>
-                        </Box>
-                    </Box>
+                                <MdAdminPanelSettings
+                                    fontSize={25}
+                                    color="black"
+                                />
+                            </ListItemIcon>
+                            {!isMinimized && <ListItemText primary="Admin" />}
+                            {!isMinimized &&
+                                (openManagement ? (
+                                    <ExpandLess />
+                                ) : (
+                                    <ExpandMore />
+                                ))}
+                        </ListItemButton>
+                    </ListItem>
+                    <Collapse in={openManagement} timeout="auto" unmountOnExit>
+                        <List sx={{ ml: isMinimized ? 0 : 4 }}>
+                            {managementItems.map(renderNavItem)}
+                        </List>
+                    </Collapse>
+                </Box>
+            </Box>
 
-                    {/* Profile & Logout Section */}
-                    <Box px={isMinimized ? "0.5rem" : "2rem"} mb={2}>
-                        <Divider sx={{ my: 2 }} />
-                        <Box
-                            mt="10px"
-                            display="flex"
-                            flexDirection="column"
-                            alignItems="center"
-                            gap="0.5rem"
+            <Box px={isMinimized ? "0.5rem" : "2rem"} mb={2}>
+                <Divider sx={{ my: 2 }} />
+                <Box
+                    mt="10px"
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    gap="0.5rem"
+                >
+                    <Box
+                        display="flex"
+                        width="100%"
+                        gap="0.75rem"
+                        justifyContent={isMinimized ? "center" : "flex-start"}
+                        alignItems="center"
+                    >
+                        <Avatar
+                            src={user?.profile_image || DP}
+                            sx={{
+                                width: isMinimized ? 40 : 40,
+                                height: isMinimized ? 40 : 40,
+                            }}
                         >
-                            <Box
-                                display="flex"
-                                width="100%"
-                                gap="0.75rem"
-                                justifyContent={
-                                    isMinimized ? "center" : "flex-start"
-                                }
-                                alignItems="center"
-                            >
-                                {/* Avatar */}
-                                <Avatar
-                                    src={user?.profile_image || DP}
-                                    sx={{
-                                        width: isMinimized ? 40 : 40,
-                                        height: isMinimized ? 40 : 40,
-                                        transition: "width 0.3s, height 0.3s",
-                                    }}
+                            {user?.email?.charAt(0)}
+                        </Avatar>
+                        {!isMinimized && user && (
+                            <Box display="flex" flexDirection="column">
+                                <Typography variant="body1" fontWeight="600">
+                                    {user.name}
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    color="textSecondary"
                                 >
-                                    {user?.email}
-                                </Avatar>
-
-                                {/* User Info */}
-                                {!isMinimized && user && (
-                                    <Box
-                                        display="flex"
-                                        flexDirection="column"
-                                        alignItems={
-                                            isMinimized
-                                                ? "center"
-                                                : "flex-start"
-                                        }
-                                    >
-                                        <Typography
-                                            variant="body1"
-                                            fontWeight="600"
-                                        >
-                                            {user.name}
-                                        </Typography>
-                                        <Typography
-                                            variant="body2"
-                                            color="textSecondary"
-                                        >
-                                            {user.role}
-                                        </Typography>
-                                    </Box>
-                                )}
+                                    {user.role}
+                                </Typography>
                             </Box>
-
-                            {/* Logout Button */}
-                            <Tooltip title="Log Out" arrow>
-                                <Button
-                                    onClick={handleLogout}
-                                    variant="contained"
-                                    color="error"
-                                    sx={{
-                                        width: isMinimized ? "40px" : "100%",
-                                        borderRadius: "8px",
-                                        textTransform: "none",
-                                        fontWeight: 600,
-                                        padding: isMinimized
-                                            ? "8px"
-                                            : "8px 16px",
-                                        minWidth: 0,
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <ExitToAppIcon />
-                                    {!isMinimized && "Logout"}
-                                </Button>
-                            </Tooltip>
-                        </Box>
+                        )}
                     </Box>
-                </Drawer>
-            )}
-        </Box>
+                    <Tooltip title="Log Out" arrow>
+                        <Button
+                            onClick={handleLogout}
+                            variant="contained"
+                            color="error"
+                            sx={{
+                                width: isMinimized ? "40px" : "100%",
+                                borderRadius: "8px",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                padding: isMinimized ? "8px" : "8px 16px",
+                                minWidth: 0,
+                                justifyContent: "center",
+                            }}
+                        >
+                            <ExitToAppIcon />
+                            {!isMinimized && "Logout"}
+                        </Button>
+                    </Tooltip>
+                </Box>
+            </Box>
+        </Drawer>
     );
 };
 
@@ -382,7 +324,6 @@ Sidebar.propTypes = {
     isSidebarOpen: PropTypes.bool.isRequired,
     setIsSidebarOpen: PropTypes.func.isRequired,
     isNonMobile: PropTypes.bool,
-    setNavTitle: PropTypes.func.isRequired,
     isMinimized: PropTypes.bool.isRequired,
     userRole: PropTypes.oneOf(["admin", "user"]),
 };

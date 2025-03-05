@@ -5,7 +5,6 @@ import {
     TableHead,
     TableRow,
     CircularProgress,
-    Typography,
     TableContainer,
     Paper,
     Box,
@@ -14,12 +13,17 @@ import PropTypes from "prop-types";
 
 const ProgramTables = ({ programs, loading, subTabValue }) => {
     if (loading) return <CircularProgress />;
-    if (!programs.length) return <Typography>No data available</Typography>;
+
 
     const tableStyles = {
         overflowX: "auto",
-        maxHeight: "400px",
-        "& th, & td": { fontSize: "12px", padding: "6px" },
+        maxHeight: "550px",
+        minWidth: "100%", // Set minimum width for the table
+        "& th, & td": {
+            fontSize: "12px",
+            padding: "10px", // Increased padding for better spacing
+            whiteSpace: "nowrap", // Prevent text from wrapping
+        },
     };
 
     const renderPrograms = () => (
@@ -79,7 +83,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                     program.program_type,
                                 ].map((value, index) => (
                                     <TableCell key={index}>
-                                        {value || "N/A"}
+                                        {value || " "}
                                     </TableCell>
                                 ))}
                             </TableRow>
