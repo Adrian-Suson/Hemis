@@ -1,78 +1,73 @@
 import PropTypes from "prop-types";
-import {
-    AppBar,
-    IconButton,
-    Toolbar,
-    Box,
-} from "@mui/material";
+import { AppBar, IconButton, Toolbar, Box, Button } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = ({
-    isNonMobile = true,
-    isMinimized,
-    setIsMinimized,
+    isMobile,
     isSidebarOpen,
     setIsSidebarOpen,
+    isMinimized,
+    setIsMinimized,
 }) => {
+    const navigate = useNavigate();
 
+    const navItems = [
+        { text: "Dashboard", path: "/admin/dashboard" },
+        { text: "Institutions", path: "/admin/institutions" },
+        { text: "Program", path: "/admin/program" },
+        { text: "Reports", path: "/admin/reports" },
+    ];
 
-
-    const handleToggle = () => {
-        if (isNonMobile) {
-            setIsMinimized(!isMinimized);
-        } else {
-            setIsSidebarOpen(!isSidebarOpen);
-        }
+    const handleNavigation = (path) => {
+        navigate(path);
     };
 
     return (
-        <>
-            <AppBar
-                position="static"
-                sx={{
-                    background: "none",
-                    boxShadow: "none",
-                    height: "50px", // Added fixed height
-                }}
+        <AppBar
+            position="static"
+            sx={{ background: "none", boxShadow: "none" }}
+        >
+            <Toolbar
+                sx={{ justifyContent: "space-between", minHeight: "50px" }}
             >
-                <Toolbar
-                    sx={{
-                        justifyContent: "space-between",
-                        minHeight: "50px !important", // Override default Toolbar height
-                        height: "50px", // Added fixed height
+                {/* Menu icon for toggling sidebar */}
+                <IconButton
+                    onClick={() => {
+                        if (isMobile) {
+                            setIsSidebarOpen(!isSidebarOpen);
+                        } else {
+                            setIsMinimized(!isMinimized); // Toggle minimization on desktop
+                        }
                     }}
                 >
-                    {/* Menu icon toggles sidebar or minimization */}
-                    <IconButton
-                        onClick={handleToggle}
-                        sx={{ padding: "8px" }} // Reduced padding for smaller height
-                    >
-                        <MenuIcon />
-                    </IconButton>
+                    <MenuIcon />
+                </IconButton>
 
-
-                    {/* Right-side buttons */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            ml: "auto",
-                            height: "50px", // Match parent height
-                        }}
-                    />
-                </Toolbar>
-            </AppBar>
-        </>
+                {/* Navigation Links for Desktop */}
+                {!isMobile && (
+                    <Box display="flex" gap={2}>
+                        {navItems.map(({ text, path }) => (
+                            <Button
+                                key={text}
+                                onClick={() => handleNavigation(path)}
+                            >
+                                {text}
+                            </Button>
+                        ))}
+                    </Box>
+                )}
+            </Toolbar>
+        </AppBar>
     );
 };
 
 Navbar.propTypes = {
-    navTitle: PropTypes.string.isRequired,
-    isMinimized: PropTypes.bool.isRequired,
-    setIsMinimized: PropTypes.func.isRequired,
-    isNonMobile: PropTypes.bool,
+    isMobile: PropTypes.bool.isRequired,
     isSidebarOpen: PropTypes.bool.isRequired,
     setIsSidebarOpen: PropTypes.func.isRequired,
+    isMinimized: PropTypes.bool.isRequired, // Added for desktop minimization
+    setIsMinimized: PropTypes.func.isRequired, // Added for desktop minimization
 };
 
 export default Navbar;
