@@ -503,12 +503,12 @@ const CurricularProgram = () => {
         return programs.filter(
             (program) => program.program_type === categories[mainTabValue]
         );
-    }, [programs, mainTabValue]);
+    }, [programs, mainTabValue, categories]);
 
     return (
         <Box sx={{ p: 3 }}>
             {/* Breadcrumbs Navigation */}
-            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
                     color="inherit"
