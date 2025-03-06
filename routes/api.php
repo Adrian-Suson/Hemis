@@ -19,9 +19,8 @@ Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 // Protected routes - Require Authentication
 Route::middleware('auth:sanctum')->group(function () {
     // User Routes
-
-
     Route::apiResource('users', UserController::class);
+    Route::post('users/{user}/reactivate', [UserController::class, 'reactivate']);
 
     // Authenticated User Routes
     Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -31,7 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('institutions', InstitutionController::class);
     // Campus Routes
     Route::apiResource('campuses', CampusController::class);
+
+    // Program Routes
     Route::apiResource('programs', ProgramController::class);
+    Route::get('programs/export/{category}', [ProgramController::class, 'export']);
+
     Route::apiResource('enrollments', EnrollmentController::class);
     Route::apiResource('program-statistics', ProgramStatisticController::class);
 

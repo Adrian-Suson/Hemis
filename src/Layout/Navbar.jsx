@@ -10,24 +10,24 @@ import {
     Divider,
     Tabs,
     Tab,
-    Tooltip,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useMemo, useEffect } from "react";
 import axios from "axios";
 import config from "../utils/config";
 import DP from "../assets/Profile.png";
-import Logo from "../assets/ChedLogo.png"; // Assuming you have a logo image in this path
+import Logo from "../assets/ChedLogo.png";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"; // Import dropdown icon
 
 const Navbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
 
-    const [anchorEl, setAnchorEl] = useState(null); // Manage the avatar dropdown state
-    const [adminMenuAnchorEl, setAdminMenuAnchorEl] = useState(null); // Manage the Admin dropdown state
-    const [user, setUser] = useState(null); // Store user profile data
-    const [value, setValue] = useState(0); // Store the active tab index
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [adminMenuAnchorEl, setAdminMenuAnchorEl] = useState(null);
+    const [user, setUser] = useState(null);
+    const [value, setValue] = useState(0);
 
     const navItems = useMemo(
         () => [
@@ -35,13 +35,12 @@ const Navbar = () => {
             { text: "Institutions", path: "/admin/institutions" },
             { text: "Program", path: "/admin/program" },
             { text: "Reports", path: "/admin/reports" },
-            { text: "Admin", path: "/admin", isAdmin: true }, // Added Admin button with special handling
+            { text: "Admin", path: "/admin", isAdmin: true },
         ],
         []
     );
 
     useEffect(() => {
-        // Fetch the user's profile on component mount
         const fetchUserProfile = async () => {
             try {
                 const token = localStorage.getItem("token");
@@ -67,20 +66,20 @@ const Navbar = () => {
     };
 
     const handleTabChange = (event, newValue) => {
-        setValue(newValue); // Update the active tab index
+        setValue(newValue);
     };
 
     const handleMenuOpen = (event, type) => {
         if (type === "avatar") {
-            setAnchorEl(event.currentTarget); // Open the avatar menu on click
+            setAnchorEl(event.currentTarget);
         } else if (type === "admin") {
-            setAdminMenuAnchorEl(event.currentTarget); // Open the admin menu on click
+            setAdminMenuAnchorEl(event.currentTarget);
         }
     };
 
     const handleMenuClose = () => {
-        setAnchorEl(null); // Close avatar menu
-        setAdminMenuAnchorEl(null); // Close admin menu
+        setAnchorEl(null);
+        setAdminMenuAnchorEl(null);
     };
 
     const handleLogout = async () => {
@@ -104,11 +103,12 @@ const Navbar = () => {
         }
     };
 
-    // Handle the active tab based on location.pathname
     useEffect(() => {
         const currentPath = location.pathname;
         const activeTabIndex = navItems.findIndex(
-            (item) => item.path === currentPath
+            (item) =>
+                item.path === currentPath ||
+                currentPath.startsWith(item.path + "/")
         );
         if (activeTabIndex >= 0) {
             setValue(activeTabIndex);
@@ -123,15 +123,15 @@ const Navbar = () => {
                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 display: "flex",
-                justifyContent: "flex-end", // Align everything to the right
+                justifyContent: "flex-end",
             }}
         >
             <Toolbar
                 sx={{
                     display: "flex",
-                    justifyContent: "flex-end", // Align everything to the right
+                    justifyContent: "flex-end",
                     minHeight: "64px !important",
-                    px: { xs: 2, md: 3 }, // Responsive padding
+                    px: { xs: 2, md: 3 },
                 }}
             >
                 {/* Left section with Logo and "Hemis" name */}
@@ -140,12 +140,14 @@ const Navbar = () => {
                         display: "flex",
                         alignItems: "center",
                         marginRight: "auto",
+                        cursor: "pointer",
                     }}
+                    onClick={() => handleNavigation("/admin/dashboard")}
                 >
                     <img
-                        src={Logo} // Your logo image source
+                        src={Logo}
                         alt="Hemis Logo"
-                        style={{ width: 40, height: 40, marginRight: "8px" }} // Adjust the size as necessary
+                        style={{ width: 40, height: 40, marginRight: "8px" }}
                     />
                     <Typography
                         variant="h6"
@@ -158,67 +160,93 @@ const Navbar = () => {
                     </Typography>
                 </Box>
 
-                {/* Tabs for navigation */}
-                <Box sx={{ flexGrow: 1 }}>
-                    <Tabs
-                        value={value}
-                        onChange={handleTabChange}
-                        textColor="primary"
-                        indicatorColor="primary"
-                        sx={{ display: "flex", justifyContent: "flex-end" }}
-                    >
-                        {navItems.map(({ text, path, isAdmin }) =>
-                            isAdmin ? (
-                                <Tab
-                                    key={text}
-                                    label={text}
-                                    onClick={(e) => handleMenuOpen(e, "admin")} // Admin tab click triggers dropdown
-                                    sx={{
-                                        fontWeight: 600,
-                                        textTransform: "none",
-                                        color:
-                                            location.pathname === path
-                                                ? theme.palette.primary.main
-                                                : theme.palette.text.primary,
-                                    }}
-                                />
-                            ) : (
-                                <Tab
-                                    key={text}
-                                    label={text}
-                                    onClick={() => handleNavigation(path)}
-                                    sx={{
-                                        fontWeight: 600,
-                                        textTransform: "none",
-                                        color:
-                                            location.pathname === path
-                                                ? theme.palette.primary.main
-                                                : theme.palette.text.primary,
-                                    }}
-                                />
-                            )
-                        )}
-                    </Tabs>
-                </Box>
-
-                {/* Avatar and Dropdown */}
+                {/* Avatar Dropdown And Tabs for navigation */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Tabs
+                            value={value}
+                            onChange={handleTabChange}
+                            textColor="primary"
+                            indicatorColor="primary"
+                            sx={{ display: "flex", justifyContent: "flex-end" }}
+                        >
+                            {navItems.map(({ text, path, isAdmin }, index) =>
+                                isAdmin ? (
+                                    <Tab
+                                        key={text}
+                                        label={
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+
+                                                }}
+                                            >
+                                                {text}
+                                                <KeyboardArrowDownIcon fontSize="small" />
+                                            </Box>
+                                        }
+                                        onClick={(e) =>
+                                            handleMenuOpen(e, "admin")
+                                        }
+                                        sx={{
+                                            fontWeight: 400,
+                                            textTransform: "none",
+                                            color:
+                                                value === index
+                                                    ? theme.palette.primary.main
+                                                    : theme.palette.text
+                                                          .primary,
+                                        }}
+                                    />
+                                ) : (
+                                    <Tab
+                                        key={text}
+                                        label={text}
+                                        onClick={() => handleNavigation(path)}
+                                        sx={{
+                                            fontWeight: 400,
+                                            textTransform: "none",
+                                            color:
+                                                value === index
+                                                    ? theme.palette.primary.main
+                                                    : theme.palette.text
+                                                          .primary,
+                                        }}
+                                    />
+                                )
+                            )}
+                        </Tabs>
+                    </Box>
                     {user && (
-                        <Tooltip title="User Menu">
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                cursor: "pointer",
+                            }}
+                            onClick={(e) => handleMenuOpen(e, "avatar")}
+                        >
                             <Avatar
                                 sx={{
-                                    cursor: "pointer",
                                     bgcolor: theme.palette.primary.main,
                                     width: 40,
                                     height: 40,
                                     marginLeft: "16px",
                                 }}
-                                src={user.initials || DP}
-                                onClick={(e) => handleMenuOpen(e, "avatar")} // Open avatar menu on click
+                                src={user.avatar || DP}
                             >
-                                {user.initials || DP}
+                                {(user.firstName && user.firstName[0]) || ""}
                             </Avatar>
-                        </Tooltip>
+                            <KeyboardArrowDownIcon
+                                fontSize="small"
+                                sx={{
+                                    color: theme.palette.text.secondary,
+                                    ml: 0.5,
+                                }}
+                            />
+                        </Box>
                     )}
 
                     {/* Avatar Dropdown Menu */}
@@ -227,10 +255,33 @@ const Navbar = () => {
                         open={Boolean(anchorEl)}
                         onClose={handleMenuClose}
                         MenuListProps={{
-                            "aria-labelledby": "basic-button",
+                            "aria-labelledby": "profile-button",
+                        }}
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                        }}
+                        transformOrigin={{
+                            vertical: "top",
+                            horizontal: "right",
+                        }}
+                        PaperProps={{
+                            elevation: 3,
+                            sx: {
+                                mt: 1.5,
+                                minWidth: 180,
+                                borderRadius: 1,
+                            },
                         }}
                     >
-                        <MenuItem>Profile</MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                handleMenuClose();
+                                handleNavigation("/admin/profile");
+                            }}
+                        >
+                            Profile
+                        </MenuItem>
                         <Divider />
                         <MenuItem onClick={handleLogout}>Logout</MenuItem>
                     </Menu>
@@ -243,16 +294,36 @@ const Navbar = () => {
                         MenuListProps={{
                             "aria-labelledby": "admin-button",
                         }}
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "center",
+                        }}
+                        transformOrigin={{
+                            vertical: "top",
+                            horizontal: "center",
+                        }}
+                        PaperProps={{
+                            elevation: 3,
+                            sx: {
+                                mt: 1.5,
+                                minWidth: 180,
+                                borderRadius: 1,
+                            },
+                        }}
                     >
                         <MenuItem
-                            onClick={() => handleNavigation("/admin/settings")}
+                            onClick={() => {
+                                handleMenuClose();
+                                handleNavigation("/admin/settings");
+                            }}
                         >
                             Settings
                         </MenuItem>
                         <MenuItem
-                            onClick={() =>
-                                handleNavigation("/admin/user-management")
-                            }
+                            onClick={() => {
+                                handleMenuClose();
+                                handleNavigation("/admin/user-management");
+                            }}
                         >
                             User Management
                         </MenuItem>
@@ -262,7 +333,5 @@ const Navbar = () => {
         </AppBar>
     );
 };
-
-Navbar.propTypes = {};
 
 export default Navbar;
