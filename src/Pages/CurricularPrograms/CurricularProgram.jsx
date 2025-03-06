@@ -63,13 +63,9 @@ const CurricularProgram = () => {
 
                 const response = await axios.get(`${config.API_URL}/programs`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: {
-                        institution_id: institutionId,
-                        program_type: categories[mainTabValue],
-                    },
+                    params: { institution_id: institutionId }, // No program_type filter
                 });
-                console.log("API Response:", response.data);
-
+                console.log("Fetched programs:", response.data);
                 if (Array.isArray(response.data)) {
                     setPrograms(response.data);
                 } else {
@@ -85,7 +81,7 @@ const CurricularProgram = () => {
         };
 
         fetchPrograms();
-    }, [mainTabValue, categories]);
+    }, []); // Fetch once on mount
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
@@ -502,6 +498,13 @@ const CurricularProgram = () => {
         setSnackbar((prev) => ({ ...prev, open: false }));
     };
 
+    // Filter programs based on the selected category (mainTabValue)
+    const filteredPrograms = useMemo(() => {
+        return programs.filter(
+            (program) => program.program_type === categories[mainTabValue]
+        );
+    }, [programs, mainTabValue]);
+
     return (
         <Box sx={{ p: 3 }}>
             {/* Breadcrumbs Navigation */}
@@ -580,7 +583,7 @@ const CurricularProgram = () => {
             </Tabs>
 
             <ProgramTables
-                programs={programs}
+                programs={filteredPrograms} // Pass filtered programs instead of full programs
                 loading={loading}
                 subTabValue={subTabValue}
             />
