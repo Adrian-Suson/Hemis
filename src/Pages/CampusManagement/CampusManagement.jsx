@@ -49,7 +49,7 @@ const CampusManagement = () => {
     return (
         <Box sx={{ p: 2 }}>
             {/* Breadcrumbs */}
-            <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
                     color="inherit"

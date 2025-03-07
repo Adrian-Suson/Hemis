@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
+use CurricularProgramsExport;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProgramController extends Controller
 {
@@ -36,19 +38,19 @@ class ProgramController extends Controller
         $validated = $request->validate([
             'institution_id' => 'required|exists:institutions,id',
             'program_name' => 'required|string|max:255',
-            'program_code' => 'nullable|numeric',
+            'program_code' => 'nullable|integer',
             'major_name' => 'nullable|string|max:255',
-            'major_code' => 'nullable|numeric',
+            'major_code' => 'nullable|integer',
             'category' => 'nullable|string|max:255',
-            'serial' => 'nullable|integer|max:255',
+            'serial' => 'nullable|string|max:255',
             'year' => 'nullable|integer|min:1900|max:' . date('Y'),
             'is_thesis_dissertation_required' => 'nullable|in:1,2,3',
             'program_status' => 'nullable|in:1,2,3,4',
             'calendar_use_code' => 'nullable|in:1,2,3',
             'program_normal_length_in_years' => 'nullable|integer',
-            'lab_units' => 'nullable|numeric',
-            'lecture_units' => 'nullable|numeric',
-            'total_units' => 'nullable|numeric',
+            'lab_units' => 'nullable|integer',
+            'lecture_units' => 'nullable|integer',
+            'total_units' => 'nullable|integer',
             'tuition_per_unit' => 'nullable|numeric',
             'program_fee' => 'nullable|numeric',
             'program_type' => 'nullable|string|max:255',
@@ -83,6 +85,19 @@ class ProgramController extends Controller
 
         $program->update($validated);
         return response()->json($program->load(['institution', 'enrollments', 'statistics']));
+    }
+
+    public function export($category)
+    {
+        $export = new CurricularProgramsExport($category);
+        $data = $export->getData();
+
+        Excel::create('Curricular_Programs_' . $category . '_' . date('Y-m-d'), function ($excel) use ($data) {
+            $excel->sheet('Sheet1', function ($sheet) use ($data) {
+                $sheet->fromArray($data, null, 'A3', false, false); // Start at row 3
+                $sheet->setAutoSize(true);
+            });
+        })->export('xlsx');
     }
 
     public function destroy(Program $program): JsonResponse
