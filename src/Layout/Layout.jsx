@@ -1,15 +1,9 @@
-import { useState } from "react";
-import { Box, useMediaQuery } from "@mui/material";
+import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
-import PropTypes from "prop-types";
-import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import Footer from "./Footer"; // Import Footer Component
 
-const Layout = ({ userRole }) => {
-    const isMobile = useMediaQuery("(max-width: 600px)");
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+const Layout = () => {
     return (
         <Box display="flex" flexDirection="column" width="100%" height="100vh">
             {/* Navbar (Fixed at Top) */}
@@ -23,23 +17,10 @@ const Layout = ({ userRole }) => {
                     height: "50px",
                 }}
             >
-                <Navbar
-                    isMobile={isMobile}
-                    isSidebarOpen={isSidebarOpen}
-                    setIsSidebarOpen={setIsSidebarOpen}
-                />
+                <Navbar />
             </Box>
 
             <Box display="flex" flexGrow={1} width="100%" pt="50px">
-                {/* Sidebar only for mobile */}
-                {isMobile && (
-                    <Sidebar
-                        userRole={userRole}
-                        isSidebarOpen={isSidebarOpen}
-                        setIsSidebarOpen={setIsSidebarOpen}
-                    />
-                )}
-
                 <Box
                     flexGrow={1}
                     display="flex"
@@ -58,8 +39,6 @@ const Layout = ({ userRole }) => {
     );
 };
 
-Layout.propTypes = {
-    userRole: PropTypes.string,
-};
+Layout.propTypes = {};
 
 export default Layout;

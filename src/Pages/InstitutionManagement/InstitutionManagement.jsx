@@ -190,7 +190,7 @@
         return (
             <Box sx={{ p: 3 }}>
                 {/* Breadcrumbs */}
-                <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+                <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                         underline="hover"
                         color="inherit"

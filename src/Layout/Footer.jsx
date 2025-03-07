@@ -96,7 +96,7 @@ const Footer = ({ isSidebarOpen, isMinimized }) => {
             {/* Social Media Icons */}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
                 <IconButton
-                    href="https://facebook.com"
+                    href="https://www.facebook.com/CHEDRO9"
                     target="_blank"
                     color="primary"
                     sx={{ margin: "0 8px" }}

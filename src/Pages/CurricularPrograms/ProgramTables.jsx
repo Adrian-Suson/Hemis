@@ -14,23 +14,114 @@ import PropTypes from "prop-types";
 const ProgramTables = ({ programs, loading, subTabValue }) => {
     if (loading) return <CircularProgress />;
 
-
+    // Enhanced table styles with visible boxes
     const tableStyles = {
         overflowX: "auto",
         maxHeight: "550px",
-        minWidth: "100%", // Set minimum width for the table
-        "& th, & td": {
+        minWidth: "100%",
+        "& .MuiTableCell-root": {
             fontSize: "12px",
-            padding: "10px", // Increased padding for better spacing
-            whiteSpace: "nowrap", // Prevent text from wrapping
+            padding: "10px",
+            whiteSpace: "nowrap",
+            border: "1px solid rgba(224, 224, 224, 1)", // Add visible borders to all cells
+        },
+        "& .MuiTableHead-root .MuiTableCell-root": {
+            backgroundColor: "#f5f5f5", // Light background for header cells
+            fontWeight: "bold",
+        },
+        "& .MuiTableRow-root:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.04)",
         },
     };
 
+    // Style for main header cells
+    const mainHeaderStyle = {
+        position: "sticky",
+        top: 0, // Stick to the top
+        backgroundColor: "#e0e0e0", // Slightly darker than subheaders
+        fontWeight: "bold",
+        textAlign: "center",
+        border: "1px solid rgba(185, 185, 185, 1)",
+        zIndex: 11000, // Ensure it stays on top
+    };
+
+    const subHeaderStyle = {
+        position: "sticky",
+        top: 46, // Stick to the top
+        backgroundColor: "#e0e0e0", // Slightly darker than subheaders
+        fontWeight: "bold",
+        textAlign: "center",
+        border: "1px solid rgba(185, 185, 185, 1)",
+        zIndex: 11000, // Ensure it stays on top
+    };
+
+
     const renderPrograms = () => (
         <Box sx={{ overflowX: "auto" }}>
-            <TableContainer component={Paper} elevation={2} sx={tableStyles}>
-                <Table size="small">
+            <TableContainer component={Paper} elevation={3} sx={tableStyles}>
+                <Table size="small" stickyHeader>
                     <TableHead>
+                        {/* Main Header Row with Groupings */}
+                        <TableRow>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                CURRICULAR PROGRAM
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                MAJOR
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                AUTHORITY TO OFFER PROGRAM
+                            </TableCell>
+                            <TableCell
+                                rowSpan={2}
+                                colSpan={1}
+                                sx={{
+                                    ...mainHeaderStyle,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                IS THESIS/ DISSERTATION REQUIRED? <br />
+                                1= REQUIRED 2=OPTIONAL 3=NOT REQ
+                            </TableCell>
+                            <TableCell
+                                rowSpan={2}
+                                sx={{
+                                    ...mainHeaderStyle,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                PROGRAM STATUS (USE CODE): <br />1 - ACTIVE;
+                                2-PHASED OUT; 3-ABOLISHED
+                            </TableCell>
+                            <TableCell
+                                rowSpan={2}
+                                sx={{
+                                    ...mainHeaderStyle,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                PROGRAM CALENDAR (USE CODE): <br />
+                                1 - SEM 2 - TRISEM <br />3 - QTR SEM 4 -
+                                DISTANCE MODE
+                            </TableCell>
+                            <TableCell
+                                rowSpan={2}
+                                sx={{
+                                    ...mainHeaderStyle,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                PROGRAM NORMAL LENGTH
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                PROGRAM UNITS EXCLUDING THESIS
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                FINANCIAL INFORMATION
+                            </TableCell>
+                        </TableRow>
+
+                        {/* Sub-header Row */}
                         <TableRow>
                             {[
                                 "Program Name",
@@ -40,21 +131,13 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                 "Category",
                                 "Serial",
                                 "Year",
-                                "Thesis Req",
-                                "Status",
-                                "Calendar Code",
-                                "Length",
                                 "Lab Units",
                                 "Lecture Units",
                                 "Total Units",
                                 "Tuition/Unit",
                                 "Program Fee",
-                                "Program Type",
                             ].map((head) => (
-                                <TableCell
-                                    key={head}
-                                    sx={{ fontWeight: "bold" }}
-                                >
+                                <TableCell key={head} sx={subHeaderStyle}>
                                     {head}
                                 </TableCell>
                             ))}
@@ -80,10 +163,9 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                     program.total_units,
                                     program.tuition_per_unit,
                                     program.program_fee,
-                                    program.program_type,
                                 ].map((value, index) => (
                                     <TableCell key={index}>
-                                        {value || " "}
+                                        {value || "-"}
                                     </TableCell>
                                 ))}
                             </TableRow>
@@ -96,16 +178,53 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
 
     const renderEnrollments = () => (
         <Box sx={{ overflowX: "auto" }}>
-            <TableContainer component={Paper} elevation={2} sx={tableStyles}>
-                <Table size="small">
+            <TableContainer component={Paper} elevation={3} sx={tableStyles}>
+                <Table size="small" stickyHeader>
                     <TableHead>
+                        {/* Main Header Row with Groupings */}
+                        <TableRow>
+                            <TableCell
+                                rowSpan={2}
+                                sx={{
+                                    ...mainHeaderStyle,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                Program Name
+                            </TableCell>
+                            <TableCell colSpan={4} sx={mainHeaderStyle}>
+                                First Year
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                Second Year
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                Third Year
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                Fourth Year
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                Fifth Year
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                Sixth Year
+                            </TableCell>
+                            <TableCell colSpan={2} sx={mainHeaderStyle}>
+                                Seventh Year
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                Totals
+                            </TableCell>
+                        </TableRow>
+
+                        {/* Sub-header Row */}
                         <TableRow>
                             {[
-                                "Program Name",
                                 "Freshmen M",
                                 "Freshmen F",
-                                "1st Yr Old M",
-                                "1st Yr Old F",
+                                "1st Yr M",
+                                "1st Yr F",
                                 "2nd Yr M",
                                 "2nd Yr F",
                                 "3rd Yr M",
@@ -122,12 +241,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                 "Subtotal F",
                                 "Total",
                             ].map((head) => (
-                                <TableCell
-                                    key={head}
-                                    sx={{ fontWeight: "bold" }}
-                                >
-                                    {head}
-                                </TableCell>
+                                <TableCell key={head} sx={subHeaderStyle}>{head}</TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
@@ -158,7 +272,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                         enrollment.grand_total,
                                     ].map((value, index) => (
                                         <TableCell key={index}>
-                                            {value || 0}
+                                            {value ?? 0}
                                         </TableCell>
                                     ))}
                                 </TableRow>
@@ -172,12 +286,31 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
 
     const renderStatistics = () => (
         <Box sx={{ overflowX: "auto" }}>
-            <TableContainer component={Paper} elevation={2} sx={tableStyles}>
-                <Table size="small">
+            <TableContainer component={Paper} elevation={3} sx={tableStyles}>
+                <Table size="small" stickyHeader>
                     <TableHead>
                         <TableRow>
+                            <TableCell
+                                rowSpan={2}
+                                sx={{
+                                    ...mainHeaderStyle,
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                Program Name
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                Units
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                Graduates
+                            </TableCell>
+                            <TableCell colSpan={3} sx={mainHeaderStyle}>
+                                Scholars & Grantees
+                            </TableCell>
+                        </TableRow>
+                        <TableRow>
                             {[
-                                "Program Name",
                                 "Lecture Units",
                                 "Lab Units",
                                 "Total Units",
@@ -188,12 +321,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                 "Int Grantees",
                                 "SUC Grantees",
                             ].map((head) => (
-                                <TableCell
-                                    key={head}
-                                    sx={{ fontWeight: "bold" }}
-                                >
-                                    {head}
-                                </TableCell>
+                                <TableCell key={head} sx={subHeaderStyle}>{head}</TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
@@ -217,7 +345,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                         program.statistics.suc_funded_grantees,
                                     ].map((value, index) => (
                                         <TableCell key={index}>
-                                            {value || 0}
+                                            {value ?? 0}
                                         </TableCell>
                                     ))}
                                 </TableRow>
