@@ -15,7 +15,7 @@ class CreateCampusesTable extends Migration
             $table->string('institutional_code');
             $table->string('region');
             $table->string('municipality_city_province');
-            $table->year('year_first_operation');
+            $table->string('year_first_operation');
             $table->decimal('land_area_hectares', 8, 2);
             $table->decimal('distance_from_main', 8, 2);
             $table->string('autonomous_code');
