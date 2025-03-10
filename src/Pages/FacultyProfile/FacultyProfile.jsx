@@ -116,8 +116,11 @@ const FacultyProfileUpload = () => {
 
                 let allFacultyProfiles = []; // To store data from all sheets
 
-                for (let sheetIndex = 0; sheetIndex <= 9; sheetIndex++) {
-                    if (!workbook.SheetNames[sheetIndex]) continue;
+                for (
+                    let sheetIndex = 0;
+                    sheetIndex < workbook.SheetNames.length;
+                    sheetIndex++
+                ) {
                     const sheetName = workbook.SheetNames[sheetIndex];
                     const sheet = workbook.Sheets[sheetName];
 
@@ -125,123 +128,115 @@ const FacultyProfileUpload = () => {
 
                     const jsonData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 10,
+                        range: 9,
                     });
 
-                    const processedFacultyProfiles = jsonData
-                        .filter(
-                            (row) =>
-                                row.some(
-                                    (cell) => cell !== undefined && cell !== ""
-                                ) && row[1] // Skip if name (row[1]) is empty
-                        )
-                        .map((row) => ({
-                            institution_id: institutionId,
-                            faculty_group: selectedGroup, // Set based on selected tab
-                            name: String(row[1] || "N/A"),
-                            generic_faculty_rank: row[2]
-                                ? parseInt(row[2], 10)
-                                : null,
-                            home_college: String(row[3] || "N/A"),
-                            home_department: String(row[4] || "N/A"),
-                            is_tenured: row[5] ? Boolean(row[5]) : false,
-                            ssl_salary_grade: row[6]
-                                ? parseInt(row[6], 10)
-                                : null,
-                            annual_basic_salary: row[7]
-                                ? parseInt(row[7], 10)
-                                : null,
-                            on_leave_without_pay: row[8]
-                                ? parseInt(row[8], 10)
-                                : null,
-                            full_time_equivalent: row[9]
-                                ? parseFloat(row[9])
-                                : 0.0,
-                            gender: row[10] ? parseInt(row[10], 10) : null,
-                            highest_degree_attained: row[11]
-                                ? parseInt(row[11], 10)
-                                : null,
-                            pursuing_next_degree: row[12]
-                                ? parseInt(row[12], 10)
-                                : null,
-                            discipline_teaching_load_1: String(
-                                row[13] || "N/A"
-                            ),
-                            discipline_teaching_load_2: String(
-                                row[14] || "N/A"
-                            ),
-                            discipline_bachelors: String(row[15] || "N/A"),
-                            discipline_masters: String(row[16] || "N/A"),
-                            discipline_doctorate: String(row[17] || "N/A"),
-                            masters_with_thesis: row[18]
-                                ? parseInt(row[18], 10)
-                                : null,
-                            doctorate_with_dissertation: row[19]
-                                ? parseInt(row[19], 10)
-                                : null,
-                            undergrad_lab_credit_units: row[20]
-                                ? parseFloat(row[20])
-                                : 0.0,
-                            undergrad_lecture_credit_units: row[21]
-                                ? parseFloat(row[21])
-                                : 0.0,
-                            undergrad_total_credit_units: row[22]
-                                ? parseFloat(row[22])
-                                : 0.0,
-                            undergrad_lab_hours_per_week: row[23]
-                                ? parseFloat(row[23])
-                                : 0.0,
-                            undergrad_lecture_hours_per_week: row[24]
-                                ? parseFloat(row[24])
-                                : 0.0,
-                            undergrad_total_hours_per_week: row[25]
-                                ? parseFloat(row[25])
-                                : 0.0,
-                            undergrad_lab_contact_hours: row[26]
-                                ? parseFloat(row[26])
-                                : 0.0,
-                            undergrad_lecture_contact_hours: row[27]
-                                ? parseFloat(row[27])
-                                : 0.0,
-                            undergrad_total_contact_hours: row[28]
-                                ? parseFloat(row[28])
-                                : 0.0,
-                            graduate_lab_credit_units: row[29]
-                                ? parseFloat(row[29])
-                                : 0.0,
-                            graduate_lecture_credit_units: row[30]
-                                ? parseFloat(row[30])
-                                : 0.0,
-                            graduate_total_credit_units: row[31]
-                                ? parseFloat(row[31])
-                                : 0.0,
-                            graduate_lab_contact_hours: row[32]
-                                ? parseFloat(row[32])
-                                : 0.0,
-                            graduate_lecture_contact_hours: row[33]
-                                ? parseFloat(row[33])
-                                : 0.0,
-                            graduate_total_contact_hours: row[34]
-                                ? parseFloat(row[34])
-                                : 0.0,
-                            research_load: row[35] ? parseFloat(row[35]) : 0.0,
-                            extension_services_load: row[36]
-                                ? parseFloat(row[36])
-                                : 0.0,
-                            study_load: row[37] ? parseFloat(row[37]) : 0.0,
-                            production_load: row[38]
-                                ? parseFloat(row[38])
-                                : 0.0,
-                            administrative_load: row[39]
-                                ? parseFloat(row[39])
-                                : 0.0,
-                            other_load_credits: row[40]
-                                ? parseFloat(row[40])
-                                : 0.0,
-                            total_work_load: row[41]
-                                ? parseFloat(row[41])
-                                : 0.0,
-                        }));
+                    // Filter out empty rows and check if any valid name exists
+                    const validRows = jsonData.filter(
+                        (row) =>
+                            row.some(
+                                (cell) => cell !== undefined && cell !== ""
+                            ) && row[1]
+                    );
+
+                    if (validRows.length === 0) {
+                        console.log(`Skipping empty sheet: ${sheetName}`);
+                        continue; // Skip this sheet
+                    }
+
+                    const processedFacultyProfiles = validRows.map((row) => ({
+                        institution_id: institutionId,
+                        faculty_group: selectedGroup,
+                        name: String(row[1] || "N/A"),
+                        generic_faculty_rank: row[2]
+                            ? parseInt(row[2], 10)
+                            : null,
+                        home_college: String(row[3] || "N/A"),
+                        home_department: String(row[4] || "N/A"),
+                        is_tenured: row[5] ? parseInt(row[5]) : 0,
+                        ssl_salary_grade: row[6] ? parseInt(row[6], 10) : null,
+                        annual_basic_salary: row[7]
+                            ? parseInt(row[7], 10)
+                            : null,
+                        on_leave_without_pay: row[8]
+                            ? parseInt(row[8], 10)
+                            : null,
+                        full_time_equivalent: row[9] ? parseFloat(row[9]) : 0.0,
+                        gender: row[10] ? parseInt(row[10], 10) : null,
+                        highest_degree_attained: row[11]
+                            ? parseInt(row[11], 10)
+                            : null,
+                        pursuing_next_degree: row[12]
+                            ? parseInt(row[12], 10)
+                            : null,
+                        discipline_teaching_load_1: String(row[13] || "N/A"),
+                        discipline_teaching_load_2: String(row[14] || "N/A"),
+                        discipline_bachelors: String(row[15] || "N/A"),
+                        discipline_masters: String(row[16] || "N/A"),
+                        discipline_doctorate: String(row[17] || "N/A"),
+                        masters_with_thesis: row[18]
+                            ? parseInt(row[18], 10)
+                            : null,
+                        doctorate_with_dissertation: row[19]
+                            ? parseInt(row[19], 10)
+                            : null,
+                        undergrad_lab_credit_units: row[20]
+                            ? parseFloat(row[20])
+                            : 0.0,
+                        undergrad_lecture_credit_units: row[21]
+                            ? parseFloat(row[21])
+                            : 0.0,
+                        undergrad_total_credit_units: row[22]
+                            ? parseFloat(row[22])
+                            : 0.0,
+                        undergrad_lab_hours_per_week: row[23]
+                            ? parseFloat(row[23])
+                            : 0.0,
+                        undergrad_lecture_hours_per_week: row[24]
+                            ? parseFloat(row[24])
+                            : 0.0,
+                        undergrad_total_hours_per_week: row[25]
+                            ? parseFloat(row[25])
+                            : 0.0,
+                        undergrad_lab_contact_hours: row[26]
+                            ? parseFloat(row[26])
+                            : 0.0,
+                        undergrad_lecture_contact_hours: row[27]
+                            ? parseFloat(row[27])
+                            : 0.0,
+                        undergrad_total_contact_hours: row[28]
+                            ? parseFloat(row[28])
+                            : 0.0,
+                        graduate_lab_credit_units: row[29]
+                            ? parseFloat(row[29])
+                            : 0.0,
+                        graduate_lecture_credit_units: row[30]
+                            ? parseFloat(row[30])
+                            : 0.0,
+                        graduate_total_credit_units: row[31]
+                            ? parseFloat(row[31])
+                            : 0.0,
+                        graduate_lab_contact_hours: row[32]
+                            ? parseFloat(row[32])
+                            : 0.0,
+                        graduate_lecture_contact_hours: row[33]
+                            ? parseFloat(row[33])
+                            : 0.0,
+                        graduate_total_contact_hours: row[34]
+                            ? parseFloat(row[34])
+                            : 0.0,
+                        research_load: row[35] ? parseFloat(row[35]) : 0.0,
+                        extension_services_load: row[36]
+                            ? parseFloat(row[36])
+                            : 0.0,
+                        study_load: row[37] ? parseFloat(row[37]) : 0.0,
+                        production_load: row[38] ? parseFloat(row[38]) : 0.0,
+                        administrative_load: row[39]
+                            ? parseFloat(row[39])
+                            : 0.0,
+                        other_load_credits: row[40] ? parseFloat(row[40]) : 0.0,
+                        total_work_load: row[41] ? parseFloat(row[41]) : 0.0,
+                    }));
 
                     allFacultyProfiles = [
                         ...allFacultyProfiles,
@@ -306,7 +301,7 @@ const FacultyProfileUpload = () => {
                 >
                     Institution Management
                 </Link>
-                <Typography color="textPrimary">Curricular Program</Typography>
+                <Typography color="textPrimary">Faculties</Typography>
             </Breadcrumbs>
 
             {/* Tabs for faculty groups */}
