@@ -14,6 +14,7 @@ import UserManagement from "./Pages/UserManagment/UserManagement ";
 import InstitutionManagement from "./Pages/InstitutionManagement/InstitutionManagement";
 import CampusManagement from "./Pages/CampusManagement/CampusManagement";
 import CurricularProgram from "./Pages/CurricularPrograms/CurricularProgram";
+import FacultyProfile from "./Pages/FacultyProfile/FacultyProfile";
 
 function App() {
     return (
@@ -45,6 +46,10 @@ function App() {
                         <Route
                             path="/admin/institutions/curricular-programs/:institutionId"
                             element={<CurricularProgram />}
+                        />
+                        <Route
+                            path="admin/institutions/faculties/:institutionId"
+                            element={<FacultyProfile />}
                         />
 
                         <Route path="*" element={<NotFound />} />

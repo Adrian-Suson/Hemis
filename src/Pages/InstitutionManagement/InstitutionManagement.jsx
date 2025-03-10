@@ -18,8 +18,10 @@ import { Link as RouterLink } from "react-router-dom";
 import config from "../../utils/config";
 import { useProgress } from "../../Context/ProgressContext";
 import CustomSnackbar from "../../Components/CustomSnackbar";
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
+import DownloadIcon from '@mui/icons-material/Download';
+import ExcelJS from "exceljs";
 
 const InstitutionManagement = () => {
     const [activeTab, setActiveTab] = useState(0);
@@ -49,7 +51,7 @@ const InstitutionManagement = () => {
 
     const fetchInstitutions = async () => {
         try {
-            showProgress(20); // Show some progress at the start
+            showProgress(90); // Show some progress at the start
             const token = localStorage.getItem("token");
             const response = await axios.get(
                 `${config.API_URL}/institutions?type=${getInstitutionType()}`,
@@ -222,6 +224,145 @@ const InstitutionManagement = () => {
         reader.readAsArrayBuffer(file);
     };
 
+    const handleExportData = async () => {
+        if (!institutions.length) {
+            setSnackbarMessage("No data available to export.");
+            setSnackbarSeverity("warning");
+            setSnackbarOpen(true);
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                "/public/templates/Form-A-Themeplate.xlsx"
+            );
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to load template file: HTTP ${response.status} - ${response.statusText}`
+                );
+            }
+            const arrayBuffer = await response.arrayBuffer();
+
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(arrayBuffer);
+
+            const sheetA1 = workbook.getWorksheet("FORM A1");
+            const sheetA2 = workbook.getWorksheet("FORM A2");
+
+            if (!sheetA1 || !sheetA2) {
+                throw new Error(
+                    "Template is missing required sheets: FORM A1 or FORM A2"
+                );
+            }
+
+            // Rest of your existing code remains unchanged
+            const institution = institutions[0];
+            const a1StartRow = 5;
+            const a1Data = [
+                institution.name || "N/A",
+                "", // ADDRESS header
+                "",
+                institution.address_street || "N/A",
+                institution.municipality_city || "N/A",
+                institution.province || "N/A",
+                institution.region || "N/A",
+                institution.postal_code || "N/A",
+                institution.institutional_telephone || "N/A",
+                institution.institutional_fax || "N/A",
+                institution.head_telephone || "N/A",
+                institution.institutional_email || "N/A",
+                institution.institutional_website || "N/A",
+                institution.year_established || "N/A",
+                institution.sec_registration || "N/A",
+                institution.year_granted_approved || "N/A",
+                institution.year_converted_college || "N/A",
+                institution.year_converted_university || "N/A",
+                institution.head_name || "N/A",
+                institution.head_title || "N/A",
+                institution.head_education || "N/A",
+            ];
+
+            a1Data.forEach((value, index) => {
+                const row = sheetA1.getRow(a1StartRow + index);
+                row.getCell(3).value = value;
+                row.commit();
+            });
+
+            const token = localStorage.getItem("token");
+            const campusResponse = await axios.get(
+                `http://localhost:8000/api/campuses?institution_id=${institution.id}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            let campuses = campusResponse.data.campuses || [];
+            if (!Array.isArray(campuses)) {
+                console.warn(
+                    "Campuses is not an array, normalizing to empty array:",
+                    campuses
+                );
+                campuses = [];
+            }
+
+            const a2StartRow = 14;
+            if (campuses.length === 0) {
+                console.log(
+                    "No campuses to export for institution:",
+                    institution.id
+                );
+            } else {
+                campuses.forEach((campus, index) => {
+                    const row = sheetA2.getRow(a2StartRow + index);
+                    console.log(
+                        `Populating row ${a2StartRow + index} with campus:`,
+                        campus
+                    );
+                    row.values = [
+                        index + 1,
+                        campus.suc_name || "N/A",
+                        campus.campus_type || "N/A",
+                        campus.institutional_code || "N/A",
+                        campus.region || "N/A",
+                        campus.municipality_city_province || "N/A",
+                        campus.year_first_operation || "N/A",
+                        campus.land_area_hectares || "0.0",
+                        campus.distance_from_main || "0.0",
+                        campus.autonomous_code || "N/A",
+                        campus.position_title || "N/A",
+                        campus.head_full_name || "N/A",
+                        campus.former_name || "N/A",
+                        campus.latitude_coordinates || "0.0",
+                        campus.longitude_coordinates || "0.0",
+                    ];
+                    row.commit();
+                });
+            }
+
+            const fileName = `Form_A_${getInstitutionType()}_${
+                new Date().toISOString().split("T")[0]
+            }.xlsx`;
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            setSnackbarMessage("Data exported successfully using template!");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+        } catch (error) {
+            console.error("Error exporting data:", error);
+            setSnackbarMessage(`Error exporting data: ${error.message}`);
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+        }
+    };
+
     return (
         <Box sx={{ p: 3 }}>
             {/* Breadcrumbs */}
@@ -245,7 +386,7 @@ const InstitutionManagement = () => {
                 <Tab label="PHEIs" />
             </Tabs>
 
-            <ButtonGroup sx={{ mt: 3, display: "flex"}}>
+            <ButtonGroup sx={{ mt: 3, display: "flex" }}>
                 <Button
                     variant="contained"
                     component="label"
@@ -265,10 +406,18 @@ const InstitutionManagement = () => {
                 <Button
                     variant="contained"
                     color="secondary"
-                    startIcon={<NoteAddIcon/>}
+                    startIcon={<NoteAddIcon />}
                     onClick={() => setOpenManualDialog(true)}
                 >
                     Add Institution Manually
+                </Button>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<DownloadIcon/>}
+                    onClick={handleExportData}
+                >
+                    Export Form A
                 </Button>
             </ButtonGroup>
             <ManualInstitutionDialog

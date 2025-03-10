@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\InstitutionController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\ProgramStatisticController;
+use App\Http\Controllers\Api\FacultyProfileController; // Added this
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
@@ -14,7 +15,6 @@ Route::post('auth/register', [AuthController::class, 'register']);
 Route::post('auth/login', [AuthController::class, 'login']);
 Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
-
 
 // Protected routes - Require Authentication
 Route::middleware('auth:sanctum')->group(function () {
@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Institution Routes
     Route::apiResource('institutions', InstitutionController::class);
+
     // Campus Routes
     Route::apiResource('campuses', CampusController::class);
 
@@ -35,8 +36,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('programs', ProgramController::class);
     Route::get('programs/export/{category}', [ProgramController::class, 'export']);
 
+    // Enrollment Routes
     Route::apiResource('enrollments', EnrollmentController::class);
+
+    // Program Statistics Routes
     Route::apiResource('program-statistics', ProgramStatisticController::class);
 
-
+    // Faculty Profile Routes
+    Route::apiResource('faculty-profiles', FacultyProfileController::class);
 });

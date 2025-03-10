@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link as RouterLink } from "react-router-dom";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 import {
     Box,
-    Button,
     Typography,
     Table,
     TableBody,
@@ -15,11 +14,9 @@ import {
     Breadcrumbs,
     Link,
 } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const CampusManagement = () => {
     const { institutionId } = useParams();
-    const navigate = useNavigate();
     const [campuses, setCampuses] = useState([]);
     const [institutionName, setInstitutionName] = useState("");
 
@@ -72,16 +69,6 @@ const CampusManagement = () => {
                         : "Campuses"}
                 </Typography>
             </Breadcrumbs>
-
-            {/* Back Button */}
-            <Button
-                startIcon={<ArrowBackIcon />}
-                onClick={() => navigate("/admin/institutions")}
-                variant="outlined"
-                sx={{ mb: 2 }}
-            >
-                Back to Institutions
-            </Button>
 
             <Typography variant="h5" gutterBottom>
                 {institutionName

@@ -225,6 +225,40 @@ const DetailDialog = ({ open, onClose, institution, onEdit, navigate }) => {
                         </Button>
                     </Tooltip>
 
+                    {/* Faculties */}
+                    <Tooltip title="View Faculties">
+                        <Button
+                            onClick={() =>
+                                handleNavigation(
+                                    `/admin/institutions/faculties/${institution.id}`,
+                                    "faculties"
+                                )
+                            }
+                            disabled={loading.faculties}
+                            startIcon={
+                                loading.faculties ? (
+                                    <CircularProgress
+                                        size={18}
+                                        color="inherit"
+                                    />
+                                ) : (
+                                    <LibraryBooksIcon />
+                                )
+                            }
+                            sx={{
+                                color: "#1976d2",
+                                borderColor: "#1976d2",
+                                "&:hover": {
+                                    borderColor: "#115293",
+                                    color: "#115293",
+                                },
+                                textTransform: "none",
+                            }}
+                        >
+                            Faculties
+                        </Button>
+                    </Tooltip>
+
                     {/* Edit Institution */}
                     <Tooltip title="Edit Institution">
                         <Button
