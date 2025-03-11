@@ -51,7 +51,7 @@ const CampusManagement = () => {
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to="/dashboard"
+                    to="/admin/dashboard"
                 >
                     Dashboard
                 </Link>
@@ -69,12 +69,6 @@ const CampusManagement = () => {
                         : "Campuses"}
                 </Typography>
             </Breadcrumbs>
-
-            <Typography variant="h5" gutterBottom>
-                {institutionName
-                    ? `Campuses of ${institutionName}`
-                    : "Campuses"}
-            </Typography>
 
             <TableContainer component={Paper} sx={{ mt: 2, maxHeight: "65vh" }}>
                 <Table size="small" stickyHeader>

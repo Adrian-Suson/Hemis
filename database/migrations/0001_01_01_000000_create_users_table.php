@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -18,7 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('User'); // Added Role (Admin, User, etc.)
+            $table->enum('role', ['Super Admin', 'CHED Regional Admin', 'CHED Staff', 'HEI Admin', 'HEI Staff', 'Viewer'])->default('Viewer');
             $table->enum('status', ['Active', 'Inactive', 'Suspended'])->default('Active'); // Added Status
             $table->rememberToken();
             $table->timestamps();

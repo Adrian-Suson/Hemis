@@ -28,7 +28,7 @@ const NotFound = () => {
         variant="contained"
         color="primary"
         sx={{ mt: 3, px: 4, py: 1 }}
-        onClick={() => navigate("/dashboard")}
+        onClick={() => navigate("/admin/dashboard")}
       >
         Go Back to Home
       </Button>

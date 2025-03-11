@@ -12,11 +12,19 @@ class FacultyProfileController extends Controller
     /**
      * Display a listing of the faculty profiles.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $facultyProfiles = FacultyProfile::with('institution')->get();
+        $query = FacultyProfile::with('institution');
+
+        if ($request->has('institution_id')) {
+            $query->where('institution_id', $request->institution_id);
+        }
+
+        $facultyProfiles = $query->get();
+
         return response()->json($facultyProfiles, Response::HTTP_OK);
     }
+
 
     /**
      * Store a newly created faculty profile in storage.

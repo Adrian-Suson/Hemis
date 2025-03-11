@@ -1,23 +1,25 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import PropTypes from 'prop-types';
+import { Navigate, Outlet } from "react-router-dom";
+import PropTypes from "prop-types";
 
-const ProtectedRoute = () => {
-    const isAuthenticated = !!localStorage.getItem('token');
-    
+const ProtectedRoute = ({ allowedRoles }) => {
+    // Get user data from localStorage (you can also use a global state like Redux or Context API)
+    const user = JSON.parse(localStorage.getItem("user"));
 
-
-    if (!isAuthenticated) {
+    // If no user, redirect to login
+    if (!user) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Check if the user has the correct role
+    if (!allowedRoles.includes(user.role)) {
+        return <Navigate to="/admin/dashboard" replace />;
     }
 
     return <Outlet />;
 };
 
 ProtectedRoute.propTypes = {
-    children: PropTypes.oneOfType([
-        PropTypes.arrayOf(PropTypes.node),
-        PropTypes.node
-    ])
+    allowedRoles: PropTypes.arrayOf(PropTypes.string).isRequired,
 };
 
 export default ProtectedRoute;

@@ -4,17 +4,20 @@ import {
     Route,
     Navigate,
 } from "react-router-dom";
-// Import your LoginPage component
+
+// Import pages
 import LoginPage from "./Pages/Auth/LoginPage";
 import DashboardPage from "./Pages/Dashboard/DashboardPage";
-import ProtectedRoute from "./utils/ProtectedRoute"; // Your ProtectedRoute component
-import Layout from "./Layout/Layout"; // Your Layout component
-import NotFound from "./utils/NotFound";
-import UserManagement from "./Pages/UserManagment/UserManagement ";
+import UserManagement from "./Pages/UserManagment/UserManagement";
 import InstitutionManagement from "./Pages/InstitutionManagement/InstitutionManagement";
 import CampusManagement from "./Pages/CampusManagement/CampusManagement";
 import CurricularProgram from "./Pages/CurricularPrograms/CurricularProgram";
 import FacultyProfile from "./Pages/FacultyProfile/FacultyProfile";
+
+// Utility Components
+import ProtectedRoute from "./utils/ProtectedRoute";
+import Layout from "./Layout/Layout";
+import NotFound from "./utils/NotFound";
 
 function App() {
     return (
@@ -23,22 +26,64 @@ function App() {
                 {/* Redirect from "/" to "/login" */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
 
-                {/* Login page route */}
+                {/* Public Route: Login */}
                 <Route path="/login" element={<LoginPage />} />
 
-                {/* Protected Routes */}
-                <Route element={<ProtectedRoute />}>
-                    <Route element={<Layout />}>
-                        <Route path="/dashboard" element={<DashboardPage />} />
+                {/* Protected Routes for Specific Roles */}
+                <Route element={<Layout />}>
+                    {/* Open to all authenticated users */}
+                    <Route
+                        element={
+                            <ProtectedRoute
+                                allowedRoles={[
+                                    "Super Admin",
+                                    "CHED Regional Admin",
+                                    "HEI Admin",
+                                    "HEI Staff",
+                                    "Viewer",
+                                ]}
+                            />
+                        }
+                    >
+                        <Route
+                            path="/admin/dashboard"
+                            element={<DashboardPage />}
+                        />
+                    </Route>
+
+                    {/* Only for Super Admin & CHED Regional Admin */}
+                    <Route
+                        element={
+                            <ProtectedRoute
+                                allowedRoles={[
+                                    "Super Admin",
+                                    "CHED Regional Admin",
+                                ]}
+                            />
+                        }
+                    >
                         <Route
                             path="/admin/user-management"
                             element={<UserManagement />}
                         />
+                    </Route>
+
+                    {/* For CHED Regional Admin & HEI Admin */}
+                    <Route
+                        element={
+                            <ProtectedRoute
+                                allowedRoles={[
+                                    "Super Admin",
+                                    "CHED Regional Admin",
+                                    "HEI Admin",
+                                ]}
+                            />
+                        }
+                    >
                         <Route
                             path="/admin/institutions"
                             element={<InstitutionManagement />}
                         />
-                        {/* Route for Campus Management */}
                         <Route
                             path="/admin/institutions/campuses/:institutionId"
                             element={<CampusManagement />}
@@ -48,12 +93,13 @@ function App() {
                             element={<CurricularProgram />}
                         />
                         <Route
-                            path="admin/institutions/faculties/:institutionId"
+                            path="/admin/institutions/faculties/:institutionId"
                             element={<FacultyProfile />}
                         />
-
-                        <Route path="*" element={<NotFound />} />
                     </Route>
+
+                    {/* Catch all route for 404 */}
+                    <Route path="*" element={<NotFound />} />
                 </Route>
             </Routes>
         </Router>

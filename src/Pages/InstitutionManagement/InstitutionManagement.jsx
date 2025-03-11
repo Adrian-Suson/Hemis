@@ -18,9 +18,8 @@ import { Link as RouterLink } from "react-router-dom";
 import config from "../../utils/config";
 import { useProgress } from "../../Context/ProgressContext";
 import CustomSnackbar from "../../Components/CustomSnackbar";
-import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
-import DownloadIcon from '@mui/icons-material/Download';
+import DownloadIcon from "@mui/icons-material/Download";
 import ExcelJS from "exceljs";
 
 const InstitutionManagement = () => {
@@ -233,9 +232,7 @@ const InstitutionManagement = () => {
         }
 
         try {
-            const response = await fetch(
-                "/public/templates/Form-A-Themeplate.xlsx"
-            );
+            const response = await fetch("/templates/Form-A-Themeplate.xlsx");
             if (!response.ok) {
                 throw new Error(
                     `Failed to load template file: HTTP ${response.status} - ${response.statusText}`
@@ -371,7 +368,7 @@ const InstitutionManagement = () => {
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to="/dashboard"
+                    to="/admin/dashboard"
                 >
                     Dashboard
                 </Link>
@@ -380,17 +377,16 @@ const InstitutionManagement = () => {
                 </Typography>
             </Breadcrumbs>
 
-            <Tabs value={activeTab} onChange={handleTabChange}>
-                <Tab label="SUCs" />
-                <Tab label="LUCs" />
-                <Tab label="PHEIs" />
-            </Tabs>
-
-            <ButtonGroup sx={{ mt: 3, display: "flex" }}>
+            <ButtonGroup sx={{ mt: 3, display: "flex",}}>
                 <Button
                     variant="contained"
                     component="label"
                     startIcon={<UploadIcon />}
+                    sx={{
+                        backgroundColor: "primary.main",
+                        color: "white",
+                        "&:hover": { backgroundColor: "primary.dark" },
+                    }}
                 >
                     Upload Form A
                     <input
@@ -402,24 +398,46 @@ const InstitutionManagement = () => {
                     />
                 </Button>
 
-                {/* Button to open the separate ManualInstitutionDialog */}
-                <Button
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<NoteAddIcon />}
-                    onClick={() => setOpenManualDialog(true)}
-                >
-                    Add Institution Manually
-                </Button>
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<DownloadIcon/>}
+                    startIcon={<DownloadIcon />}
                     onClick={handleExportData}
+                    disabled={!institutions.length} // Disable if no data
+                    sx={{
+                        backgroundColor: institutions.length
+                            ? "secondary.main"
+                            : "grey.400",
+                        "&:hover": {
+                            backgroundColor: institutions.length
+                                ? "secondary.dark"
+                                : "grey.500",
+                        },
+                    }}
                 >
-                    Export Form A
+                    {institutions.length
+                        ? "Export Form A"
+                        : "No Data to Export"}
                 </Button>
             </ButtonGroup>
+
+            <Tabs
+                value={activeTab}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{
+                    "& .MuiTab-root": {
+                        fontWeight: "bold",
+                        textTransform: "none",
+                    },
+                }}
+            >
+                <Tab label="SUCs" />
+                <Tab label="LUCs" />
+                <Tab label="PHEIs" />
+            </Tabs>
+
             <ManualInstitutionDialog
                 open={openManualDialog}
                 onClose={() => setOpenManualDialog(false)}

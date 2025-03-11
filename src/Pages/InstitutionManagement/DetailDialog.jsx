@@ -14,13 +14,11 @@ import {
     ButtonGroup,
 } from "@mui/material";
 import PropTypes from "prop-types";
-import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import { useState } from "react";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
-const DetailDialog = ({ open, onClose, institution, onEdit, navigate }) => {
+const DetailDialog = ({ open, onClose, institution, navigate }) => {
     const [loading, setLoading] = useState({
         viewCampuses: false,
         edit: false,
@@ -259,42 +257,6 @@ const DetailDialog = ({ open, onClose, institution, onEdit, navigate }) => {
                         </Button>
                     </Tooltip>
 
-                    {/* Edit Institution */}
-                    <Tooltip title="Edit Institution">
-                        <Button
-                            onClick={() => {
-                                setLoading((prev) => ({ ...prev, edit: true }));
-                                onEdit(institution);
-                                setLoading((prev) => ({
-                                    ...prev,
-                                    edit: false,
-                                }));
-                            }}
-                            disabled={loading.edit}
-                            startIcon={
-                                loading.edit ? (
-                                    <CircularProgress
-                                        size={18}
-                                        color="inherit"
-                                    />
-                                ) : (
-                                    <EditIcon />
-                                )
-                            }
-                            sx={{
-                                color: "#1976d2",
-                                borderColor: "#1976d2",
-                                "&:hover": {
-                                    borderColor: "#115293",
-                                    color: "#115293",
-                                },
-                                textTransform: "none",
-                            }}
-                        >
-                            Edit Institution
-                        </Button>
-                    </Tooltip>
-
                     {/* Curricular Programs */}
                     <Tooltip title="View Academic Programs">
                         <Button
@@ -326,28 +288,6 @@ const DetailDialog = ({ open, onClose, institution, onEdit, navigate }) => {
                             }}
                         >
                             Curricular Programs
-                        </Button>
-                    </Tooltip>
-
-                    {/* Export Button */}
-                    <Tooltip title="Export Data">
-                        <Button
-                            onClick={() => {
-                                // Replace with your export logic
-                                console.log("Exporting data...");
-                            }}
-                            startIcon={<FileDownloadIcon />}
-                            sx={{
-                                color: "#1976d2",
-                                borderColor: "#1976d2",
-                                "&:hover": {
-                                    borderColor: "#115293",
-                                    color: "#115293",
-                                },
-                                textTransform: "none",
-                            }}
-                        >
-                            Export
                         </Button>
                     </Tooltip>
                 </ButtonGroup>
