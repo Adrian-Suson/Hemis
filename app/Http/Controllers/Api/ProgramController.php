@@ -4,33 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
-use CurricularProgramsExport;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ProgramController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        // Start the query with eager loading
-        $query = Program::with(['institution', 'enrollments', 'statistics']);
-
-        // Filter by institution_id if provided
-        if ($request->has('institution_id')) {
-            $query->where('institution_id', $request->query('institution_id'));
-        }
-
-        // Filter by program_type if provided
-        if ($request->has('program_type')) {
-            $query->where('program_type', $request->query('program_type'));
-        }
-
-        // Execute the query and get the results
-        $programs = $query->get();
-
-        // Return the filtered programs as JSON
-        return response()->json($programs);
+        $programs = Program::with('institution', 'enrollment', 'programStatistic')->get();
+        return response()->json([
+            'status' => 'success',
+            'data' => $programs
+        ], 200);
     }
 
     public function store(Request $request): JsonResponse
@@ -41,9 +26,9 @@ class ProgramController extends Controller
             'program_code' => 'nullable|integer',
             'major_name' => 'nullable|string|max:255',
             'major_code' => 'nullable|integer',
-            'category' => 'nullable|string|max:255',
+            'category' => 'nullable|string|max:100',
             'serial' => 'nullable|string|max:255',
-            'year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'year' => 'nullable|integer',
             'is_thesis_dissertation_required' => 'nullable|in:1,2,3',
             'program_status' => 'nullable|in:1,2,3,4',
             'calendar_use_code' => 'nullable|in:1,2,3',
@@ -57,52 +42,58 @@ class ProgramController extends Controller
         ]);
 
         $program = Program::create($validated);
-        return response()->json($program->load(['institution', 'enrollments', 'statistics']), 201);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Program created successfully',
+            'data' => $program->load('institution')
+        ], 201);
     }
 
     public function show(Program $program): JsonResponse
     {
-        return response()->json($program->load(['institution', 'enrollments', 'statistics']));
+        return response()->json([
+            'status' => 'success',
+            'data' => $program->load('institution', 'enrollment', 'programStatistic')
+        ], 200);
     }
 
     public function update(Request $request, Program $program): JsonResponse
     {
         $validated = $request->validate([
-            'institution_id' => 'sometimes|required|exists:institutions,id',
-            'program_name' => 'sometimes|required|string|max:255',
-            'program_code' => 'nullable|string|max:6|unique:programs,program_code,' . $program->id,
-            'authority_to_offer_program' => 'nullable|string|max:100',
-            'is_thesis_dissertation_required' => 'nullable|in:2-OPTIONAL,3-NOT REQ',
-            'program_status' => 'nullable|in:ACTIVE,PHASED OUT,ABOLISHED,4-DISTANCE MODE',
-            'calendar_use_code' => 'nullable|in:1-SEM,2-TRISEM,3-QTR SEM',
+            'institution_id' => 'sometimes|exists:institutions,id',
+            'program_name' => 'sometimes|string|max:255',
+            'program_code' => 'nullable|integer',
+            'major_name' => 'nullable|string|max:255',
+            'major_code' => 'nullable|integer',
+            'category' => 'nullable|string|max:100',
+            'serial' => 'nullable|string|max:255',
+            'year' => 'nullable|integer',
+            'is_thesis_dissertation_required' => 'nullable|in:1,2,3',
+            'program_status' => 'nullable|in:1,2,3,4',
+            'calendar_use_code' => 'nullable|in:1,2,3',
             'program_normal_length_in_years' => 'nullable|integer',
-            'lab_units' => 'nullable|numeric',
-            'lecture_units' => 'nullable|numeric',
-            'total_units' => 'nullable|numeric',
+            'lab_units' => 'nullable|integer',
+            'lecture_units' => 'nullable|integer',
+            'total_units' => 'nullable|integer',
             'tuition_per_unit' => 'nullable|numeric',
             'program_fee' => 'nullable|numeric',
+            'program_type' => 'nullable|string|max:255',
         ]);
 
         $program->update($validated);
-        return response()->json($program->load(['institution', 'enrollments', 'statistics']));
-    }
-
-    public function export($category)
-    {
-        $export = new CurricularProgramsExport($category);
-        $data = $export->getData();
-
-        Excel::create('Curricular_Programs_' . $category . '_' . date('Y-m-d'), function ($excel) use ($data) {
-            $excel->sheet('Sheet1', function ($sheet) use ($data) {
-                $sheet->fromArray($data, null, 'A3', false, false); // Start at row 3
-                $sheet->setAutoSize(true);
-            });
-        })->export('xlsx');
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Program updated successfully',
+            'data' => $program->load('institution')
+        ], 200);
     }
 
     public function destroy(Program $program): JsonResponse
     {
         $program->delete();
-        return response()->json(null, 204);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Program deleted successfully'
+        ], 204);
     }
 }

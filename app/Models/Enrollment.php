@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Enrollment extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'program_id',
         'new_students_freshmen_male',
@@ -32,7 +30,7 @@ class Enrollment extends Model
         'grand_total',
     ];
 
-    public function program()
+    public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
     }

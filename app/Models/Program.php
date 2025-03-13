@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Program extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'institution_id',
         'program_name',
@@ -27,20 +26,28 @@ class Program extends Model
         'total_units',
         'tuition_per_unit',
         'program_fee',
-        'program_type'
+        'program_type',
     ];
 
-    public function institution()
+    protected $casts = [
+        'is_thesis_dissertation_required' => 'integer',
+        'program_status' => 'integer',
+        'calendar_use_code' => 'integer',
+        'tuition_per_unit' => 'decimal:2',
+        'program_fee' => 'decimal:2',
+    ];
+
+    public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
     }
 
-    public function enrollments()
+    public function enrollment(): HasOne
     {
-        return $this->hasMany(Enrollment::class);
+        return $this->hasOne(Enrollment::class);
     }
 
-    public function statistics()
+    public function programStatistic(): HasOne
     {
         return $this->hasOne(ProgramStatistic::class);
     }
