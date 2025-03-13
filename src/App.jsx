@@ -25,10 +25,39 @@ function App() {
                 {/* Login page route */}
                 <Route path="/login" element={<LoginPage />} />
 
-                {/* Protected Routes */}
-                <Route element={<ProtectedRoute />}>
-                    <Route element={<Layout />}>
-                        <Route path="/dashboard" element={<DashboardPage />} />
+                {/* Protected Routes for Specific Roles */}
+                <Route element={<Layout />}>
+                    {/* Open to all authenticated users */}
+                    <Route
+                        element={
+                            <ProtectedRoute
+                                allowedRoles={[
+                                    "Super Admin",
+                                    "CHED Regional Admin",
+                                    "HEI Admin",
+                                    "HEI Staff",
+                                    "Viewer",
+                                ]}
+                            />
+                        }
+                    >
+                        <Route
+                            path="/admin/dashboard"
+                            element={<DashboardPage />}
+                        />
+                    </Route>
+
+                    {/* Only for Super Admin & CHED Regional Admin */}
+                    <Route
+                        element={
+                            <ProtectedRoute
+                                allowedRoles={[
+                                    "Super Admin",
+                                    "CHED Regional Admin",
+                                ]}
+                            />
+                        }
+                    >
                         <Route
                             path="/admin/user-management"
                             element={<UserManagement />}
@@ -49,6 +78,9 @@ function App() {
 
                         <Route path="*" element={<NotFound />} />
                     </Route>
+
+                    {/* Catch all route for 404 */}
+                    <Route path="*" element={<NotFound />} />
                 </Route>
             </Routes>
         </Router>

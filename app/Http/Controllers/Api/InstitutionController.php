@@ -9,24 +9,38 @@ use Illuminate\Http\JsonResponse;
 
 class InstitutionController extends Controller
 {
+    /**
+     * Display a listing of the institutions.
+     */
     public function index(Request $request): JsonResponse
     {
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         // Check if type is provided
         if ($request->has('type')) {
-            $institutions = Institution::where('institution_type', $request->type)->get();
+            $institutions = Institution::where('institution_type', $request->type)
+                ->with('region') // Include region relationship
+                ->get();
         } else {
-            $institutions = Institution::all();
+            $institutions = Institution::with('region')->get();
         }
 
-        return response()->json($institutions);
+        return response()->json([
+            'status' => 'success',
+            'data' => $institutions,
+        ]);
     }
 
+    /**
+     * Store a newly created institution in storage.
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
+            'region_id' => 'required|integer|exists:regions,id', // Updated to region_id
             'address_street' => 'nullable|string|max:255',
             'municipality_city' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
@@ -48,19 +62,33 @@ class InstitutionController extends Controller
         ]);
 
         $institution = Institution::create($validated);
-        return response()->json($institution, 201);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Institution created successfully',
+            'data' => $institution->load('region'), // Include region in response
+        ], 201);
     }
 
+    /**
+     * Display the specified institution.
+     */
     public function show(Institution $institution): JsonResponse
     {
-        return response()->json($institution);
+        return response()->json([
+            'status' => 'success',
+            'data' => $institution->load('region'), // Include region
+        ]);
     }
 
+    /**
+     * Update the specified institution in storage.
+     */
     public function update(Request $request, Institution $institution): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'region' => 'sometimes|required|string|max:255',
+            'region_id' => 'sometimes|required|integer|exists:regions,id', // Updated to region_id
             'address_street' => 'nullable|string|max:255',
             'municipality_city' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
@@ -82,14 +110,28 @@ class InstitutionController extends Controller
         ]);
 
         $institution->update($validated);
-        return response()->json($institution);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Institution updated successfully',
+            'data' => $institution->load('region'), // Include region
+        ]);
     }
 
+<<<<<<< Updated upstream
 
 
+=======
+    /**
+     * Remove the specified institution from storage.
+     */
+>>>>>>> Stashed changes
     public function destroy(Institution $institution): JsonResponse
     {
         $institution->delete();
-        return response()->json(null, 204);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Institution deleted successfully',
+        ], 204);
     }
 }

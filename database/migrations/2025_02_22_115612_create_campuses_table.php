@@ -13,7 +13,7 @@ class CreateCampusesTable extends Migration
             $table->string('suc_name');
             $table->string('campus_type');
             $table->string('institutional_code');
-            $table->string('region');
+            $table->unsignedBigInteger('region_id');
             $table->string('municipality_city_province');
             $table->year('year_first_operation');
             $table->decimal('land_area_hectares', 8, 2);
@@ -24,11 +24,10 @@ class CreateCampusesTable extends Migration
             $table->string('former_name')->nullable();
             $table->decimal('latitude_coordinates', 10, 8);
             $table->decimal('longitude_coordinates', 11, 8);
-
-            // Foreign key linking to the institutions table
             $table->foreignId('institution_id')->constrained('institutions')->onDelete('cascade');
-
             $table->timestamps();
+
+            $table->foreign('region_id')->references('id')->on('regions')->onDelete('restrict');
         });
     }
 

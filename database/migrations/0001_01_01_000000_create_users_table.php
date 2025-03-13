@@ -18,10 +18,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('User'); // Added Role (Admin, User, etc.)
+            $table->enum('role', ['Super Admin', 'CHED Regional Admin', 'CHED Staff', 'HEI Admin', 'HEI Staff', 'Viewer'])->default('Viewer');
             $table->enum('status', ['Active', 'Inactive', 'Suspended'])->default('Active'); // Added Status
             $table->rememberToken();
             $table->timestamps();
+
+            $table->foreign('region_id')->references('id')->on('regions')->onDelete('set null');
+            $table->foreign('hei_id')->references('id')->on('institutions')->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogActions,
-    DialogContent,
     DialogTitle,
     Button,
     Typography,
@@ -15,6 +14,7 @@ import {
     FormControl,
     InputAdornment,
     Box,
+    DialogContent,
 } from "@mui/material";
 import config from "../../../utils/config";
 import PropTypes from "prop-types";
@@ -25,57 +25,92 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("");
     const [status, setStatus] = useState("Active");
-    const [profileImage, setProfileImage] = useState(""); // New state for profile image
+    const [profileImage, setProfileImage] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Define available roles
+    const roles = [
+        "Super Admin",
+        "CHED Regional Admin",
+        "CHED Staff",
+        "HEI Admin",
+        "HEI Staff",
+        "Viewer",
+    ];
 
     useEffect(() => {
         if (editingUser) {
-            setName(editingUser.name);
-            setEmail(editingUser.email);
-            setRole(editingUser.role);
-            setStatus(editingUser.status);
-            setProfileImage(editingUser.profile_image || ""); // Set the profile image if available
+            setName(editingUser.name || "");
+            setEmail(editingUser.email || "");
+            setRole(editingUser.role || "");
+            setStatus(editingUser.status || "Active");
+            setProfileImage(editingUser.profile_image || "");
+        } else {
+            // Reset to default values when adding a new user
+            setName("");
+            setEmail("");
+            setRole("");
+            setStatus("Active");
+            setProfileImage("");
         }
     }, [editingUser]);
 
     const handleSave = async () => {
+        if (!name || !email || !role) {
+            alert("Please fill in all required fields (Name, Email, Role).");
+            return;
+        }
+
         setLoading(true);
         const token = localStorage.getItem("token");
-
-        const userData = { name, email, role, status, profile_image: profileImage };
+        const userData = {
+            name,
+            email,
+            role,
+            status,
+            profile_image: profileImage,
+        };
 
         try {
             if (editingUser) {
                 // Edit existing user
-                await axios.put(`${config.API_URL}/users/${editingUser.id}`, userData, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                await axios.put(
+                    `${config.API_URL}/users/${editingUser.id}`,
+                    userData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
             } else {
-                // Create new user
+                // Create new user (assuming POST expects a password for new users)
+                if (!userData.password) {
+                    userData.password = "defaultPassword123"; // Placeholder; adjust as needed
+                }
                 await axios.post(`${config.API_URL}/users`, userData, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             }
             onUserUpdated();
-            onClose(); // Close the dialog after saving
-        } catch {
-            alert("Error saving user data");
+            onClose();
+        } catch (error) {
+            alert(
+                error.response?.data?.message ||
+                    "Error saving user data. Please try again."
+            );
         } finally {
             setLoading(false);
         }
     };
 
-    // Clear state when dialog is closed
     const handleClose = () => {
         setName("");
         setEmail("");
         setRole("");
         setStatus("Active");
-        setProfileImage(""); // Clear profile image
+        setProfileImage("");
         onClose();
     };
 
-    // Handle profile image upload
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -87,6 +122,8 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
         }
     };
 
+    const isSaveDisabled = loading || !name || !email || !role;
+
     return (
         <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm">
             <DialogTitle sx={{ pb: 1 }}>
@@ -94,7 +131,9 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                     {editingUser ? "Edit User" : "Add New User"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                    {editingUser ? "Modify user details" : "Create a new user account"}
+                    {editingUser
+                        ? "Modify user details"
+                        : "Create a new user account"}
                 </Typography>
             </DialogTitle>
             <Divider />
@@ -106,6 +145,9 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     sx={{ mb: 2 }}
+                    required
+                    error={!name && name !== ""}
+                    helperText={!name && name !== "" ? "Name is required" : ""}
                 />
                 <TextField
                     label="Email"
@@ -114,18 +156,26 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     sx={{ mb: 2 }}
+                    required
+                    error={!email && email !== ""}
+                    helperText={
+                        !email && email !== "" ? "Email is required" : ""
+                    }
                 />
 
                 {/* Role Selection */}
-                <FormControl fullWidth sx={{ mb: 2 }}>
+                <FormControl fullWidth sx={{ mb: 2 }} required>
                     <InputLabel>Role</InputLabel>
                     <Select
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                         label="Role"
                     >
-                        <MenuItem value="admin">Admin</MenuItem>
-                        <MenuItem value="User">User</MenuItem>
+                        {roles.map((r) => (
+                            <MenuItem key={r} value={r}>
+                                {r}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -154,25 +204,39 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                             <InputAdornment position="start">📷</InputAdornment>
                         ),
                     }}
+                    inputProps={{ accept: "image/*" }}
                 />
                 {profileImage && (
                     <Box sx={{ mt: 2, textAlign: "center" }}>
                         <img
                             src={profileImage}
-                            alt="Profile"
-                            style={{ width: 100, height: 100, objectFit: "cover", borderRadius: "50%" }}
+                            alt="Profile Preview"
+                            style={{
+                                width: 100,
+                                height: 100,
+                                objectFit: "cover",
+                                borderRadius: "50%",
+                            }}
                         />
                     </Box>
                 )}
             </DialogContent>
             <DialogActions sx={{ p: 2.5, pt: 1.5 }}>
-                <Button onClick={handleClose}>Cancel</Button>
+                <Button onClick={handleClose} disabled={loading}>
+                    Cancel
+                </Button>
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={loading}
+                    disabled={isSaveDisabled}
                 >
-                    {loading ? <CircularProgress size={24} /> : editingUser ? "Save Changes" : "Create User"}
+                    {loading ? (
+                        <CircularProgress size={24} />
+                    ) : editingUser ? (
+                        "Save Changes"
+                    ) : (
+                        "Create User"
+                    )}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -189,7 +253,7 @@ UserDialog.propTypes = {
         email: PropTypes.string,
         role: PropTypes.string,
         status: PropTypes.string,
-        profile_image: PropTypes.string, // Profile image as a base64 string
+        profile_image: PropTypes.string,
     }),
 };
 

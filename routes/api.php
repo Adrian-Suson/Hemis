@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CampusController;
+use App\Http\Controllers\Api\RegionController;
 
 // Public routes
 Route::post('auth/register', [AuthController::class, 'register']);
@@ -38,5 +39,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('enrollments', EnrollmentController::class);
     Route::apiResource('program-statistics', ProgramStatisticController::class);
 
-
+    // Faculty Profile Routes
+    Route::apiResource('faculty-profiles', FacultyProfileController::class);
 });
