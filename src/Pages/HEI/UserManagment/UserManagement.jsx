@@ -23,7 +23,7 @@ import {
     CircularProgress,
 } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
-import config from "../../utils/config";
+import config from "../../../utils/config";
 import UserDialog from "./Func/UserDialog";
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -39,22 +39,18 @@ const UserManagement = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    // Fetch Users from API
     const fetchUsers = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-
             const response = await axios.get(`${config.API_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-
             setUsers(response.data);
-            console.log("response.data:", response.data);
+            console.log("response.data:", response.data); // Debug to verify institution data
         } catch {
             setError("Failed to fetch users. Please login again.");
         } finally {
@@ -85,10 +81,7 @@ const UserManagement = () => {
         fetchUsers();
     };
 
-    // Handle change in page
     const handleChangePage = (event, newPage) => setPage(newPage);
-
-    // Handle change in rows per page
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
@@ -96,7 +89,6 @@ const UserManagement = () => {
 
     const handleDeactivateUser = async (id) => {
         const token = localStorage.getItem("token");
-
         try {
             await axios.delete(`${config.API_URL}/users/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -109,16 +101,13 @@ const UserManagement = () => {
 
     const handleReactivateUser = async (id) => {
         const token = localStorage.getItem("token");
-
         try {
             await axios.post(
                 `${config.API_URL}/users/${id}/reactivate`,
                 {},
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
-            fetchUsers(); // Refresh the user list
+            fetchUsers();
         } catch {
             setError("Failed to reactivate user.");
         }
@@ -149,9 +138,7 @@ const UserManagement = () => {
                             minWidth: "250px",
                             bgcolor: "white",
                             "& .MuiOutlinedInput-root": {
-                                "&:hover fieldset": {
-                                    borderColor: "primary.main",
-                                },
+                                "&:hover fieldset": { borderColor: "primary.main" },
                             },
                         }}
                         InputProps={{
@@ -186,9 +173,7 @@ const UserManagement = () => {
                         sx={{
                             minWidth: "150px",
                             boxShadow: 2,
-                            "&:hover": {
-                                boxShadow: 4,
-                            },
+                            "&:hover": { boxShadow: 4 },
                         }}
                     >
                         Add User
@@ -202,7 +187,7 @@ const UserManagement = () => {
                     <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 400, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
                                     Name
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
@@ -210,6 +195,9 @@ const UserManagement = () => {
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
                                     Email
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                    Institution
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
                                     Status
@@ -227,11 +215,14 @@ const UserManagement = () => {
                                         <Chip
                                             label={user.role}
                                             size="small"
-                                            color={user.role === "Admin" ? "primary" : "default"}
+                                            color={user.role === "Super Admin" ? "primary" : "default"} // Updated to match role
                                             variant="outlined"
                                         />
                                     </TableCell>
                                     <TableCell sx={{ padding: "4px 8px" }}>{user.email}</TableCell>
+                                    <TableCell sx={{ padding: "4px 8px" }}>
+                                        {user.institution ? user.institution.name : "N/A"}
+                                    </TableCell>
                                     <TableCell sx={{ padding: "4px 8px" }}>
                                         <Chip
                                             label={user.status}
@@ -245,52 +236,35 @@ const UserManagement = () => {
                                                 size="small"
                                                 color="primary"
                                                 variant="contained"
-                                                ml="1"
                                                 onClick={() => handleEditUser(user)}
+                                                sx={{ mr: 1 }}
                                             >
                                                 <EditIcon fontSize="small" />
                                             </Button>
                                         </Tooltip>
-
                                         {user.status === "Active" ? (
-                                                <Tooltip title="Deactivate user">
-                                                    <Button
-                                                        size="small"
-                                                        color="error"
-                                                        variant="contained"
-                                                        onClick={() =>
-                                                            handleDeactivateUser(
-                                                                user.id
-                                                            )
-                                                        }
-                                                        sx={{
-                                                            padding: "4px 8px",
-                                                            ml: 1,
-                                                        }}
-                                                    >
-                                                        <PersonOffIcon fontSize="small" />
-                                                    </Button>
-                                                </Tooltip>
-                                            ) : (
-                                                <Tooltip title="Reactivate user">
-                                                    <Button
-                                                        size="small"
-                                                        color="success"
-                                                        variant="contained"
-                                                        onClick={() =>
-                                                            handleReactivateUser(
-                                                                user.id
-                                                            )
-                                                        }
-                                                        sx={{
-                                                            padding: "4px 8px",
-                                                            ml: 1,
-                                                        }}
-                                                    >
-                                                        <PersonIcon fontSize="small" />
-                                                    </Button>
-                                                </Tooltip>
-                                            )}
+                                            <Tooltip title="Deactivate user">
+                                                <Button
+                                                    size="small"
+                                                    color="error"
+                                                    variant="contained"
+                                                    onClick={() => handleDeactivateUser(user.id)}
+                                                >
+                                                    <PersonOffIcon fontSize="small" />
+                                                </Button>
+                                            </Tooltip>
+                                        ) : (
+                                            <Tooltip title="Reactivate user">
+                                                <Button
+                                                    size="small"
+                                                    color="success"
+                                                    variant="contained"
+                                                    onClick={() => handleReactivateUser(user.id)}
+                                                >
+                                                    <PersonIcon fontSize="small" />
+                                                </Button>
+                                            </Tooltip>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -304,7 +278,6 @@ const UserManagement = () => {
                     </Box>
                 )}
 
-                {/* Table Pagination */}
                 <TablePagination
                     rowsPerPageOptions={[5, 10, 25]}
                     component="div"
@@ -316,17 +289,18 @@ const UserManagement = () => {
                 />
             </Paper>
 
-            {/* Loading Indicator */}
             {loading && (
                 <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
                     <CircularProgress />
                 </Box>
             )}
 
-            {/* User Dialog */}
             <UserDialog
                 openDialog={openDialog}
-                onClose={() => setOpenDialog(false)}
+                onClose={() => {
+                    setOpenDialog(false);
+                    setEditingUser(null);
+                }}
                 editingUser={editingUser}
                 onUserUpdated={handleUserUpdated}
             />

@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import BFImage from "../../assets/cover.jpg"; // Background image
-import Logo from "../../assets/ChedLogo.png"; // Import your logo image
+import Logo from "../../assets/ChedLogo.png"; // CHED Region 9 Logo
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -38,17 +38,31 @@ const LoginPage = () => {
                 { email, password }
             );
 
-            localStorage.setItem("token", response.data.data.token);
-            localStorage.setItem(
-                "user",
-                JSON.stringify(response.data.data.user)
-            );
+            const token = response.data.data.token;
+            const user = response.data.data.user;
 
-            axios.defaults.headers.common[
-                "Authorization"
-            ] = `Bearer ${response.data.data.token}`;
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
 
-            navigate("/admin/dashboard");
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+            // Redirect based on user role
+            switch (user.role) {
+                case "Super Admin":
+                    navigate("/super-admin/dashboard");
+                    break;
+                case "HEI Admin":
+                    navigate("/hei-admin/dashboard");
+                    break;
+                case "HEI Staff":
+                case "Viewer":
+                    navigate("/hei-staff/dashboard");
+                    break;
+                default:
+                    setError("Unknown role. Please contact support.");
+                    localStorage.clear(); // Clear invalid login
+                    break;
+            }
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -82,25 +96,32 @@ const LoginPage = () => {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    backgroundColor: "rgba(255, 255, 255, .9)",
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
                     maxWidth: "400px",
                     width: "100%",
-                    borderRadius: "10px", // Optional rounded corners
+                    borderRadius: "10px",
                 }}
             >
-                {/* Logo */}
+                {/* CHED Region 9 Logo */}
                 <img
                     src={Logo}
-                    alt="Logo"
+                    alt="CHED Region 9 Logo"
                     style={{
-                        width: "80px", // Adjust width as needed
+                        width: "80px",
                         height: "80px",
                         marginBottom: "10px",
                     }}
                 />
 
-                <Typography variant="h4" gutterBottom>
-                    Higher Education Management Information System (HEMIS)
+                <Typography variant="h5" gutterBottom>
+                    CHEDRO IX - Higher Education Management System
+                </Typography>
+                <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                >
+                    Commission on Higher Education Regional Office 9
                 </Typography>
 
                 {error && (

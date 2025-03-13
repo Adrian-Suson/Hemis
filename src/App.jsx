@@ -7,12 +7,24 @@ import {
 
 // Import pages
 import LoginPage from "./Pages/Auth/LoginPage";
-import DashboardPage from "./Pages/Dashboard/DashboardPage";
-import UserManagement from "./Pages/UserManagment/UserManagement";
-import InstitutionManagement from "./Pages/InstitutionManagement/InstitutionManagement";
-import CampusManagement from "./Pages/CampusManagement/CampusManagement";
-import CurricularProgram from "./Pages/CurricularPrograms/CurricularProgram";
-import FacultyProfile from "./Pages/FacultyProfile/FacultyProfile";
+
+//Super Admin
+import DashboardPage from "./Pages/SuperAdmin/Dashboard/DashboardPage";
+import UserManagement from "./Pages/SuperAdmin/UserManagment/UserManagement";
+import InstitutionManagement from "./Pages/SuperAdmin/InstitutionManagement/InstitutionManagement";
+import CampusManagement from "./Pages/SuperAdmin/CampusManagement/CampusManagement";
+import CurricularProgram from "./Pages/SuperAdmin/CurricularPrograms/CurricularProgram";
+import FacultyProfile from "./Pages/SuperAdmin/FacultyProfile/FacultyProfile";
+
+//HEI Admin
+import HEIDashboardPage from "./Pages/HEI/Dashboard/DashboardPage";
+import HEIUserManagement from "./Pages/HEI/UserManagment/UserManagement";
+import HEIInstitutionManagement from "./Pages/HEI/InstitutionManagement/InstitutionManagement";
+import HEICampusManagement from "./Pages/HEI/CampusManagement/CampusManagement";
+import HEICurricularProgram from "./Pages/HEI/CurricularPrograms/CurricularProgram";
+import HEIFacultyProfile from "./Pages/HEI/FacultyProfile/FacultyProfile";
+
+//HEI Staff
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -29,72 +41,91 @@ function App() {
                 {/* Public Route: Login */}
                 <Route path="/login" element={<LoginPage />} />
 
-                {/* Protected Routes for Specific Roles */}
+                {/* Protected Routes with Layout */}
                 <Route element={<Layout />}>
-                    {/* Open to all authenticated users */}
+                    {/* Super Admin Routes under /super-admin/* */}
                     <Route
                         element={
-                            <ProtectedRoute
-                                allowedRoles={[
-                                    "Super Admin",
-                                    "CHED Regional Admin",
-                                    "HEI Admin",
-                                    "HEI Staff",
-                                    "Viewer",
-                                ]}
-                            />
+                            <ProtectedRoute allowedRoles={["Super Admin"]} />
                         }
                     >
                         <Route
-                            path="/admin/dashboard"
+                            path="/super-admin/dashboard"
+                            element={<DashboardPage />}
+                        />
+                        <Route
+                            path="/super-admin/user-management"
+                            element={<UserManagement />}
+                        />
+                        <Route
+                            path="/super-admin/institutions"
+                            element={<InstitutionManagement />}
+                        />
+                        <Route
+                            path="/super-admin/institutions/campuses/:institutionId"
+                            element={<CampusManagement />}
+                        />
+                        <Route
+                            path="/super-admin/institutions/curricular-programs/:institutionId"
+                            element={<CurricularProgram />}
+                        />
+                        <Route
+                            path="/super-admin/institutions/faculties/:institutionId"
+                            element={<FacultyProfile />}
+                        />
+                    </Route>
+
+                    {/* HEI Admin Routes under /hei-admin/* */}
+                    <Route
+                        element={
+                            <ProtectedRoute allowedRoles={["HEI Admin"]} />
+                        }
+                    >
+                        <Route
+                            path="/hei-admin/dashboard"
+                            element={<HEIDashboardPage />}
+                        />
+                        <Route
+                            path="/hei-admin/institutions"
+                            element={<HEIInstitutionManagement />}
+                        />
+                        <Route
+                            path="/hei-admin/institutions/campuses/:institutionId"
+                            element={<HEICampusManagement />}
+                        />
+                        <Route
+                            path="/hei-admin/institutions/curricular-programs/:institutionId"
+                            element={<HEICurricularProgram />}
+                        />
+                        <Route
+                            path="/hei-admin/institutions/faculties/:institutionId"
+                            element={<HEIFacultyProfile />}
+                        />
+                         <Route
+                            path="/hei-admin/staff-management"
+                            element={<HEIUserManagement />}
+                        />
+                    </Route>
+
+                    {/* HEI Staff Routes under /hei-staff/* */}
+                    <Route
+                        element={
+                            <ProtectedRoute allowedRoles={["HEI Staff"]} />
+                        }
+                    >
+                        <Route
+                            path="/hei-staff/dashboard"
                             element={<DashboardPage />}
                         />
                     </Route>
 
-                    {/* Only for Super Admin & CHED Regional Admin */}
+                    {/* Viewer Routes under /hei-staff/* (assuming shared access) */}
                     <Route
-                        element={
-                            <ProtectedRoute
-                                allowedRoles={[
-                                    "Super Admin",
-                                    "CHED Regional Admin",
-                                ]}
-                            />
-                        }
+                        element={<ProtectedRoute allowedRoles={["Viewer"]} />}
                     >
                         <Route
-                            path="/admin/user-management"
-                            element={<UserManagement />}
-                        />
-                    </Route>
-
-                    {/* For CHED Regional Admin & HEI Admin */}
-                    <Route
-                        element={
-                            <ProtectedRoute
-                                allowedRoles={[
-                                    "Super Admin",
-                                    "CHED Regional Admin",
-                                    "HEI Admin",
-                                ]}
-                            />
-                        }
-                    >
-                        <Route
-                            path="/admin/institutions"
-                            element={<InstitutionManagement />}
-                        />
-                        <Route
-                            path="/admin/institutions/campuses/:institutionId"
-                            element={<CampusManagement />}
-                        />
-                        <Route
-                            path="/admin/institutions/curricular-programs/:institutionId"
-                            element={<CurricularProgram />}
-                        />
-                        <Route
-                            path="/admin/institutions/faculties/:institutionId"
-                            element={<FacultyProfile />}
+                            path="/hei-staff/dashboard"
+                            element={<DashboardPage />}
                         />
                     </Route>
 

@@ -12,7 +12,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
     // Check if the user has the correct role
     if (!allowedRoles.includes(user.role)) {
-        return <Navigate to="/admin/dashboard" replace />;
+        return <Navigate to="/" replace />;
     }
 
     return <Outlet />;

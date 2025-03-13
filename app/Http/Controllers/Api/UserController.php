@@ -5,26 +5,93 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     /**
-     * Get all users
+     * Get all users with their institutions
      */
     public function index()
     {
-        $users = User::all(); // Retrieves all users without pagination
-        return response()->json($users);
+        try {
+            $users = User::with('institution')->get();
+            return response()->json($users, Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch users',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
-     * Get single user
+     * Get a single user with their institution
      */
     public function show($id)
     {
-        $user = User::findOrFail($id);
-        return response()->json($user);
+        try {
+            $user = User::with('institution')->findOrFail($id);
+            return response()->json($user, Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'User not found',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_NOT_FOUND);
+        }
+    }
+
+    /**
+     * Store a new user
+     */
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:8',
+                'role' => 'required|in:Super Admin,HEI Admin,HEI Staff,Viewer',
+                'institution_id' => 'nullable|exists:institutions,id',
+                'status' => 'sometimes|in:Active,Inactive,Suspended',
+                'profile_image' => 'sometimes|nullable|string',
+            ]);
+
+            if ($validated['role'] !== 'Super Admin' && !$request->filled('institution_id')) {
+                return response()->json([
+                    'message' => 'Institution ID is required for non-Super Admin users.',
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+            if ($validated['role'] === 'Super Admin') {
+                $validated['institution_id'] = null;
+            }
+
+            $validated['password'] = Hash::make($validated['password']);
+
+            if (isset($validated['profile_image']) && preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $validated['profile_image'])) {
+                // Store base64 string directly
+            } else {
+                unset($validated['profile_image']);
+            }
+
+            $user = User::create($validated);
+
+            return response()->json([
+                'message' => 'User created successfully',
+                'user' => $user->load('institution'),
+            ], Response::HTTP_CREATED);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create user',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -32,89 +99,105 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        try {
+            $user = User::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
-            'password' => 'sometimes|string|min:8|confirmed',
-            'role' => 'sometimes|string|in:admin,user',
-            'profile_image' => 'sometimes|nullable|string', // Base64 image validation
-        ]);
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
+                'password' => 'sometimes|string|min:8|confirmed',
+                'role' => 'sometimes|in:Super Admin,HEI Admin,HEI Staff,Viewer',
+                'institution_id' => 'nullable|exists:institutions,id',
+                'profile_image' => 'sometimes|nullable|string',
+                'status' => 'sometimes|in:Active,Inactive,Suspended',
+            ]);
 
-        // If password is provided, hash it
-        if (isset($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
-        }
-
-        // Handle profile image if provided (base64 encoded string)
-        if (isset($validated['profile_image'])) {
-            $profileImage = $validated['profile_image'];
-
-            // If the profile image is a valid base64 string, save it
-            if (preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $profileImage)) {
-                // Directly save the base64 string in the profile_image column
-                // We don't need to decode and save as a file, just store the base64 string
-                $validated['profile_image'] = $profileImage;
+            if (array_key_exists('role', $validated)) {
+                if ($validated['role'] !== 'Super Admin' && !$request->filled('institution_id')) {
+                    return response()->json([
+                        'message' => 'Institution ID is required for non-Super Admin users.',
+                    ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                }
+                if ($validated['role'] === 'Super Admin') {
+                    $validated['institution_id'] = null;
+                }
+            } elseif ($user->role !== 'Super Admin' && !$request->filled('institution_id') && !isset($validated['institution_id'])) {
+                return response()->json([
+                    'message' => 'Institution ID is required for non-Super Admin users.',
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
+
+            if (isset($validated['password'])) {
+                $validated['password'] = Hash::make($validated['password']);
+            }
+
+            if (isset($validated['profile_image'])) {
+                $profileImage = $validated['profile_image'];
+                if (preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $profileImage)) {
+                    $validated['profile_image'] = $profileImage;
+                } else {
+                    unset($validated['profile_image']);
+                }
+            }
+
+            $user->update($validated);
+
+            return response()->json([
+                'message' => 'User updated successfully',
+                'user' => $user->load('institution'),
+            ], Response::HTTP_OK);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update user',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Update the user record with validated data
-        $user->update($validated);
-
-        return response()->json([
-            'message' => 'User updated successfully',
-            'user' => $user
-        ]); 
     }
 
     /**
-     * Reactivate user (update status to active)
+     * Reactivate user (update status to Active)
      */
     public function reactivate($id)
     {
         try {
             $user = User::findOrFail($id);
-
-            // Update status to active
-            $user->update([
-                'status' => 'Active'
-            ]);
+            $user->update(['status' => 'Active']);
 
             return response()->json([
                 'message' => 'User reactivated successfully',
-                'user' => $user
-            ]);
+                'user' => $user->load('institution'),
+            ], Response::HTTP_OK);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to reactivate user',
-                'error' => $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     /**
-     * Delete user
+     * Deactivate user (update status to Inactive)
      */
     public function destroy($id)
     {
         try {
             $user = User::findOrFail($id);
-
-            // Update status to inactive instead of deleting
-            $user->update([
-                'status' => 'Inactive'
-            ]);
+            $user->update(['status' => 'Inactive']);
 
             return response()->json([
                 'message' => 'User deactivated successfully',
-                'user' => $user
-            ]);
+                'user' => $user->load('institution'),
+            ], Response::HTTP_OK);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to deactivate user',
-                'error' => $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -4,11 +4,11 @@ use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\InstitutionController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\ProgramStatisticController;
-use App\Http\Controllers\Api\FacultyProfileController; // Added this
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FacultyProfileController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CampusController;
+use App\Http\Controllers\Api\AuthController;
+use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('auth/register', [AuthController::class, 'register']);
@@ -19,7 +19,7 @@ Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 // Protected routes - Require Authentication
 Route::middleware('auth:sanctum')->group(function () {
     // User Routes
-    Route::apiResource('users', UserController::class);
+    Route::apiResource('users', UserController::class); // Maps to index, show, store, update, destroy
     Route::post('users/{user}/reactivate', [UserController::class, 'reactivate']);
 
     // Authenticated User Routes

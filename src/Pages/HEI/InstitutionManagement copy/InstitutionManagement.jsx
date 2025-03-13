@@ -15,9 +15,9 @@ import {
 import { UploadFile as UploadIcon } from "@mui/icons-material";
 import InstitutionTable from "./InstitutionTable";
 import { Link as RouterLink } from "react-router-dom";
-import config from "../../utils/config";
-import { useProgress } from "../../Context/ProgressContext";
-import CustomSnackbar from "../../Components/CustomSnackbar";
+import config from "../../../utils/config";
+import { useProgress } from "../../../Context/ProgressContext";
+import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import DownloadIcon from "@mui/icons-material/Download";
 import ExcelJS from "exceljs";
