@@ -25,11 +25,11 @@ import {
 import { Edit as EditIcon } from "@mui/icons-material";
 import config from "../../../utils/config";
 import UserDialog from "./Func/UserDialog";
-import SearchIcon from '@mui/icons-material/Search';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import PersonIcon from '@mui/icons-material/Person';
-import PersonOffIcon from '@mui/icons-material/PersonOff';
+import SearchIcon from "@mui/icons-material/Search";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import PersonIcon from "@mui/icons-material/Person";
+import PersonOffIcon from "@mui/icons-material/PersonOff";
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -46,13 +46,26 @@ const UserManagement = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
+            const storedUser = JSON.parse(localStorage.getItem("user"));
+            const institutionId = storedUser?.institution_id;
+
+            if (!institutionId) {
+                throw new Error(
+                    "No institution ID found for the current user."
+                );
+            }
+
             const response = await axios.get(`${config.API_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` },
+                params: { institution_id: institutionId }, // Pass institution_id as query parameter
             });
             setUsers(response.data);
-            console.log("response.data:", response.data); // Debug to verify institution data
-        } catch {
-            setError("Failed to fetch users. Please login again.");
+            console.log("Filtered users:", response.data); // Debug to verify filtered data
+        } catch (err) {
+            console.error("Error fetching users:", err);
+            setError(
+                "Failed to fetch users. Please ensure you are logged in and try again."
+            );
         } finally {
             setLoading(false);
         }
@@ -95,7 +108,7 @@ const UserManagement = () => {
             });
             fetchUsers();
         } catch {
-            setError("Failed to delete user.");
+            setError("Failed to deactivate user.");
         }
     };
 
@@ -138,7 +151,9 @@ const UserManagement = () => {
                             minWidth: "250px",
                             bgcolor: "white",
                             "& .MuiOutlinedInput-root": {
-                                "&:hover fieldset": { borderColor: "primary.main" },
+                                "&:hover fieldset": {
+                                    borderColor: "primary.main",
+                                },
                             },
                         }}
                         InputProps={{
@@ -182,99 +197,176 @@ const UserManagement = () => {
             </Paper>
 
             {/* Users Table */}
-            <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: (theme) => theme.shadows[2] }}>
+            <Paper
+                sx={{
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    boxShadow: (theme) => theme.shadows[2],
+                }}
+            >
                 <TableContainer sx={{ maxHeight: "calc(100vh - 300px)" }}>
                     <Table stickyHeader size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                <TableCell
+                                    sx={{
+                                        fontWeight: 600,
+                                        backgroundColor: "#f8fafc",
+                                        padding: "4px 8px",
+                                    }}
+                                >
                                     Name
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                <TableCell
+                                    sx={{
+                                        fontWeight: 600,
+                                        backgroundColor: "#f8fafc",
+                                        padding: "4px 8px",
+                                    }}
+                                >
                                     Role
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                <TableCell
+                                    sx={{
+                                        fontWeight: 600,
+                                        backgroundColor: "#f8fafc",
+                                        padding: "4px 8px",
+                                    }}
+                                >
                                     Email
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                <TableCell
+                                    sx={{
+                                        fontWeight: 600,
+                                        backgroundColor: "#f8fafc",
+                                        padding: "4px 8px",
+                                    }}
+                                >
                                     Institution
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", padding: "4px 8px" }}>
+                                <TableCell
+                                    sx={{
+                                        fontWeight: 600,
+                                        backgroundColor: "#f8fafc",
+                                        padding: "4px 8px",
+                                    }}
+                                >
                                     Status
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 600, backgroundColor: "#f8fafc", textAlign: "center", padding: "4px 8px" }}>
+                                <TableCell
+                                    sx={{
+                                        fontWeight: 600,
+                                        backgroundColor: "#f8fafc",
+                                        textAlign: "center",
+                                        padding: "4px 8px",
+                                    }}
+                                >
                                     Actions
                                 </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
-                                <TableRow key={user.id} hover>
-                                    <TableCell sx={{ padding: "4px 8px" }}>{user.name}</TableCell>
-                                    <TableCell sx={{ padding: "4px 8px" }}>
-                                        <Chip
-                                            label={user.role}
-                                            size="small"
-                                            color={user.role === "Super Admin" ? "primary" : "default"} // Updated to match role
-                                            variant="outlined"
-                                        />
-                                    </TableCell>
-                                    <TableCell sx={{ padding: "4px 8px" }}>{user.email}</TableCell>
-                                    <TableCell sx={{ padding: "4px 8px" }}>
-                                        {user.institution ? user.institution.name : "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ padding: "4px 8px" }}>
-                                        <Chip
-                                            label={user.status}
-                                            size="small"
-                                            color={user.status === "Active" ? "success" : "error"}
-                                        />
-                                    </TableCell>
-                                    <TableCell align="center" sx={{ padding: "4px 8px" }}>
-                                        <Tooltip title="Edit user">
-                                            <Button
+                            {filteredUsers
+                                .slice(
+                                    page * rowsPerPage,
+                                    page * rowsPerPage + rowsPerPage
+                                )
+                                .map((user) => (
+                                    <TableRow key={user.id} hover>
+                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                            {user.name}
+                                        </TableCell>
+                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                            <Chip
+                                                label={user.role}
                                                 size="small"
-                                                color="primary"
-                                                variant="contained"
-                                                onClick={() => handleEditUser(user)}
-                                                sx={{ mr: 1 }}
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </Button>
-                                        </Tooltip>
-                                        {user.status === "Active" ? (
-                                            <Tooltip title="Deactivate user">
+                                                color={
+                                                    user.role === "Super Admin"
+                                                        ? "primary"
+                                                        : "default"
+                                                }
+                                                variant="outlined"
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                            {user.email}
+                                        </TableCell>
+                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                            {user.institution
+                                                ? user.institution.name
+                                                : "N/A"}
+                                        </TableCell>
+                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                            <Chip
+                                                label={user.status}
+                                                size="small"
+                                                color={
+                                                    user.status === "Active"
+                                                        ? "success"
+                                                        : "error"
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell
+                                            align="center"
+                                            sx={{ padding: "4px 8px" }}
+                                        >
+                                            <Tooltip title="Edit user">
                                                 <Button
                                                     size="small"
-                                                    color="error"
+                                                    color="primary"
                                                     variant="contained"
-                                                    onClick={() => handleDeactivateUser(user.id)}
+                                                    onClick={() =>
+                                                        handleEditUser(user)
+                                                    }
+                                                    sx={{ mr: 1 }}
                                                 >
-                                                    <PersonOffIcon fontSize="small" />
+                                                    <EditIcon fontSize="small" />
                                                 </Button>
                                             </Tooltip>
-                                        ) : (
-                                            <Tooltip title="Reactivate user">
-                                                <Button
-                                                    size="small"
-                                                    color="success"
-                                                    variant="contained"
-                                                    onClick={() => handleReactivateUser(user.id)}
-                                                >
-                                                    <PersonIcon fontSize="small" />
-                                                </Button>
-                                            </Tooltip>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                            {user.status === "Active" ? (
+                                                <Tooltip title="Deactivate user">
+                                                    <Button
+                                                        size="small"
+                                                        color="error"
+                                                        variant="contained"
+                                                        onClick={() =>
+                                                            handleDeactivateUser(
+                                                                user.id
+                                                            )
+                                                        }
+                                                    >
+                                                        <PersonOffIcon fontSize="small" />
+                                                    </Button>
+                                                </Tooltip>
+                                            ) : (
+                                                <Tooltip title="Reactivate user">
+                                                    <Button
+                                                        size="small"
+                                                        color="success"
+                                                        variant="contained"
+                                                        onClick={() =>
+                                                            handleReactivateUser(
+                                                                user.id
+                                                            )
+                                                        }
+                                                    >
+                                                        <PersonIcon fontSize="small" />
+                                                    </Button>
+                                                </Tooltip>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
 
                 {filteredUsers.length === 0 && !loading && (
                     <Box p={3} textAlign="center">
-                        <Typography color="text.secondary">No users found</Typography>
+                        <Typography color="text.secondary">
+                            No users found
+                        </Typography>
                     </Box>
                 )}
 
@@ -290,7 +382,12 @@ const UserManagement = () => {
             </Paper>
 
             {loading && (
-                <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    minHeight="200px"
+                >
                     <CircularProgress />
                 </Box>
             )}

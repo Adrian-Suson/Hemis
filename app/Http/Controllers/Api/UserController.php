@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -13,10 +14,31 @@ class UserController extends Controller
     /**
      * Get all users with their institutions
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
         try {
-            $users = User::with('institution')->get();
+            $authUser = $request->user(); // Get the authenticated user
+
+            if (!$authUser) {
+                return response()->json([
+                    'message' => 'Unauthorized: No authenticated user found',
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $query = User::with('institution'); // Eager load institution relationship
+
+            // Apply institution_id filter unless the user is a Super Admin
+            if ($authUser->role !== 'Super Admin' && $authUser->institution_id) {
+                $query->where('institution_id', $authUser->institution_id);
+            }
+
+            // Optionally handle institution_id from query params (for frontend flexibility)
+            if ($request->has('institution_id') && $authUser->role !== 'Super Admin') {
+                $query->where('institution_id', $request->input('institution_id'));
+            }
+
+            $users = $query->get();
+
             return response()->json($users, Response::HTTP_OK);
         } catch (\Exception $e) {
             return response()->json([

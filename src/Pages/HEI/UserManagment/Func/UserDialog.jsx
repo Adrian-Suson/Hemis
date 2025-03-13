@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import {
     Dialog,
@@ -30,14 +31,11 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
     const [profileImage, setProfileImage] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [institutions, setInstitutions] = useState([]);
-    const [fetchingInstitutions, setFetchingInstitutions] = useState(false);
 
-    useEffect(() => {
-        if (openDialog) {
-            fetchInstitutions();
-        }
-    }, [openDialog]);
+    // Get the current user's details from localStorage
+    const currentUser = JSON.parse(localStorage.getItem("user")) || {};
+    const isSuperAdmin = currentUser.role === "Super Admin";
+    const heiAdminInstitutionId = currentUser.institution_id;
 
     useEffect(() => {
         if (editingUser) {
@@ -45,7 +43,10 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
             setEmail(editingUser.email || "");
             setRole(editingUser.role || "HEI Staff");
             setStatus(editingUser.status || "Active");
-            setInstitutionId(editingUser.institution_id || "");
+            setInstitutionId(
+                editingUser.institution_id ||
+                    (isSuperAdmin ? "" : heiAdminInstitutionId)
+            );
             setProfileImage(editingUser.profile_image || "");
             setPassword("");
         } else {
@@ -53,30 +54,11 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
             setEmail("");
             setRole("HEI Staff");
             setStatus("Active");
-            setInstitutionId("");
+            setInstitutionId(isSuperAdmin ? "" : heiAdminInstitutionId || "");
             setPassword("");
             setProfileImage("");
         }
-    }, [editingUser]);
-
-    const fetchInstitutions = async () => {
-        setFetchingInstitutions(true);
-        setError("");
-        const token = localStorage.getItem("token");
-
-        try {
-            const response = await axios.get(`${config.API_URL}/institutions`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setInstitutions(response.data || []);
-        } catch (err) {
-            setError(
-                err.response?.data?.message || "Failed to fetch institutions"
-            );
-        } finally {
-            setFetchingInstitutions(false);
-        }
-    };
+    }, [editingUser, heiAdminInstitutionId, isSuperAdmin]);
 
     const handleSave = async () => {
         setLoading(true);
@@ -128,13 +110,12 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
     const handleClose = () => {
         setName("");
         setEmail("");
-        setRole("Viewer");
+        setRole("HEI Staff");
         setStatus("Active");
-        setInstitutionId("");
+        setInstitutionId(isSuperAdmin ? "" : heiAdminInstitutionId || "");
         setPassword("");
         setProfileImage("");
         setError("");
-        setInstitutions([]);
         onClose();
     };
 
@@ -193,43 +174,13 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         sx={{ mb: 2 }}
-                        error={password && password.length < 8} // Highlight if invalid
+                        error={password && password.length < 8}
                         helperText={
                             password && password.length < 8
                                 ? "Password must be at least 8 characters"
                                 : ""
                         }
                     />
-                )}
-
-                {role !== "Super Admin" && (
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel>Institution</InputLabel>
-                        <Select
-                            value={institutionId}
-                            onChange={(e) => setInstitutionId(e.target.value)}
-                            label="Institution"
-                            disabled={
-                                fetchingInstitutions ||
-                                institutions.length === 0
-                            }
-                        >
-                            <MenuItem value="">
-                                <em>
-                                    {fetchingInstitutions
-                                        ? "Loading Institutions..."
-                                        : institutions.length === 0
-                                        ? "No Institutions Available"
-                                        : "Select Institution"}
-                                </em>
-                            </MenuItem>
-                            {institutions.map((inst) => (
-                                <MenuItem key={inst.id} value={inst.id}>
-                                    {inst.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
                 )}
                 <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel>Status</InputLabel>
