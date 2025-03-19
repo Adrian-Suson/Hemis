@@ -1,22 +1,25 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from "react";
+// ProgressContext.jsx
+import { createContext, useContext, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import { LinearProgress } from "@mui/material";
 
-// Create the context
 const ProgressContext = createContext();
 
-// Progress Provider Component
 export const ProgressProvider = ({ children }) => {
     const [progress, setProgress] = useState({ visible: false, value: 0 });
 
-    const showProgress = (value) => {
-        setProgress({ visible: true, value: Math.min(Math.max(value, 0), 100) });
-    };
+    // Ensure showProgress and hideProgress are stable references
+    const showProgress = useCallback((value) => {
+        setProgress({
+            visible: true,
+            value: Math.min(Math.max(value, 0), 100),
+        });
+    }, []);
 
-    const hideProgress = () => {
+    const hideProgress = useCallback(() => {
         setProgress({ visible: false, value: 0 });
-    };
+    }, []);
 
     return (
         <ProgressContext.Provider value={{ showProgress, hideProgress }}>
@@ -27,12 +30,12 @@ export const ProgressProvider = ({ children }) => {
                     valueBuffer={progress.value}
                     sx={{
                         position: "fixed",
-                        top: 0,          // Positions it at the very top of the page
+                        top: 0,
                         left: 0,
-                        right: 0,        // Spans full width
-                        zIndex: 9999,    // High zIndex to stay above all content
-                        height: 4,       // Slimmer bar for a minimalist look
-                        bgcolor: "grey.300", // Background color for contrast
+                        right: 0,
+                        zIndex: 9999,
+                        height: 4,
+                        bgcolor: "grey.300",
                     }}
                 />
             )}
@@ -45,7 +48,6 @@ ProgressProvider.propTypes = {
     children: PropTypes.node.isRequired,
 };
 
-// Custom hook to use the progress context
 export const useProgress = () => {
     const context = useContext(ProgressContext);
     if (!context) {

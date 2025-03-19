@@ -81,7 +81,7 @@ class CampusController extends Controller
             return response()->json(['message' => 'Campus not found'], 404);
         }
 
-        $validated = $request->validate([
+        $validated = $request->validate(rules: [
             'suc_name' => 'nullable|string|max:255',
             'campus_type' => 'nullable|string|max:255',
             'institutional_code' => 'nullable|string|max:255',

@@ -34,6 +34,8 @@ const CustomSnackbar = ({
             </Alert>
         </Snackbar>
     );
+
+    
 };
 
 // PropTypes for type checking

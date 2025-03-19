@@ -11,7 +11,8 @@ import {
     Link,
 } from "@mui/material";
 import axios from "axios";
-import BFImage from "../../assets/cover.jpg"; // Your background image
+import BFImage from "../../assets/cover.jpg"; // Background image
+import Logo from "../../assets/ChedLogo.png"; // CHED Region 9 Logo
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -22,10 +23,9 @@ const LoginPage = () => {
 
     const handleLogin = async (event) => {
         event.preventDefault();
-        setError(""); // Reset any previous errors
-        setLoading(true); // Set loading state to true
+        setError("");
+        setLoading(true);
 
-        // Simple validation before sending the request
         if (!email || !password) {
             setError("Please fill in both fields.");
             setLoading(false);
@@ -35,37 +35,41 @@ const LoginPage = () => {
         try {
             const response = await axios.post(
                 "http://localhost:8000/api/auth/login",
-                {
-                    email,
-                    password,
-                }
+                { email, password }
             );
 
-            // Store the token and user information in localStorage
-            localStorage.setItem("token", response.data.data.token); // Store the token
-            localStorage.setItem(
-                "user",
-                JSON.stringify(response.data.data.user)
-            ); // Store the user details (including user ID)
+            const token = response.data.data.token;
+            const user = response.data.data.user;
 
-            console.log("Token:", response.data.data.token);
-            console.log("User:", response.data.data.user);
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
 
-            // Set the Authorization header for future requests
-            axios.defaults.headers.common[
-                "Authorization"
-            ] = `Bearer ${response.data.data.token}`;
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-            // Redirect to dashboard or home page
-            navigate("/dashboard");
+            // Redirect based on user role
+            switch (user.role) {
+                case "Super Admin":
+                    navigate("/super-admin/dashboard");
+                    break;
+                case "HEI Admin":
+                    navigate("/hei-admin/dashboard");
+                    break;
+                case "HEI Staff":
+                case "Viewer":
+                    navigate("/hei-staff/dashboard");
+                    break;
+                default:
+                    setError("Unknown role. Please contact support.");
+                    localStorage.clear(); // Clear invalid login
+                    break;
+            }
         } catch (err) {
-            // If an error occurs, display an error message
             setError(
                 err.response?.data?.message ||
                     "An error occurred during login. Please try again."
             );
         } finally {
-            setLoading(false); // Reset loading state
+            setLoading(false);
         }
     };
 
@@ -92,19 +96,40 @@ const LoginPage = () => {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    backgroundColor: "rgba(255, 255, 255, .9)",
-                    maxWidth: "400px", // Limit form width
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    maxWidth: "400px",
                     width: "100%",
+                    borderRadius: "10px",
                 }}
             >
-                <Typography variant="h4" gutterBottom>
-                    Login
+                {/* CHED Region 9 Logo */}
+                <img
+                    src={Logo}
+                    alt="CHED Region 9 Logo"
+                    style={{
+                        width: "80px",
+                        height: "80px",
+                        marginBottom: "10px",
+                    }}
+                />
+
+                <Typography variant="h5" gutterBottom>
+                    CHEDRO IX - Higher Education Management System
                 </Typography>
+                <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                >
+                    Commission on Higher Education Regional Office 9
+                </Typography>
+
                 {error && (
                     <Alert severity="error" sx={{ width: "100%", mb: 2 }}>
                         {error}
                     </Alert>
                 )}
+
                 <form onSubmit={handleLogin} style={{ width: "100%" }}>
                     <TextField
                         label="Email Address"
@@ -149,21 +174,21 @@ const LoginPage = () => {
                                 variant="body2"
                                 color="textSecondary"
                                 sx={{
-                                    fontSize: { xs: "0.75rem", sm: "0.875rem" }, // Responsive font size
-                                    mt: 0, // Margin top to separate from copyright
+                                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                                    mt: 0,
                                 }}
                             >
                                 Powered by:{" "}
                                 <Link
-                                    href="https://chedro9.ph" // Replace with actual URL
+                                    href="https://chedro9.ph"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     sx={{
-                                        color: "#1976d2", // MUI primary color
+                                        color: "#1976d2",
                                         textDecoration: "none",
                                         "&:hover": {
                                             textDecoration: "underline",
-                                            color: "#115293", // Darker shade on hover
+                                            color: "#115293",
                                         },
                                     }}
                                 >
