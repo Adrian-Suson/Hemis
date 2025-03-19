@@ -18,18 +18,43 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import { useState } from "react";
 
-const DetailDialog = ({ open, onClose, institution, navigate }) => {
+const DetailDialog = ({ open, onClose, institution, navigate, role }) => {
     const [loading, setLoading] = useState({
         viewCampuses: false,
         edit: false,
         academicPrograms: false,
+        faculties: false,
     });
 
     if (!institution) return null;
 
-    const handleNavigation = async (path, key) => {
+    const handleNavigation = async (pathKey, key) => {
         setLoading((prev) => ({ ...prev, [key]: true }));
+        console.log("role:", role);
         try {
+            // Construct the path based on role using ternary operators
+            const basePath =
+                role === "Super Admin"
+                    ? "/super-admin"
+                    : role === "HEI Admin"
+                    ? "/hei-admin"
+                    : "/hei-staff";
+
+            let path;
+            switch (pathKey) {
+                case "viewCampuses":
+                    path = `${basePath}/institutions/campuses/${institution.id}`;
+                    break;
+                case "faculties":
+                    path = `${basePath}/institutions/faculties/${institution.id}`;
+                    break;
+                case "academicPrograms":
+                    path = `${basePath}/institutions/curricular-programs/${institution.id}`;
+                    break;
+                default:
+                    return; // Exit if pathKey is invalid
+            }
+
             navigate(path);
         } finally {
             setLoading((prev) => ({ ...prev, [key]: false }));
@@ -72,7 +97,7 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
             <DialogTitle
                 id="institution-details-dialog"
                 sx={{
-                    backgroundColor: "#1976d2", // Professional blue
+                    backgroundColor: "#1976d2",
                     color: "white",
                     p: 2.5,
                     fontSize: "1.5rem",
@@ -187,16 +212,12 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
                     borderTop: "1px solid #e0e0e0",
                 }}
             >
-                {/* ButtonGroup for the first three actions */}
                 <ButtonGroup variant="outlined" size="small">
                     {/* View Campuses */}
                     <Tooltip title="View Campuses">
                         <Button
                             onClick={() =>
-                                handleNavigation(
-                                    `/admin/institutions/campuses/${institution.id}`,
-                                    "viewCampuses"
-                                )
+                                handleNavigation("viewCampuses", "viewCampuses")
                             }
                             disabled={loading.viewCampuses}
                             startIcon={
@@ -227,10 +248,7 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
                     <Tooltip title="View Faculties">
                         <Button
                             onClick={() =>
-                                handleNavigation(
-                                    `/admin/institutions/faculties/${institution.id}`,
-                                    "faculties"
-                                )
+                                handleNavigation("faculties", "faculties")
                             }
                             disabled={loading.faculties}
                             startIcon={
@@ -262,7 +280,7 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
                         <Button
                             onClick={() =>
                                 handleNavigation(
-                                    `/admin/institutions/curricular-programs/${institution.id}`,
+                                    "academicPrograms",
                                     "academicPrograms"
                                 )
                             }
@@ -292,7 +310,6 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
                     </Tooltip>
                 </ButtonGroup>
 
-                {/* Close Button remains separate on the right */}
                 <Button
                     onClick={onClose}
                     variant="outlined"
@@ -332,8 +349,8 @@ DetailDialog.propTypes = {
         head_title: PropTypes.string,
         head_education: PropTypes.string,
     }),
-    onEdit: PropTypes.func.isRequired,
     navigate: PropTypes.func.isRequired,
+    role: PropTypes.string.isRequired,
 };
 
 DetailDialog.defaultProps = {
