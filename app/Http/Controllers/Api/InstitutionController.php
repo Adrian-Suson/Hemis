@@ -11,7 +11,6 @@ class InstitutionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        \Log::info('Incoming Request:', $request->all());
 
         // Check if type is provided
         if ($request->has('type')) {
@@ -86,7 +85,7 @@ class InstitutionController extends Controller
         return response()->json($institution);
     }
 
-    
+
 
     public function destroy(Institution $institution): JsonResponse
     {

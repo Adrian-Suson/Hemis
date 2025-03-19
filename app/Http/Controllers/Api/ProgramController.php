@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
-use CurricularProgramsExport;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ProgramController extends Controller
 {
@@ -87,18 +85,6 @@ class ProgramController extends Controller
         return response()->json($program->load(['institution', 'enrollments', 'statistics']));
     }
 
-    public function export($category)
-    {
-        $export = new CurricularProgramsExport($category);
-        $data = $export->getData();
-
-        Excel::create('Curricular_Programs_' . $category . '_' . date('Y-m-d'), function ($excel) use ($data) {
-            $excel->sheet('Sheet1', function ($sheet) use ($data) {
-                $sheet->fromArray($data, null, 'A3', false, false); // Start at row 3
-                $sheet->setAutoSize(true);
-            });
-        })->export('xlsx');
-    }
 
     public function destroy(Program $program): JsonResponse
     {
