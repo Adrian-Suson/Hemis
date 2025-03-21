@@ -3,17 +3,11 @@ import { useParams, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 import {
     Box,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
     Breadcrumbs,
     Link,
+    Typography,
 } from "@mui/material";
+import CampusHandsontable from "./CampusHandsontable"; // Import the new component
 
 const CampusManagement = () => {
     const { institutionId } = useParams();
@@ -70,98 +64,8 @@ const CampusManagement = () => {
                 </Typography>
             </Breadcrumbs>
 
-            <TableContainer component={Paper} sx={{ mt: 2, maxHeight: "65vh" }}>
-                <Table size="small" stickyHeader>
-                    <TableHead>
-                        <TableRow>
-                            {[
-                                "Campus Name",
-                                "Type",
-                                "Code",
-                                "Region",
-                                "City/Province",
-                                "Former Name",
-                                "Established",
-                                "Land Area (ha)",
-                                "Distance (km)",
-                                "Auto Code",
-                                "Position",
-                                "Head",
-                                "Latitude",
-                                "Longitude",
-                            ].map((header, index) => (
-                                <TableCell
-                                    key={index}
-                                    sx={{ fontWeight: "bold", p: 1 }}
-                                >
-                                    {header}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {campuses.length > 0 ? (
-                            campuses.map((campus, index) => (
-                                <TableRow key={index} hover>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.suc_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.campus_type || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.institutional_code || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.region || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.municipality_city_province ||
-                                            "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.former_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.year_first_operation || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.land_area_hectares || "0.0"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.distance_from_main || "0.0"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.autonomous_code || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.position_title || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.head_full_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.latitude_coordinates || "0.0"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.longitude_coordinates || "0.0"}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={14}
-                                    align="center"
-                                    sx={{ p: 2 }}
-                                >
-                                    No campuses found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {/* Handsontable Component */}
+            <CampusHandsontable campuses={campuses} />
         </Box>
     );
 };

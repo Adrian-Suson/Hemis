@@ -48,7 +48,7 @@ const InstitutionManagement = () => {
 
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user"));
-        return user?.institution_type || "HEI"; // Default to "HEI"
+        return user?.institution_type || "SUC"; // Default to "HEI"
     };
 
     const getUserRole = () => {

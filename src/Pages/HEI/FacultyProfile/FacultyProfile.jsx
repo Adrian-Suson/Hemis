@@ -115,7 +115,7 @@ const FacultyProfileUpload = () => {
             setError(null);
             try {
                 const response = await axios.get(
-                    `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId}`,
+                    `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId.institutionId}`,
                     {
                         headers: { Authorization: `Bearer ${token}` },
                     }
@@ -144,7 +144,6 @@ const FacultyProfileUpload = () => {
         setUploadProgress(5);
 
         const token = localStorage.getItem("token");
-
         if (!token) {
             alert("Authentication token is missing.");
             setIsUploading(false);
@@ -160,6 +159,7 @@ const FacultyProfileUpload = () => {
                 const workbook = XLSX.read(data, { type: "binary" });
 
                 let allFacultyProfiles = [];
+                const seenProfiles = new Set(); // To track unique profiles
 
                 for (let sheetIndex = 0; sheetIndex < 9; sheetIndex++) {
                     const sheetName = workbook.SheetNames[sheetIndex];
@@ -185,117 +185,62 @@ const FacultyProfileUpload = () => {
                     }
 
                     const processedFacultyProfiles = validRows.map((row) => ({
-                        institution_id: institutionId,
+                        institution_id: institutionId.institutionId,
                         faculty_group: sheetName,
                         name: row[1] ? String(row[1]) : null,
-                        generic_faculty_rank: row[2]
-                            ? parseInt(row[2], 10)
-                            : null,
+                        generic_faculty_rank: row[2] ? parseInt(row[2], 10) : null,
                         home_college: row[3] ? String(row[3]) : null,
                         home_department: row[4] ? String(row[4]) : null,
                         is_tenured: row[5] ? Boolean(parseInt(row[5])) : false,
                         ssl_salary_grade: row[6] ? parseInt(row[6], 10) : null,
-                        annual_basic_salary: row[7]
-                            ? parseInt(row[7], 10)
-                            : null,
-                        on_leave_without_pay: row[8]
-                            ? parseInt(row[8], 10)
-                            : null,
-                        full_time_equivalent: row[9]
-                            ? parseFloat(row[9])
-                            : null,
+                        annual_basic_salary: row[7] ? parseInt(row[7], 10) : null,
+                        on_leave_without_pay: row[8] ? parseInt(row[8], 10) : null,
+                        full_time_equivalent: row[9] ? parseFloat(row[9]) : null,
                         gender: row[10] ? parseInt(row[10], 10) : null,
-                        highest_degree_attained: row[11]
-                            ? parseInt(row[11], 10)
-                            : null,
-                        pursuing_next_degree: row[12]
-                            ? parseInt(row[12], 10)
-                            : null,
-                        discipline_teaching_load_1: row[13]
-                            ? String(row[13])
-                            : null,
-                        discipline_teaching_load_2: row[14]
-                            ? String(row[14])
-                            : null,
+                        highest_degree_attained: row[11] ? parseInt(row[11], 10) : null,
+                        pursuing_next_degree: row[12] ? parseInt(row[12], 10) : null,
+                        discipline_teaching_load_1: row[13] ? String(row[13]) : null,
+                        discipline_teaching_load_2: row[14] ? String(row[14]) : null,
                         discipline_bachelors: row[15] ? String(row[15]) : null,
                         discipline_masters: row[16] ? String(row[16]) : null,
                         discipline_doctorate: row[17] ? String(row[17]) : null,
-                        masters_with_thesis: row[18]
-                            ? parseInt(row[18], 10)
-                            : null,
-                        doctorate_with_dissertation: row[19]
-                            ? parseInt(row[19], 10)
-                            : null,
-                        undergrad_lab_credit_units: row[20]
-                            ? parseFloat(row[20])
-                            : null,
-                        undergrad_lecture_credit_units: row[21]
-                            ? parseFloat(row[21])
-                            : null,
-                        undergrad_total_credit_units: row[22]
-                            ? parseFloat(row[22])
-                            : null,
-                        undergrad_lab_hours_per_week: row[23]
-                            ? parseFloat(row[23])
-                            : null,
-                        undergrad_lecture_hours_per_week: row[24]
-                            ? parseFloat(row[24])
-                            : null,
-                        undergrad_total_hours_per_week: row[25]
-                            ? parseFloat(row[25])
-                            : null,
-                        undergrad_lab_contact_hours: row[26]
-                            ? parseFloat(row[26])
-                            : null,
-                        undergrad_lecture_contact_hours: row[27]
-                            ? parseFloat(row[27])
-                            : null,
-                        undergrad_total_contact_hours: row[28]
-                            ? parseFloat(row[28])
-                            : null,
-                        graduate_lab_credit_units: row[29]
-                            ? parseFloat(row[29])
-                            : null,
-                        graduate_lecture_credit_units: row[30]
-                            ? parseFloat(row[30])
-                            : null,
-                        graduate_total_credit_units: row[31]
-                            ? parseFloat(row[31])
-                            : null,
-                        graduate_lab_contact_hours: row[32]
-                            ? parseFloat(row[32])
-                            : null,
-                        graduate_lecture_contact_hours: row[33]
-                            ? parseFloat(row[33])
-                            : null,
-                        graduate_total_contact_hours: row[34]
-                            ? parseFloat(row[34])
-                            : null,
+                        masters_with_thesis: row[18] ? parseInt(row[18], 10) : null,
+                        doctorate_with_dissertation: row[19] ? parseInt(row[19], 10) : null,
+                        undergrad_lab_credit_units: row[20] ? parseFloat(row[20]) : null,
+                        undergrad_lecture_credit_units: row[21] ? parseFloat(row[21]) : null,
+                        undergrad_total_credit_units: row[22] ? parseFloat(row[22]) : null,
+                        undergrad_lab_hours_per_week: row[23] ? parseFloat(row[23]) : null,
+                        undergrad_lecture_hours_per_week: row[24] ? parseFloat(row[24]) : null,
+                        undergrad_total_hours_per_week: row[25] ? parseFloat(row[25]) : null,
+                        undergrad_lab_contact_hours: row[26] ? parseFloat(row[26]) : null,
+                        undergrad_lecture_contact_hours: row[27] ? parseFloat(row[27]) : null,
+                        undergrad_total_contact_hours: row[28] ? parseFloat(row[28]) : null,
+                        graduate_lab_credit_units: row[29] ? parseFloat(row[29]) : null,
+                        graduate_lecture_credit_units: row[30] ? parseFloat(row[30]) : null,
+                        graduate_total_credit_units: row[31] ? parseFloat(row[31]) : null,
+                        graduate_lab_contact_hours: row[32] ? parseFloat(row[32]) : null,
+                        graduate_lecture_contact_hours: row[33] ? parseFloat(row[33]) : null,
+                        graduate_total_contact_hours: row[34] ? parseFloat(row[34]) : null,
                         research_load: row[35] ? parseFloat(row[35]) : null,
-                        extension_services_load: row[36]
-                            ? parseFloat(row[36])
-                            : null,
+                        extension_services_load: row[36] ? parseFloat(row[36]) : null,
                         study_load: row[37] ? parseFloat(row[37]) : null,
                         production_load: row[38] ? parseFloat(row[38]) : null,
-                        administrative_load: row[39]
-                            ? parseFloat(row[39])
-                            : null,
-                        other_load_credits: row[40]
-                            ? parseFloat(row[40])
-                            : null,
+                        administrative_load: row[39] ? parseFloat(row[39]) : null,
+                        other_load_credits: row[40] ? parseFloat(row[40]) : null,
                         total_work_load: row[41] ? parseFloat(row[41]) : null,
                     }));
 
-                    allFacultyProfiles = [
-                        ...allFacultyProfiles,
-                        ...processedFacultyProfiles,
-                    ];
+                    // Filter out duplicates
+                    processedFacultyProfiles.forEach((profile) => {
+                        const profileString = JSON.stringify(profile);
+                        if (!seenProfiles.has(profileString)) {
+                            seenProfiles.add(profileString);
+                            allFacultyProfiles.push(profile);
+                        }
+                    });
                 }
 
-                console.log(
-                    "Final Processed Faculty Data:",
-                    allFacultyProfiles
-                );
+                console.log("Final Processed Faculty Data:", allFacultyProfiles);
                 setUploadProgress(80);
 
                 if (allFacultyProfiles.length > 0) {
@@ -308,7 +253,6 @@ const FacultyProfileUpload = () => {
                     );
 
                     console.log("Faculty profiles uploaded successfully!");
-                    // Append new data to existing facultyProfiles
                     setFacultyProfiles((prevProfiles) => [
                         ...prevProfiles,
                         ...allFacultyProfiles,

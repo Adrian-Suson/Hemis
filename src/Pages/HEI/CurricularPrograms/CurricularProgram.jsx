@@ -179,7 +179,7 @@ const CurricularProgram = () => {
 
                         return {
                             program: {
-                                institution_id: institutionId,
+                                institution_id: institutionId.institutionId,
                                 program_name: row[1] || null,
                                 program_code: String(row[2] || "0"),
                                 major_name: row[3] || null,
