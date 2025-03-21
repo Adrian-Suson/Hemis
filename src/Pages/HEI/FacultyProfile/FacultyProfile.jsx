@@ -15,7 +15,7 @@ import {
     ButtonGroup,
 } from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
 import DownloadIcon from '@mui/icons-material/Download';
@@ -93,6 +93,7 @@ const FacultyProfileUpload = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const institutionId = useParams();
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
@@ -103,7 +104,6 @@ const FacultyProfileUpload = () => {
     // Fetch all faculty profiles on component mount
     useEffect(() => {
         const token = localStorage.getItem("token");
-        const institutionId = localStorage.getItem("institutionId");
 
         if (!token) {
             setError("Authentication token is missing.");
@@ -131,7 +131,7 @@ const FacultyProfileUpload = () => {
         };
 
         fetchFacultyProfiles();
-    }, []);
+    }, [institutionId]);
 
     const handleTabChange = (_, newValue) => {
         setSelectedGroup(newValue);
@@ -144,7 +144,6 @@ const FacultyProfileUpload = () => {
         setUploadProgress(5);
 
         const token = localStorage.getItem("token");
-        const institutionId = localStorage.getItem("institutionId");
 
         if (!token) {
             alert("Authentication token is missing.");
@@ -537,7 +536,7 @@ const FacultyProfileUpload = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/admin/dashboard")}
+                    onClick={() => navigate("/hei-admin/dashboard")}
                 >
                     Dashboard
                 </Link>
@@ -545,7 +544,7 @@ const FacultyProfileUpload = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/admin/institutions")}
+                    onClick={() => navigate("/hei-admin/institutions")}
                 >
                     Institution Management
                 </Link>
@@ -570,7 +569,7 @@ const FacultyProfileUpload = () => {
                         startIcon={<UploadFileIcon />}
                         disabled={isUploading}
                     >
-                        {isUploading ? "Uploading..." : "Import Form B"}
+                        {isUploading ? "Uploading..." : "Import Form E2"}
                     </Button>
                 </label>
                 <Button

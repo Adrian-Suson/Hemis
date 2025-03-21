@@ -51,7 +51,7 @@ const CampusManagement = () => {
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to="/admin/dashboard"
+                    to="/hei-admin/dashboard"
                 >
                     Dashboard
                 </Link>
@@ -59,7 +59,7 @@ const CampusManagement = () => {
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to="/admin/institutions"
+                    to="/hei-admin/institutions"
                 >
                     Institution Management
                 </Link>
