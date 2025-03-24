@@ -77,29 +77,10 @@ class FacultyProfileController extends Controller
             '*.total_work_load' => 'nullable|numeric',
         ]);
 
-        // Remove duplicates by converting each profile to a unique string and filtering
-        $uniqueProfiles = [];
-        $seen = [];
+        // Bulk insert the validated data
+        $facultyProfiles = FacultyProfile::insert($validatedData);
 
-        foreach ($validatedData as $profile) {
-            $profileString = json_encode($profile); // Stringify for comparison
-            if (!in_array($profileString, $seen)) {
-                $seen[] = $profileString;
-                $uniqueProfiles[] = $profile;
-            }
-        }
-
-        if (empty($uniqueProfiles)) {
-            return response()->json(['message' => 'No unique faculty profiles to insert'], Response::HTTP_OK);
-        }
-
-        // Bulk insert the unique validated data
-        FacultyProfile::insert($uniqueProfiles);
-
-        return response()->json([
-            'message' => 'Faculty profiles created successfully',
-            'count' => count($uniqueProfiles)
-        ], Response::HTTP_CREATED);
+        return response()->json(['message' => 'Faculty profiles created successfully', 'count' => count($validatedData)], Response::HTTP_CREATED);
     }
 
     /**
