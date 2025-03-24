@@ -1,14 +1,57 @@
 import { HotTable } from "@handsontable/react";
 import "handsontable/dist/handsontable.full.min.css"; // Import Handsontable styles
-import { useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { registerAllModules } from "handsontable/registry"; // Register all modules
 import PropTypes from "prop-types";
-import { CircularProgress, Box } from "@mui/material";
+import {
+    CircularProgress,
+    Box,
+    TextField,
+    Grid,
+    Fab,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
+    IconButton,
+} from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info"; // Icon for the FAB
+import CloseIcon from "@mui/icons-material/Close"; // Icon for closing the dialog
 
 // Register all Handsontable modules (including numeric cell type)
 registerAllModules();
 
 const ProgramTables = ({ programs, loading, subTabValue }) => {
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredPrograms, setFilteredPrograms] = useState(programs);
+
+    // Filter states for each column
+
+    // State for controlling the reference dialog
+    const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
+
+    // Apply search and filters
+    useEffect(() => {
+        let filtered = [...programs];
+
+        // Apply search
+        if (searchQuery) {
+            filtered = filtered.filter((program) =>
+                Object.values(program).some((value) =>
+                    String(value)
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase())
+                )
+            );
+        }
+
+        setFilteredPrograms(filtered);
+    }, [programs, searchQuery]);
+
     // Define column configurations for each subTabValue
     const columnConfigs = useMemo(
         () => ({
@@ -24,17 +67,17 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                     { data: "year", title: "Year" },
                     {
                         data: "is_thesis_dissertation_required",
-                        title: "Thesis/Dissertation", // Shortened title
+                        title: "Thesis/Dissertation",
                         type: "numeric",
                     },
                     {
                         data: "program_status",
-                        title: "Status", // Shortened title
+                        title: "Status",
                         type: "numeric",
                     },
                     {
                         data: "calendar_use_code",
-                        title: "Calendar", // Shortened title
+                        title: "Calendar",
                         type: "numeric",
                     },
                     {
@@ -43,12 +86,28 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         type: "numeric",
                     },
                     { data: "lab_units", title: "Lab Units", type: "numeric" },
-                    { data: "lecture_units", title: "Lecture Units", type: "numeric" },
-                    { data: "total_units", title: "Total Units", type: "numeric" },
-                    { data: "tuition_per_unit", title: "Tuition/Unit", type: "numeric" },
-                    { data: "program_fee", title: "Program Fee", type: "numeric" },
+                    {
+                        data: "lecture_units",
+                        title: "Lecture Units",
+                        type: "numeric",
+                    },
+                    {
+                        data: "total_units",
+                        title: "Total Units",
+                        type: "numeric",
+                    },
+                    {
+                        data: "tuition_per_unit",
+                        title: "Tuition/Unit",
+                        type: "numeric",
+                    },
+                    {
+                        data: "program_fee",
+                        title: "Program Fee",
+                        type: "numeric",
+                    },
                 ],
-                data: programs.map((program) => ({
+                data: filteredPrograms.map((program) => ({
                     program_name: program.program_name || "-",
                     program_code: program.program_code || "-",
                     major_name: program.major_name || "-",
@@ -56,10 +115,12 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                     category: program.category || "-",
                     serial: program.serial || "-",
                     year: program.year || "-",
-                    is_thesis_dissertation_required: program.is_thesis_dissertation_required || "-",
+                    is_thesis_dissertation_required:
+                        program.is_thesis_dissertation_required || "-",
                     program_status: program.program_status || "-",
                     calendar_use_code: program.calendar_use_code || "-",
-                    program_normal_length_in_years: program.program_normal_length_in_years || "-",
+                    program_normal_length_in_years:
+                        program.program_normal_length_in_years || "-",
                     lab_units: program.lab_units || 0,
                     lecture_units: program.lecture_units || 0,
                     total_units: program.total_units || 0,
@@ -71,46 +132,129 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                 // Enrollments
                 columns: [
                     { data: "program_name", title: "Program Name" },
-                    { data: "new_students_freshmen_male", title: "Freshmen M", type: "numeric" },
-                    { data: "new_students_freshmen_female", title: "Freshmen F", type: "numeric" },
-                    { data: "first_year_old_male", title: "1st Yr M", type: "numeric" },
-                    { data: "first_year_old_female", title: "1st Yr F", type: "numeric" },
-                    { data: "second_year_male", title: "2nd Yr M", type: "numeric" },
-                    { data: "second_year_female", title: "2nd Yr F", type: "numeric" },
-                    { data: "third_year_male", title: "3rd Yr M", type: "numeric" },
-                    { data: "third_year_female", title: "3rd Yr F", type: "numeric" },
-                    { data: "fourth_year_male", title: "4th Yr M", type: "numeric" },
-                    { data: "fourth_year_female", title: "4th Yr F", type: "numeric" },
-                    { data: "fifth_year_male", title: "5th Yr M", type: "numeric" },
-                    { data: "fifth_year_female", title: "5th Yr F", type: "numeric" },
-                    { data: "sixth_year_male", title: "6th Yr M", type: "numeric" },
-                    { data: "sixth_year_female", title: "6th Yr F", type: "numeric" },
-                    { data: "seventh_year_male", title: "7th Yr M", type: "numeric" },
-                    { data: "seventh_year_female", title: "7th Yr F", type: "numeric" },
-                    { data: "subtotal_male", title: "Subtotal M", type: "numeric" },
-                    { data: "subtotal_female", title: "Subtotal F", type: "numeric" },
+                    {
+                        data: "new_students_freshmen_male",
+                        title: "Freshmen M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "new_students_freshmen_female",
+                        title: "Freshmen F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "first_year_old_male",
+                        title: "1st Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "first_year_old_female",
+                        title: "1st Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "second_year_male",
+                        title: "2nd Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "second_year_female",
+                        title: "2nd Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "third_year_male",
+                        title: "3rd Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "third_year_female",
+                        title: "3rd Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "fourth_year_male",
+                        title: "4th Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "fourth_year_female",
+                        title: "4th Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "fifth_year_male",
+                        title: "5th Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "fifth_year_female",
+                        title: "5th Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "sixth_year_male",
+                        title: "6th Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "sixth_year_female",
+                        title: "6th Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "seventh_year_male",
+                        title: "7th Yr M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "seventh_year_female",
+                        title: "7th Yr F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "subtotal_male",
+                        title: "Subtotal M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "subtotal_female",
+                        title: "Subtotal F",
+                        type: "numeric",
+                    },
                     { data: "grand_total", title: "Total", type: "numeric" },
                 ],
-                data: programs.flatMap(
+                data: filteredPrograms.flatMap(
                     (program) =>
                         program.enrollments?.map((enrollment) => ({
                             program_name: program.program_name || "-",
-                            new_students_freshmen_male: enrollment.new_students_freshmen_male ?? 0,
-                            new_students_freshmen_female: enrollment.new_students_freshmen_female ?? 0,
-                            first_year_old_male: enrollment.first_year_old_male ?? 0,
-                            first_year_old_female: enrollment.first_year_old_female ?? 0,
+                            new_students_freshmen_male:
+                                enrollment.new_students_freshmen_male ?? 0,
+                            new_students_freshmen_female:
+                                enrollment.new_students_freshmen_female ?? 0,
+                            first_year_old_male:
+                                enrollment.first_year_old_male ?? 0,
+                            first_year_old_female:
+                                enrollment.first_year_old_female ?? 0,
                             second_year_male: enrollment.second_year_male ?? 0,
-                            second_year_female: enrollment.second_year_female ?? 0,
+                            second_year_female:
+                                enrollment.second_year_female ?? 0,
                             third_year_male: enrollment.third_year_male ?? 0,
-                            third_year_female: enrollment.third_year_female ?? 0,
+                            third_year_female:
+                                enrollment.third_year_female ?? 0,
                             fourth_year_male: enrollment.fourth_year_male ?? 0,
-                            fourth_year_female: enrollment.fourth_year_female ?? 0,
+                            fourth_year_female:
+                                enrollment.fourth_year_female ?? 0,
                             fifth_year_male: enrollment.fifth_year_male ?? 0,
-                            fifth_year_female: enrollment.fifth_year_female ?? 0,
+                            fifth_year_female:
+                                enrollment.fifth_year_female ?? 0,
                             sixth_year_male: enrollment.sixth_year_male ?? 0,
-                            sixth_year_female: enrollment.sixth_year_female ?? 0,
-                            seventh_year_male: enrollment.seventh_year_male ?? 0,
-                            seventh_year_female: enrollment.seventh_year_female ?? 0,
+                            sixth_year_female:
+                                enrollment.sixth_year_female ?? 0,
+                            seventh_year_male:
+                                enrollment.seventh_year_male ?? 0,
+                            seventh_year_female:
+                                enrollment.seventh_year_female ?? 0,
                             subtotal_male: enrollment.subtotal_male ?? 0,
                             subtotal_female: enrollment.subtotal_female ?? 0,
                             grand_total: enrollment.grand_total ?? 0,
@@ -121,103 +265,353 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                 // Statistics
                 columns: [
                     { data: "program_name", title: "Program Name" },
-                    { data: "lecture_units_actual", title: "Lecture Units", type: "numeric" },
-                    { data: "laboratory_units_actual", title: "Lab Units", type: "numeric" },
-                    { data: "total_units_actual", title: "Total Units", type: "numeric" },
-                    { data: "graduates_males", title: "Grads M", type: "numeric" },
-                    { data: "graduates_females", title: "Grads F", type: "numeric" },
-                    { data: "graduates_total", title: "Grads Total", type: "numeric" },
-                    { data: "externally_funded_merit_scholars", title: "Ext Scholars", type: "numeric" },
-                    { data: "internally_funded_grantees", title: "Int Grantees", type: "numeric" },
-                    { data: "suc_funded_grantees", title: "SUC Grantees", type: "numeric" },
+                    {
+                        data: "lecture_units_actual",
+                        title: "Lecture Units",
+                        type: "numeric",
+                    },
+                    {
+                        data: "laboratory_units_actual",
+                        title: "Lab Units",
+                        type: "numeric",
+                    },
+                    {
+                        data: "total_units_actual",
+                        title: "Total Units",
+                        type: "numeric",
+                    },
+                    {
+                        data: "graduates_males",
+                        title: "Grads M",
+                        type: "numeric",
+                    },
+                    {
+                        data: "graduates_females",
+                        title: "Grads F",
+                        type: "numeric",
+                    },
+                    {
+                        data: "graduates_total",
+                        title: "Grads Total",
+                        type: "numeric",
+                    },
+                    {
+                        data: "externally_funded_merit_scholars",
+                        title: "Ext Scholars",
+                        type: "numeric",
+                    },
+                    {
+                        data: "internally_funded_grantees",
+                        title: "Int Grantees",
+                        type: "numeric",
+                    },
+                    {
+                        data: "suc_funded_grantees",
+                        title: "SUC Grantees",
+                        type: "numeric",
+                    },
                 ],
-                data: programs
+                data: filteredPrograms
                     .filter((program) => program.statistics)
                     .map((program) => ({
                         program_name: program.program_name || "-",
-                        lecture_units_actual: program.statistics?.lecture_units_actual ?? 0,
-                        laboratory_units_actual: program.statistics?.laboratory_units_actual ?? 0,
-                        total_units_actual: program.statistics?.total_units_actual ?? 0,
-                        graduates_males: program.statistics?.graduates_males ?? 0,
-                        graduates_females: program.statistics?.graduates_females ?? 0,
-                        graduates_total: program.statistics?.graduates_total ?? 0,
-                        externally_funded_merit_scholars: program.statistics?.externally_funded_merit_scholars ?? 0,
-                        internally_funded_grantees: program.statistics?.internally_funded_grantees ?? 0,
-                        suc_funded_grantees: program.statistics?.suc_funded_grantees ?? 0,
+                        lecture_units_actual:
+                            program.statistics?.lecture_units_actual ?? 0,
+                        laboratory_units_actual:
+                            program.statistics?.laboratory_units_actual ?? 0,
+                        total_units_actual:
+                            program.statistics?.total_units_actual ?? 0,
+                        graduates_males:
+                            program.statistics?.graduates_males ?? 0,
+                        graduates_females:
+                            program.statistics?.graduates_females ?? 0,
+                        graduates_total:
+                            program.statistics?.graduates_total ?? 0,
+                        externally_funded_merit_scholars:
+                            program.statistics
+                                ?.externally_funded_merit_scholars ?? 0,
+                        internally_funded_grantees:
+                            program.statistics?.internally_funded_grantees ?? 0,
+                        suc_funded_grantees:
+                            program.statistics?.suc_funded_grantees ?? 0,
                     })),
             },
         }),
-        [programs]
+        [filteredPrograms]
     );
 
     if (loading) return <CircularProgress />;
     const currentConfig = columnConfigs[subTabValue] || columnConfigs[0];
 
+    // Reference data for the dialog
+    const referenceData = {
+        authority: [
+            { code: "GP", label: "Government Permit" },
+            { code: "GR", label: "Government Recognition" },
+            { code: "BR", label: "Board Resolution" },
+        ],
+        thesisDissertation: [
+            { code: 1, label: "Required" },
+            { code: 2, label: "Optional" },
+            { code: 3, label: "Not Required" },
+        ],
+        programStatus: [
+            { code: 1, label: "Active" },
+            { code: 2, label: "Phased Out" },
+            { code: 3, label: "Abolished" },
+        ],
+        calendar: [
+            { code: 1, label: "Sem" },
+            { code: 2, label: "Tri Sem" },
+            { code: 3, label: "Quarter Sem" },
+            { code: 4, label: "Distance Mode" },
+        ],
+    };
+
     return (
-        <Box sx={{ overflowX: "auto", maxHeight: "550px" }}>
-            <HotTable
-                data={currentConfig.data}
-                columns={currentConfig.columns}
-                colHeaders={true}
-                rowHeaders={true}
-                stretchH="all"
-                height="550px" // Match your original maxHeight
-                licenseKey="non-commercial-and-evaluation"
-                settings={{
-                    readOnly: true, // Keep as read-only for display purposes
-                    manualColumnResize: true,
-                    columnSorting: true,
-                    contextMenu: false, // Disable context menu if not needed
-                    nestedHeaders: [
-                        subTabValue === 0
-                            ? [
-                                  { label: "CURRICULAR PROGRAM", colspan: 2 },
-                                  { label: "MAJOR", colspan: 2 },
-                                  { label: "AUTHORITY TO OFFER PROGRAM", colspan: 3 },
-                                  { label: "THESIS/DISSERTATION\n1=Required 2=Optional 3=Not Req", colspan: 1 },
-                                  { label: "STATUS\n1=Active 2=Phased Out 3=Abolished", colspan: 1 },
-                                  { label: "CALENDAR\n1=Sem 2=Trisem 3=Qtr Sem 4=Distance", colspan: 1 },
-                                  { label: "LENGTH", colspan: 1 },
-                                  { label: "PROGRAM UNITS EXCLUDING THESIS", colspan: 3 },
-                                  { label: "FINANCIAL INFORMATION", colspan: 2 },
-                              ]
-                            : subTabValue === 1
-                            ? [
-                                  { label: "Program Name", colspan: 1 },
-                                  { label: "First Year", colspan: 4 },
-                                  { label: "Second Year", colspan: 2 },
-                                  { label: "Third Year", colspan: 2 },
-                                  { label: "Fourth Year", colspan: 2 },
-                                  { label: "Fifth Year", colspan: 2 },
-                                  { label: "Sixth Year", colspan: 2 },
-                                  { label: "Seventh Year", colspan: 2 },
-                                  { label: "Totals", colspan: 3 },
-                              ]
-                            : [
-                                  { label: "Program Name", colspan: 1 },
-                                  { label: "Units", colspan: 3 },
-                                  { label: "Graduates", colspan: 3 },
-                                  { label: "Scholars & Grantees", colspan: 3 },
-                              ],
-                        currentConfig.columns.map((col) => col.title), // Sub-headers
-                    ],
-                    cells: (row, col) => {
-                        const cellProperties = {};
-                        // Apply word wrapping and width constraints to specific columns
-                        if (subTabValue === 0 && [7, 8, 9].includes(col)) {
-                            cellProperties.renderer = "text";
-                            cellProperties.wordWrap = true;
-                            cellProperties.width = 100; // Set a reasonable width
-                        }
-                        return cellProperties;
-                    },
+        <Box sx={{ mt: 2, position: "relative" }}>
+            {/* Search and Filter Section */}
+            <Box sx={{ mb: 1 }}>
+                <Grid container spacing={1} alignItems="center">
+                    <Grid item xs={12} sm={4}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="Search"
+                            variant="outlined"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search..."
+                            sx={{
+                                "& .MuiInputBase-root": {
+                                    fontSize: "0.75rem",
+                                    height: "32px",
+                                },
+                                "& .MuiInputLabel-root": {
+                                    fontSize: "0.75rem",
+                                    transform: "translate(14px, 8px) scale(1)",
+                                },
+                                "& .MuiInputLabel-shrink": {
+                                    transform:
+                                        "translate(14px, -6px) scale(0.75)",
+                                },
+                            }}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
+
+            <Box
+                sx={{
+                    overflowX: "auto",
+                    maxHeight: "550px",
+                    position: "relative",
                 }}
-            />
-            {currentConfig.data.length === 0 && (
-                <Box sx={{ textAlign: "center", p: 2, color: "#666" }}>
-                    No data available.
-                </Box>
-            )}
+            >
+                <HotTable
+                    data={currentConfig.data}
+                    columns={currentConfig.columns}
+                    rowHeaders={true}
+                    stretchH="all"
+                    height="550px" // Match your original maxHeight
+                    licenseKey="non-commercial-and-evaluation"
+                    settings={{
+                        readOnly: true, // Keep as read-only for display purposes
+                        manualColumnResize: true,
+                        columnSorting: true,
+                        contextMenu: false, // Disable context menu if not needed
+                        nestedHeaders: [
+                            subTabValue === 0
+                                ? [
+                                      {
+                                          label: "CURRICULAR PROGRAM",
+                                          colspan: 2,
+                                      },
+                                      { label: "MAJOR", colspan: 2 },
+                                      {
+                                          label: "AUTHORITY TO OFFER PROGRAM",
+                                          colspan: 3,
+                                      },
+                                      { label: "", colspan: 1 }, // Empty header for Thesis/Dissertation
+                                      { label: "", colspan: 1 }, // Empty header for Status
+                                      { label: "", colspan: 1 }, // Empty header for Calendar
+                                      { label: "LENGTH", colspan: 1 },
+                                      {
+                                          label: "PROGRAM UNITS EXCLUDING THESIS",
+                                          colspan: 3,
+                                      },
+                                      {
+                                          label: "FINANCIAL INFORMATION",
+                                          colspan: 2,
+                                      },
+                                  ]
+                                : subTabValue === 1
+                                ? [
+                                      { label: "Program Name", colspan: 1 },
+                                      { label: "First Year", colspan: 4 },
+                                      { label: "Second Year", colspan: 2 },
+                                      { label: "Third Year", colspan: 2 },
+                                      { label: "Fourth Year", colspan: 2 },
+                                      { label: "Fifth Year", colspan: 2 },
+                                      { label: "Sixth Year", colspan: 2 },
+                                      { label: "Seventh Year", colspan: 2 },
+                                      { label: "Totals", colspan: 3 },
+                                  ]
+                                : [
+                                      { label: "Program Name", colspan: 1 },
+                                      { label: "Units", colspan: 3 },
+                                      { label: "Graduates", colspan: 3 },
+                                      {
+                                          label: "Scholars & Grantees",
+                                          colspan: 3,
+                                      },
+                                  ],
+                            currentConfig.columns.map((col) => col.title), // Sub-headers
+                        ],
+                        cells: (row, col) => {
+                            const cellProperties = {};
+                            const columnData = currentConfig.columns[col].data;
+                            const value = currentConfig.data[row]?.[columnData];
+
+                            cellProperties.renderer = (instance, td) => {
+                                // Default rendering for all columns
+                                td.innerHTML =
+                                    value !== undefined && value !== null
+                                        ? value
+                                        : "-";
+
+                                // Apply common styles
+                                td.style.whiteSpace = "nowrap";
+                                td.style.overflow = "hidden";
+                                td.style.textOverflow = "ellipsis";
+                                td.style.maxWidth =
+                                    col === 0 ? "180px" : "120px";
+                                td.title = value || "-"; // Tooltip for cell content
+
+                                // Center-align all columns except "program_name" and "major_name"
+                                if (
+                                    columnData !== "program_name" &&
+                                    columnData !== "major_name"
+                                ) {
+                                    td.style.textAlign = "center";
+                                } else {
+                                    td.style.textAlign = "left";
+                                }
+                            };
+
+                            return cellProperties;
+                        },
+                    }}
+                />
+                {currentConfig.data.length === 0 && (
+                    <Box sx={{ textAlign: "center", p: 2, color: "#666" }}>
+                        No data available.
+                    </Box>
+                )}
+
+                {/* Floating Action Button */}
+                <Fab
+                    color="primary"
+                    aria-label="show reference"
+                    onClick={() => setOpenReferenceDialog(true)}
+                    sx={{
+                        position: "absolute",
+                        bottom: 16,
+                        right: 16,
+                    }}
+                >
+                    <InfoIcon />
+                </Fab>
+            </Box>
+
+            {/* Reference Dialog */}
+            <Dialog
+                open={openReferenceDialog}
+                onClose={() => setOpenReferenceDialog(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Reference Table
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOpenReferenceDialog(false)}
+                        sx={{
+                            position: "absolute",
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>
+                                    Authority to Offer Program
+                                </TableCell>
+                                <TableCell>
+                                    Is Thesis/Dissertation Required?
+                                </TableCell>
+                                <TableCell>Program Status</TableCell>
+                                <TableCell>Program Calendar</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {/* Authority to Offer Program */}
+                            {referenceData.authority.map((item, index) => (
+                                <TableRow key={`authority-${index}`}>
+                                    <TableCell>{`${item.code} - ${item.label}`}</TableCell>
+                                    {/* Thesis/Dissertation */}
+                                    {index <
+                                    referenceData.thesisDissertation.length ? (
+                                        <TableCell>
+                                            {`${referenceData.thesisDissertation[index].code} - ${referenceData.thesisDissertation[index].label}`}
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell>-</TableCell>
+                                    )}
+                                    {/* Program Status */}
+                                    {index <
+                                    referenceData.programStatus.length ? (
+                                        <TableCell>
+                                            {`${referenceData.programStatus[index].code} - ${referenceData.programStatus[index].label}`}
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell>-</TableCell>
+                                    )}
+                                    {/* Program Calendar */}
+                                    {index < referenceData.calendar.length ? (
+                                        <TableCell>
+                                            {`${referenceData.calendar[index].code} - ${referenceData.calendar[index].label}`}
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell>-</TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                            {/* Additional rows for Program Calendar if needed */}
+                            {referenceData.calendar.length >
+                                referenceData.authority.length &&
+                                referenceData.calendar
+                                    .slice(referenceData.authority.length)
+                                    .map((item, index) => (
+                                        <TableRow
+                                            key={`calendar-extra-${index}`}
+                                        >
+                                            <TableCell>-</TableCell>
+                                            <TableCell>-</TableCell>
+                                            <TableCell>-</TableCell>
+                                            <TableCell>{`${item.code} - ${item.label}`}</TableCell>
+                                        </TableRow>
+                                    ))}
+                        </TableBody>
+                    </Table>
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 };
