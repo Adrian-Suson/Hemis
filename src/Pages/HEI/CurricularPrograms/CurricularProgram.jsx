@@ -7,6 +7,7 @@ import {
     Box,
     Breadcrumbs,
     Link,
+    Paper,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -53,7 +54,6 @@ const CurricularProgram = () => {
         const fetchPrograms = async () => {
             try {
                 const token = localStorage.getItem("token");
-
 
                 if (!institutionId) {
                     console.error("No institution ID found in localStorage");
@@ -572,15 +572,25 @@ const CurricularProgram = () => {
                 </Button>
             </Box>
 
-            <Tabs
-                value={subTabValue}
-                onChange={(event, newValue) => setSubTabValue(newValue)}
-                sx={{ mb: 2 }}
-            >
-                {subCategories.map((subCategory) => (
-                    <Tab key={subCategory} label={subCategory} />
-                ))}
-            </Tabs>
+            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+                <Tabs
+                    value={subTabValue}
+                    onChange={(event, newValue) => setSubTabValue(newValue)}
+                    variant="fullWidth"
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        "& .MuiTab-root": {
+                            fontSize: "0.875rem",
+                            fontWeight: "medium",
+                        },
+                    }}
+                >
+                    {subCategories.map((subCategory) => (
+                        <Tab key={subCategory} label={subCategory} />
+                    ))}
+                </Tabs>
+            </Paper>
 
             <ProgramTables
                 programs={filteredPrograms} // Pass filtered programs instead of full programs

@@ -8,15 +8,21 @@ import {
     Chip,
     Paper,
     Divider,
-    Container, // Added Container import
+    Container,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import PersonIcon from "@mui/icons-material/Person"; // Added PersonIcon import
-import PeopleIcon from "@mui/icons-material/People"; // Added PeopleIcon import
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks"; // Added LibraryBooksIcon import
-import SchoolIcon from "@mui/icons-material/School"; // Added SchoolIcon import
-import BusinessIcon from "@mui/icons-material/Business"; // Added BusinessIcon import
+import PersonIcon from "@mui/icons-material/Person";
+import PeopleIcon from "@mui/icons-material/People";
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
+import SchoolIcon from "@mui/icons-material/School";
+import BusinessIcon from "@mui/icons-material/Business";
+// Import Chart.js and react-chartjs-2 components
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Pie } from "react-chartjs-2";
+
+// Register Chart.js components
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -64,7 +70,6 @@ const Dashboard = () => {
                     axios.get("http://localhost:8000/api/programs", {
                         headers: { Authorization: `Bearer ${token}` },
                     }),
-
                     axios.get("http://localhost:8000/api/institutions", {
                         headers: { Authorization: `Bearer ${token}` },
                     }),
@@ -93,8 +98,7 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
-    }, []
-);
+    }, []);
 
     if (dashboardData.loading) {
         return (
@@ -112,7 +116,7 @@ const Dashboard = () => {
         );
     }
 
-    // Calculate some overview metrics
+    // Calculate overview metrics
     const totalUsers = dashboardData.users.length;
     const totalFaculty = dashboardData.facultyProfiles.length;
     const totalPrograms = dashboardData.programs.length;
@@ -125,8 +129,71 @@ const Dashboard = () => {
             ) || 0)
         );
     }, 0);
-
     const totalInstitutions = dashboardData.institutions.length;
+
+    // Aggregate institution types for the pie chart
+    const institutionTypeCounts = dashboardData.institutions.reduce(
+        (acc, institution) => {
+            const type = institution.institution_type || "Unknown"; // Fallback to "Unknown" if institution_type is missing
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+        },
+        {}
+    );
+
+    // Prepare data for the pie chart
+    const pieChartData = {
+        labels: Object.keys(institutionTypeCounts),
+        datasets: [
+            {
+                label: "Institutions by Type",
+                data: Object.values(institutionTypeCounts),
+                backgroundColor: [
+                    "#FF6384", // Red
+                    "#36A2EB", // Blue
+                    "#FFCE56", // Yellow
+                    "#4BC0C0", // Teal
+                    "#9966FF", // Purple
+                    "#FF9F40", // Orange
+                    "#C9CBDF", // Gray
+                ],
+                borderColor: [
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#C9CBDF",
+                ],
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    // Pie chart options
+    const pieChartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: "top",
+            },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        const label = context.label || "";
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce(
+                            (sum, val) => sum + val,
+                            0
+                        );
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${label}: ${value} (${percentage}%)`;
+                    },
+                },
+            },
+        },
+    };
 
     return (
         <Container maxWidth="xl">
@@ -332,6 +399,36 @@ const Dashboard = () => {
                         </Paper>
                     </Grid>
                 </Grid>
+
+                {/* Pie Chart Section for Institution Types */}
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        border: 1,
+                        borderColor: "divider",
+                        mb: 4,
+                    }}
+                >
+                    <Typography variant="h5" fontWeight="medium" mb={2}>
+                        Institution Types Distribution
+                    </Typography>
+                    <Divider sx={{ mb: 3 }} />
+                    {Object.keys(institutionTypeCounts).length > 0 ? (
+                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
+                            <Pie
+                                data={pieChartData}
+                                options={pieChartOptions}
+                            />
+                        </Box>
+                    ) : (
+                        <Typography color="text.secondary" textAlign="center">
+                            No institution type data available.
+                        </Typography>
+                    )}
+                </Paper>
+
                 {/* Institutions Section */}
                 <Paper
                     elevation={0}

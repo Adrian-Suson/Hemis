@@ -27,4 +27,23 @@ class ProgramStatisticController extends Controller
         $statistic = ProgramStatistic::create($validated);
         return response()->json($statistic->load('program'), 201);
     }
+
+    public function update(Request $request, ProgramStatistic $statistic): JsonResponse
+    {
+        $validated = $request->validate([
+            'program_id' => 'sometimes|required|exists:programs,id|unique:program_statistics,program_id,' . $statistic->id,
+            'lecture_units_actual' => 'nullable|numeric',
+            'laboratory_units_actual' => 'nullable|numeric',
+            'total_units_actual' => 'nullable|numeric',
+            'graduates_males' => 'nullable|integer',
+            'graduates_females' => 'nullable|integer',
+            'graduates_total' => 'nullable|integer',
+            'externally_funded_merit_scholars' => 'nullable|integer',
+            'internally_funded_grantees' => 'nullable|integer',
+            'suc_funded_grantees' => 'nullable|integer',
+        ]);
+
+        $statistic->update($validated);
+        return response()->json($statistic->load('program'));
+    }
 }

@@ -6,6 +6,8 @@ import DP from "../assets/Profile.png";
 import Logo from "../assets/ChedLogo.png";
 import ProfileDialog from "./ProfileDialog";
 import CustomSnackbar from "../Components/CustomSnackbar";
+// Import Skeleton from MUI
+import { Skeleton } from "@mui/material";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -63,12 +65,18 @@ const Navbar = () => {
         if (user?.role === "Super Admin") {
             return [
                 { text: "Settings", path: "/super-admin/settings" },
-                { text: "User Management", path: "/super-admin/user-management" },
+                {
+                    text: "User Management",
+                    path: "/super-admin/user-management",
+                },
             ];
         } else if (user?.role === "HEI Admin") {
             return [
                 { text: "Settings", path: "/hei-admin/settings" },
-                { text: "Staff Management", path: "/hei-admin/staff-management" },
+                {
+                    text: "Staff Management",
+                    path: "/hei-admin/staff-management",
+                },
             ];
         }
         return [];
@@ -98,7 +106,10 @@ const Navbar = () => {
             setUser(response.data);
         } catch (err) {
             console.error("Failed to fetch user:", err);
-            showSnackbar(err.message || "Failed to load user profile.", "error");
+            showSnackbar(
+                err.message || "Failed to load user profile.",
+                "error"
+            );
         } finally {
             setLoading(false);
         }
@@ -239,15 +250,21 @@ const Navbar = () => {
                                                 : handleNavigation(path)
                                         }
                                         onMouseEnter={(e) =>
-                                            isAdmin && handleMenuOpen(e, "admin")
+                                            isAdmin &&
+                                            handleMenuOpen(e, "admin")
                                         }
                                         disabled={loading}
                                         style={{
                                             padding: "8px 16px",
                                             background: "none",
                                             border: "none",
-                                            cursor: loading ? "not-allowed" : "pointer",
-                                            color: activeTabIndex === index ? "#1976d2" : "#000",
+                                            cursor: loading
+                                                ? "not-allowed"
+                                                : "pointer",
+                                            color:
+                                                activeTabIndex === index
+                                                    ? "#1976d2"
+                                                    : "#000",
                                             fontWeight: 400,
                                             display: "flex",
                                             alignItems: "center",
@@ -267,7 +284,8 @@ const Navbar = () => {
                                                 left: "50%",
                                                 transform: "translateX(-50%)",
                                                 background: "white",
-                                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                                boxShadow:
+                                                    "0 2px 4px rgba(0,0,0,0.1)",
                                                 borderRadius: "4px",
                                                 minWidth: "180px",
                                                 zIndex: 1000,
@@ -280,7 +298,9 @@ const Navbar = () => {
                                                     key={item.text}
                                                     onClick={() => {
                                                         handleMenuClose();
-                                                        handleNavigation(item.path);
+                                                        handleNavigation(
+                                                            item.path
+                                                        );
                                                     }}
                                                     disabled={loading}
                                                     style={{
@@ -289,9 +309,14 @@ const Navbar = () => {
                                                         background: "none",
                                                         border: "none",
                                                         textAlign: "left",
-                                                        cursor: loading ? "not-allowed" : "pointer",
-                                                        opacity: loading ? 0.6 : 1,
-                                                        transition: "background-color 0.2s ease",
+                                                        cursor: loading
+                                                            ? "not-allowed"
+                                                            : "pointer",
+                                                        opacity: loading
+                                                            ? 0.6
+                                                            : 1,
+                                                        transition:
+                                                            "background-color 0.2s ease",
                                                     }}
                                                 >
                                                     {item.text}
@@ -304,12 +329,35 @@ const Navbar = () => {
                         </div>
 
                         {loading ? (
-                            <div style={{ marginLeft: "16px" }}>Loading...</div>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    marginLeft: "16px",
+                                }}
+                            >
+                                {/* Skeleton for the avatar */}
+                                <Skeleton
+                                    variant="circular"
+                                    width={40}
+                                    height={40}
+                                    sx={{ bgcolor: "grey.200" }}
+                                />
+                                {/* Skeleton for the down arrow */}
+                                <Skeleton
+                                    variant="rectangular"
+                                    width={16}
+                                    height={16}
+                                    sx={{ ml: 1, bgcolor: "grey.200" }}
+                                />
+                            </div>
                         ) : user ? (
                             <div style={{ position: "relative" }}>
                                 <div
                                     onClick={(e) => handleMenuOpen(e, "avatar")}
-                                    onMouseEnter={(e) => handleMenuOpen(e, "avatar")}
+                                    onMouseEnter={(e) =>
+                                        handleMenuOpen(e, "avatar")
+                                    }
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -338,7 +386,8 @@ const Navbar = () => {
                                             top: "100%",
                                             right: 0,
                                             background: "white",
-                                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                            boxShadow:
+                                                "0 2px 4px rgba(0,0,0,0.1)",
                                             borderRadius: "4px",
                                             minWidth: "180px",
                                             zIndex: 1000,
@@ -358,9 +407,12 @@ const Navbar = () => {
                                                 background: "none",
                                                 border: "none",
                                                 textAlign: "left",
-                                                cursor: loading ? "not-allowed" : "pointer",
+                                                cursor: loading
+                                                    ? "not-allowed"
+                                                    : "pointer",
                                                 opacity: loading ? 0.6 : 1,
-                                                transition: "background-color 0.2s ease",
+                                                transition:
+                                                    "background-color 0.2s ease",
                                             }}
                                         >
                                             Profile
@@ -375,12 +427,17 @@ const Navbar = () => {
                                                 background: "none",
                                                 border: "none",
                                                 textAlign: "left",
-                                                cursor: loading ? "not-allowed" : "pointer",
+                                                cursor: loading
+                                                    ? "not-allowed"
+                                                    : "pointer",
                                                 opacity: loading ? 0.6 : 1,
-                                                transition: "background-color 0.2s ease",
+                                                transition:
+                                                    "background-color 0.2s ease",
                                             }}
                                         >
-                                            {loading ? "Logging out..." : "Logout"}
+                                            {loading
+                                                ? "Logging out..."
+                                                : "Logout"}
                                         </button>
                                     </div>
                                 )}

@@ -17,8 +17,7 @@ import React from "react";
 
 const InstitutionTable = ({ institutions, onEdit }) => {
     const navigate = useNavigate();
-const user = JSON.parse(localStorage.getItem("user"));
-    const role = user?.role || "HEI Staff"
+
     const [selectedInstitution, setSelectedInstitution] = React.useState(null);
     const [openDialog, setOpenDialog] = React.useState(false);
 
@@ -119,7 +118,6 @@ const user = JSON.parse(localStorage.getItem("user"));
             </Table>
             <DetailDialog
                 open={openDialog}
-                role={role}
                 onClose={handleCloseDialog}
                 institution={selectedInstitution}
                 onEdit={onEdit}

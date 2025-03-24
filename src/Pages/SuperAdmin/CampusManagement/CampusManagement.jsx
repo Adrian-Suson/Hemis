@@ -1,28 +1,21 @@
+// CampusManagement.jsx
 import { useState, useEffect } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
-import {
-    Box,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Breadcrumbs,
-    Link,
-} from "@mui/material";
+import { Box, Breadcrumbs, Link, Typography } from "@mui/material";
+import CampusHandsontable from "./CampusHandsontable";
+import CampusManagementSkeleton from "./CampusManagementSkeleton"; // Import the skeleton component
 
 const CampusManagement = () => {
     const { institutionId } = useParams();
     const [campuses, setCampuses] = useState([]);
     const [institutionName, setInstitutionName] = useState("");
+    const [loading, setLoading] = useState(true); // Add loading state
 
     useEffect(() => {
         const fetchCampuses = async () => {
             try {
+                setLoading(true); // Set loading to true
                 const token = localStorage.getItem("token");
                 const response = await axios.get(
                     `http://localhost:8000/api/campuses?institution_id=${institutionId}`,
@@ -37,11 +30,18 @@ const CampusManagement = () => {
             } catch (error) {
                 console.error("Error fetching campuses:", error);
                 setCampuses([]);
+            } finally {
+                setLoading(false); // Set loading to false
             }
         };
 
         fetchCampuses();
     }, [institutionId]);
+
+    // Show skeleton while loading
+    if (loading) {
+        return <CampusManagementSkeleton />;
+    }
 
     return (
         <Box sx={{ p: 2 }}>
@@ -51,7 +51,7 @@ const CampusManagement = () => {
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to="/admin/dashboard"
+                    to="/Super-admin/dashboard"
                 >
                     Dashboard
                 </Link>
@@ -59,7 +59,7 @@ const CampusManagement = () => {
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to="/admin/institutions"
+                    to="/Super-admin/institutions"
                 >
                     Institution Management
                 </Link>
@@ -70,98 +70,8 @@ const CampusManagement = () => {
                 </Typography>
             </Breadcrumbs>
 
-            <TableContainer component={Paper} sx={{ mt: 2, maxHeight: "65vh" }}>
-                <Table size="small" stickyHeader>
-                    <TableHead>
-                        <TableRow>
-                            {[
-                                "Campus Name",
-                                "Type",
-                                "Code",
-                                "Region",
-                                "City/Province",
-                                "Former Name",
-                                "Established",
-                                "Land Area (ha)",
-                                "Distance (km)",
-                                "Auto Code",
-                                "Position",
-                                "Head",
-                                "Latitude",
-                                "Longitude",
-                            ].map((header, index) => (
-                                <TableCell
-                                    key={index}
-                                    sx={{ fontWeight: "bold", p: 1 }}
-                                >
-                                    {header}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {campuses.length > 0 ? (
-                            campuses.map((campus, index) => (
-                                <TableRow key={index} hover>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.suc_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.campus_type || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.institutional_code || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.region || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.municipality_city_province ||
-                                            "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.former_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.year_first_operation || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.land_area_hectares || "0.0"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.distance_from_main || "0.0"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.autonomous_code || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.position_title || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.head_full_name || "N/A"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.latitude_coordinates || "0.0"}
-                                    </TableCell>
-                                    <TableCell sx={{ p: 1 }}>
-                                        {campus.longitude_coordinates || "0.0"}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={14}
-                                    align="center"
-                                    sx={{ p: 2 }}
-                                >
-                                    No campuses found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {/* Handsontable Component */}
+            <CampusHandsontable campuses={campuses} />
         </Box>
     );
 };

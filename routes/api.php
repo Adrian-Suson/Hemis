@@ -44,4 +44,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Faculty Profile Routes
     Route::apiResource('faculty-profiles', FacultyProfileController::class);
+
 });
