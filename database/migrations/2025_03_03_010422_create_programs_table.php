@@ -17,9 +17,9 @@ return new class extends Migration {
             $table->string('category', 100)->nullable();
             $table->string('serial', 255)->nullable();
             $table->integer('year')->nullable();
-            $table->enum('is_thesis_dissertation_required', ['1', '2', '3'])->nullable();
-            $table->enum('program_status', ['1', '2', '3', '4'])->nullable();
-            $table->enum('calendar_use_code', ['1', '2', '3'])->nullable();
+            $table->string('is_thesis_dissertation_required', 255 )->nullable();
+            $table->string('program_status', 255)->nullable();
+            $table->string('calendar_use_code', 255)->nullable();
             $table->integer('program_normal_length_in_years')->nullable();
             $table->integer('lab_units' )->nullable();
             $table->integer('lecture_units')->nullable();

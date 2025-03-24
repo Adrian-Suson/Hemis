@@ -67,18 +67,23 @@ class ProgramController extends Controller
     {
         $validated = $request->validate([
             'institution_id' => 'sometimes|required|exists:institutions,id',
-            'program_name' => 'sometimes|required|string|max:255',
-            'program_code' => 'nullable|string|max:6|unique:programs,program_code,' . $program->id,
-            'authority_to_offer_program' => 'nullable|string|max:100',
-            'is_thesis_dissertation_required' => 'nullable|in:2-OPTIONAL,3-NOT REQ',
-            'program_status' => 'nullable|in:ACTIVE,PHASED OUT,ABOLISHED,4-DISTANCE MODE',
-            'calendar_use_code' => 'nullable|in:1-SEM,2-TRISEM,3-QTR SEM',
+            'program_name' => 'required|string|max:255',
+            'program_code' => 'nullable|integer',
+            'major_name' => 'nullable|string|max:255',
+            'major_code' => 'nullable|integer',
+            'category' => 'nullable|string|max:255',
+            'serial' => 'nullable|string|max:255',
+            'year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'is_thesis_dissertation_required' => 'nullable|in:1,2,3',
+            'program_status' => 'nullable|in:1,2,3,4',
+            'calendar_use_code' => 'nullable|in:1,2,3',
             'program_normal_length_in_years' => 'nullable|integer',
-            'lab_units' => 'nullable|numeric',
-            'lecture_units' => 'nullable|numeric',
-            'total_units' => 'nullable|numeric',
+            'lab_units' => 'nullable|integer',
+            'lecture_units' => 'nullable|integer',
+            'total_units' => 'nullable|integer',
             'tuition_per_unit' => 'nullable|numeric',
             'program_fee' => 'nullable|numeric',
+            'program_type' => 'nullable|string|max:255',
         ]);
 
         $program->update($validated);

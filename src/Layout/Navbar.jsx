@@ -1,43 +1,43 @@
-import {
-    AppBar,
-    Toolbar,
-    Box,
-    Typography,
-    useTheme,
-    Avatar,
-    Menu,
-    MenuItem,
-    Divider,
-    Tabs,
-    Tab,
-    CircularProgress,
-} from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import axios from "axios";
 import config from "../utils/config";
 import DP from "../assets/Profile.png";
 import Logo from "../assets/ChedLogo.png";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ProfileDialog from "./ProfileDialog";
 import CustomSnackbar from "../Components/CustomSnackbar";
+// Import Skeleton from MUI
+import { Skeleton } from "@mui/material";
 
 const Navbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const theme = useTheme();
 
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [adminMenuAnchorEl, setAdminMenuAnchorEl] = useState(null);
+    const [activeDropdown, setActiveDropdown] = useState(null); // Single state for active dropdown
     const [user, setUser] = useState(null);
-    const [value, setValue] = useState(0);
+    const [activeTabIndex, setActiveTabIndex] = useState(0);
     const [openProfileDialog, setOpenProfileDialog] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [snackbarSeverity, setSnackbarSeverity] = useState("info");
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: "",
+        severity: "info",
+    });
 
-    // Role-based navigation items
+    const DownArrow = () => (
+        <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            style={{ marginLeft: "4px" }}
+        >
+            <path d="M6 9l6 6 6-6" />
+        </svg>
+    );
+
     const navItems = useMemo(() => {
         const role = user?.role;
         if (role === "Super Admin") {
@@ -55,102 +55,16 @@ const Navbar = () => {
         } else if (role === "HEI Staff") {
             return [
                 { text: "Dashboard", path: "/hei-staff/dashboard" },
-                { text: "Institutions", path: "/hei-admin/institutions" }, // Note: Using hei-admin path here, might need adjustment
+                { text: "Institutions", path: "/hei-admin/institutions" },
             ];
         }
         return [];
     }, [user]);
 
-    // Fetch user profile
-    const fetchUserProfile = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            const storedUser = JSON.parse(localStorage.getItem("user"));
-            const response = await axios.get(
-                `${config.API_URL}/users/${storedUser.id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setUser(response.data);
-        } catch (err) {
-            console.error("Failed to fetch user:", err);
-            setSnackbarMessage("Failed to load user profile.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUserProfile();
-    }, []);
-
-    const handleNavigation = (path) => {
-        navigate(path);
-    };
-
-    const handleTabChange = (event, newValue) => {
-        setValue(newValue);
-    };
-
-    const handleMenuOpen = (event, type) => {
-        if (type === "avatar") setAnchorEl(event.currentTarget);
-        else if (type === "admin") setAdminMenuAnchorEl(event.currentTarget);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-        setAdminMenuAnchorEl(null);
-    };
-
-    const handleLogout = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem("token");
-            await axios.post(
-                `${config.API_URL}/auth/logout`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            localStorage.clear();
-            navigate("/", { replace: true });
-            window.location.reload(false);
-        } catch (err) {
-            console.error("Logout failed:", err);
-            setSnackbarMessage("Logout failed.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-            localStorage.clear();
-            navigate("/", { replace: true });
-            window.location.reload(false);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        const currentPath = location.pathname;
-        const activeTabIndex = navItems.findIndex(
-            (item) =>
-                item.path === currentPath ||
-                currentPath.startsWith(item.path + "/")
-        );
-        if (activeTabIndex >= 0) setValue(activeTabIndex);
-    }, [location.pathname, navItems]);
-
-    const handleSnackbarClose = () => {
-        setSnackbarOpen(false);
-    };
-
-    // Admin menu items based on role
     const adminMenuItems = useMemo(() => {
         if (user?.role === "Super Admin") {
             return [
-                {
-                    text: "Settings",
-                    path: "/super-admin/settings",
-                },
+                { text: "Settings", path: "/super-admin/settings" },
                 {
                     text: "User Management",
                     path: "/super-admin/user-management",
@@ -158,10 +72,7 @@ const Navbar = () => {
             ];
         } else if (user?.role === "HEI Admin") {
             return [
-                {
-                    text: "Settings",
-                    path: "/hei-admin/settings",
-                },
+                { text: "Settings", path: "/hei-admin/settings" },
                 {
                     text: "Staff Management",
                     path: "/hei-admin/staff-management",
@@ -171,210 +82,370 @@ const Navbar = () => {
         return [];
     }, [user]);
 
+    const showSnackbar = useCallback((message, severity = "info") => {
+        setSnackbar({ open: true, message, severity });
+    }, []);
+
+    const handleSnackbarClose = useCallback(() => {
+        setSnackbar((prev) => ({ ...prev, open: false }));
+    }, []);
+
+    const fetchUserProfile = useCallback(async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("No authentication token found");
+
+            const storedUser = JSON.parse(localStorage.getItem("user"));
+            if (!storedUser?.id) throw new Error("No user data found");
+
+            const response = await axios.get(
+                `${config.API_URL}/users/${storedUser.id}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setUser(response.data);
+        } catch (err) {
+            console.error("Failed to fetch user:", err);
+            showSnackbar(
+                err.message || "Failed to load user profile.",
+                "error"
+            );
+        } finally {
+            setLoading(false);
+        }
+    }, [showSnackbar]);
+
+    const handleNavigation = useCallback(
+        (path) => {
+            if (!loading) {
+                setActiveDropdown(null); // Close any open dropdown on navigation
+                navigate(path);
+            }
+        },
+        [loading, navigate]
+    );
+
+    const handleMenuOpen = useCallback((event, type) => {
+        setActiveDropdown(type); // Set only the clicked dropdown as active
+    }, []);
+
+    const handleMenuClose = useCallback(() => {
+        setActiveDropdown(null); // Close all dropdowns
+    }, []);
+
+    const handleLogout = useCallback(async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) throw new Error("No authentication token found");
+
+            await axios.post(
+                `${config.API_URL}/auth/logout`,
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 5000,
+                }
+            );
+
+            localStorage.clear();
+            setUser(null);
+            navigate("/", { replace: true });
+            window.location.reload();
+        } catch (err) {
+            console.error("Logout failed:", err);
+            localStorage.clear();
+            setUser(null);
+            navigate("/", { replace: true });
+            window.location.reload();
+        } finally {
+            setLoading(false);
+        }
+    }, [navigate]);
+
+    useEffect(() => {
+        const currentPath = location.pathname;
+        const index = navItems.findIndex(
+            (item) =>
+                item.path === currentPath ||
+                currentPath.startsWith(item.path + "/")
+        );
+        if (index >= 0) setActiveTabIndex(index);
+    }, [location.pathname, navItems]);
+
+    useEffect(() => {
+        fetchUserProfile();
+    }, [fetchUserProfile]);
+
+    const getDashboardPath = useCallback(() => {
+        if (user?.role === "Super Admin") return "/super-admin/dashboard";
+        if (user?.role === "HEI Admin") return "/hei-admin/dashboard";
+        return "/hei-staff/dashboard";
+    }, [user]);
+
     return (
         <>
-            <AppBar
-                position="static"
-                sx={{
+            <nav
+                style={{
                     background: "linear-gradient(90deg, #ffffff, #f5f5f5)",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    borderBottom: "1px solid #e0e0e0",
+                    position: "static",
                 }}
             >
-                <Toolbar
-                    sx={{
+                <div
+                    style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        minHeight: "64px !important",
-                        px: { xs: 2, md: 3 },
+                        alignItems: "center",
+                        minHeight: "64px",
+                        padding: "0 24px",
                     }}
                 >
-                    <Box
-                        sx={{
+                    <div
+                        style={{
                             display: "flex",
                             alignItems: "center",
                             cursor: "pointer",
                         }}
-                        onClick={() =>
-                            handleNavigation(
-                                user?.role === "Super Admin"
-                                    ? "/super-admin/dashboard"
-                                    : user?.role === "HEI Admin"
-                                    ? "/hei-admin/dashboard"
-                                    : "/hei-staff/dashboard"
-                            )
-                        }
+                        onClick={() => handleNavigation(getDashboardPath())}
                     >
                         <img
                             src={Logo}
                             alt="CHEDRO IX Logo"
                             style={{
-                                width: 40,
-                                height: 40,
+                                width: "40px",
+                                height: "40px",
                                 marginRight: "8px",
                             }}
                         />
-                        <Typography
-                            variant="h6"
-                            sx={{ fontWeight: 600, color: "black" }}
+                        <span
+                            style={{
+                                fontSize: "1.5rem",
+                                fontWeight: 600,
+                                color: "black",
+                            }}
                         >
                             CHEDRO IX
-                        </Typography>
-                    </Box>
+                        </span>
+                    </div>
 
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Tabs
-                            value={value}
-                            onChange={handleTabChange}
-                            textColor="primary"
-                            indicatorColor="primary"
-                        >
-                            {navItems.map(({ text, path, isAdmin }, index) =>
-                                isAdmin ? (
-                                    <Tab
-                                        key={text}
-                                        label={
-                                            <Box
-                                                sx={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                }}
-                                            >
-                                                {text}
-                                                <KeyboardArrowDownIcon fontSize="small" />
-                                            </Box>
-                                        }
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                        }}
+                    >
+                        <div style={{ display: "flex", gap: "16px" }}>
+                            {navItems.map(({ text, path, isAdmin }, index) => (
+                                <div
+                                    key={text}
+                                    style={{ position: "relative" }}
+                                >
+                                    <button
                                         onClick={(e) =>
+                                            isAdmin
+                                                ? handleMenuOpen(e, "admin")
+                                                : handleNavigation(path)
+                                        }
+                                        onMouseEnter={(e) =>
+                                            isAdmin &&
                                             handleMenuOpen(e, "admin")
                                         }
-                                        sx={{
-                                            fontWeight: 400,
-                                            textTransform: "none",
-                                            color:
-                                                value === index
-                                                    ? theme.palette.primary.main
-                                                    : theme.palette.text
-                                                          .primary,
-                                        }}
                                         disabled={loading}
-                                    />
-                                ) : (
-                                    <Tab
-                                        key={text}
-                                        label={text}
-                                        onClick={() => handleNavigation(path)}
-                                        sx={{
-                                            fontWeight: 400,
-                                            textTransform: "none",
+                                        style={{
+                                            padding: "8px 16px",
+                                            background: "none",
+                                            border: "none",
+                                            cursor: loading
+                                                ? "not-allowed"
+                                                : "pointer",
                                             color:
-                                                value === index
-                                                    ? theme.palette.primary.main
-                                                    : theme.palette.text
-                                                          .primary,
+                                                activeTabIndex === index
+                                                    ? "#1976d2"
+                                                    : "#000",
+                                            fontWeight: 400,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            opacity: loading ? 0.6 : 1,
+                                            transition: "color 0.3s ease",
                                         }}
-                                        disabled={loading}
-                                    />
-                                )
-                            )}
-                        </Tabs>
+                                    >
+                                        {text}
+                                        {isAdmin && <DownArrow />}
+                                    </button>
+
+                                    {isAdmin && activeDropdown === "admin" && (
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                top: "100%",
+                                                left: "50%",
+                                                transform: "translateX(-50%)",
+                                                background: "white",
+                                                boxShadow:
+                                                    "0 2px 4px rgba(0,0,0,0.1)",
+                                                borderRadius: "4px",
+                                                minWidth: "180px",
+                                                zIndex: 1000,
+                                                border: "1px solid #e0e0e0",
+                                            }}
+                                            onMouseLeave={handleMenuClose}
+                                        >
+                                            {adminMenuItems.map((item) => (
+                                                <button
+                                                    key={item.text}
+                                                    onClick={() => {
+                                                        handleMenuClose();
+                                                        handleNavigation(
+                                                            item.path
+                                                        );
+                                                    }}
+                                                    disabled={loading}
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "8px 16px",
+                                                        background: "none",
+                                                        border: "none",
+                                                        textAlign: "left",
+                                                        cursor: loading
+                                                            ? "not-allowed"
+                                                            : "pointer",
+                                                        opacity: loading
+                                                            ? 0.6
+                                                            : 1,
+                                                        transition:
+                                                            "background-color 0.2s ease",
+                                                    }}
+                                                >
+                                                    {item.text}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
 
                         {loading ? (
-                            <CircularProgress size={24} sx={{ ml: 2 }} />
-                        ) : user ? (
-                            <Box
-                                sx={{
+                            <div
+                                style={{
                                     display: "flex",
                                     alignItems: "center",
-                                    cursor: "pointer",
+                                    marginLeft: "16px",
                                 }}
-                                onClick={(e) => handleMenuOpen(e, "avatar")}
                             >
-                                <Avatar
-                                    sx={{
-                                        bgcolor: theme.palette.primary.main,
-                                        width: 40,
-                                        height: 40,
+                                {/* Skeleton for the avatar */}
+                                <Skeleton
+                                    variant="circular"
+                                    width={40}
+                                    height={40}
+                                    sx={{ bgcolor: "grey.200" }}
+                                />
+                                {/* Skeleton for the down arrow */}
+                                <Skeleton
+                                    variant="rectangular"
+                                    width={16}
+                                    height={16}
+                                    sx={{ ml: 1, bgcolor: "grey.200" }}
+                                />
+                            </div>
+                        ) : user ? (
+                            <div style={{ position: "relative" }}>
+                                <div
+                                    onClick={(e) => handleMenuOpen(e, "avatar")}
+                                    onMouseEnter={(e) =>
+                                        handleMenuOpen(e, "avatar")
+                                    }
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        cursor: "pointer",
                                         marginLeft: "16px",
                                     }}
-                                    src={user.profile_image || DP}
                                 >
-                                    {(user.name && user.name[0]) || ""}
-                                </Avatar>
-                                <KeyboardArrowDownIcon
-                                    fontSize="small"
-                                    sx={{
-                                        color: theme.palette.text.secondary,
-                                        ml: 0.5,
-                                    }}
-                                />
-                            </Box>
+                                    <img
+                                        src={user.profile_image || DP}
+                                        alt="Profile"
+                                        style={{
+                                            width: "40px",
+                                            height: "40px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#1976d2",
+                                            border: "2px solid #e0e0e0",
+                                        }}
+                                    />
+                                    <DownArrow />
+                                </div>
+
+                                {activeDropdown === "avatar" && (
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            top: "100%",
+                                            right: 0,
+                                            background: "white",
+                                            boxShadow:
+                                                "0 2px 4px rgba(0,0,0,0.1)",
+                                            borderRadius: "4px",
+                                            minWidth: "180px",
+                                            zIndex: 1000,
+                                            border: "1px solid #e0e0e0",
+                                        }}
+                                        onMouseLeave={handleMenuClose}
+                                    >
+                                        <button
+                                            onClick={() => {
+                                                handleMenuClose();
+                                                setOpenProfileDialog(true);
+                                            }}
+                                            disabled={loading}
+                                            style={{
+                                                width: "100%",
+                                                padding: "8px 16px",
+                                                background: "none",
+                                                border: "none",
+                                                textAlign: "left",
+                                                cursor: loading
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                                opacity: loading ? 0.6 : 1,
+                                                transition:
+                                                    "background-color 0.2s ease",
+                                            }}
+                                        >
+                                            Profile
+                                        </button>
+                                        <hr style={{ margin: "0" }} />
+                                        <button
+                                            onClick={handleLogout}
+                                            disabled={loading}
+                                            style={{
+                                                width: "100%",
+                                                padding: "8px 16px",
+                                                background: "none",
+                                                border: "none",
+                                                textAlign: "left",
+                                                cursor: loading
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                                opacity: loading ? 0.6 : 1,
+                                                transition:
+                                                    "background-color 0.2s ease",
+                                            }}
+                                        >
+                                            {loading
+                                                ? "Logging out..."
+                                                : "Logout"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         ) : null}
-
-                        <Menu
-                            anchorEl={anchorEl}
-                            open={Boolean(anchorEl)}
-                            onClose={handleMenuClose}
-                            anchorOrigin={{
-                                vertical: "bottom",
-                                horizontal: "right",
-                            }}
-                            transformOrigin={{
-                                vertical: "top",
-                                horizontal: "right",
-                            }}
-                            PaperProps={{
-                                elevation: 3,
-                                sx: { mt: 1.5, minWidth: 180, borderRadius: 1 },
-                            }}
-                        >
-                            <MenuItem
-                                onClick={() => {
-                                    handleMenuClose();
-                                    setOpenProfileDialog(true);
-                                }}
-                                disabled={loading}
-                            >
-                                Profile
-                            </MenuItem>
-                            <Divider />
-                            <MenuItem onClick={handleLogout} disabled={loading}>
-                                Logout
-                            </MenuItem>
-                        </Menu>
-
-                        <Menu
-                            anchorEl={adminMenuAnchorEl}
-                            open={Boolean(adminMenuAnchorEl)}
-                            onClose={handleMenuClose}
-                            anchorOrigin={{
-                                vertical: "bottom",
-                                horizontal: "center",
-                            }}
-                            transformOrigin={{
-                                vertical: "top",
-                                horizontal: "center",
-                            }}
-                            PaperProps={{
-                                elevation: 3,
-                                sx: { mt: 1.5, minWidth: 180, borderRadius: 1 },
-                            }}
-                        >
-                            {adminMenuItems.map((item) => (
-                                <MenuItem
-                                    key={item.text}
-                                    onClick={() => {
-                                        handleMenuClose();
-                                        handleNavigation(item.path);
-                                    }}
-                                    disabled={loading}
-                                >
-                                    {item.text}
-                                </MenuItem>
-                            ))}
-                        </Menu>
-                    </Box>
-                </Toolbar>
-            </AppBar>
+                    </div>
+                </div>
+            </nav>
 
             <ProfileDialog
                 open={openProfileDialog}
@@ -385,9 +456,9 @@ const Navbar = () => {
             />
 
             <CustomSnackbar
-                open={snackbarOpen}
-                message={snackbarMessage}
-                severity={snackbarSeverity}
+                open={snackbar.open}
+                message={snackbar.message}
+                severity={snackbar.severity}
                 onClose={handleSnackbarClose}
                 autoHideDuration={5000}
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
