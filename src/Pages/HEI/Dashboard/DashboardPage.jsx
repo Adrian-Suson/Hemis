@@ -93,8 +93,7 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
-    }, []
-);
+    }, []);
 
     if (dashboardData.loading) {
         return (
