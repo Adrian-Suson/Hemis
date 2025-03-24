@@ -1,434 +1,736 @@
-import { HotTable } from "@handsontable/react";
-import "handsontable/dist/handsontable.full.min.css"; // Import Handsontable styles
-import { useState, useMemo, useEffect } from "react";
-import { registerAllModules } from "handsontable/registry"; // Register all modules
+import { useState } from "react";
 import PropTypes from "prop-types";
 import {
-    Box,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
     Paper,
     Tabs,
     Tab,
+    Box,
+    Typography,
+    Tooltip,
+    Chip,
     Alert,
     TablePagination,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Grid,
 } from "@mui/material";
-
-// Register all Handsontable modules
-registerAllModules();
 
 const FacultyProfileTable = ({ facultyProfiles }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(20);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filteredData, setFilteredData] = useState(facultyProfiles);
-
-    // Filter states for each column
-    const [facultyRankFilter, setFacultyRankFilter] = useState("");
-    const [homeCollegeFilter, setHomeCollegeFilter] = useState("");
-    const [isTenuredFilter, setIsTenuredFilter] = useState("");
-    const [genderFilter, setGenderFilter] = useState("");
+    const [rowsPerPage, setRowsPerPage] = useState(15);
 
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
         setPage(0); // Reset to first page when changing tabs
     };
 
+    // Helper component for table cells with potentially long content
+    const CompactCell = ({ value, width = 120 }) => (
+        <Tooltip title={value || "-"} arrow placement="top">
+            <TableCell
+                sx={{
+                    maxWidth: width,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    padding: "6px 8px",
+                    fontSize: "0.8125rem",
+                }}
+            >
+                {value || "-"}
+            </TableCell>
+        </Tooltip>
+    );
+
+    CompactCell.propTypes = {
+        value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        width: PropTypes.number,
+    };
+
+    // Helper component for table headers
+    const HeaderCell = ({ children, colSpan, width = 120 }) => (
+        <TableCell
+            colSpan={colSpan}
+            sx={{
+                position: "sticky",
+                top: 0,
+                backgroundColor: "#f5f5f5",
+                fontWeight: "bold",
+                maxWidth: width,
+                padding: "8px",
+                fontSize: "0.75rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                zIndex: 1,
+                borderBottom: "2px solid #e0e0e0",
+            }}
+        >
+            <Tooltip title={children} arrow placement="top">
+                <Typography variant="subtitle2" noWrap>
+                    {children}
+                </Typography>
+            </Tooltip>
+        </TableCell>
+    );
+
+    HeaderCell.propTypes = {
+        children: PropTypes.node.isRequired,
+        colSpan: PropTypes.number,
+        width: PropTypes.number,
+    };
+
+    // Pagination handlers
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
 
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0); // Reset to first page
+        setPage(0); // Reset to first page when changing rows per page
     };
 
-    // Extract unique values for filters
-    const uniqueFacultyRanks = useMemo(
-        () => [
-            ...new Set(
-                facultyProfiles.map(
-                    (profile) => profile.generic_faculty_rank || "-"
-                )
-            ),
-        ],
-        [facultyProfiles]
-    );
-    const uniqueHomeColleges = useMemo(
-        () => [
-            ...new Set(
-                facultyProfiles.map((profile) => profile.home_college || "-")
-            ),
-        ],
-        [facultyProfiles]
-    );
-    const uniqueTenuredOptions = ["Yes", "No"];
-    const uniqueGenderOptions = ["Male", "Female", "-"];
-
-    // Apply search and filters
-    useEffect(() => {
-        let filtered = [...facultyProfiles];
-
-        // Apply search
-        if (searchQuery) {
-            filtered = filtered.filter((profile) =>
-                Object.values(profile).some((value) =>
-                    String(value)
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                )
-            );
-        }
-
-        // Apply filters
-        if (facultyRankFilter) {
-            filtered = filtered.filter(
-                (profile) =>
-                    (profile.generic_faculty_rank || "-") === facultyRankFilter
-            );
-        }
-        if (homeCollegeFilter) {
-            filtered = filtered.filter(
-                (profile) => (profile.home_college || "-") === homeCollegeFilter
-            );
-        }
-        if (isTenuredFilter) {
-            filtered = filtered.filter(
-                (profile) =>
-                    (profile.is_tenured ? "Yes" : "No") === isTenuredFilter
-            );
-        }
-        if (genderFilter) {
-            filtered = filtered.filter(
-                (profile) =>
-                    (profile.gender === 1
-                        ? "Male"
-                        : profile.gender === 2
-                        ? "Female"
-                        : "-") === genderFilter
-            );
-        }
-
-        setFilteredData(filtered);
-        setPage(0); // Reset to first page when filters or search change
-    }, [
-        searchQuery,
-        facultyRankFilter,
-        homeCollegeFilter,
-        isTenuredFilter,
-        genderFilter,
-        facultyProfiles,
-    ]);
-
-    // Slice data for pagination
-    const paginatedProfiles = useMemo(
-        () =>
-            filteredData.slice(
-                page * rowsPerPage,
-                page * rowsPerPage + rowsPerPage
-            ),
-        [filteredData, page, rowsPerPage]
+    // Slice the data based on the current page and rows per page
+    const paginatedProfiles = facultyProfiles.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
     );
 
-    // Define column configurations for each tab
-    const columnConfigs = useMemo(
-        () => ({
-            0: {
-                // Personal Info
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    { data: "generic_faculty_rank", title: "FACULTY RANK" },
-                    { data: "home_college", title: "HOME COLLEGE" },
-                    { data: "home_department", title: "HOME DEPT" },
-                    {
-                        data: "is_tenured",
-                        title: "TENURED?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#2e7d32" : "#616161"; // Green for Yes, gray for No
-                        },
+    const renderPersonalInfoTable = () => (
+        <Box>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    mt: 2,
+                    height: 500,
+                    overflow: "auto",
+                    "&::-webkit-scrollbar": {
+                        width: 8,
+                        height: 8,
                     },
-                    { data: "ssl_salary_grade", title: "SSL GRADE" },
-                    {
-                        data: "annual_basic_salary",
-                        title: "ANNUAL SALARY",
-                        type: "numeric",
+                    "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#bdbdbd",
+                        borderRadius: 2,
                     },
-                    { data: "on_leave_without_pay", title: "ON LEAVE?" },
-                    {
-                        data: "full_time_equivalent",
-                        title: "FTE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "gender",
-                        title: "GENDER",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML =
-                                value === 1
-                                    ? "Male"
-                                    : value === 2
-                                    ? "Female"
-                                    : "-";
-                        },
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    generic_faculty_rank: profile.generic_faculty_rank || "-",
-                    home_college: profile.home_college || "-",
-                    home_department: profile.home_department || "-",
-                    is_tenured: profile.is_tenured || false,
-                    ssl_salary_grade: profile.ssl_salary_grade || "-",
-                    annual_basic_salary: profile.annual_basic_salary || 0,
-                    on_leave_without_pay: profile.on_leave_without_pay || "-",
-                    full_time_equivalent: profile.full_time_equivalent || 0,
-                    gender: profile.gender || "-",
-                })),
-            },
-            1: {
-                // Education
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "highest_degree_attained",
-                        title: "HIGHEST DEGREE",
-                    },
-                    {
-                        data: "pursuing_next_degree",
-                        title: "PURSUING NEXT DEGREE?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161"; // Blue for Yes, gray for No
-                        },
-                    },
-                    {
-                        data: "discipline_teaching_load_1",
-                        title: "DISCIPLINE (1)",
-                    },
-                    {
-                        data: "discipline_teaching_load_2",
-                        title: "DISCIPLINE (2)",
-                    },
-                    {
-                        data: "discipline_bachelors",
-                        title: "BACHELORS DISCIPLINE",
-                    },
-                    { data: "discipline_masters", title: "MASTERS DISCIPLINE" },
-                    {
-                        data: "discipline_doctorate",
-                        title: "DOCTORATE DISCIPLINE",
-                    },
-                    {
-                        data: "masters_with_thesis",
-                        title: "MASTERS W/ THESIS?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161";
-                        },
-                    },
-                    {
-                        data: "doctorate_with_dissertation",
-                        title: "DOCTORATE W/ DISSERTATION?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161";
-                        },
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    highest_degree_attained:
-                        profile.highest_degree_attained || "-",
-                    pursuing_next_degree: profile.pursuing_next_degree || false,
-                    discipline_teaching_load_1:
-                        profile.discipline_teaching_load_1 || "-",
-                    discipline_teaching_load_2:
-                        profile.discipline_teaching_load_2 || "-",
-                    discipline_bachelors: profile.discipline_bachelors || "-",
-                    discipline_masters: profile.discipline_masters || "-",
-                    discipline_doctorate: profile.discipline_doctorate || "-",
-                    masters_with_thesis: profile.masters_with_thesis || false,
-                    doctorate_with_dissertation:
-                        profile.doctorate_with_dissertation || false,
-                })),
-            },
-            2: {
-                // Teaching Load
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "undergrad_lab_credit_units",
-                        title: "LAB CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_credit_units",
-                        title: "LECTURE CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_credit_units",
-                        title: "TOTAL CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lab_hours_per_week",
-                        title: "LAB HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_hours_per_week",
-                        title: "LECTURE HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_hours_per_week",
-                        title: "TOTAL HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lab_contact_hours",
-                        title: "STUDENT CONTACT LAB",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_contact_hours",
-                        title: "STUDENT CONTACT LECTURE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_contact_hours",
-                        title: "TOTAL CONTACT HRS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lab_credit_units",
-                        title: "LAB CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lecture_credit_units",
-                        title: "LECTURE CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_total_credit_units",
-                        title: "TOTAL CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lab_contact_hours",
-                        title: "STUDENT CONTACT LAB",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lecture_contact_hours",
-                        title: "STUDENT CONTACT LECTURE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_total_contact_hours",
-                        title: "TOTAL CONTACT HRS",
-                        type: "numeric",
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    undergrad_lab_credit_units:
-                        profile.undergrad_lab_credit_units || 0,
-                    undergrad_lecture_credit_units:
-                        profile.undergrad_lecture_credit_units || 0,
-                    undergrad_total_credit_units:
-                        profile.undergrad_total_credit_units || 0,
-                    undergrad_lab_hours_per_week:
-                        profile.undergrad_lab_hours_per_week || 0,
-                    undergrad_lecture_hours_per_week:
-                        profile.undergrad_lecture_hours_per_week || 0,
-                    undergrad_total_hours_per_week:
-                        profile.undergrad_total_hours_per_week || 0,
-                    undergrad_lab_contact_hours:
-                        profile.undergrad_lab_contact_hours || 0,
-                    undergrad_lecture_contact_hours:
-                        profile.undergrad_lecture_contact_hours || 0,
-                    undergrad_total_contact_hours:
-                        profile.undergrad_total_contact_hours || 0,
-                    graduate_lab_credit_units:
-                        profile.graduate_lab_credit_units || 0,
-                    graduate_lecture_credit_units:
-                        profile.graduate_lecture_credit_units || 0,
-                    graduate_total_credit_units:
-                        profile.graduate_total_credit_units || 0,
-                    graduate_lab_contact_hours:
-                        profile.graduate_lab_contact_hours || 0,
-                    graduate_lecture_contact_hours:
-                        profile.graduate_lecture_contact_hours || 0,
-                    graduate_total_contact_hours:
-                        profile.graduate_total_contact_hours || 0,
-                })),
-            },
-            3: {
-                // Other Loads
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "research_load",
-                        title: "RESEARCH LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "extension_services_load",
-                        title: "EXTENSION SERVICES",
-                        type: "numeric",
-                    },
-                    {
-                        data: "study_load",
-                        title: "STUDY LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "production_load",
-                        title: "PRODUCTION LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "administrative_load",
-                        title: "ADMIN LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "other_load_credits",
-                        title: "OTHER LOAD CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "total_work_load",
-                        title: "TOTAL WORK LOAD",
-                        type: "numeric",
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    research_load: profile.research_load || 0,
-                    extension_services_load:
-                        profile.extension_services_load || 0,
-                    study_load: profile.study_load || 0,
-                    production_load: profile.production_load || 0,
-                    administrative_load: profile.administrative_load || 0,
-                    other_load_credits: profile.other_load_credits || 0,
-                    total_work_load: profile.total_work_load || 0,
-                })),
-            },
-        }),
-        [paginatedProfiles]
+                }}
+            >
+                <Table stickyHeader size="small">
+                    <TableHead>
+                        <TableRow>
+                            <HeaderCell width={180}>NAME OF FACULTY</HeaderCell>
+                            <HeaderCell width={120}>FACULTY RANK</HeaderCell>
+                            <HeaderCell width={120}>HOME COLLEGE</HeaderCell>
+                            <HeaderCell width={120}>HOME DEPT</HeaderCell>
+                            <HeaderCell width={100}>TENURED?</HeaderCell>
+                            <HeaderCell width={100}>SSL GRADE</HeaderCell>
+                            <HeaderCell width={120}>ANNUAL SALARY</HeaderCell>
+                            <HeaderCell width={100}>ON LEAVE?</HeaderCell>
+                            <HeaderCell width={100}>FTE</HeaderCell>
+                            <HeaderCell width={80}>GENDER</HeaderCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {paginatedProfiles.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={10} align="center">
+                                    No data available.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            paginatedProfiles.map((profile, index) => (
+                                <TableRow
+                                    key={index}
+                                    sx={{
+                                        "&:nth-of-type(odd)": {
+                                            backgroundColor: "#fafafa",
+                                        },
+                                        "&:hover": {
+                                            backgroundColor: "#f1f8ff",
+                                        },
+                                    }}
+                                >
+                                    <CompactCell
+                                        value={profile.name}
+                                        width={180}
+                                    />
+                                    <CompactCell
+                                        value={profile.generic_faculty_rank}
+                                    />
+                                    <CompactCell value={profile.home_college} />
+                                    <CompactCell
+                                        value={profile.home_department}
+                                    />
+                                    <TableCell
+                                        align="center"
+                                        sx={{ padding: "6px 8px" }}
+                                    >
+                                        <Chip
+                                            size="small"
+                                            label={
+                                                profile.is_tenured
+                                                    ? "Yes"
+                                                    : "No"
+                                            }
+                                            color={
+                                                profile.is_tenured
+                                                    ? "success"
+                                                    : "default"
+                                            }
+                                            sx={{
+                                                fontSize: "0.75rem",
+                                                height: 20,
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <CompactCell
+                                        value={profile.ssl_salary_grade}
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={profile.annual_basic_salary}
+                                    />
+                                    <CompactCell
+                                        value={profile.on_leave_without_pay}
+                                    />
+                                    <CompactCell
+                                        value={profile.full_time_equivalent}
+                                    />
+                                    <TableCell
+                                        align="center"
+                                        sx={{ padding: "6px 8px" }}
+                                    >
+                                        {profile.gender === 1
+                                            ? "Male"
+                                            : profile.gender === 2
+                                            ? "Female"
+                                            : "-"}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <TablePagination
+                rowsPerPageOptions={[15, 50, 100]}
+                component="div"
+                count={facultyProfiles.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                sx={{ mt: 1 }}
+            />
+        </Box>
     );
 
-    const currentConfig = columnConfigs[tabIndex];
+    const renderEducationTable = () => (
+        <Box>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    mt: 2,
+                    height: 500,
+                    overflow: "auto",
+                    "&::-webkit-scrollbar": {
+                        width: 8,
+                        height: 8,
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#bdbdbd",
+                        borderRadius: 2,
+                    },
+                }}
+            >
+                <Table stickyHeader size="small">
+                    <TableHead>
+                        <TableRow>
+                            <HeaderCell width={180}>NAME OF FACULTY</HeaderCell>
+                            <HeaderCell width={160}>HIGHEST DEGREE</HeaderCell>
+                            <HeaderCell width={140}>
+                                PURSUING NEXT DEGREE?
+                            </HeaderCell>
+                            <HeaderCell width={160}>DISCIPLINE (1)</HeaderCell>
+                            <HeaderCell width={160}>DISCIPLINE (2)</HeaderCell>
+                            <HeaderCell width={160}>
+                                BACHELORS DISCIPLINE
+                            </HeaderCell>
+                            <HeaderCell width={160}>
+                                MASTERS DISCIPLINE
+                            </HeaderCell>
+                            <HeaderCell width={160}>
+                                DOCTORATE DISCIPLINE
+                            </HeaderCell>
+                            <HeaderCell width={140}>
+                                MASTERS W/ THESIS?
+                            </HeaderCell>
+                            <HeaderCell width={140}>
+                                DOCTORATE W/ DISSERTATION?
+                            </HeaderCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {paginatedProfiles.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={10} align="center">
+                                    No data available.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            paginatedProfiles.map((profile, index) => (
+                                <TableRow
+                                    key={index}
+                                    sx={{
+                                        "&:nth-of-type(odd)": {
+                                            backgroundColor: "#fafafa",
+                                        },
+                                        "&:hover": {
+                                            backgroundColor: "#f1f8ff",
+                                        },
+                                    }}
+                                >
+                                    <CompactCell
+                                        value={profile.name}
+                                        width={180}
+                                    />
+                                    <CompactCell
+                                        value={profile.highest_degree_attained}
+                                        width={160}
+                                    />
+                                    <TableCell
+                                        align="center"
+                                        sx={{ padding: "6px 8px" }}
+                                    >
+                                        <Chip
+                                            size="small"
+                                            label={
+                                                profile.pursuing_next_degree
+                                                    ? "Yes"
+                                                    : "No"
+                                            }
+                                            color={
+                                                profile.pursuing_next_degree
+                                                    ? "info"
+                                                    : "default"
+                                            }
+                                            sx={{
+                                                fontSize: "0.75rem",
+                                                height: 20,
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <CompactCell
+                                        value={
+                                            profile.discipline_teaching_load_1
+                                        }
+                                        width={160}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.discipline_teaching_load_2
+                                        }
+                                        width={160}
+                                    />
+                                    <CompactCell
+                                        value={profile.discipline_bachelors}
+                                        width={160}
+                                    />
+                                    <CompactCell
+                                        value={profile.discipline_masters}
+                                        width={160}
+                                    />
+                                    <CompactCell
+                                        value={profile.discipline_doctorate}
+                                        width={160}
+                                    />
+                                    <TableCell
+                                        align="center"
+                                        sx={{ padding: "6px 8px" }}
+                                    >
+                                        <Chip
+                                            size="small"
+                                            label={
+                                                profile.masters_with_thesis
+                                                    ? "Yes"
+                                                    : "No"
+                                            }
+                                            color={
+                                                profile.masters_with_thesis
+                                                    ? "info"
+                                                    : "default"
+                                            }
+                                            sx={{
+                                                fontSize: "0.75rem",
+                                                height: 20,
+                                            }}
+                                        />
+                                    </TableCell>
+                                    <TableCell
+                                        align="center"
+                                        sx={{ padding: "6px 8px" }}
+                                    >
+                                        <Chip
+                                            size="small"
+                                            label={
+                                                profile.doctorate_with_dissertation
+                                                    ? "Yes"
+                                                    : "No"
+                                            }
+                                            color={
+                                                profile.doctorate_with_dissertation
+                                                    ? "info"
+                                                    : "default"
+                                            }
+                                            sx={{
+                                                fontSize: "0.75rem",
+                                                height: 20,
+                                            }}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <TablePagination
+                rowsPerPageOptions={[15, 50, 100]}
+                component="div"
+                count={facultyProfiles.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                sx={{ mt: 1 }}
+            />
+        </Box>
+    );
+
+    const renderTeachingLoadTable = () => (
+        <Box>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    mt: 2,
+                    height: 500,
+                    overflow: "auto",
+                    "&::-webkit-scrollbar": {
+                        width: 8,
+                        height: 8,
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#bdbdbd",
+                        borderRadius: 2,
+                    },
+                }}
+            >
+                <Table stickyHeader size="small">
+                    <TableHead>
+                        <TableRow>
+                            <HeaderCell width={180}> </HeaderCell>
+                            <HeaderCell
+                                colSpan={9}
+                                sx={{
+                                    backgroundColor: "#e3f2fd",
+                                    textAlign: "center",
+                                }}
+                            >
+                                UNDERGRADUATE TEACHING LOAD
+                            </HeaderCell>
+                            <HeaderCell
+                                colSpan={6}
+                                sx={{
+                                    backgroundColor: "#e8f5e9",
+                                    textAlign: "center",
+                                }}
+                            >
+                                GRADUATE TEACHING LOAD
+                            </HeaderCell>
+                        </TableRow>
+                        <TableRow>
+                            <HeaderCell width={180}>NAME OF FACULTY</HeaderCell>
+                            {/* Undergraduate headers */}
+                            <HeaderCell width={100}>LAB CREDITS</HeaderCell>
+                            <HeaderCell width={100}>LECTURE CREDITS</HeaderCell>
+                            <HeaderCell width={100}>TOTAL CREDITS</HeaderCell>
+                            <HeaderCell width={100}>LAB HRS/WEEK</HeaderCell>
+                            <HeaderCell width={100}>
+                                LECTURE HRS/WEEK
+                            </HeaderCell>
+                            <HeaderCell width={100}>TOTAL HRS/WEEK</HeaderCell>
+                            <HeaderCell width={110}>
+                                STUDENT CONTACT LAB
+                            </HeaderCell>
+                            <HeaderCell width={110}>
+                                STUDENT CONTACT LECTURE
+                            </HeaderCell>
+                            <HeaderCell width={110}>
+                                TOTAL CONTACT HRS
+                            </HeaderCell>
+                            {/* Graduate headers */}
+                            <HeaderCell width={100}>LAB CREDITS</HeaderCell>
+                            <HeaderCell width={100}>LECTURE CREDITS</HeaderCell>
+                            <HeaderCell width={100}>TOTAL CREDITS</HeaderCell>
+                            <HeaderCell width={110}>
+                                STUDENT CONTACT LAB
+                            </HeaderCell>
+                            <HeaderCell width={110}>
+                                STUDENT CONTACT LECTURE
+                            </HeaderCell>
+                            <HeaderCell width={110}>
+                                TOTAL CONTACT HRS
+                            </HeaderCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {paginatedProfiles.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={16} align="center">
+                                    No data available.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            paginatedProfiles.map((profile, index) => (
+                                <TableRow
+                                    key={index}
+                                    sx={{
+                                        "&:nth-of-type(odd)": {
+                                            backgroundColor: "#fafafa",
+                                        },
+                                        "&:hover": {
+                                            backgroundColor: "#f1f8ff",
+                                        },
+                                    }}
+                                >
+                                    <CompactCell
+                                        value={profile.name}
+                                        width={180}
+                                    />
+                                    {/* Undergraduate cells */}
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_lab_credit_units
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_lecture_credit_units
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_total_credit_units
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_lab_hours_per_week
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_lecture_hours_per_week
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_total_hours_per_week
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_lab_contact_hours
+                                        }
+                                        width={110}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_lecture_contact_hours
+                                        }
+                                        width={110}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.undergrad_total_contact_hours
+                                        }
+                                        width={110}
+                                    />
+                                    {/* Graduate cells */}
+                                    <CompactCell
+                                        value={
+                                            profile.graduate_lab_credit_units
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.graduate_lecture_credit_units
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.graduate_total_credit_units
+                                        }
+                                        width={100}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.graduate_lab_contact_hours
+                                        }
+                                        width={110}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.graduate_lecture_contact_hours
+                                        }
+                                        width={110}
+                                    />
+                                    <CompactCell
+                                        value={
+                                            profile.graduate_total_contact_hours
+                                        }
+                                        width={110}
+                                    />
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <TablePagination
+                rowsPerPageOptions={[15, 50, 100]}
+                component="div"
+                count={facultyProfiles.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                sx={{ mt: 1 }}
+            />
+        </Box>
+    );
+
+    const renderOtherLoadsTable = () => (
+        <Box>
+            <TableContainer
+                component={Paper}
+                sx={{
+                    mt: 2,
+                    height: 500,
+                    overflow: "auto",
+                    "&::-webkit-scrollbar": {
+                        width: 8,
+                        height: 8,
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#bdbdbd",
+                        borderRadius: 2,
+                    },
+                }}
+            >
+                <Table stickyHeader size="small">
+                    <TableHead>
+                        <TableRow>
+                            <HeaderCell width={180}>NAME OF FACULTY</HeaderCell>
+                            <HeaderCell width={140}>RESEARCH LOAD</HeaderCell>
+                            <HeaderCell width={140}>
+                                EXTENSION SERVICES
+                            </HeaderCell>
+                            <HeaderCell width={140}>STUDY LOAD</HeaderCell>
+                            <HeaderCell width={140}>PRODUCTION LOAD</HeaderCell>
+                            <HeaderCell width={140}>ADMIN LOAD</HeaderCell>
+                            <HeaderCell width={140}>
+                                OTHER LOAD CREDITS
+                            </HeaderCell>
+                            <HeaderCell width={140}>TOTAL WORK LOAD</HeaderCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {paginatedProfiles.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={8} align="center">
+                                    No data available.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            paginatedProfiles.map((profile, index) => (
+                                <TableRow
+                                    key={index}
+                                    sx={{
+                                        "&:nth-of-type(odd)": {
+                                            backgroundColor: "#fafafa",
+                                        },
+                                        "&:hover": {
+                                            backgroundColor: "#f1f8ff",
+                                        },
+                                    }}
+                                >
+                                    <CompactCell
+                                        value={profile.name}
+                                        width={180}
+                                    />
+                                    <CompactCell
+                                        value={profile.research_load}
+                                        width={140}
+                                    />
+                                    <CompactCell
+                                        value={profile.extension_services_load}
+                                        width={140}
+                                    />
+                                    <CompactCell
+                                        value={profile.study_load}
+                                        width={140}
+                                    />
+                                    <CompactCell
+                                        value={profile.production_load}
+                                        width={140}
+                                    />
+                                    <CompactCell
+                                        value={profile.administrative_load}
+                                        width={140}
+                                    />
+                                    <CompactCell
+                                        value={profile.other_load_credits}
+                                        width={140}
+                                    />
+                                    <TableCell
+                                        sx={{
+                                            padding: "6px 8px",
+                                            fontSize: "0.8125rem",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        {profile.total_work_load || "-"}
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <TablePagination
+                rowsPerPageOptions={[15, 50, 100]}
+                component="div"
+                count={facultyProfiles.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                sx={{ mt: 1 }}
+            />
+        </Box>
+    );
 
     return (
         <Box sx={{ mt: 3 }}>
@@ -459,326 +761,10 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                 </Alert>
             ) : (
                 <>
-                    {/* Search and Filter Section */}
-                    <Box sx={{ mb: 1 }}>
-                        <Grid container spacing={1} alignItems="center">
-                            <Grid item xs={12} sm={4}>
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    label="Search"
-                                    variant="outlined"
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    placeholder="Search..."
-                                    sx={{
-                                        "& .MuiInputBase-root": {
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                        },
-                                        "& .MuiInputLabel-root": {
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                        },
-                                        "& .MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Faculty Rank
-                                    </InputLabel>
-                                    <Select
-                                        value={facultyRankFilter}
-                                        onChange={(e) =>
-                                            setFacultyRankFilter(e.target.value)
-                                        }
-                                        label="Faculty Rank"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueFacultyRanks.map((rank) => (
-                                            <MenuItem
-                                                key={rank}
-                                                value={rank}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {rank}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Home College
-                                    </InputLabel>
-                                    <Select
-                                        value={homeCollegeFilter}
-                                        onChange={(e) =>
-                                            setHomeCollegeFilter(e.target.value)
-                                        }
-                                        label="Home College"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueHomeColleges.map((college) => (
-                                            <MenuItem
-                                                key={college}
-                                                value={college}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {college}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Tenured
-                                    </InputLabel>
-                                    <Select
-                                        value={isTenuredFilter}
-                                        onChange={(e) =>
-                                            setIsTenuredFilter(e.target.value)
-                                        }
-                                        label="Tenured"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueTenuredOptions.map((option) => (
-                                            <MenuItem
-                                                key={option}
-                                                value={option}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {option}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Gender
-                                    </InputLabel>
-                                    <Select
-                                        value={genderFilter}
-                                        onChange={(e) =>
-                                            setGenderFilter(e.target.value)
-                                        }
-                                        label="Gender"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueGenderOptions.map((option) => (
-                                            <MenuItem
-                                                key={option}
-                                                value={option}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {option}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                        </Grid>
-                    </Box>
-
-                    <Box sx={{ height: 460, overflow: "auto" }}>
-                        <HotTable
-                            data={currentConfig.data}
-                            columns={currentConfig.columns}
-                            colHeaders={true}
-                            rowHeaders={true}
-                            stretchH="all"
-                            height="100%" // Fill the container height
-                            licenseKey="non-commercial-and-evaluation"
-                            settings={{
-                                readOnly: true,
-                                manualColumnResize: true,
-                                columnSorting: true,
-                                contextMenu: false,
-                                nestedHeaders:
-                                    tabIndex === 2
-                                        ? [
-                                              [
-                                                  { label: "", colspan: 1 },
-                                                  {
-                                                      label: "UNDERGRADUATE TEACHING LOAD",
-                                                      colspan: 9,
-                                                  },
-                                                  {
-                                                      label: "GRADUATE TEACHING LOAD",
-                                                      colspan: 6,
-                                                  },
-                                              ],
-                                              currentConfig.columns.map(
-                                                  (col) => col.title
-                                              ),
-                                          ]
-                                        : [
-                                              currentConfig.columns.map(
-                                                  (col) => col.title
-                                              ),
-                                          ],
-                                cells: (row, col) => {
-                                    const cellProperties = {};
-                                    const value =
-                                        currentConfig.data[row]?.[
-                                            currentConfig.columns[col].data
-                                        ];
-                                    const columnData =
-                                        currentConfig.columns[col].data;
-
-                                    cellProperties.renderer = (
-                                        instance,
-                                        td
-                                    ) => {
-                                        td.innerHTML =
-                                            value !== undefined &&
-                                            value !== null
-                                                ? value
-                                                : "-";
-                                        td.style.whiteSpace = "nowrap";
-                                        td.style.overflow = "hidden";
-                                        td.style.textOverflow = "ellipsis";
-                                        td.style.maxWidth =
-                                            col === 0 ? "180px" : "120px";
-                                        td.title = value || "-"; // Tooltip
-
-                                        // Center-align all columns except the "name" column
-                                        if (columnData !== "name") {
-                                            td.style.textAlign = "center";
-                                        }
-                                    };
-                                    return cellProperties;
-                                },
-                            }}
-                        />
-                    </Box>
-                    <TablePagination
-                        rowsPerPageOptions={[20, 50, 100]}
-                        component="div"
-                        count={filteredData.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        sx={{ mt: 1 }}
-                    />
+                    {tabIndex === 0 && renderPersonalInfoTable()}
+                    {tabIndex === 1 && renderEducationTable()}
+                    {tabIndex === 2 && renderTeachingLoadTable()}
+                    {tabIndex === 3 && renderOtherLoadsTable()}
                 </>
             )}
         </Box>
