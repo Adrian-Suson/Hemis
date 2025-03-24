@@ -29,8 +29,10 @@ import {
     PointElement,
 } from "chart.js";
 import { Pie } from "react-chartjs-2";
+// Import chartjs-plugin-datalabels
+import ChartDataLabels from "chartjs-plugin-datalabels";
 
-// Register Chart.js components
+// Register Chart.js components and the datalabels plugin
 ChartJS.register(
     ArcElement,
     Tooltip,
@@ -38,7 +40,8 @@ ChartJS.register(
     LineElement,
     CategoryScale,
     LinearScale,
-    PointElement
+    PointElement,
+    ChartDataLabels // Register the datalabels plugin
 );
 
 const Dashboard = () => {
@@ -138,8 +141,8 @@ const Dashboard = () => {
         {}
     );
 
-    // Prepare data for the pie chart
-    const pieChartData = {
+    // Prepare data for the institution types pie chart
+    const institutionPieChartData = {
         labels: Object.keys(institutionTypeCounts),
         datasets: [
             {
@@ -168,7 +171,65 @@ const Dashboard = () => {
         ],
     };
 
-    // Pie chart options
+    // Aggregate enrollments by institution type
+    const enrollmentByInstitutionType = dashboardData.institutions.reduce(
+        (acc, institution) => {
+            const type = institution.institution_type || "Unknown";
+            // Find all programs for this institution
+            const institutionPrograms = dashboardData.programs.filter(
+                (program) => program.institution_id === institution.id
+            );
+            // Sum the enrollments for these programs
+            const enrollmentTotal = institutionPrograms.reduce(
+                (sum, program) => {
+                    return (
+                        sum +
+                        (program.enrollments?.reduce(
+                            (subSum, enrollment) =>
+                                subSum + (enrollment.grand_total || 0),
+                            0
+                        ) || 0)
+                    );
+                },
+                0
+            );
+            acc[type] = (acc[type] || 0) + enrollmentTotal;
+            return acc;
+        },
+        {}
+    );
+
+    // Prepare data for the enrollment by institution type pie chart
+    const enrollmentPieChartData = {
+        labels: Object.keys(enrollmentByInstitutionType),
+        datasets: [
+            {
+                label: "Enrollments by Institution Type",
+                data: Object.values(enrollmentByInstitutionType),
+                backgroundColor: [
+                    "#FF6384", // Red
+                    "#36A2EB", // Blue
+                    "#FFCE56", // Yellow
+                    "#4BC0C0", // Teal
+                    "#9966FF", // Purple
+                    "#FF9F40", // Orange
+                    "#C9CBDF", // Gray
+                ],
+                borderColor: [
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#C9CBDF",
+                ],
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    // Pie chart options (used for both charts)
     const pieChartOptions = {
         responsive: true,
         plugins: {
@@ -189,12 +250,25 @@ const Dashboard = () => {
                     },
                 },
             },
+            datalabels: {
+                color: "#fff", // White text for better contrast on colored segments
+                formatter: (value) => {
+                    return value; // Display the raw value
+                },
+                font: {
+                    weight: "bold",
+                    size: 14,
+                },
+                anchor: "center", // Position the label in the center of the segment
+                align: "center", // Align the label in the center
+                textAlign: "center",
+            },
         },
     };
 
     // Skeleton Loader Component
     const DashboardSkeleton = () => (
-        <Box sx={{ p: 4, height: "100vh", overflowY: "auto" }}>
+        <Box sx={{ my: 5, p: 4, height: "100vh", overflowY: "auto" }}>
             <Box
                 sx={{
                     display: "flex",
@@ -247,28 +321,63 @@ const Dashboard = () => {
                 ))}
             </Grid>
 
-            {/* Pie Chart Skeleton */}
-            <Paper
-                elevation={0}
-                sx={{
-                    p: 3,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: "divider",
-                    mb: 4,
-                }}
-            >
-                <Skeleton
-                    variant="text"
-                    width={200}
-                    height={30}
-                    sx={{ mb: 2 }}
-                />
-                <Divider sx={{ mb: 3 }} />
-                <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                    <Skeleton variant="circular" width={300} height={300} />
-                </Box>
-            </Paper>
+            {/* Pie Charts Skeleton (Side by Side) */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={6}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 2,
+                            border: 1,
+                            borderColor: "divider",
+                            height: "100%",
+                        }}
+                    >
+                        <Skeleton
+                            variant="text"
+                            width={200}
+                            height={30}
+                            sx={{ mb: 2 }}
+                        />
+                        <Divider sx={{ mb: 3 }} />
+                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
+                            <Skeleton
+                                variant="circular"
+                                width={300}
+                                height={300}
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 2,
+                            border: 1,
+                            borderColor: "divider",
+                            height: "100%",
+                        }}
+                    >
+                        <Skeleton
+                            variant="text"
+                            width={200}
+                            height={30}
+                            sx={{ mb: 2 }}
+                        />
+                        <Divider sx={{ mb: 3 }} />
+                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
+                            <Skeleton
+                                variant="circular"
+                                width={300}
+                                height={300}
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
 
             {/* Institutions Section Skeleton */}
             <Paper
@@ -285,7 +394,7 @@ const Dashboard = () => {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        mb: 2,
+                        my: 5,
                     }}
                 >
                     <Skeleton variant="text" width={150} height={30} />
@@ -366,10 +475,10 @@ const Dashboard = () => {
     return (
         <Box
             p={5}
+            mt={5}
             sx={{
-                height: "90vh", // Set height to viewport height
+                height: "87vh", // Set height to viewport height
                 overflowY: "auto", // Enable vertical scrolling
-                // Optional: Customize scrollbar appearance (for Webkit browsers)
                 "&::-webkit-scrollbar": {
                     width: "8px",
                 },
@@ -385,7 +494,7 @@ const Dashboard = () => {
                 },
             }}
         >
-            <Box sx={{ py: 4 }}>
+            <Box>
                 {/* Header with refresh action */}
                 <Box
                     sx={{
@@ -588,34 +697,81 @@ const Dashboard = () => {
                     </Grid>
                 </Grid>
 
-                {/* Pie Chart Section for Institution Types */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 3,
-                        borderRadius: 2,
-                        border: 1,
-                        borderColor: "divider",
-                        mb: 4,
-                    }}
-                >
-                    <Typography variant="h5" fontWeight="medium" mb={2}>
-                        Institution Types Distribution
-                    </Typography>
-                    <Divider sx={{ mb: 3 }} />
-                    {Object.keys(institutionTypeCounts).length > 0 ? (
-                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                            <Pie
-                                data={pieChartData}
-                                options={pieChartOptions}
-                            />
-                        </Box>
-                    ) : (
-                        <Typography color="text.secondary" textAlign="center">
-                            No institution type data available.
-                        </Typography>
-                    )}
-                </Paper>
+                {/* Pie Charts Section (Side by Side) */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    {/* Pie Chart for Institution Types */}
+                    <Grid item xs={12} md={6}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 3,
+                                borderRadius: 2,
+                                border: 1,
+                                borderColor: "divider",
+                                height: "100%",
+                            }}
+                        >
+                            <Typography variant="h5" fontWeight="medium" mb={2}>
+                                Institution Types Distribution
+                            </Typography>
+                            <Divider sx={{ mb: 3 }} />
+                            {Object.keys(institutionTypeCounts).length > 0 ? (
+                                <Box sx={{ maxWidth: 400, mx: "auto" }}>
+                                    <Pie
+                                        data={institutionPieChartData}
+                                        options={pieChartOptions}
+                                    />
+                                </Box>
+                            ) : (
+                                <Typography
+                                    color="text.secondary"
+                                    textAlign="center"
+                                >
+                                    No institution type data available.
+                                </Typography>
+                            )}
+                        </Paper>
+                    </Grid>
+
+                    {/* Pie Chart for Enrollments by Institution Type */}
+                    <Grid item xs={12} md={6}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 3,
+                                borderRadius: 2,
+                                border: 1,
+                                borderColor: "divider",
+                                height: "100%",
+                            }}
+                        >
+                            <Typography variant="h5" fontWeight="medium" mb={2}>
+                                Enrollments by Institution Type
+                            </Typography>
+                            <Divider sx={{ mb: 3 }} />
+                            {Object.keys(enrollmentByInstitutionType).length >
+                                0 &&
+                            Object.values(enrollmentByInstitutionType).some(
+                                (value) => value > 0
+                            ) ? (
+                                <Box sx={{ maxWidth: 400, mx: "auto" }}>
+                                    <Pie
+                                        data={enrollmentPieChartData}
+                                        options={pieChartOptions}
+                                    />
+                                </Box>
+                            ) : (
+                                <Typography
+                                    color="text.secondary"
+                                    textAlign="center"
+                                >
+                                    No enrollment data available for institution
+                                    types.
+                                </Typography>
+                            )}
+                        </Paper>
+                    </Grid>
+                </Grid>
 
                 {/* Institutions Section */}
                 <Paper
