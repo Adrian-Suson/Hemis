@@ -17,9 +17,10 @@ import ProgramTables from "./ProgramTables";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import { useProgress } from "../../../Context/ProgressContext";
 import ExcelJS from "exceljs";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const CurricularProgram = () => {
+    const { institutionId } = useParams();
     const [programs, setPrograms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mainTabValue, setMainTabValue] = useState(0);
@@ -52,7 +53,7 @@ const CurricularProgram = () => {
         const fetchPrograms = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const institutionId = localStorage.getItem("institutionId");
+
 
                 if (!institutionId) {
                     console.error("No institution ID found in localStorage");
@@ -63,7 +64,7 @@ const CurricularProgram = () => {
 
                 const response = await axios.get(`${config.API_URL}/programs`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { institution_id: institutionId }, // No program_type filter
+                    params: { institution_id: institutionId.institutionId }, // No program_type filter
                 });
                 console.log("Fetched programs:", response.data);
                 if (Array.isArray(response.data)) {
@@ -81,13 +82,12 @@ const CurricularProgram = () => {
         };
 
         fetchPrograms();
-    }, []); // Fetch once on mount
+    }, [institutionId]); // Fetch once on mount
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        const institutionId = localStorage.getItem("institutionId");
         const token = localStorage.getItem("token");
 
         if (!institutionId || !token) {
@@ -179,7 +179,7 @@ const CurricularProgram = () => {
 
                         return {
                             program: {
-                                institution_id: institutionId,
+                                institution_id: institutionId.institutionId,
                                 program_name: row[1] || null,
                                 program_code: String(row[2] || "0"),
                                 major_name: row[3] || null,
@@ -513,7 +513,7 @@ const CurricularProgram = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/admin/dashboard")}
+                    onClick={() => navigate("/hei-admin/dashboard")}
                 >
                     Dashboard
                 </Link>
@@ -521,7 +521,7 @@ const CurricularProgram = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/admin/institutions")}
+                    onClick={() => navigate("/hei-admin/institutions")}
                 >
                     Institution Management
                 </Link>
