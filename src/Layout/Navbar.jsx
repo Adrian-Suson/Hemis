@@ -64,7 +64,10 @@ const Navbar = () => {
     const adminMenuItems = useMemo(() => {
         if (user?.role === "Super Admin") {
             return [
-                { text: "Settings", path: "/super-admin/settings" },
+                {
+                    text: "Statistics",
+                    path: "/super-admin/statistics",
+                },
                 {
                     text: "User Management",
                     path: "/super-admin/user-management",
@@ -72,7 +75,6 @@ const Navbar = () => {
             ];
         } else if (user?.role === "HEI Admin") {
             return [
-                { text: "Settings", path: "/hei-admin/settings" },
                 {
                     text: "Staff Management",
                     path: "/hei-admin/staff-management",

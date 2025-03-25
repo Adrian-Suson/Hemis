@@ -64,7 +64,7 @@ const CurricularProgram = () => {
 
                 const response = await axios.get(`${config.API_URL}/programs`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { institution_id: institutionId.institutionId }, // No program_type filter
+                    params: { institution_id: institutionId }, // No program_type filter
                 });
                 console.log("Fetched programs:", response.data);
                 if (Array.isArray(response.data)) {
@@ -179,7 +179,7 @@ const CurricularProgram = () => {
 
                         return {
                             program: {
-                                institution_id: institutionId.institutionId,
+                                institution_id: institutionId,
                                 program_name: row[1] || null,
                                 program_code: String(row[2] || "0"),
                                 major_name: row[3] || null,
@@ -513,7 +513,7 @@ const CurricularProgram = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/Super-admin/dashboard")}
+                    onClick={() => navigate("/super-admin/dashboard")}
                 >
                     Dashboard
                 </Link>
@@ -521,7 +521,7 @@ const CurricularProgram = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/Super-admin/institutions")}
+                    onClick={() => navigate("/super-admin/institutions")}
                 >
                     Institution Management
                 </Link>

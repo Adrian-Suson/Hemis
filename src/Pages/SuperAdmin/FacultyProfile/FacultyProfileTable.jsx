@@ -1,7 +1,7 @@
 import { HotTable } from "@handsontable/react";
-import "handsontable/dist/handsontable.full.min.css"; // Import Handsontable styles
+import "handsontable/dist/handsontable.full.min.css";
 import { useState, useMemo, useEffect } from "react";
-import { registerAllModules } from "handsontable/registry"; // Register all modules
+import { registerAllModules } from "handsontable/registry";
 import PropTypes from "prop-types";
 import {
     Box,
@@ -17,15 +17,20 @@ import {
     MenuItem,
     Grid,
 } from "@mui/material";
+import axios from "axios";
+import config from "../../../utils/config";
 
 // Register all Handsontable modules
 registerAllModules();
 
-const FacultyProfileTable = ({ facultyProfiles }) => {
+const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(20);
     const [searchQuery, setSearchQuery] = useState("");
+    const [facultyProfiles, setFacultyProfiles] = useState(
+        initialFacultyProfiles
+    ); // Manage facultyProfiles in state
     const [filteredData, setFilteredData] = useState(facultyProfiles);
 
     // Filter states for each column
@@ -67,7 +72,7 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
         ],
         [facultyProfiles]
     );
-    const uniqueTenuredOptions = ["Yes", "No"];
+    const uniqueTenuredOptions = ["1", "2", "3", "4"];
     const uniqueGenderOptions = ["Male", "Female", "-"];
 
     // Apply search and filters
@@ -99,8 +104,7 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
         }
         if (isTenuredFilter) {
             filtered = filtered.filter(
-                (profile) =>
-                    (profile.is_tenured ? "Yes" : "No") === isTenuredFilter
+                (profile) => String(profile.is_tenured) === isTenuredFilter
             );
         }
         if (genderFilter) {
@@ -135,6 +139,52 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
         [filteredData, page, rowsPerPage]
     );
 
+    // Handle cell changes
+    const handleCellChange = (changes, source) => {
+        if (source === "edit") {
+            const updatedFacultyProfiles = [...facultyProfiles];
+            const updatedFilteredData = [...filteredData];
+
+            changes.forEach(([row, prop, , newValue]) => {
+                // Find the actual row index in filteredData and facultyProfiles
+                const paginatedIndex = row + page * rowsPerPage;
+                const profileIndex = facultyProfiles.findIndex(
+                    (profile) => profile === filteredData[paginatedIndex]
+                );
+
+                if (profileIndex !== -1) {
+                    // All fields (including is_tenured, pursuing_next_degree, etc.) are sent as raw values
+                    const valueToSave = newValue;
+
+                    // Update the original facultyProfiles
+                    updatedFacultyProfiles[profileIndex][prop] = valueToSave;
+                    // Update the filteredData
+                    updatedFilteredData[paginatedIndex][prop] = valueToSave;
+                }
+            });
+
+            setFacultyProfiles(updatedFacultyProfiles);
+            setFilteredData(updatedFilteredData);
+
+            // Save changes to backend
+            changes.forEach(async ([row, prop, , newValue]) => {
+                const profile = updatedFilteredData[row + page * rowsPerPage];
+                try {
+                    const token = localStorage.getItem("token");
+                    const dataToSend = { [prop]: newValue };
+                    // All fields are already in the correct format (integers), so send as-is
+                    await axios.put(
+                        `${config.API_URL}/faculty-profiles/${profile.id}`,
+                        dataToSend,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                } catch (error) {
+                    console.error("Error saving changes:", error);
+                }
+            });
+        }
+    };
+
     // Define column configurations for each tab
     const columnConfigs = useMemo(
         () => ({
@@ -148,10 +198,6 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                     {
                         data: "is_tenured",
                         title: "TENURED?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#2e7d32" : "#616161"; // Green for Yes, gray for No
-                        },
                     },
                     { data: "ssl_salary_grade", title: "SSL GRADE" },
                     {
@@ -168,14 +214,6 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                     {
                         data: "gender",
                         title: "GENDER",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML =
-                                value === 1
-                                    ? "Male"
-                                    : value === 2
-                                    ? "Female"
-                                    : "-";
-                        },
                     },
                 ],
                 data: paginatedProfiles.map((profile) => ({
@@ -183,7 +221,10 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                     generic_faculty_rank: profile.generic_faculty_rank || "-",
                     home_college: profile.home_college || "-",
                     home_department: profile.home_department || "-",
-                    is_tenured: profile.is_tenured || false,
+                    is_tenured:
+                        profile.is_tenured !== undefined
+                            ? profile.is_tenured
+                            : null,
                     ssl_salary_grade: profile.ssl_salary_grade || "-",
                     annual_basic_salary: profile.annual_basic_salary || 0,
                     on_leave_without_pay: profile.on_leave_without_pay || "-",
@@ -198,54 +239,57 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                     {
                         data: "highest_degree_attained",
                         title: "HIGHEST DEGREE",
+                        type: "numeric",
                     },
                     {
                         data: "pursuing_next_degree",
                         title: "PURSUING NEXT DEGREE?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161"; // Blue for Yes, gray for No
-                        },
+                        type: "numeric",
                     },
                     {
                         data: "discipline_teaching_load_1",
                         title: "DISCIPLINE (1)",
+                        type: "numeric",
                     },
                     {
                         data: "discipline_teaching_load_2",
                         title: "DISCIPLINE (2)",
+                        type: "numeric",
                     },
                     {
                         data: "discipline_bachelors",
                         title: "BACHELORS DISCIPLINE",
+                        type: "numeric",
                     },
-                    { data: "discipline_masters", title: "MASTERS DISCIPLINE" },
+                    {
+                        data: "discipline_masters",
+                        title: "MASTERS DISCIPLINE",
+                        type: "numeric",
+                    },
                     {
                         data: "discipline_doctorate",
                         title: "DOCTORATE DISCIPLINE",
+                        type: "numeric",
                     },
                     {
                         data: "masters_with_thesis",
                         title: "MASTERS W/ THESIS?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161";
-                        },
+                        type: "numeric",
                     },
                     {
                         data: "doctorate_with_dissertation",
                         title: "DOCTORATE W/ DISSERTATION?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161";
-                        },
+                        type: "numeric",
                     },
                 ],
                 data: paginatedProfiles.map((profile) => ({
                     name: profile.name || "-",
                     highest_degree_attained:
                         profile.highest_degree_attained || "-",
-                    pursuing_next_degree: profile.pursuing_next_degree || false,
+                    pursuing_next_degree:
+                        profile.pursuing_next_degree !== undefined
+                            ? profile.pursuing_next_degree
+                            : 0, // Keep as integer
                     discipline_teaching_load_1:
                         profile.discipline_teaching_load_1 || "-",
                     discipline_teaching_load_2:
@@ -253,9 +297,14 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                     discipline_bachelors: profile.discipline_bachelors || "-",
                     discipline_masters: profile.discipline_masters || "-",
                     discipline_doctorate: profile.discipline_doctorate || "-",
-                    masters_with_thesis: profile.masters_with_thesis || false,
+                    masters_with_thesis:
+                        profile.masters_with_thesis !== undefined
+                            ? profile.masters_with_thesis
+                            : 0, // Keep as integer
                     doctorate_with_dissertation:
-                        profile.doctorate_with_dissertation || false,
+                        profile.doctorate_with_dissertation !== undefined
+                            ? profile.doctorate_with_dissertation
+                            : 0, // Keep as integer
                 })),
             },
             2: {
@@ -704,13 +753,14 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                             colHeaders={true}
                             rowHeaders={true}
                             stretchH="all"
-                            height="100%" // Fill the container height
+                            height="100%"
                             licenseKey="non-commercial-and-evaluation"
                             settings={{
-                                readOnly: true,
+                                readOnly: false, // Enable editing
                                 manualColumnResize: true,
                                 columnSorting: true,
-                                contextMenu: false,
+                                contextMenu: true, // Enable context menu for copy/paste, undo, etc.
+                                afterChange: handleCellChange, // Handle cell changes
                                 nestedHeaders:
                                     tabIndex === 2
                                         ? [
