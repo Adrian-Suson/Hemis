@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
@@ -10,7 +11,6 @@ import {
     Breadcrumbs,
     Link,
     Button,
-    CircularProgress,
     Alert,
     ButtonGroup,
 } from "@mui/material";
@@ -18,68 +18,60 @@ import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
-import DownloadIcon from '@mui/icons-material/Download';
+import DownloadIcon from "@mui/icons-material/Download";
+import FacultyProfileSkeleton from "./FacultyProfileSkeleton";
 
 const facultyGroups = [
     {
         label: "Group A1",
-        value: "A1",
         sheetName: "GROUP A1",
         description:
             "FULL-TIME FACULTY MEMBERS WITH THEIR OWN FACULTY PLANTILLA ITEMS TEACHING AT ELEM, SECONDARY AND TECH/VOC",
     },
     {
         label: "Group A2",
-        value: "A2",
         sheetName: "GROUP A2",
         description:
             "HALF-TIME FACULTY MEMBERS WITH THEIR OWN FACULTY PLANTILLA ITEMS",
     },
     {
         label: "Group A3",
-        value: "A3",
         sheetName: "GROUP A3",
         description:
             "PERSONS OCCUPYING RESEARCH PLANTILLA ITEMS BUT CLASSIFIED AS REGULAR FACULTY",
     },
     {
         label: "Group B",
-        value: "B",
         sheetName: "GROUP B",
         description:
             "FULL-TIME FACULTY MEMBERS WITHOUT ITEMS BUT DRAWING SALARIES FROM THE PS ITEMS OF FACULTY ON LEAVE WITHOUT PAY",
     },
     {
         label: "Group C1",
-        value: "C1",
         sheetName: "GROUP C1",
         description:
             "FULL-TIME FACULTY MEMBERS WITHOUT ITEMS DRAWING SALARIES FROM GAA PS LUMP SUMS",
     },
     {
         label: "Group C2",
-        value: "C2",
         sheetName: "GROUP C2",
         description:
             "FULL-TIME FACULTY MEMBERS WITHOUT ITEMS PAID DRAWING SALARIES FROM SUC INCOME",
     },
     {
         label: "Group C3",
-        value: "C3",
         sheetName: "GROUP C3",
         description:
             "FULL-TIME FACULTY MEMBERS WITH NO PS ITEMS DRAWING SALARIES FROM LGU FUNDS",
     },
     {
         label: "Group D",
-        value: "D",
         sheetName: "GROUP D",
         description:
             "TEACHING FELLOWS AND TEACHING ASSOCIATES (but not Graduate Assistants)",
     },
     {
         label: "Group E",
-        value: "E",
         sheetName: "GROUP E",
         description:
             "LECTURERS AND ALL OTHER PART-TIME FACULTY WITH NO ITEMS (e.g. PROFS EMERITI, ADJUNCT/AFFILIATE FACULTY, VISITING PROFS, etc.)",
@@ -87,7 +79,7 @@ const facultyGroups = [
 ];
 
 const FacultyProfileUpload = () => {
-    const [selectedGroup, setSelectedGroup] = useState(facultyGroups[0].value);
+    const [selectedGroup, setSelectedGroup] = useState(facultyGroups[0].sheetName);
     const [facultyProfiles, setFacultyProfiles] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
@@ -103,38 +95,41 @@ const FacultyProfileUpload = () => {
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            setError("Authentication token is missing.");
-            return;
-        }
-
-        const fetchFacultyProfiles = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await axios.get(
-                    `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId.institutionId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
-                console.log("API Response:", response.data); // Debug log
-                setFacultyProfiles(response.data);
-            } catch (error) {
-                console.error("Error fetching faculty profiles:", error);
-                setError("Failed to load faculty profiles. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchFacultyProfiles();
+        fetchFacultyProfiles(selectedGroup);
     }, [institutionId]);
+
+    const fetchFacultyProfiles = async (group = null) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setError("Authentication token is missing.");
+                return;
+            }
+            let url = `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId.institutionId}`;
+            if (group) {
+                url += `&faculty_group=${group}`;
+            }
+            const response = await axios.get(url, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            console.log("id", institutionId.institutionId); // Debug log
+            console.log("Selected Group:", group); // Debug log
+            console.log("API Response:", response.data); // Debug log
+            setFacultyProfiles(response.data);
+        } catch (error) {
+            console.error("Error fetching faculty profiles:", error);
+            setError("Failed to load faculty profiles. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleTabChange = (_, newValue) => {
         setSelectedGroup(newValue);
+        console.log("newValue:", newValue);
+        fetchFacultyProfiles(newValue); // Fetch data for the new group
     };
 
     const processExcelFile = async (file) => {
@@ -159,7 +154,7 @@ const FacultyProfileUpload = () => {
                 const workbook = XLSX.read(data, { type: "binary" });
 
                 let allFacultyProfiles = [];
-                const seenProfiles = new Set(); // To track unique profiles
+                const seenProfiles = new Set();
 
                 for (let sheetIndex = 0; sheetIndex < 9; sheetIndex++) {
                     const sheetName = workbook.SheetNames[sheetIndex];
@@ -191,7 +186,7 @@ const FacultyProfileUpload = () => {
                         generic_faculty_rank: row[2] ? parseInt(row[2], 10) : null,
                         home_college: row[3] ? String(row[3]) : null,
                         home_department: row[4] ? String(row[4]) : null,
-                        is_tenured: row[5] ? Boolean(parseInt(row[5])) : false,
+                        is_tenured: row[5] ? parseInt(row[5]) : null,
                         ssl_salary_grade: row[6] ? parseInt(row[6], 10) : null,
                         annual_basic_salary: row[7] ? parseInt(row[7], 10) : null,
                         on_leave_without_pay: row[8] ? parseInt(row[8], 10) : null,
@@ -230,7 +225,6 @@ const FacultyProfileUpload = () => {
                         total_work_load: row[41] ? parseFloat(row[41]) : null,
                     }));
 
-                    // Filter out duplicates
                     processedFacultyProfiles.forEach((profile) => {
                         const profileString = JSON.stringify(profile);
                         if (!seenProfiles.has(profileString)) {
@@ -251,7 +245,6 @@ const FacultyProfileUpload = () => {
                             headers: { Authorization: `Bearer ${token}` },
                         }
                     );
-
                     console.log("Faculty profiles uploaded successfully!");
                     setFacultyProfiles((prevProfiles) => [
                         ...prevProfiles,
@@ -279,15 +272,10 @@ const FacultyProfileUpload = () => {
         }
     };
 
-    // Filter faculty profiles based on selected group
-    const filteredFacultyProfiles = facultyProfiles.filter(
-        (profile) =>
-            profile.faculty_group ===
-            facultyGroups.find((group) => group.value === selectedGroup)
-                .sheetName
+    // Determine the current group object
+    const currentGroup = facultyGroups.find(
+        (group) => group.sheetName === selectedGroup
     );
-
-    console.log("Filtered Faculty Profiles:", filteredFacultyProfiles); // Debug log
 
     const handleExportData = async () => {
         if (!facultyProfiles.length) {
@@ -299,7 +287,6 @@ const FacultyProfileUpload = () => {
             return;
         }
 
-        // Debug: Log the facultyProfiles to check if 'name' exists
         console.log("Faculty Profiles before export:", facultyProfiles);
         console.log(
             "Sample profile names:",
@@ -307,7 +294,6 @@ const FacultyProfileUpload = () => {
         );
 
         try {
-            // Load the Excel template file from your public folder
             const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
             if (!response.ok) {
                 throw new Error(
@@ -316,40 +302,31 @@ const FacultyProfileUpload = () => {
             }
             const arrayBuffer = await response.arrayBuffer();
 
-            // Load the workbook using ExcelJS
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(arrayBuffer);
 
-            // Define the starting row for data insertion (adjust based on template)
-            const dataStartRow = 10; // Assuming data starts at row 10 (adjust if different)
+            const dataStartRow = 10;
 
-            // Group faculty profiles by faculty_group
             const profilesByGroup = facultyGroups.reduce((acc, group) => {
                 acc[group.sheetName] = facultyProfiles.filter(
                     (profile) => profile.faculty_group === group.sheetName
                 );
                 console.log(
-                    `Sheet ${group.sheetName}: ${
-                        acc[group.sheetName].length
-                    } profiles`
+                    `Sheet ${group.sheetName}: ${acc[group.sheetName].length} profiles`
                 );
                 return acc;
             }, {});
 
-            // Iterate over sheets in the workbook (up to 9 sheets based on facultyGroups)
             for (
                 let sheetIndex = 0;
                 sheetIndex < Math.min(9, workbook.worksheets.length);
                 sheetIndex++
             ) {
                 const sheetName =
-                    facultyGroups[sheetIndex]?.sheetName ||
-                    `Sheet${sheetIndex + 1}`;
-                const worksheet = workbook.getWorksheet(sheetIndex + 1); // ExcelJS uses 1-based indexing
+                    facultyGroups[sheetIndex]?.sheetName || `Sheet${sheetIndex + 1}`;
+                const worksheet = workbook.getWorksheet(sheetIndex + 1);
                 if (!worksheet) {
-                    console.log(
-                        `Worksheet ${sheetName} not found, skipping...`
-                    );
+                    console.log(`Worksheet ${sheetName} not found, skipping...`);
                     continue;
                 }
 
@@ -358,89 +335,54 @@ const FacultyProfileUpload = () => {
                     `Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`
                 );
 
-                // Debug: Log the names for this sheet
-                console.log(
-                    `Names in sheet ${sheetName}:`,
-                    profilesForSheet.map((profile) => profile.name)
-                );
-
-                // Insert data row-by-row for this sheet
                 profilesForSheet.forEach((profile, i) => {
                     const row = worksheet.getRow(dataStartRow + i);
-                    row.getCell(2).value = profile.name || null; // Column B
-                    row.getCell(3).value = profile.generic_faculty_rank || 0; // Column C
-                    row.getCell(4).value = profile.home_college || null; // Column D
-                    row.getCell(5).value = profile.home_department || null; // Column E
-                    row.getCell(6).value = profile.is_tenured; // Column F
-                    row.getCell(7).value = profile.ssl_salary_grade || 0; // Column G
-                    row.getCell(8).value = profile.annual_basic_salary || 0; // Column H
-                    row.getCell(9).value = profile.on_leave_without_pay || 0; // Column I
-                    row.getCell(10).value = profile.full_time_equivalent || 0; // Column J
-                    row.getCell(11).value = profile.gender || null; // Column K
-                    row.getCell(12).value =
-                        profile.highest_degree_attained || 0; // Column L
-                    row.getCell(13).value = profile.pursuing_next_degree; // Column M
-                    row.getCell(14).value =
-                        profile.discipline_teaching_load_1 || null; // Column N
-                    row.getCell(15).value =
-                        profile.discipline_teaching_load_2 || null; // Column O
-                    row.getCell(16).value =
-                        profile.discipline_bachelors || null; // Column P
-                    row.getCell(17).value = profile.discipline_masters || null; // Column Q
-                    row.getCell(18).value =
-                        profile.discipline_doctorate || null; // Column R
-                    row.getCell(19).value = profile.masters_with_thesis || null; // Column S
-                    row.getCell(20).value =
-                        profile.doctorate_with_dissertation || null; // Column T
-                    row.getCell(21).value =
-                        profile.undergrad_lab_credit_units || 0; // Column U
-                    row.getCell(22).value =
-                        profile.undergrad_lecture_credit_units || 0; // Column V
-                    row.getCell(23).value =
-                        profile.undergrad_total_credit_units || 0; // Column W
-                    row.getCell(24).value =
-                        profile.undergrad_lab_hours_per_week || 0; // Column X
-                    row.getCell(25).value =
-                        profile.undergrad_lecture_hours_per_week || 0; // Column Y
-                    row.getCell(26).value =
-                        profile.undergrad_total_hours_per_week || 0; // Column Z
-                    row.getCell(27).value =
-                        profile.undergrad_lab_contact_hours || 0; // Column AA
-                    row.getCell(28).value =
-                        profile.undergrad_lecture_contact_hours || 0; // Column AB
-                    row.getCell(29).value =
-                        profile.undergrad_total_contact_hours || 0; // Column AC
-                    row.getCell(30).value =
-                        profile.graduate_lab_credit_units || 0; // Column AD
-                    row.getCell(31).value =
-                        profile.graduate_lecture_credit_units || 0; // Column AE
-                    row.getCell(32).value =
-                        profile.graduate_total_credit_units || 0; // Column AF
-                    row.getCell(33).value =
-                        profile.graduate_lab_contact_hours || 0; // Column AG
-                    row.getCell(34).value =
-                        profile.graduate_lecture_contact_hours || 0; // Column AH
-                    row.getCell(35).value =
-                        profile.graduate_total_contact_hours || 0; // Column AI
-                    row.getCell(36).value = profile.research_load || 0; // Column AJ
-                    row.getCell(37).value =
-                        profile.extension_services_load || 0; // Column AK
-                    row.getCell(38).value = profile.study_load || 0; // Column AL
-                    row.getCell(39).value = profile.production_load || 0; // Column AM
-                    row.getCell(40).value = profile.administrative_load || 0; // Column AN
-                    row.getCell(41).value = profile.other_load_credits || 0; // Column AO
-                    row.getCell(42).value = profile.total_work_load || 0; // Column AP
-
+                    row.getCell(2).value = profile.name || null;
+                    row.getCell(3).value = profile.generic_faculty_rank || 0;
+                    row.getCell(4).value = profile.home_college || null;
+                    row.getCell(5).value = profile.home_department || null;
+                    row.getCell(6).value = profile.is_tenured;
+                    row.getCell(7).value = profile.ssl_salary_grade || 0;
+                    row.getCell(8).value = profile.annual_basic_salary || 0;
+                    row.getCell(9).value = profile.on_leave_without_pay || 0;
+                    row.getCell(10).value = profile.full_time_equivalent || 0;
+                    row.getCell(11).value = profile.gender || null;
+                    row.getCell(12).value = profile.highest_degree_attained || 0;
+                    row.getCell(13).value = profile.pursuing_next_degree;
+                    row.getCell(14).value = profile.discipline_teaching_load_1 || null;
+                    row.getCell(15).value = profile.discipline_teaching_load_2 || null;
+                    row.getCell(16).value = profile.discipline_bachelors || null;
+                    row.getCell(17).value = profile.discipline_masters || null;
+                    row.getCell(18).value = profile.discipline_doctorate || null;
+                    row.getCell(19).value = profile.masters_with_thesis || null;
+                    row.getCell(20).value = profile.doctorate_with_dissertation || null;
+                    row.getCell(21).value = profile.undergrad_lab_credit_units || 0;
+                    row.getCell(22).value = profile.undergrad_lecture_credit_units || 0;
+                    row.getCell(23).value = profile.undergrad_total_credit_units || 0;
+                    row.getCell(24).value = profile.undergrad_lab_hours_per_week || 0;
+                    row.getCell(25).value = profile.undergrad_lecture_hours_per_week || 0;
+                    row.getCell(26).value = profile.undergrad_total_hours_per_week || 0;
+                    row.getCell(27).value = profile.undergrad_lab_contact_hours || 0;
+                    row.getCell(28).value = profile.undergrad_lecture_contact_hours || 0;
+                    row.getCell(29).value = profile.undergrad_total_contact_hours || 0;
+                    row.getCell(30).value = profile.graduate_lab_credit_units || 0;
+                    row.getCell(31).value = profile.graduate_lecture_credit_units || 0;
+                    row.getCell(32).value = profile.graduate_total_credit_units || 0;
+                    row.getCell(33).value = profile.graduate_lab_contact_hours || 0;
+                    row.getCell(34).value = profile.graduate_lecture_contact_hours || 0;
+                    row.getCell(35).value = profile.graduate_total_contact_hours || 0;
+                    row.getCell(36).value = profile.research_load || 0;
+                    row.getCell(37).value = profile.extension_services_load || 0;
+                    row.getCell(38).value = profile.study_load || 0;
+                    row.getCell(39).value = profile.production_load || 0;
+                    row.getCell(40).value = profile.administrative_load || 0;
+                    row.getCell(41).value = profile.other_load_credits || 0;
+                    row.getCell(42).value = profile.total_work_load || 0;
                     row.commit();
                 });
             }
 
-            // Generate a filename for the new file
-            const fileName = `Form_E2_Faculty_Profiles_${
-                new Date().toISOString().split("T")[0]
-            }.xlsx`;
-
-            // Write the workbook to a buffer and trigger the download
+            const fileName = `Form_E2_Faculty_Profiles_${new Date().toISOString().split("T")[0]}.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -470,8 +412,6 @@ const FacultyProfileUpload = () => {
     const handleSnackbarClose = () => {
         setSnackbar((prev) => ({ ...prev, open: false }));
     };
-
-    console.log("Filtered Faculty Profiles:", filteredFacultyProfiles); // Debug log
 
     return (
         <Box sx={{ p: 3 }}>
@@ -519,7 +459,7 @@ const FacultyProfileUpload = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<DownloadIcon/>  }
+                    startIcon={<DownloadIcon />}
                     onClick={handleExportData}
                     disabled={isUploading || loading}
                 >
@@ -537,19 +477,16 @@ const FacultyProfileUpload = () => {
             >
                 {facultyGroups.map((group) => (
                     <Tab
-                        key={group.value}
+                        key={group.sheetName}
                         label={group.label}
-                        value={group.value}
+                        value={group.sheetName}
                     />
                 ))}
             </Tabs>
 
             {/* Group description */}
             <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
-                {
-                    facultyGroups.find((group) => group.value === selectedGroup)
-                        ?.description
-                }
+                {currentGroup?.description}
             </Typography>
 
             {/* Progress Bar */}
@@ -566,11 +503,8 @@ const FacultyProfileUpload = () => {
             )}
 
             {/* Loading and Error States */}
-            {loading && (
-                <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
-                    <CircularProgress size={40} />
-                </Box>
-            )}
+            {loading && <FacultyProfileSkeleton />}
+
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
                     {error}
@@ -580,7 +514,7 @@ const FacultyProfileUpload = () => {
             {!loading && !error && (
                 <FacultyProfileTable
                     selectedGroup={selectedGroup}
-                    facultyProfiles={filteredFacultyProfiles}
+                    facultyProfiles={facultyProfiles}
                 />
             )}
 

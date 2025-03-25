@@ -20,6 +20,10 @@ class FacultyProfileController extends Controller
             $query->where('institution_id', $request->institution_id);
         }
 
+        if ($request->has('faculty_group')) {
+            $query->where('faculty_group', $request->faculty_group);
+        }
+
         $facultyProfiles = $query->get();
 
         return response()->json($facultyProfiles, Response::HTTP_OK);
