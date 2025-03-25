@@ -39,6 +39,11 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [isTenuredFilter, setIsTenuredFilter] = useState("");
     const [genderFilter, setGenderFilter] = useState("");
 
+    // Add this useEffect to sync state with prop changes
+    useEffect(() => {
+        setFacultyProfiles(initialFacultyProfiles);
+    }, [initialFacultyProfiles]);
+
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
         setPage(0); // Reset to first page when changing tabs

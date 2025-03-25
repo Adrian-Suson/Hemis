@@ -1,3 +1,4 @@
+// InstitutionTable.jsx
 import {
     Table,
     TableBody,
@@ -11,20 +12,17 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import DetailDialog from "./DetailDialog"; // Import the updated dialog component
+import DetailDialog from "./DetailDialog";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import React from "react";
 
 const InstitutionTable = ({ institutions, onEdit }) => {
     const navigate = useNavigate();
-
     const [selectedInstitution, setSelectedInstitution] = React.useState(null);
     const [openDialog, setOpenDialog] = React.useState(false);
 
     const handleOpenDialog = (institution) => {
-        // Store the institution ID in localStorage
         localStorage.setItem("institutionId", institution.id);
-
         setSelectedInstitution(institution);
         setOpenDialog(true);
     };
@@ -37,71 +35,68 @@ const InstitutionTable = ({ institutions, onEdit }) => {
     };
 
     return (
-        <TableContainer component={Paper} sx={{ mt: 4 }}>
-            <Table size="small" stickyHeader>
+        <TableContainer component={Paper} sx={{ mt: 2, boxShadow: "none" }}>
+            <Table
+                size="small"
+                stickyHeader
+                sx={{ borderCollapse: "collapse" }}
+            >
                 <TableHead>
-                    <TableRow>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
+                    <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                        <TableCell sx={{ fontWeight: "bold", py: 1, px: 2 }}>
                             Name
                         </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
+                        <TableCell sx={{ fontWeight: "bold", py: 1, px: 2 }}>
                             Region
                         </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
+                        <TableCell sx={{ fontWeight: "bold", py: 1, px: 2 }}>
                             Address
                         </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
+                        <TableCell sx={{ fontWeight: "bold", py: 1, px: 2 }}>
                             City
                         </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
+                        <TableCell sx={{ fontWeight: "bold", py: 1, px: 2 }}>
                             Province
                         </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
-                            Type
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", padding: "6px" }}>
+                        <TableCell sx={{ fontWeight: "bold", py: 1, px: 2 }}>
                             Actions
                         </TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
                     {institutions.length > 0 ? (
-                        institutions.map((institution, index) => (
-                            <TableRow key={index}>
-                                <TableCell sx={{ padding: "6px" }}>
+                        institutions.map((institution) => (
+                            <TableRow
+                                key={institution.id}
+                                sx={{
+                                    "&:hover": { backgroundColor: "#fafafa" },
+                                }}
+                            >
+                                <TableCell sx={{ py: 0.5, px: 2 }}>
                                     {institution.name}
                                 </TableCell>
-                                <TableCell sx={{ padding: "6px" }}>
+                                <TableCell sx={{ py: 0.5, px: 2 }}>
                                     {institution.region}
                                 </TableCell>
-                                <TableCell sx={{ padding: "6px" }}>
+                                <TableCell sx={{ py: 0.5, px: 2 }}>
                                     {institution.address_street || "N/A"}
                                 </TableCell>
-                                <TableCell sx={{ padding: "6px" }}>
+                                <TableCell sx={{ py: 0.5, px: 2 }}>
                                     {institution.municipality_city || "N/A"}
                                 </TableCell>
-                                <TableCell sx={{ padding: "6px" }}>
+                                <TableCell sx={{ py: 0.5, px: 2 }}>
                                     {institution.province || "N/A"}
                                 </TableCell>
-                                <TableCell sx={{ padding: "6px" }}>
-                                    {institution.institution_type}
-                                </TableCell>
-                                <TableCell
-                                    sx={{
-                                        padding: "6px",
-                                        display: "flex",
-                                        gap: 1,
-                                    }}
-                                >
-                                    {/* View Details Button */}
+                                <TableCell sx={{ py: 0.5, px: 2 }}>
                                     <Tooltip title="View Details">
                                         <IconButton
+                                            size="small"
                                             color="info"
                                             onClick={() =>
                                                 handleOpenDialog(institution)
                                             }
                                         >
-                                            <VisibilityIcon />
+                                            <VisibilityIcon fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
                                 </TableCell>
@@ -109,7 +104,11 @@ const InstitutionTable = ({ institutions, onEdit }) => {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={7} align="center">
+                            <TableCell
+                                colSpan={7}
+                                align="center"
+                                sx={{ py: 2 }}
+                            >
                                 No data uploaded yet.
                             </TableCell>
                         </TableRow>

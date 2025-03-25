@@ -1,4 +1,3 @@
-// InstitutionManagement.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -21,13 +20,15 @@ import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import DownloadIcon from "@mui/icons-material/Download";
 import ExcelJS from "exceljs";
-// Import the new skeleton component
 import InstitutionManagementSkeleton from "./InstitutionManagementSkeleton";
 
 const InstitutionManagement = () => {
-    const [activeTab, setActiveTab] = useState(0);
+    const [activeTab, setActiveTab] = useState(() => {
+        const savedTab = localStorage.getItem("activeTab");
+        return savedTab !== null ? parseInt(savedTab, 10) : 0;
+    });
     const [institutions, setInstitutions] = useState([]);
-    const [loading, setLoading] = useState(true); // Add loading state
+    const [loading, setLoading] = useState(true);
     const { showProgress, hideProgress } = useProgress();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -53,7 +54,7 @@ const InstitutionManagement = () => {
 
     const fetchInstitutions = async () => {
         try {
-            setLoading(true); // Set loading to true
+            setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(
                 `${config.API_URL}/institutions?type=${getInstitutionType()}`,
@@ -68,19 +69,20 @@ const InstitutionManagement = () => {
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
-            setLoading(false); // Set loading to false
-            hideProgress(); // Hide progress
+            setLoading(false);
+            hideProgress();
         }
     };
 
-    // Fetch institutions whenever activeTab changes
     useEffect(() => {
         fetchInstitutions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
+    // Handle tab change and save to localStorage
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
+        localStorage.setItem("activeTab", newValue);
     };
 
     const handleEdit = (institution) => {
@@ -93,17 +95,17 @@ const InstitutionManagement = () => {
         const file = fileInput.files[0];
         if (!file) return;
 
-        showProgress(10); // Some initial progress
+        showProgress(10);
 
         const reader = new FileReader();
         reader.onload = async (e) => {
-            showProgress(30); // After reading
+            showProgress(30);
 
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: "array" });
 
-                showProgress(40); // After parsing
+                showProgress(40);
 
                 const sheetA1 = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonDataA1 = XLSX.utils.sheet_to_json(sheetA1, {
@@ -145,7 +147,7 @@ const InstitutionManagement = () => {
                     institution_type: getInstitutionType(),
                 };
 
-                showProgress(50); // Before sending to server
+                showProgress(50);
 
                 const token = localStorage.getItem("token");
                 const institutionResponse = await axios.post(
@@ -168,7 +170,6 @@ const InstitutionManagement = () => {
                 );
                 const institutionId = institutionResponse.data.id;
 
-                // Process campus data
                 const sheetA2 = workbook.Sheets[workbook.SheetNames[1]];
                 const jsonDataA2 = XLSX.utils.sheet_to_json(sheetA2, {
                     header: 1,
@@ -208,7 +209,7 @@ const InstitutionManagement = () => {
                         institution_id: String(institutionId),
                     }));
 
-                showProgress(70); // Before sending campuses
+                showProgress(70);
                 await axios.post(
                     "http://localhost:8000/api/campuses",
                     processedCampuses,
@@ -218,7 +219,7 @@ const InstitutionManagement = () => {
                 );
 
                 console.log("Campuses data sent successfully!");
-                showProgress(100); // Done
+                showProgress(100);
             } catch (error) {
                 console.error("Error sending data to backend:", error);
                 setSnackbarMessage("Error uploading institution data.");
@@ -369,11 +370,6 @@ const InstitutionManagement = () => {
         }
     };
 
-    // Show skeleton while loading
-    if (loading) {
-        return <InstitutionManagementSkeleton />;
-    }
-
     return (
         <Box sx={{ p: 3 }}>
             {/* Breadcrumbs */}
@@ -417,7 +413,7 @@ const InstitutionManagement = () => {
                     color="primary"
                     startIcon={<DownloadIcon />}
                     onClick={handleExportData}
-                    disabled={!institutions.length} // Disable if no data
+                    disabled={!institutions.length}
                     sx={{
                         backgroundColor: institutions.length
                             ? "secondary.main"
@@ -452,6 +448,18 @@ const InstitutionManagement = () => {
                 <Tab label="PHEIs" />
             </Tabs>
 
+            {/* Conditionally render skeleton or table */}
+            {loading ? (
+                <InstitutionManagementSkeleton
+                    count={fetchInstitutions.length || 5}
+                />
+            ) : (
+                <InstitutionTable
+                    institutions={institutions}
+                    onEdit={handleEdit}
+                />
+            )}
+
             <ManualInstitutionDialog
                 open={openManualDialog}
                 onClose={() => setOpenManualDialog(false)}
@@ -463,13 +471,12 @@ const InstitutionManagement = () => {
                 setSnackbarMessage={setSnackbarMessage}
                 setSnackbarSeverity={setSnackbarSeverity}
             />
-            <InstitutionTable institutions={institutions} onEdit={handleEdit} />
             <CustomSnackbar
                 open={snackbarOpen}
                 message={snackbarMessage}
                 severity={snackbarSeverity}
                 onClose={handleCloseSnackbar}
-                autoHideDuration={5000} // 5 seconds, for example
+                autoHideDuration={5000}
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
             />
         </Box>

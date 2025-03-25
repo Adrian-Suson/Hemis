@@ -3,14 +3,11 @@ import {
     Box,
     Typography,
     Grid,
-    Button,
     Avatar,
-    Chip,
     Paper,
     Divider,
     Skeleton,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import PersonIcon from "@mui/icons-material/Person";
 import PeopleIcon from "@mui/icons-material/People";
@@ -54,7 +51,6 @@ const Dashboard = () => {
         loading: true,
         error: null,
     });
-    const navigate = useNavigate();
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -378,85 +374,6 @@ const Dashboard = () => {
                     </Paper>
                 </Grid>
             </Grid>
-
-            {/* Institutions Section Skeleton */}
-            <Paper
-                elevation={0}
-                sx={{
-                    p: 3,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: "divider",
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        my: 5,
-                    }}
-                >
-                    <Skeleton variant="text" width={150} height={30} />
-                    <Skeleton variant="rectangular" width={120} height={36} />
-                </Box>
-                <Divider sx={{ mb: 3 }} />
-                <Grid container spacing={3}>
-                    {Array.from({ length: 3 }).map((_, index) => (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 2,
-                                    height: "100%",
-                                    borderRadius: 2,
-                                    border: 1,
-                                    borderColor: "divider",
-                                }}
-                            >
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "flex-start",
-                                        justifyContent: "space-between",
-                                    }}
-                                >
-                                    <Box>
-                                        <Skeleton
-                                            variant="text"
-                                            width={150}
-                                            height={30}
-                                            sx={{ mb: 1 }}
-                                        />
-                                        <Skeleton
-                                            variant="rectangular"
-                                            width={80}
-                                            height={24}
-                                            sx={{ mb: 1 }}
-                                        />
-                                    </Box>
-                                    <Skeleton
-                                        variant="circular"
-                                        width={40}
-                                        height={40}
-                                    />
-                                </Box>
-                                <Skeleton
-                                    variant="text"
-                                    width="80%"
-                                    height={20}
-                                    sx={{ mb: 2 }}
-                                />
-                                <Skeleton
-                                    variant="rectangular"
-                                    width="100%"
-                                    height={36}
-                                />
-                            </Paper>
-                        </Grid>
-                    ))}
-                </Grid>
-            </Paper>
         </Box>
     );
 
@@ -475,7 +392,7 @@ const Dashboard = () => {
     return (
         <Box
             p={5}
-            mt={5}
+            mt={2}
             sx={{
                 height: "87vh", // Set height to viewport height
                 overflowY: "auto", // Enable vertical scrolling
@@ -772,121 +689,6 @@ const Dashboard = () => {
                         </Paper>
                     </Grid>
                 </Grid>
-
-                {/* Institutions Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 3,
-                        borderRadius: 2,
-                        border: 1,
-                        borderColor: "divider",
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            mb: 2,
-                        }}
-                    >
-                        <Typography variant="h5" fontWeight="medium">
-                            Institutions
-                        </Typography>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            size="small"
-                            onClick={() => navigate("/admin/institutions")}
-                        >
-                            Manage Institutions
-                        </Button>
-                    </Box>
-                    <Divider sx={{ mb: 3 }} />
-                    <Grid container spacing={3}>
-                        {dashboardData.institutions.map((institution) => (
-                            <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={4}
-                                key={institution.id}
-                            >
-                                <Paper
-                                    elevation={0}
-                                    sx={{
-                                        p: 2,
-                                        height: "100%",
-                                        borderRadius: 2,
-                                        border: 1,
-                                        borderColor: "divider",
-                                        transition: "all 0.3s",
-                                        "&:hover": {
-                                            boxShadow: 3,
-                                            borderColor: "primary.main",
-                                        },
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "flex-start",
-                                            justifyContent: "space-between",
-                                        }}
-                                    >
-                                        <Box>
-                                            <Typography
-                                                variant="h6"
-                                                fontWeight="medium"
-                                                gutterBottom
-                                            >
-                                                {institution.name}
-                                            </Typography>
-                                            <Chip
-                                                label={institution.region}
-                                                size="small"
-                                                sx={{ mb: 1 }}
-                                                color="primary"
-                                                variant="outlined"
-                                            />
-                                        </Box>
-                                        <Avatar
-                                            sx={{
-                                                bgcolor: "primary.light",
-                                                color: "primary.main",
-                                            }}
-                                        >
-                                            {institution.name.charAt(0)}
-                                        </Avatar>
-                                    </Box>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{ mb: 2 }}
-                                    >
-                                        {institution.address_street},{" "}
-                                        {institution.municipality_city},{" "}
-                                        {institution.province}
-                                    </Typography>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        color="primary"
-                                        size="small"
-                                        onClick={() =>
-                                            navigate(
-                                                `/admin/institutions/${institution.id}`
-                                            )
-                                        }
-                                    >
-                                        View Details
-                                    </Button>
-                                </Paper>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </Paper>
             </Box>
         </Box>
     );
