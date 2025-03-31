@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -5,8 +6,6 @@ import {
     Box,
     Button,
     Typography,
-    Tabs,
-    Tab,
     Breadcrumbs,
     Link,
     ButtonGroup,
@@ -18,15 +17,10 @@ import config from "../../../utils/config";
 import { useProgress } from "../../../Context/ProgressContext";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
-import DownloadIcon from "@mui/icons-material/Download";
-import ExcelJS from "exceljs";
 import InstitutionManagementSkeleton from "./InstitutionManagementSkeleton";
+import UploadDialog from "./UploadDialog";
 
 const InstitutionManagement = () => {
-    const [activeTab, setActiveTab] = useState(() => {
-        const savedTab = localStorage.getItem("activeTab");
-        return savedTab !== null ? parseInt(savedTab, 10) : 0;
-    });
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showProgress, hideProgress } = useProgress();
@@ -34,34 +28,21 @@ const InstitutionManagement = () => {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("info");
     const [openManualDialog, setOpenManualDialog] = useState(false);
+    const [openUploadDialog, setOpenUploadDialog] = useState(false);
+    const [selectedInstitutionType, setSelectedInstitutionType] = useState("");
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const handleCloseSnackbar = () => {
         setSnackbarOpen(false);
-    };
-
-    const getInstitutionType = () => {
-        switch (activeTab) {
-            case 0:
-                return "SUC";
-            case 1:
-                return "LUC";
-            case 2:
-                return "PHEI";
-            default:
-                return "Unknown";
-        }
     };
 
     const fetchInstitutions = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            const response = await axios.get(
-                `${config.API_URL}/institutions?type=${getInstitutionType()}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            const response = await axios.get(`${config.API_URL}/institutions`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             setInstitutions(response.data);
         } catch (error) {
             console.error("Error fetching institutions:", error);
@@ -76,24 +57,18 @@ const InstitutionManagement = () => {
 
     useEffect(() => {
         fetchInstitutions();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab]);
-
-    // Handle tab change and save to localStorage
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-        localStorage.setItem("activeTab", newValue);
-    };
+    }, []);
 
     const handleEdit = (institution) => {
         console.log("Editing institution:", institution);
-        // Open a modal or redirect to an edit form
     };
 
-    const handleFileUpload = (event) => {
-        const fileInput = event.target;
-        const file = fileInput.files[0];
-        if (!file) return;
+    const handleUploadClick = () => {
+        setOpenUploadDialog(true);
+    };
+
+    const handleFileUpload = async () => {
+        if (!selectedFile || !selectedInstitutionType) return;
 
         showProgress(10);
 
@@ -113,41 +88,42 @@ const InstitutionManagement = () => {
                 });
 
                 const extractedInstitution = {
-                    name: String(jsonDataA1[4]?.[2] || "Unknown"),
-                    region: String(jsonDataA1[10]?.[2] || "Unknown"),
-                    address_street: String(jsonDataA1[7]?.[2] || "Unknown"),
-                    municipality_city: String(jsonDataA1[8]?.[2] || "Unknown"),
-                    province: String(jsonDataA1[9]?.[2] || "Unknown"),
-                    postal_code: String(jsonDataA1[11]?.[2] || "N/A"),
+                    name: String(jsonDataA1[1]?.[2] || "Unknown"),
+                    address_street: String(jsonDataA1[4]?.[2] || "Unknown"),
+                    municipality_city: String(jsonDataA1[5]?.[2] || "Unknown"),
+                    province: String(jsonDataA1[6]?.[2] || "Unknown"),
+                    region: String(jsonDataA1[7]?.[2] || "Unknown"),
+                    postal_code: String(jsonDataA1[8]?.[2] || "N/A"),
                     institutional_telephone: String(
-                        jsonDataA1[12]?.[2] || "N/A"
+                        jsonDataA1[9]?.[2] || "N/A"
                     ),
-                    institutional_fax: String(jsonDataA1[13]?.[2] || "N/A"),
-                    head_telephone: String(jsonDataA1[14]?.[2] || "N/A"),
-                    institutional_email: String(jsonDataA1[15]?.[2] || "N/A"),
-                    institutional_website: String(jsonDataA1[16]?.[2] || "N/A"),
-                    year_established: jsonDataA1[17]?.[2]
+                    institutional_fax: String(jsonDataA1[10]?.[2] || "N/A"),
+                    head_telephone: String(jsonDataA1[11]?.[2] || "N/A"),
+                    institutional_email: String(jsonDataA1[12]?.[2] || "N/A"),
+                    institutional_website: String(jsonDataA1[13]?.[2] || "N/A"),
+                    year_established: jsonDataA1[14]?.[2]
+                        ? String(jsonDataA1[14]?.[2])
+                        : "N/A",
+                    sec_registration: jsonDataA1[15]?.[2]
+                        ? String(jsonDataA1[15]?.[2])
+                        : "N/A",
+                    year_granted_approved: jsonDataA1[16]?.[2]
+                        ? String(jsonDataA1[16]?.[2])
+                        : "N/A",
+                    year_converted_college: jsonDataA1[17]?.[2]
                         ? String(jsonDataA1[17]?.[2])
                         : "N/A",
-                    sec_registration: jsonDataA1[18]?.[2]
+                    year_converted_university: jsonDataA1[18]?.[2]
                         ? String(jsonDataA1[18]?.[2])
                         : "N/A",
-                    year_granted_approved: jsonDataA1[19]?.[2]
-                        ? String(jsonDataA1[19]?.[2])
-                        : "N/A",
-                    year_converted_college: jsonDataA1[20]?.[2]
-                        ? String(jsonDataA1[20]?.[2])
-                        : "N/A",
-                    year_converted_university: jsonDataA1[21]?.[2]
-                        ? String(jsonDataA1[21]?.[2])
-                        : "N/A",
-                    head_name: String(jsonDataA1[22]?.[2] || "Unknown"),
-                    head_title: String(jsonDataA1[23]?.[2] || "N/A"),
-                    head_education: String(jsonDataA1[24]?.[2] || "N/A"),
-                    institution_type: getInstitutionType(),
+                    head_name: String(jsonDataA1[19]?.[2] || "Unknown"),
+                    head_title: String(jsonDataA1[20]?.[2] || "N/A"),
+                    head_education: String(jsonDataA1[21]?.[2] || "N/A"),
+                    institution_type: selectedInstitutionType,
                 };
 
                 showProgress(50);
+                console.log("extractedInstitution:", extractedInstitution);
 
                 const token = localStorage.getItem("token");
                 const institutionResponse = await axios.post(
@@ -164,10 +140,6 @@ const InstitutionManagement = () => {
                 setSnackbarMessage("Institution data uploaded successfully!");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
-                console.log(
-                    "Institution data sent successfully:",
-                    institutionResponse.data
-                );
                 const institutionId = institutionResponse.data.id;
 
                 const sheetA2 = workbook.Sheets[workbook.SheetNames[1]];
@@ -175,7 +147,7 @@ const InstitutionManagement = () => {
                     header: 1,
                 });
 
-                const startRow = 13;
+                const startRow = 10;
                 const processedCampuses = jsonDataA2
                     .slice(startRow)
                     .filter((row) =>
@@ -213,9 +185,7 @@ const InstitutionManagement = () => {
                 await axios.post(
                     "http://localhost:8000/api/campuses",
                     processedCampuses,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
 
                 console.log("Campuses data sent successfully!");
@@ -227,152 +197,17 @@ const InstitutionManagement = () => {
                 setSnackbarOpen(true);
             } finally {
                 hideProgress();
-                fileInput.value = "";
+                setSelectedFile(null);
+                setSelectedInstitutionType("");
             }
         };
 
-        reader.readAsArrayBuffer(file);
-    };
-
-    const handleExportData = async () => {
-        if (!institutions.length) {
-            setSnackbarMessage("No data available to export.");
-            setSnackbarSeverity("warning");
-            setSnackbarOpen(true);
-            return;
-        }
-
-        try {
-            const response = await fetch("/templates/Form-A-Themeplate.xlsx");
-            if (!response.ok) {
-                throw new Error(
-                    `Failed to load template file: HTTP ${response.status} - ${response.statusText}`
-                );
-            }
-            const arrayBuffer = await response.arrayBuffer();
-
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(arrayBuffer);
-
-            const sheetA1 = workbook.getWorksheet("FORM A1");
-            const sheetA2 = workbook.getWorksheet("FORM A2");
-
-            if (!sheetA1 || !sheetA2) {
-                throw new Error(
-                    "Template is missing required sheets: FORM A1 or FORM A2"
-                );
-            }
-
-            const institution = institutions[0];
-            const a1StartRow = 5;
-            const a1Data = [
-                institution.name || "N/A",
-                "", // ADDRESS header
-                "",
-                institution.address_street || "N/A",
-                institution.municipality_city || "N/A",
-                institution.province || "N/A",
-                institution.region || "N/A",
-                institution.postal_code || "N/A",
-                institution.institutional_telephone || "N/A",
-                institution.institutional_fax || "N/A",
-                institution.head_telephone || "N/A",
-                institution.institutional_email || "N/A",
-                institution.institutional_website || "N/A",
-                institution.year_established || "N/A",
-                institution.sec_registration || "N/A",
-                institution.year_granted_approved || "N/A",
-                institution.year_converted_college || "N/A",
-                institution.year_converted_university || "N/A",
-                institution.head_name || "N/A",
-                institution.head_title || "N/A",
-                institution.head_education || "N/A",
-            ];
-
-            a1Data.forEach((value, index) => {
-                const row = sheetA1.getRow(a1StartRow + index);
-                row.getCell(3).value = value;
-                row.commit();
-            });
-
-            const token = localStorage.getItem("token");
-            const campusResponse = await axios.get(
-                `http://localhost:8000/api/campuses?institution_id=${institution.id}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            let campuses = campusResponse.data.campuses || [];
-            if (!Array.isArray(campuses)) {
-                console.warn(
-                    "Campuses is not an array, normalizing to empty array:",
-                    campuses
-                );
-                campuses = [];
-            }
-
-            const a2StartRow = 14;
-            if (campuses.length === 0) {
-                console.log(
-                    "No campuses to export for institution:",
-                    institution.id
-                );
-            } else {
-                campuses.forEach((campus, index) => {
-                    const row = sheetA2.getRow(a2StartRow + index);
-                    console.log(
-                        `Populating row ${a2StartRow + index} with campus:`,
-                        campus
-                    );
-                    row.values = [
-                        index + 1,
-                        campus.suc_name || "N/A",
-                        campus.campus_type || "N/A",
-                        campus.institutional_code || "N/A",
-                        campus.region || "N/A",
-                        campus.municipality_city_province || "N/A",
-                        campus.year_first_operation || "N/A",
-                        campus.land_area_hectares || "0.0",
-                        campus.distance_from_main || "0.0",
-                        campus.autonomous_code || "N/A",
-                        campus.position_title || "N/A",
-                        campus.head_full_name || "N/A",
-                        campus.former_name || "N/A",
-                        campus.latitude_coordinates || "0.0",
-                        campus.longitude_coordinates || "0.0",
-                    ];
-                    row.commit();
-                });
-            }
-
-            const fileName = `Form_A_${getInstitutionType()}_${
-                new Date().toISOString().split("T")[0]
-            }.xlsx`;
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            window.URL.revokeObjectURL(url);
-
-            setSnackbarMessage("Data exported successfully using template!");
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
-        } catch (error) {
-            console.error("Error exporting data:", error);
-            setSnackbarMessage(`Error exporting data: ${error.message}`);
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-        }
+        reader.readAsArrayBuffer(selectedFile);
+        setOpenUploadDialog(false);
     };
 
     return (
         <Box sx={{ p: 3 }}>
-            {/* Breadcrumbs */}
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
@@ -390,65 +225,18 @@ const InstitutionManagement = () => {
             <ButtonGroup sx={{ mt: 3, display: "flex" }}>
                 <Button
                     variant="contained"
-                    component="label"
                     startIcon={<UploadIcon />}
                     sx={{
                         backgroundColor: "primary.main",
                         color: "white",
                         "&:hover": { backgroundColor: "primary.dark" },
                     }}
+                    onClick={handleUploadClick}
                 >
                     Upload Form A
-                    <input
-                        type="file"
-                        hidden
-                        accept=".xlsx, .xls"
-                        onClick={() => {}}
-                        onChange={handleFileUpload}
-                    />
-                </Button>
-
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<DownloadIcon />}
-                    onClick={handleExportData}
-                    disabled={!institutions.length}
-                    sx={{
-                        backgroundColor: institutions.length
-                            ? "secondary.main"
-                            : "grey.400",
-                        "&:hover": {
-                            backgroundColor: institutions.length
-                                ? "secondary.dark"
-                                : "grey.500",
-                        },
-                    }}
-                >
-                    {institutions.length
-                        ? "Export Form A"
-                        : "No Data to Export"}
                 </Button>
             </ButtonGroup>
 
-            <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-                sx={{
-                    "& .MuiTab-root": {
-                        fontWeight: "bold",
-                        textTransform: "none",
-                    },
-                }}
-            >
-                <Tab label="SUCs" />
-                <Tab label="LUCs" />
-                <Tab label="PHEIs" />
-            </Tabs>
-
-            {/* Conditionally render skeleton or table */}
             {loading ? (
                 <InstitutionManagementSkeleton
                     count={fetchInstitutions.length || 5}
@@ -460,10 +248,21 @@ const InstitutionManagement = () => {
                 />
             )}
 
+            {/* Upload Dialog */}
+            <UploadDialog
+                openUploadDialog={openUploadDialog}
+                setOpenUploadDialog={setOpenUploadDialog}
+                selectedInstitutionType={selectedInstitutionType}
+                setSelectedInstitutionType={setSelectedInstitutionType}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
+                handleFileUpload={handleFileUpload}
+            />
+
             <ManualInstitutionDialog
                 open={openManualDialog}
                 onClose={() => setOpenManualDialog(false)}
-                getInstitutionType={getInstitutionType}
+                getInstitutionType={() => selectedInstitutionType} // Pass selected type if needed
                 fetchInstitutions={fetchInstitutions}
                 showProgress={showProgress}
                 hideProgress={hideProgress}

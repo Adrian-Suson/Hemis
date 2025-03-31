@@ -3,39 +3,18 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button,
     Typography,
-    Tooltip,
-    CircularProgress,
     Box,
     Grid,
     Paper,
     Divider,
-    ButtonGroup,
+    IconButton,
 } from "@mui/material";
 import PropTypes from "prop-types";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
-import { useState } from "react";
+import CloseIcon from "@mui/icons-material/Close"; // Added CloseIcon
 
-const DetailDialog = ({ open, onClose, institution, navigate }) => {
-    const [loading, setLoading] = useState({
-        viewCampuses: false,
-        edit: false,
-        academicPrograms: false,
-    });
-
+const DetailDialog = ({ open, onClose, institution }) => {
     if (!institution) return null;
-
-    const handleNavigation = async (path, key) => {
-        setLoading((prev) => ({ ...prev, [key]: true }));
-        try {
-            navigate(path);
-        } finally {
-            setLoading((prev) => ({ ...prev, [key]: false }));
-            onClose();
-        }
-    };
 
     const formatField = (label, value) => (
         <Grid item xs={12} sm={6} key={label}>
@@ -68,18 +47,33 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
             aria-labelledby="institution-details-dialog"
             sx={{ "& .MuiDialog-paper": { borderRadius: 2, boxShadow: 3 } }}
         >
-            {/* Dialog Header */}
+            {/* Dialog Header with Close Icon */}
             <DialogTitle
                 id="institution-details-dialog"
                 sx={{
-                    backgroundColor: "#1976d2", // Professional blue
+                    backgroundColor: "#1976d2",
                     color: "white",
                     p: 2.5,
                     fontSize: "1.5rem",
                     fontWeight: 600,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                 }}
             >
                 {institution.name || "Institution Details"}
+                <IconButton
+                    onClick={onClose}
+                    sx={{
+                        color: "white",
+                        "&:hover": {
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                        },
+                    }}
+                    aria-label="close"
+                >
+                    <CloseIcon />
+                </IconButton>
             </DialogTitle>
 
             {/* Dialog Content */}
@@ -179,133 +173,15 @@ const DetailDialog = ({ open, onClose, institution, navigate }) => {
                 </Paper>
             </DialogContent>
 
+            {/* Dialog Actions (now empty since Close is moved) */}
             <DialogActions
                 sx={{
                     p: 2,
                     backgroundColor: "#f1f1f1",
-                    justifyContent: "space-between",
                     borderTop: "1px solid #e0e0e0",
                 }}
             >
-                {/* ButtonGroup for the first three actions */}
-                <ButtonGroup variant="outlined" size="small">
-                    {/* View Campuses */}
-                    <Tooltip title="View Campuses">
-                        <Button
-                            onClick={() =>
-                                handleNavigation(
-                                    `/super-admin/institutions/campuses/${institution.id}`,
-                                    "viewCampuses"
-                                )
-                            }
-                            disabled={loading.viewCampuses}
-                            startIcon={
-                                loading.viewCampuses ? (
-                                    <CircularProgress
-                                        size={18}
-                                        color="inherit"
-                                    />
-                                ) : (
-                                    <VisibilityIcon />
-                                )
-                            }
-                            sx={{
-                                color: "#1976d2",
-                                borderColor: "#1976d2",
-                                "&:hover": {
-                                    borderColor: "#115293",
-                                    color: "#115293",
-                                },
-                                textTransform: "none",
-                            }}
-                        >
-                            View Campuses
-                        </Button>
-                    </Tooltip>
-
-                    {/* Faculties */}
-                    <Tooltip title="View Faculties">
-                        <Button
-                            onClick={() =>
-                                handleNavigation(
-                                    `/super-admin/institutions/faculties/${institution.id}`,
-                                    "faculties"
-                                )
-                            }
-                            disabled={loading.faculties}
-                            startIcon={
-                                loading.faculties ? (
-                                    <CircularProgress
-                                        size={18}
-                                        color="inherit"
-                                    />
-                                ) : (
-                                    <LibraryBooksIcon />
-                                )
-                            }
-                            sx={{
-                                color: "#1976d2",
-                                borderColor: "#1976d2",
-                                "&:hover": {
-                                    borderColor: "#115293",
-                                    color: "#115293",
-                                },
-                                textTransform: "none",
-                            }}
-                        >
-                            Faculties
-                        </Button>
-                    </Tooltip>
-
-                    {/* Curricular Programs */}
-                    <Tooltip title="View Academic Programs">
-                        <Button
-                            onClick={() =>
-                                handleNavigation(
-                                    `/super-admin/institutions/curricular-programs/${institution.id}`,
-                                    "academicPrograms"
-                                )
-                            }
-                            disabled={loading.academicPrograms}
-                            startIcon={
-                                loading.academicPrograms ? (
-                                    <CircularProgress
-                                        size={18}
-                                        color="inherit"
-                                    />
-                                ) : (
-                                    <LibraryBooksIcon />
-                                )
-                            }
-                            sx={{
-                                color: "#1976d2",
-                                borderColor: "#1976d2",
-                                "&:hover": {
-                                    borderColor: "#115293",
-                                    color: "#115293",
-                                },
-                                textTransform: "none",
-                            }}
-                        >
-                            Curricular Programs
-                        </Button>
-                    </Tooltip>
-                </ButtonGroup>
-
-                {/* Close Button remains separate on the right */}
-                <Button
-                    onClick={onClose}
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                        color: "#d32f2f",
-                        borderColor: "#d32f2f",
-                        "&:hover": { borderColor: "#b71c1c", color: "#b71c1c" },
-                        textTransform: "none",
-                    }}
-                >
-                    Close
-                </Button>
+                {/* You can add other actions here if needed */}
             </DialogActions>
         </Dialog>
     );

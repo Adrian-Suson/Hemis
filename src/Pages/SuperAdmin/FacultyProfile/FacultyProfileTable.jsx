@@ -28,9 +28,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(20);
     const [searchQuery, setSearchQuery] = useState("");
-    const [facultyProfiles, setFacultyProfiles] = useState(
-        initialFacultyProfiles
-    ); // Manage facultyProfiles in state
+    const [facultyProfiles, setFacultyProfiles] = useState(initialFacultyProfiles);
     const [filteredData, setFilteredData] = useState(facultyProfiles);
 
     // Filter states for each column
@@ -38,8 +36,9 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [homeCollegeFilter, setHomeCollegeFilter] = useState("");
     const [isTenuredFilter, setIsTenuredFilter] = useState("");
     const [genderFilter, setGenderFilter] = useState("");
+    const [yearFilter, setYearFilter] = useState(""); // New state for year filter
 
-    // Add this useEffect to sync state with prop changes
+    // Sync state with prop changes
     useEffect(() => {
         setFacultyProfiles(initialFacultyProfiles);
     }, [initialFacultyProfiles]);
@@ -79,6 +78,20 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     );
     const uniqueTenuredOptions = ["1", "2", "3", "4"];
     const uniqueGenderOptions = ["Male", "Female", "-"];
+    const uniqueYears = useMemo(
+        () => [
+            ...new Set(
+                facultyProfiles
+                    .map((profile) =>
+                        profile.created_at
+                            ? new Date(profile.created_at).getFullYear()
+                            : null
+                    )
+                    .filter((year) => year !== null)
+            ),
+        ].sort((a, b) => a - b), // Sort years in ascending order
+        [facultyProfiles]
+    );
 
     // Apply search and filters
     useEffect(() => {
@@ -95,7 +108,16 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             );
         }
 
-        // Apply filters
+        // Apply year filter
+        if (yearFilter) {
+            filtered = filtered.filter((profile) => {
+                if (!profile.created_at) return false;
+                const createdYear = new Date(profile.created_at).getFullYear();
+                return createdYear === parseInt(yearFilter);
+            });
+        }
+
+        // Apply other filters
         if (facultyRankFilter) {
             filtered = filtered.filter(
                 (profile) =>
@@ -131,6 +153,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
         homeCollegeFilter,
         isTenuredFilter,
         genderFilter,
+        yearFilter, // Add yearFilter to dependencies
         facultyProfiles,
     ]);
 
@@ -151,19 +174,14 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             const updatedFilteredData = [...filteredData];
 
             changes.forEach(([row, prop, , newValue]) => {
-                // Find the actual row index in filteredData and facultyProfiles
                 const paginatedIndex = row + page * rowsPerPage;
                 const profileIndex = facultyProfiles.findIndex(
                     (profile) => profile === filteredData[paginatedIndex]
                 );
 
                 if (profileIndex !== -1) {
-                    // All fields (including is_tenured, pursuing_next_degree, etc.) are sent as raw values
                     const valueToSave = newValue;
-
-                    // Update the original facultyProfiles
                     updatedFacultyProfiles[profileIndex][prop] = valueToSave;
-                    // Update the filteredData
                     updatedFilteredData[paginatedIndex][prop] = valueToSave;
                 }
             });
@@ -171,13 +189,11 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             setFacultyProfiles(updatedFacultyProfiles);
             setFilteredData(updatedFilteredData);
 
-            // Save changes to backend
             changes.forEach(async ([row, prop, , newValue]) => {
                 const profile = updatedFilteredData[row + page * rowsPerPage];
                 try {
                     const token = localStorage.getItem("token");
                     const dataToSend = { [prop]: newValue };
-                    // All fields are already in the correct format (integers), so send as-is
                     await axios.put(
                         `${config.API_URL}/faculty-profiles/${profile.id}`,
                         dataToSend,
@@ -194,42 +210,24 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const columnConfigs = useMemo(
         () => ({
             0: {
-                // Personal Info
                 columns: [
                     { data: "name", title: "NAME OF FACULTY" },
                     { data: "generic_faculty_rank", title: "FACULTY RANK" },
                     { data: "home_college", title: "HOME COLLEGE" },
                     { data: "home_department", title: "HOME DEPT" },
-                    {
-                        data: "is_tenured",
-                        title: "TENURED?",
-                    },
+                    { data: "is_tenured", title: "TENURED?" },
                     { data: "ssl_salary_grade", title: "SSL GRADE" },
-                    {
-                        data: "annual_basic_salary",
-                        title: "ANNUAL SALARY",
-                        type: "numeric",
-                    },
+                    { data: "annual_basic_salary", title: "ANNUAL SALARY", type: "numeric" },
                     { data: "on_leave_without_pay", title: "ON LEAVE?" },
-                    {
-                        data: "full_time_equivalent",
-                        title: "FTE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "gender",
-                        title: "GENDER",
-                    },
+                    { data: "full_time_equivalent", title: "FTE", type: "numeric" },
+                    { data: "gender", title: "GENDER" },
                 ],
                 data: paginatedProfiles.map((profile) => ({
                     name: profile.name || "-",
                     generic_faculty_rank: profile.generic_faculty_rank || "-",
                     home_college: profile.home_college || "-",
                     home_department: profile.home_department || "-",
-                    is_tenured:
-                        profile.is_tenured !== undefined
-                            ? profile.is_tenured
-                            : null,
+                    is_tenured: profile.is_tenured !== undefined ? profile.is_tenured : null,
                     ssl_salary_grade: profile.ssl_salary_grade || "-",
                     annual_basic_salary: profile.annual_basic_salary || 0,
                     on_leave_without_pay: profile.on_leave_without_pay || "-",
@@ -238,239 +236,84 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 })),
             },
             1: {
-                // Education
                 columns: [
                     { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "highest_degree_attained",
-                        title: "HIGHEST DEGREE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "pursuing_next_degree",
-                        title: "PURSUING NEXT DEGREE?",
-                        type: "numeric",
-                    },
-                    {
-                        data: "discipline_teaching_load_1",
-                        title: "DISCIPLINE (1)",
-                        type: "numeric",
-                    },
-                    {
-                        data: "discipline_teaching_load_2",
-                        title: "DISCIPLINE (2)",
-                        type: "numeric",
-                    },
-                    {
-                        data: "discipline_bachelors",
-                        title: "BACHELORS DISCIPLINE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "discipline_masters",
-                        title: "MASTERS DISCIPLINE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "discipline_doctorate",
-                        title: "DOCTORATE DISCIPLINE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "masters_with_thesis",
-                        title: "MASTERS W/ THESIS?",
-                        type: "numeric",
-                    },
-                    {
-                        data: "doctorate_with_dissertation",
-                        title: "DOCTORATE W/ DISSERTATION?",
-                        type: "numeric",
-                    },
+                    { data: "highest_degree_attained", title: "HIGHEST DEGREE", type: "numeric" },
+                    { data: "pursuing_next_degree", title: "PURSUING NEXT DEGREE?", type: "numeric" },
+                    { data: "discipline_teaching_load_1", title: "DISCIPLINE (1)", type: "numeric" },
+                    { data: "discipline_teaching_load_2", title: "DISCIPLINE (2)", type: "numeric" },
+                    { data: "discipline_bachelors", title: "BACHELORS DISCIPLINE", type: "numeric" },
+                    { data: "discipline_masters", title: "MASTERS DISCIPLINE", type: "numeric" },
+                    { data: "discipline_doctorate", title: "DOCTORATE DISCIPLINE", type: "numeric" },
+                    { data: "masters_with_thesis", title: "MASTERS W/ THESIS?", type: "numeric" },
+                    { data: "doctorate_with_dissertation", title: "DOCTORATE W/ DISSERTATION?", type: "numeric" },
                 ],
                 data: paginatedProfiles.map((profile) => ({
                     name: profile.name || "-",
-                    highest_degree_attained:
-                        profile.highest_degree_attained || "-",
-                    pursuing_next_degree:
-                        profile.pursuing_next_degree !== undefined
-                            ? profile.pursuing_next_degree
-                            : 0, // Keep as integer
-                    discipline_teaching_load_1:
-                        profile.discipline_teaching_load_1 || "-",
-                    discipline_teaching_load_2:
-                        profile.discipline_teaching_load_2 || "-",
+                    highest_degree_attained: profile.highest_degree_attained || "-",
+                    pursuing_next_degree: profile.pursuing_next_degree !== undefined ? profile.pursuing_next_degree : 0,
+                    discipline_teaching_load_1: profile.discipline_teaching_load_1 || "-",
+                    discipline_teaching_load_2: profile.discipline_teaching_load_2 || "-",
                     discipline_bachelors: profile.discipline_bachelors || "-",
                     discipline_masters: profile.discipline_masters || "-",
                     discipline_doctorate: profile.discipline_doctorate || "-",
-                    masters_with_thesis:
-                        profile.masters_with_thesis !== undefined
-                            ? profile.masters_with_thesis
-                            : 0, // Keep as integer
-                    doctorate_with_dissertation:
-                        profile.doctorate_with_dissertation !== undefined
-                            ? profile.doctorate_with_dissertation
-                            : 0, // Keep as integer
+                    masters_with_thesis: profile.masters_with_thesis !== undefined ? profile.masters_with_thesis : 0,
+                    doctorate_with_dissertation: profile.doctorate_with_dissertation !== undefined ? profile.doctorate_with_dissertation : 0,
                 })),
             },
             2: {
-                // Teaching Load
                 columns: [
                     { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "undergrad_lab_credit_units",
-                        title: "LAB CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_credit_units",
-                        title: "LECTURE CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_credit_units",
-                        title: "TOTAL CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lab_hours_per_week",
-                        title: "LAB HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_hours_per_week",
-                        title: "LECTURE HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_hours_per_week",
-                        title: "TOTAL HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lab_contact_hours",
-                        title: "STUDENT CONTACT LAB",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_contact_hours",
-                        title: "STUDENT CONTACT LECTURE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_contact_hours",
-                        title: "TOTAL CONTACT HRS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lab_credit_units",
-                        title: "LAB CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lecture_credit_units",
-                        title: "LECTURE CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_total_credit_units",
-                        title: "TOTAL CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lab_contact_hours",
-                        title: "STUDENT CONTACT LAB",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lecture_contact_hours",
-                        title: "STUDENT CONTACT LECTURE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_total_contact_hours",
-                        title: "TOTAL CONTACT HRS",
-                        type: "numeric",
-                    },
+                    { data: "undergrad_lab_credit_units", title: "LAB CREDITS", type: "numeric" },
+                    { data: "undergrad_lecture_credit_units", title: "LECTURE CREDITS", type: "numeric" },
+                    { data: "undergrad_total_credit_units", title: "TOTAL CREDITS", type: "numeric" },
+                    { data: "undergrad_lab_hours_per_week", title: "LAB HRS/WEEK", type: "numeric" },
+                    { data: "undergrad_lecture_hours_per_week", title: "LECTURE HRS/WEEK", type: "numeric" },
+                    { data: "undergrad_total_hours_per_week", title: "TOTAL HRS/WEEK", type: "numeric" },
+                    { data: "undergrad_lab_contact_hours", title: "STUDENT CONTACT LAB", type: "numeric" },
+                    { data: "undergrad_lecture_contact_hours", title: "STUDENT CONTACT LECTURE", type: "numeric" },
+                    { data: "undergrad_total_contact_hours", title: "TOTAL CONTACT HRS", type: "numeric" },
+                    { data: "graduate_lab_credit_units", title: "LAB CREDITS", type: "numeric" },
+                    { data: "graduate_lecture_credit_units", title: "LECTURE CREDITS", type: "numeric" },
+                    { data: "graduate_total_credit_units", title: "TOTAL CREDITS", type: "numeric" },
+                    { data: "graduate_lab_contact_hours", title: "STUDENT CONTACT LAB", type: "numeric" },
+                    { data: "graduate_lecture_contact_hours", title: "STUDENT CONTACT LECTURE", type: "numeric" },
+                    { data: "graduate_total_contact_hours", title: "TOTAL CONTACT HRS", type: "numeric" },
                 ],
                 data: paginatedProfiles.map((profile) => ({
                     name: profile.name || "-",
-                    undergrad_lab_credit_units:
-                        profile.undergrad_lab_credit_units || 0,
-                    undergrad_lecture_credit_units:
-                        profile.undergrad_lecture_credit_units || 0,
-                    undergrad_total_credit_units:
-                        profile.undergrad_total_credit_units || 0,
-                    undergrad_lab_hours_per_week:
-                        profile.undergrad_lab_hours_per_week || 0,
-                    undergrad_lecture_hours_per_week:
-                        profile.undergrad_lecture_hours_per_week || 0,
-                    undergrad_total_hours_per_week:
-                        profile.undergrad_total_hours_per_week || 0,
-                    undergrad_lab_contact_hours:
-                        profile.undergrad_lab_contact_hours || 0,
-                    undergrad_lecture_contact_hours:
-                        profile.undergrad_lecture_contact_hours || 0,
-                    undergrad_total_contact_hours:
-                        profile.undergrad_total_contact_hours || 0,
-                    graduate_lab_credit_units:
-                        profile.graduate_lab_credit_units || 0,
-                    graduate_lecture_credit_units:
-                        profile.graduate_lecture_credit_units || 0,
-                    graduate_total_credit_units:
-                        profile.graduate_total_credit_units || 0,
-                    graduate_lab_contact_hours:
-                        profile.graduate_lab_contact_hours || 0,
-                    graduate_lecture_contact_hours:
-                        profile.graduate_lecture_contact_hours || 0,
-                    graduate_total_contact_hours:
-                        profile.graduate_total_contact_hours || 0,
+                    undergrad_lab_credit_units: profile.undergrad_lab_credit_units || 0,
+                    undergrad_lecture_credit_units: profile.undergrad_lecture_credit_units || 0,
+                    undergrad_total_credit_units: profile.undergrad_total_credit_units || 0,
+                    undergrad_lab_hours_per_week: profile.undergrad_lab_hours_per_week || 0,
+                    undergrad_lecture_hours_per_week: profile.undergrad_lecture_hours_per_week || 0,
+                    undergrad_total_hours_per_week: profile.undergrad_total_hours_per_week || 0,
+                    undergrad_lab_contact_hours: profile.undergrad_lab_contact_hours || 0,
+                    undergrad_lecture_contact_hours: profile.undergrad_lecture_contact_hours || 0,
+                    undergrad_total_contact_hours: profile.undergrad_total_contact_hours || 0,
+                    graduate_lab_credit_units: profile.graduate_lab_credit_units || 0,
+                    graduate_lecture_credit_units: profile.graduate_lecture_credit_units || 0,
+                    graduate_total_credit_units: profile.graduate_total_credit_units || 0,
+                    graduate_lab_contact_hours: profile.graduate_lab_contact_hours || 0,
+                    graduate_lecture_contact_hours: profile.graduate_lecture_contact_hours || 0,
+                    graduate_total_contact_hours: profile.graduate_total_contact_hours || 0,
                 })),
             },
             3: {
-                // Other Loads
                 columns: [
                     { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "research_load",
-                        title: "RESEARCH LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "extension_services_load",
-                        title: "EXTENSION SERVICES",
-                        type: "numeric",
-                    },
-                    {
-                        data: "study_load",
-                        title: "STUDY LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "production_load",
-                        title: "PRODUCTION LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "administrative_load",
-                        title: "ADMIN LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "other_load_credits",
-                        title: "OTHER LOAD CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "total_work_load",
-                        title: "TOTAL WORK LOAD",
-                        type: "numeric",
-                    },
+                    { data: "research_load", title: "RESEARCH LOAD", type: "numeric" },
+                    { data: "extension_services_load", title: "EXTENSION SERVICES", type: "numeric" },
+                    { data: "study_load", title: "STUDY LOAD", type: "numeric" },
+                    { data: "production_load", title: "PRODUCTION LOAD", type: "numeric" },
+                    { data: "administrative_load", title: "ADMIN LOAD", type: "numeric" },
+                    { data: "other_load_credits", title: "OTHER LOAD CREDITS", type: "numeric" },
+                    { data: "total_work_load", title: "TOTAL WORK LOAD", type: "numeric" },
                 ],
                 data: paginatedProfiles.map((profile) => ({
                     name: profile.name || "-",
                     research_load: profile.research_load || 0,
-                    extension_services_load:
-                        profile.extension_services_load || 0,
+                    extension_services_load: profile.extension_services_load || 0,
                     study_load: profile.study_load || 0,
                     production_load: profile.production_load || 0,
                     administrative_load: profile.administrative_load || 0,
@@ -516,7 +359,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     {/* Search and Filter Section */}
                     <Box sx={{ mb: 1 }}>
                         <Grid container spacing={1} alignItems="center">
-                            <Grid item xs={12} sm={4}>
+                            <Grid item xs={12} sm={2}>
                                 <TextField
                                     fullWidth
                                     size="small"
@@ -748,10 +591,61 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                     </Select>
                                 </FormControl>
                             </Grid>
+                            <Grid item xs={6} sm={2}>
+                                <FormControl
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    <InputLabel
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                            "&.MuiInputLabel-shrink": {
+                                                transform:
+                                                    "translate(14px, -6px) scale(0.75)",
+                                            },
+                                        }}
+                                    >
+                                        Year
+                                    </InputLabel>
+                                    <Select
+                                        value={yearFilter}
+                                        onChange={(e) =>
+                                            setYearFilter(e.target.value)
+                                        }
+                                        label="Year"
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                            "& .MuiSelect-select": {
+                                                padding: "6px 32px 6px 12px",
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem
+                                            value=""
+                                            sx={{ fontSize: "0.75rem" }}
+                                        >
+                                            All
+                                        </MenuItem>
+                                        {uniqueYears.map((year) => (
+                                            <MenuItem
+                                                key={year}
+                                                value={year}
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                {year}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
                         </Grid>
                     </Box>
 
-                    <Box sx={{ height: 460, overflow: "auto" }}>
+                    <Box sx={{ height: 600, overflow: "auto" }}>
                         <HotTable
                             data={currentConfig.data}
                             columns={currentConfig.columns}
@@ -761,11 +655,11 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                             height="100%"
                             licenseKey="non-commercial-and-evaluation"
                             settings={{
-                                readOnly: false, // Enable editing
+                                readOnly: false,
                                 manualColumnResize: true,
                                 columnSorting: true,
-                                contextMenu: true, // Enable context menu for copy/paste, undo, etc.
-                                afterChange: handleCellChange, // Handle cell changes
+                                contextMenu: true,
+                                afterChange: handleCellChange,
                                 nestedHeaders:
                                     tabIndex === 2
                                         ? [
@@ -812,9 +706,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                         td.style.textOverflow = "ellipsis";
                                         td.style.maxWidth =
                                             col === 0 ? "180px" : "120px";
-                                        td.title = value || "-"; // Tooltip
+                                        td.title = value || "-";
 
-                                        // Center-align all columns except the "name" column
                                         if (columnData !== "name") {
                                             td.style.textAlign = "center";
                                         }
@@ -832,7 +725,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         page={page}
                         onPageChange={handleChangePage}
                         onRowsPerPageChange={handleChangeRowsPerPage}
-                        sx={{ mt: 1 }}
                     />
                 </>
             )}

@@ -7,6 +7,7 @@ import {
     Box,
     Breadcrumbs,
     Link,
+    Paper,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -54,7 +55,6 @@ const CurricularProgram = () => {
             try {
                 const token = localStorage.getItem("token");
 
-
                 if (!institutionId) {
                     console.error("No institution ID found in localStorage");
                     setPrograms([]);
@@ -64,7 +64,7 @@ const CurricularProgram = () => {
 
                 const response = await axios.get(`${config.API_URL}/programs`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { institution_id: institutionId }, // No program_type filter
+                    params: { institution_id: institutionId.institutionId }, // No program_type filter
                 });
                 console.log("Fetched programs:", response.data);
                 if (Array.isArray(response.data)) {
@@ -179,7 +179,7 @@ const CurricularProgram = () => {
 
                         return {
                             program: {
-                                institution_id: institutionId,
+                                institution_id: institutionId.institutionId,
                                 program_name: row[1] || null,
                                 program_code: String(row[2] || "0"),
                                 major_name: row[3] || null,
@@ -572,15 +572,25 @@ const CurricularProgram = () => {
                 </Button>
             </Box>
 
-            <Tabs
-                value={subTabValue}
-                onChange={(event, newValue) => setSubTabValue(newValue)}
-                sx={{ mb: 2 }}
-            >
-                {subCategories.map((subCategory) => (
-                    <Tab key={subCategory} label={subCategory} />
-                ))}
-            </Tabs>
+            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+                <Tabs
+                    value={subTabValue}
+                    onChange={(event, newValue) => setSubTabValue(newValue)}
+                    variant="fullWidth"
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        "& .MuiTab-root": {
+                            fontSize: "0.875rem",
+                            fontWeight: "medium",
+                        },
+                    }}
+                >
+                    {subCategories.map((subCategory) => (
+                        <Tab key={subCategory} label={subCategory} />
+                    ))}
+                </Tabs>
+            </Paper>
 
             <ProgramTables
                 programs={filteredPrograms} // Pass filtered programs instead of full programs

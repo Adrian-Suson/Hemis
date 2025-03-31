@@ -30,6 +30,7 @@ import HEIFacultyProfile from "./Pages/HEI/FacultyProfile/FacultyProfile";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
+import Statistics from "./Pages/SuperAdmin/Statistics/Statistics";
 
 function App() {
     return (
@@ -73,6 +74,10 @@ function App() {
                             path="/super-admin/institutions/faculties/:institutionId"
                             element={<FacultyProfile />}
                         />
+                        <Route
+                            path="/super-admin/statistics"
+                            element={<Statistics />}
+                        />
                     </Route>
 
                     {/* HEI Admin Routes under /hei-admin/* */}
@@ -101,7 +106,7 @@ function App() {
                             path="/hei-admin/institutions/faculties/:institutionId"
                             element={<HEIFacultyProfile />}
                         />
-                         <Route
+                        <Route
                             path="/hei-admin/staff-management"
                             element={<HEIUserManagement />}
                         />

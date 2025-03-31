@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Institution;
 use Illuminate\Http\Request;
 use App\Models\Campus;
+use Carbon\Carbon;
 
 class CampusController extends Controller
 {
@@ -44,7 +45,7 @@ class CampusController extends Controller
             '*.suc_name' => 'nullable|string|max:255',
             '*.campus_type' => 'nullable|string|max:255',
             '*.institutional_code' => 'nullable|string|max:255',
-            '*.region' => 'nullable|string|max:255', // FIXED: Changed from integer to string
+            '*.region' => 'nullable|string|max:255',
             '*.municipality_city_province' => 'nullable|string|max:255',
             '*.year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
             '*.land_area_hectares' => 'nullable|numeric|min:0',
@@ -55,11 +56,22 @@ class CampusController extends Controller
             '*.former_name' => 'nullable|string|max:255',
             '*.latitude_coordinates' => 'nullable|numeric|between:-90,90',
             '*.longitude_coordinates' => 'nullable|numeric|between:-180,180',
-            '*.institution_id' => 'required|exists:institutions,id', // Still required
+            '*.institution_id' => 'required|exists:institutions,id',
         ]);
 
+        // Ensure the timezone is set to Asia/Manila (redundant if already set in config/app.php)
+        date_default_timezone_set('Asia/Manila');
+
+        // Add timestamps to each record in the validated data
+        $currentTime = Carbon::now('Asia/Manila'); // Explicitly set timezone to Philippine time
+        $validatedData = array_map(function ($campus) use ($currentTime) {
+            $campus['created_at'] = $currentTime;
+            $campus['updated_at'] = $currentTime;
+            return $campus;
+        }, $validatedData);
+
         // Bulk insert campuses
-        $campuses = Campus::insert($validatedData); // Using insert for batch processing
+        $campuses = Campus::insert($validatedData);
 
         return response()->json(['message' => 'Campuses added successfully'], 201);
     }

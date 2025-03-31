@@ -79,18 +79,15 @@ const facultyGroups = [
 ];
 
 const FacultyProfileUpload = () => {
-    const [selectedGroup, setSelectedGroup] = useState(facultyGroups[0].sheetName);
+    const [selectedGroup, setSelectedGroup] = useState(
+        facultyGroups[0].sheetName
+    );
     const [facultyProfiles, setFacultyProfiles] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const institutionId = useParams();
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: "",
-        severity: "info",
-    });
     const navigate = useNavigate();
 
     // Fetch all faculty profiles on component mount
@@ -183,45 +180,101 @@ const FacultyProfileUpload = () => {
                         institution_id: institutionId.institutionId,
                         faculty_group: sheetName,
                         name: row[1] ? String(row[1]) : null,
-                        generic_faculty_rank: row[2] ? parseInt(row[2], 10) : null,
+                        generic_faculty_rank: row[2]
+                            ? parseInt(row[2], 10)
+                            : null,
                         home_college: row[3] ? String(row[3]) : null,
                         home_department: row[4] ? String(row[4]) : null,
                         is_tenured: row[5] ? parseInt(row[5]) : null,
                         ssl_salary_grade: row[6] ? parseInt(row[6], 10) : null,
-                        annual_basic_salary: row[7] ? parseInt(row[7], 10) : null,
-                        on_leave_without_pay: row[8] ? parseInt(row[8], 10) : null,
-                        full_time_equivalent: row[9] ? parseFloat(row[9]) : null,
+                        annual_basic_salary: row[7]
+                            ? parseInt(row[7], 10)
+                            : null,
+                        on_leave_without_pay: row[8]
+                            ? parseInt(row[8], 10)
+                            : null,
+                        full_time_equivalent: row[9]
+                            ? parseFloat(row[9])
+                            : null,
                         gender: row[10] ? parseInt(row[10], 10) : null,
-                        highest_degree_attained: row[11] ? parseInt(row[11], 10) : null,
-                        pursuing_next_degree: row[12] ? parseInt(row[12], 10) : null,
-                        discipline_teaching_load_1: row[13] ? String(row[13]) : null,
-                        discipline_teaching_load_2: row[14] ? String(row[14]) : null,
+                        highest_degree_attained: row[11]
+                            ? parseInt(row[11], 10)
+                            : null,
+                        pursuing_next_degree: row[12]
+                            ? parseInt(row[12], 10)
+                            : null,
+                        discipline_teaching_load_1: row[13]
+                            ? String(row[13])
+                            : null,
+                        discipline_teaching_load_2: row[14]
+                            ? String(row[14])
+                            : null,
                         discipline_bachelors: row[15] ? String(row[15]) : null,
                         discipline_masters: row[16] ? String(row[16]) : null,
                         discipline_doctorate: row[17] ? String(row[17]) : null,
-                        masters_with_thesis: row[18] ? parseInt(row[18], 10) : null,
-                        doctorate_with_dissertation: row[19] ? parseInt(row[19], 10) : null,
-                        undergrad_lab_credit_units: row[20] ? parseFloat(row[20]) : null,
-                        undergrad_lecture_credit_units: row[21] ? parseFloat(row[21]) : null,
-                        undergrad_total_credit_units: row[22] ? parseFloat(row[22]) : null,
-                        undergrad_lab_hours_per_week: row[23] ? parseFloat(row[23]) : null,
-                        undergrad_lecture_hours_per_week: row[24] ? parseFloat(row[24]) : null,
-                        undergrad_total_hours_per_week: row[25] ? parseFloat(row[25]) : null,
-                        undergrad_lab_contact_hours: row[26] ? parseFloat(row[26]) : null,
-                        undergrad_lecture_contact_hours: row[27] ? parseFloat(row[27]) : null,
-                        undergrad_total_contact_hours: row[28] ? parseFloat(row[28]) : null,
-                        graduate_lab_credit_units: row[29] ? parseFloat(row[29]) : null,
-                        graduate_lecture_credit_units: row[30] ? parseFloat(row[30]) : null,
-                        graduate_total_credit_units: row[31] ? parseFloat(row[31]) : null,
-                        graduate_lab_contact_hours: row[32] ? parseFloat(row[32]) : null,
-                        graduate_lecture_contact_hours: row[33] ? parseFloat(row[33]) : null,
-                        graduate_total_contact_hours: row[34] ? parseFloat(row[34]) : null,
+                        masters_with_thesis: row[18]
+                            ? parseInt(row[18], 10)
+                            : null,
+                        doctorate_with_dissertation: row[19]
+                            ? parseInt(row[19], 10)
+                            : null,
+                        undergrad_lab_credit_units: row[20]
+                            ? parseFloat(row[20])
+                            : null,
+                        undergrad_lecture_credit_units: row[21]
+                            ? parseFloat(row[21])
+                            : null,
+                        undergrad_total_credit_units: row[22]
+                            ? parseFloat(row[22])
+                            : null,
+                        undergrad_lab_hours_per_week: row[23]
+                            ? parseFloat(row[23])
+                            : null,
+                        undergrad_lecture_hours_per_week: row[24]
+                            ? parseFloat(row[24])
+                            : null,
+                        undergrad_total_hours_per_week: row[25]
+                            ? parseFloat(row[25])
+                            : null,
+                        undergrad_lab_contact_hours: row[26]
+                            ? parseFloat(row[26])
+                            : null,
+                        undergrad_lecture_contact_hours: row[27]
+                            ? parseFloat(row[27])
+                            : null,
+                        undergrad_total_contact_hours: row[28]
+                            ? parseFloat(row[28])
+                            : null,
+                        graduate_lab_credit_units: row[29]
+                            ? parseFloat(row[29])
+                            : null,
+                        graduate_lecture_credit_units: row[30]
+                            ? parseFloat(row[30])
+                            : null,
+                        graduate_total_credit_units: row[31]
+                            ? parseFloat(row[31])
+                            : null,
+                        graduate_lab_contact_hours: row[32]
+                            ? parseFloat(row[32])
+                            : null,
+                        graduate_lecture_contact_hours: row[33]
+                            ? parseFloat(row[33])
+                            : null,
+                        graduate_total_contact_hours: row[34]
+                            ? parseFloat(row[34])
+                            : null,
                         research_load: row[35] ? parseFloat(row[35]) : null,
-                        extension_services_load: row[36] ? parseFloat(row[36]) : null,
+                        extension_services_load: row[36]
+                            ? parseFloat(row[36])
+                            : null,
                         study_load: row[37] ? parseFloat(row[37]) : null,
                         production_load: row[38] ? parseFloat(row[38]) : null,
-                        administrative_load: row[39] ? parseFloat(row[39]) : null,
-                        other_load_credits: row[40] ? parseFloat(row[40]) : null,
+                        administrative_load: row[39]
+                            ? parseFloat(row[39])
+                            : null,
+                        other_load_credits: row[40]
+                            ? parseFloat(row[40])
+                            : null,
                         total_work_load: row[41] ? parseFloat(row[41]) : null,
                     }));
 
@@ -234,7 +287,10 @@ const FacultyProfileUpload = () => {
                     });
                 }
 
-                console.log("Final Processed Faculty Data:", allFacultyProfiles);
+                console.log(
+                    "Final Processed Faculty Data:",
+                    allFacultyProfiles
+                );
                 setUploadProgress(80);
 
                 if (allFacultyProfiles.length > 0) {
@@ -278,15 +334,6 @@ const FacultyProfileUpload = () => {
     );
 
     const handleExportData = async () => {
-        if (!facultyProfiles.length) {
-            setSnackbar({
-                open: true,
-                message: "No data available to export.",
-                severity: "warning",
-            });
-            return;
-        }
-
         console.log("Faculty Profiles before export:", facultyProfiles);
         console.log(
             "Sample profile names:",
@@ -312,7 +359,9 @@ const FacultyProfileUpload = () => {
                     (profile) => profile.faculty_group === group.sheetName
                 );
                 console.log(
-                    `Sheet ${group.sheetName}: ${acc[group.sheetName].length} profiles`
+                    `Sheet ${group.sheetName}: ${
+                        acc[group.sheetName].length
+                    } profiles`
                 );
                 return acc;
             }, {});
@@ -323,10 +372,13 @@ const FacultyProfileUpload = () => {
                 sheetIndex++
             ) {
                 const sheetName =
-                    facultyGroups[sheetIndex]?.sheetName || `Sheet${sheetIndex + 1}`;
+                    facultyGroups[sheetIndex]?.sheetName ||
+                    `Sheet${sheetIndex + 1}`;
                 const worksheet = workbook.getWorksheet(sheetIndex + 1);
                 if (!worksheet) {
-                    console.log(`Worksheet ${sheetName} not found, skipping...`);
+                    console.log(
+                        `Worksheet ${sheetName} not found, skipping...`
+                    );
                     continue;
                 }
 
@@ -347,32 +399,54 @@ const FacultyProfileUpload = () => {
                     row.getCell(9).value = profile.on_leave_without_pay || 0;
                     row.getCell(10).value = profile.full_time_equivalent || 0;
                     row.getCell(11).value = profile.gender || null;
-                    row.getCell(12).value = profile.highest_degree_attained || 0;
+                    row.getCell(12).value =
+                        profile.highest_degree_attained || 0;
                     row.getCell(13).value = profile.pursuing_next_degree;
-                    row.getCell(14).value = profile.discipline_teaching_load_1 || null;
-                    row.getCell(15).value = profile.discipline_teaching_load_2 || null;
-                    row.getCell(16).value = profile.discipline_bachelors || null;
+                    row.getCell(14).value =
+                        profile.discipline_teaching_load_1 || null;
+                    row.getCell(15).value =
+                        profile.discipline_teaching_load_2 || null;
+                    row.getCell(16).value =
+                        profile.discipline_bachelors || null;
                     row.getCell(17).value = profile.discipline_masters || null;
-                    row.getCell(18).value = profile.discipline_doctorate || null;
+                    row.getCell(18).value =
+                        profile.discipline_doctorate || null;
                     row.getCell(19).value = profile.masters_with_thesis || null;
-                    row.getCell(20).value = profile.doctorate_with_dissertation || null;
-                    row.getCell(21).value = profile.undergrad_lab_credit_units || 0;
-                    row.getCell(22).value = profile.undergrad_lecture_credit_units || 0;
-                    row.getCell(23).value = profile.undergrad_total_credit_units || 0;
-                    row.getCell(24).value = profile.undergrad_lab_hours_per_week || 0;
-                    row.getCell(25).value = profile.undergrad_lecture_hours_per_week || 0;
-                    row.getCell(26).value = profile.undergrad_total_hours_per_week || 0;
-                    row.getCell(27).value = profile.undergrad_lab_contact_hours || 0;
-                    row.getCell(28).value = profile.undergrad_lecture_contact_hours || 0;
-                    row.getCell(29).value = profile.undergrad_total_contact_hours || 0;
-                    row.getCell(30).value = profile.graduate_lab_credit_units || 0;
-                    row.getCell(31).value = profile.graduate_lecture_credit_units || 0;
-                    row.getCell(32).value = profile.graduate_total_credit_units || 0;
-                    row.getCell(33).value = profile.graduate_lab_contact_hours || 0;
-                    row.getCell(34).value = profile.graduate_lecture_contact_hours || 0;
-                    row.getCell(35).value = profile.graduate_total_contact_hours || 0;
+                    row.getCell(20).value =
+                        profile.doctorate_with_dissertation || null;
+                    row.getCell(21).value =
+                        profile.undergrad_lab_credit_units || 0;
+                    row.getCell(22).value =
+                        profile.undergrad_lecture_credit_units || 0;
+                    row.getCell(23).value =
+                        profile.undergrad_total_credit_units || 0;
+                    row.getCell(24).value =
+                        profile.undergrad_lab_hours_per_week || 0;
+                    row.getCell(25).value =
+                        profile.undergrad_lecture_hours_per_week || 0;
+                    row.getCell(26).value =
+                        profile.undergrad_total_hours_per_week || 0;
+                    row.getCell(27).value =
+                        profile.undergrad_lab_contact_hours || 0;
+                    row.getCell(28).value =
+                        profile.undergrad_lecture_contact_hours || 0;
+                    row.getCell(29).value =
+                        profile.undergrad_total_contact_hours || 0;
+                    row.getCell(30).value =
+                        profile.graduate_lab_credit_units || 0;
+                    row.getCell(31).value =
+                        profile.graduate_lecture_credit_units || 0;
+                    row.getCell(32).value =
+                        profile.graduate_total_credit_units || 0;
+                    row.getCell(33).value =
+                        profile.graduate_lab_contact_hours || 0;
+                    row.getCell(34).value =
+                        profile.graduate_lecture_contact_hours || 0;
+                    row.getCell(35).value =
+                        profile.graduate_total_contact_hours || 0;
                     row.getCell(36).value = profile.research_load || 0;
-                    row.getCell(37).value = profile.extension_services_load || 0;
+                    row.getCell(37).value =
+                        profile.extension_services_load || 0;
                     row.getCell(38).value = profile.study_load || 0;
                     row.getCell(39).value = profile.production_load || 0;
                     row.getCell(40).value = profile.administrative_load || 0;
@@ -382,7 +456,9 @@ const FacultyProfileUpload = () => {
                 });
             }
 
-            const fileName = `Form_E2_Faculty_Profiles_${new Date().toISOString().split("T")[0]}.xlsx`;
+            const fileName = `Form_E2_Faculty_Profiles_${
+                new Date().toISOString().split("T")[0]
+            }.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -393,24 +469,9 @@ const FacultyProfileUpload = () => {
             a.download = fileName;
             a.click();
             window.URL.revokeObjectURL(url);
-
-            setSnackbar({
-                open: true,
-                message: "Data exported successfully across all sheets!",
-                severity: "success",
-            });
         } catch (error) {
             console.error("Error exporting data:", error);
-            setSnackbar({
-                open: true,
-                message: `Error exporting data: ${error.message}. Check the console for details.`,
-                severity: "error",
-            });
         }
-    };
-
-    const handleSnackbarClose = () => {
-        setSnackbar((prev) => ({ ...prev, open: false }));
     };
 
     return (
@@ -517,16 +578,6 @@ const FacultyProfileUpload = () => {
                     facultyProfiles={facultyProfiles}
                 />
             )}
-
-            {/* Snackbar for feedback */}
-            <Alert
-                open={snackbar.open}
-                onClose={handleSnackbarClose}
-                severity={snackbar.severity}
-                sx={{ position: "fixed", bottom: 16, right: 16 }}
-            >
-                {snackbar.message}
-            </Alert>
         </Box>
     );
 };

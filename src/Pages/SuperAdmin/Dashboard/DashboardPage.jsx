@@ -392,10 +392,9 @@ const Dashboard = () => {
     return (
         <Box
             p={5}
-            mt={2}
             sx={{
-                height: "87vh", // Set height to viewport height
-                overflowY: "auto", // Enable vertical scrolling
+                height: "100vh",
+                overflowY: "auto",
                 "&::-webkit-scrollbar": {
                     width: "8px",
                 },
@@ -434,184 +433,83 @@ const Dashboard = () => {
                         </Typography>
                     </Box>
                 </Box>
-                {/* Overview Metrics Cards */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "primary.light",
-                                color: "primary.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
+                <Grid container spacing={2} sx={{ mb: 4 }}>
+                    {[
+                        {
+                            label: "Users",
+                            value: totalUsers,
+                            color: "primary",
+                            Icon: PersonIcon,
+                        },
+                        {
+                            label: "Faculty",
+                            value: totalFaculty,
+                            color: "success",
+                            Icon: PeopleIcon,
+                        },
+                        {
+                            label: "Programs",
+                            value: totalPrograms,
+                            color: "warning",
+                            Icon: LibraryBooksIcon,
+                        },
+                        {
+                            label: "Enrollments",
+                            value: totalEnrollments.toLocaleString(),
+                            color: "info",
+                            Icon: SchoolIcon,
+                        },
+                        {
+                            label: "Institutions",
+                            value: totalInstitutions,
+                            color: "secondary",
+                            Icon: BusinessIcon,
+                        },
+                    ].map(({ label, value, color, Icon }, index) => (
+                        <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
+                            <Paper
                                 sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
+                                    p: 2,
+                                    bgcolor: `${color}.light`,
+                                    color: `${color}.contrastText`,
                                 }}
                             >
-                                <Avatar sx={{ bgcolor: "primary.main", mr: 1 }}>
-                                    <PersonIcon />
-                                </Avatar>
-                                <Typography variant="h6">Users</Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalUsers}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Registered system users
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "success.light",
-                                color: "success.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "success.main", mr: 1 }}>
-                                    <PeopleIcon />
-                                </Avatar>
-                                <Typography variant="h6">Faculty</Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalFaculty}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Registered faculty members
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "warning.light",
-                                color: "warning.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "warning.main", mr: 1 }}>
-                                    <LibraryBooksIcon />
-                                </Avatar>
-                                <Typography variant="h6">Programs</Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalPrograms}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Total academic programs
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "info.light",
-                                color: "info.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "info.main", mr: 1 }}>
-                                    <SchoolIcon />
-                                </Avatar>
-                                <Typography variant="h6">
-                                    Enrollments
-                                </Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalEnrollments.toLocaleString()}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Total student enrollments
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "secondary.light",
-                                color: "secondary.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar
-                                    sx={{ bgcolor: "secondary.main", mr: 1 }}
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        mb: 1,
+                                    }}
                                 >
-                                    <BusinessIcon />
-                                </Avatar>
-                                <Typography variant="h6">
-                                    Institutions
+                                    <Avatar
+                                        sx={{ bgcolor: `${color}.main`, mr: 1 }}
+                                    >
+                                        <Icon />
+                                    </Avatar>
+                                    <Typography variant="h6">
+                                        {label}
+                                    </Typography>
+                                </Box>
+                                <Typography variant="h3" fontWeight="bold">
+                                    {value}
                                 </Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalInstitutions}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Educational institutions
-                            </Typography>
-                        </Paper>
-                    </Grid>
+                                <Typography
+                                    variant="body2"
+                                    sx={{ mt: 1, opacity: 0.8 }}
+                                >
+                                    {label === "Users"
+                                        ? "Registered system users"
+                                        : label === "Faculty"
+                                        ? "Registered faculty members"
+                                        : label === "Programs"
+                                        ? "Total academic programs"
+                                        : label === "Enrollments"
+                                        ? "Total student enrollments"
+                                        : "Educational institutions"}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                    ))}
                 </Grid>
 
                 {/* Pie Charts Section (Side by Side) */}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FacultyProfile;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -96,6 +97,17 @@ class FacultyProfileController extends Controller
         if (empty($uniqueProfiles)) {
             return response()->json(['message' => 'No unique faculty profiles to insert'], Response::HTTP_OK);
         }
+
+        // Ensure the timezone is set to Asia/Manila
+        date_default_timezone_set('Asia/Manila');
+
+        // Add timestamps to each record in the unique profiles
+        $currentTime = Carbon::now('Asia/Manila'); // Set timezone to Philippine time
+        $uniqueProfiles = array_map(function ($profile) use ($currentTime) {
+            $profile['created_at'] = $currentTime;
+            $profile['updated_at'] = $currentTime;
+            return $profile;
+        }, $uniqueProfiles);
 
         // Bulk insert the unique validated data
         FacultyProfile::insert($uniqueProfiles);
