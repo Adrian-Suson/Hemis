@@ -2,7 +2,6 @@ import {
     Table,
     TableBody,
     TableCell,
-    TableContainer,
     TableHead,
     TableRow,
     Paper,
@@ -14,33 +13,42 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem as FilterMenuItem,
     Box,
     TablePagination,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import DetailDialog from "./DetailDialog";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import ExcelJS from "exceljs";
+import axios from "axios";
+import { CiCircleMore } from "react-icons/ci";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import PeopleIcon from "@mui/icons-material/People";
 import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import DescriptionIcon from "@mui/icons-material/Description";
-import { useRef, useState } from "react";
-import ExcelJS from "exceljs";
-import axios from "axios";
+import DetailDialog from "./DetailDialog";
+import config from "../../../utils/config";
+
+// Constants for configuration
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, { label: "All", value: -1 }];
+
+// Utility function to get unique values from an array
+const getUniqueValues = (arr, key) =>
+    [...new Set(arr.map((item) => item[key]).filter(Boolean))].sort();
 
 const InstitutionTable = ({
-    institutions,
+    institutions = [],
     onEdit,
     setSnackbarMessage,
     setSnackbarSeverity,
     setSnackbarOpen,
 }) => {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
-    const role = user?.role || "HEI Staff";
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const role = user.role || "HEI Staff";
+
+    // State management with initial values from localStorage
     const [selectedInstitution, setSelectedInstitution] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -50,14 +58,38 @@ const InstitutionTable = ({
         academicPrograms: false,
         exportFormA: false,
     });
-    const [searchTerm, setSearchTerm] = useState(""); // Search state
-    const [typeFilter, setTypeFilter] = useState(""); // Institution type filter state
-    const [cityFilter, setCityFilter] = useState(""); // City filter state
-    const [provinceFilter, setProvinceFilter] = useState(""); // Province filter state
-    const [page, setPage] = useState(0); // Current page
-    const [rowsPerPage, setRowsPerPage] = useState(15); // Rows per page
+    const [searchTerm, setSearchTerm] = useState(
+        localStorage.getItem("searchTerm") || ""
+    );
+    const [typeFilter, setTypeFilter] = useState(
+        localStorage.getItem("typeFilter") || ""
+    );
+    const [cityFilter, setCityFilter] = useState(
+        localStorage.getItem("cityFilter") || ""
+    );
+    const [provinceFilter, setProvinceFilter] = useState(
+        localStorage.getItem("provinceFilter") || ""
+    );
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
+
     const menuButtonRef = useRef(null);
 
+    // Save all filters to localStorage when they change
+    useEffect(() => {
+        localStorage.setItem("searchTerm", searchTerm);
+        localStorage.setItem("typeFilter", typeFilter);
+        localStorage.setItem("cityFilter", cityFilter);
+        localStorage.setItem("provinceFilter", provinceFilter);
+        console.log("Saved to localStorage:", {
+            searchTerm,
+            typeFilter,
+            cityFilter,
+            provinceFilter,
+        });
+    }, [searchTerm, typeFilter, cityFilter, provinceFilter]);
+
+    // Dialog and Menu handlers
     const handleOpenDialog = (institution) => {
         localStorage.setItem("institutionId", institution.id);
         setSelectedInstitution(institution);
@@ -67,9 +99,7 @@ const InstitutionTable = ({
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedInstitution(null);
-        if (menuButtonRef.current) {
-            menuButtonRef.current.focus();
-        }
+        menuButtonRef.current?.focus();
     };
 
     const handleMenuOpen = (event, institution) => {
@@ -80,670 +110,641 @@ const InstitutionTable = ({
 
     const handleMenuClose = () => {
         setAnchorEl(null);
-        if (menuButtonRef.current) {
-            menuButtonRef.current.focus();
-        }
+        menuButtonRef.current?.focus();
     };
 
-    const handleNavigation = (path, type) => {
-        setLoading((prev) => ({ ...prev, [type]: true }));
-        setTimeout(() => {
-            navigate(path);
-            setLoading((prev) => ({ ...prev, [type]: false }));
-        }, 500);
-    };
+    // Navigation with loading state
+    const handleNavigation = useCallback(
+        (path, type) => {
+            setLoading((prev) => ({ ...prev, [type]: true }));
+            setTimeout(() => {
+                navigate(path);
+                setLoading((prev) => ({ ...prev, [type]: false }));
+            }, 500);
+        },
+        [navigate]
+    );
 
-    const handleExportToFormA = async (institution) => {
-        setLoading((prev) => ({ ...prev, exportFormA: true }));
-        try {
-            const response = await fetch("/templates/Form-A-Themeplate.xlsx");
-            if (!response.ok)
-                throw new Error(`Failed to load template: ${response.status}`);
-            const arrayBuffer = await response.arrayBuffer();
+    // Export to Form A
+    const handleExportToFormA = useCallback(
+        async (institution) => {
+            setLoading((prev) => ({ ...prev, exportFormA: true }));
+            try {
+                const response = await fetch(
+                    "/templates/Form-A-Themeplate.xlsx"
+                );
+                if (!response.ok)
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                const arrayBuffer = await response.arrayBuffer();
 
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(arrayBuffer);
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
 
-            const sheetA1 = workbook.getWorksheet("FORM A1");
-            const sheetA2 = workbook.getWorksheet("FORM A2");
+                const sheetA1 = workbook.getWorksheet("FORM A1");
+                const sheetA2 = workbook.getWorksheet("FORM A2");
 
-            sheetA1.getRow(2).getCell(3).value = institution.name || "N/A";
-            sheetA1.getRow(5).getCell(3).value =
-                institution.address_street || "N/A";
-            sheetA1.getRow(6).getCell(3).value =
-                institution.municipality_city || "N/A";
-            sheetA1.getRow(7).getCell(3).value = institution.province || "N/A";
-            sheetA1.getRow(8).getCell(3).value = institution.region || "N/A";
-            sheetA1.getRow(9).getCell(3).value =
-                institution.postal_code || "N/A";
-            sheetA1.getRow(10).getCell(3).value =
-                institution.institutional_telephone || "N/A";
-            sheetA1.getRow(11).getCell(3).value =
-                institution.institutional_fax || "N/A";
-            sheetA1.getRow(12).getCell(3).value =
-                institution.head_telephone || "N/A";
-            sheetA1.getRow(13).getCell(3).value =
-                institution.institutional_email || "N/A";
-            sheetA1.getRow(14).getCell(3).value =
-                institution.institutional_website || "N/A";
-            sheetA1.getRow(15).getCell(3).value =
-                institution.year_established || "N/A";
-            sheetA1.getRow(16).getCell(3).value =
-                institution.sec_registration || "N/A";
-            sheetA1.getRow(17).getCell(3).value =
-                institution.year_granted_approved || "N/A";
-            sheetA1.getRow(18).getCell(3).value =
-                institution.year_converted_college || "N/A";
-            sheetA1.getRow(19).getCell(3).value =
-                institution.year_converted_university || "N/A";
-            sheetA1.getRow(20).getCell(3).value =
-                institution.head_name || "N/A";
-            sheetA1.getRow(21).getCell(3).value =
-                institution.head_title || "N/A";
-            sheetA1.getRow(22).getCell(3).value =
-                institution.head_education || "N/A";
-
-            const token = localStorage.getItem("token");
-            const campusResponse = await axios.get(
-                `http://localhost:8000/api/campuses?institution_id=${institution.id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const campuses = Array.isArray(campusResponse.data.campuses)
-                ? campusResponse.data.campuses
-                : [];
-
-            const a2StartRow = 11;
-            campuses.forEach((campus, index) => {
-                const row = sheetA2.getRow(a2StartRow + index);
-                row.values = [
-                    index + 1,
-                    campus.suc_name || "N/A",
-                    campus.campus_type || "N/A",
-                    campus.institutional_code || "N/A",
-                    campus.region || "N/A",
-                    campus.municipality_city_province || "N/A",
-                    campus.year_first_operation || "N/A",
-                    campus.land_area_hectares || "0.0",
-                    campus.distance_from_main || "0.0",
-                    campus.autonomous_code || "N/A",
-                    campus.position_title || "N/A",
-                    campus.head_full_name || "N/A",
-                    campus.former_name || "N/A",
-                    campus.latitude_coordinates || "0.0",
-                    campus.longitude_coordinates || "0.0",
+                const a1Fields = [
+                    { row: 5, cell: 3, key: "name" },
+                    { row: 8, cell: 3, key: "address_street" },
+                    { row: 9, cell: 3, key: "municipality_city" },
+                    { row: 10, cell: 3, key: "province" },
+                    { row: 11, cell: 3, key: "region" },
+                    { row: 12, cell: 3, key: "postal_code" },
+                    { row: 13, cell: 3, key: "institutional_telephone" },
+                    { row: 14, cell: 3, key: "institutional_fax" },
+                    { row: 15, cell: 3, key: "head_telephone" },
+                    { row: 16, cell: 3, key: "institutional_email" },
+                    { row: 17, cell: 3, key: "institutional_website" },
+                    { row: 18, cell: 3, key: "year_established" },
+                    { row: 19, cell: 3, key: "sec_registration" },
+                    { row: 20, cell: 3, key: "year_granted_approved" },
+                    { row: 21, cell: 3, key: "year_converted_college" },
+                    { row: 22, cell: 3, key: "year_converted_university" },
+                    { row: 23, cell: 3, key: "head_name" },
+                    { row: 24, cell: 3, key: "head_title" },
+                    { row: 25, cell: 3, key: "head_education" },
                 ];
-                row.commit();
-            });
+                a1Fields.forEach(({ row, cell, key }) => {
+                    sheetA1.getRow(row).getCell(cell).value =
+                        institution[key] || "N/A";
+                });
 
-            const fileName = `Form_A_${institution.name || "Unknown"}_${
-                institution.institution_type || "Unknown"
-            }_${new Date().toISOString().split("T")[0]}.xlsx`;
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            window.URL.revokeObjectURL(url);
+                const token = localStorage.getItem("token");
+                const { data } = await axios.get(
+                    `${config.API_URL}/campuses?institution_id=${institution.id}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                const campuses = Array.isArray(data.campuses)
+                    ? data.campuses
+                    : [];
 
-            setSnackbarMessage(
-                `Form A exported successfully for ${institution.name}!`
+                const a2StartRow = 11;
+                campuses.forEach((campus, index) => {
+                    const row = sheetA2.getRow(a2StartRow + index);
+                    row.values = [
+                        index + 1,
+                        campus.suc_name || "N/A",
+                        campus.campus_type || "N/A",
+                        campus.institutional_code || "N/A",
+                        campus.region || "N/A",
+                        campus.municipality_city_province || "N/A",
+                        campus.year_first_operation || "N/A",
+                        campus.land_area_hectares || "0.0",
+                        campus.distance_from_main || "0.0",
+                        campus.autonomous_code || "N/A",
+                        campus.position_title || "N/A",
+                        campus.head_full_name || "N/A",
+                        campus.former_name || "N/A",
+                        campus.latitude_coordinates || "0.0",
+                        campus.longitude_coordinates || "0.0",
+                    ];
+                    row.commit();
+                });
+
+                const fileName = `Form_A_${institution.name || "Unknown"}_${
+                    institution.institution_type || "Unknown"
+                }_${new Date().toISOString().split("T")[0]}.xlsx`;
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], {
+                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                setSnackbarMessage(
+                    `Form A exported successfully for ${institution.name}!`
+                );
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
+            } catch (error) {
+                console.error("Error exporting Form A:", error);
+                setSnackbarMessage(`Failed to export Form A: ${error.message}`);
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+            } finally {
+                setLoading((prev) => ({ ...prev, exportFormA: false }));
+                handleMenuClose();
+            }
+        },
+        [setSnackbarMessage, setSnackbarSeverity, setSnackbarOpen]
+    );
+
+    // Memoized filtered institutions
+    const filteredInstitutions = useMemo(() => {
+        return institutions.filter((institution) => {
+            const matchesSearch = institution.name
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase());
+            const matchesType = typeFilter
+                ? institution.institution_type === typeFilter
+                : true;
+            const matchesCity = cityFilter
+                ? institution.municipality_city === cityFilter
+                : true;
+            const matchesProvince = provinceFilter
+                ? institution.province === provinceFilter
+                : true;
+            return (
+                matchesSearch && matchesType && matchesCity && matchesProvince
             );
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
-        } catch (error) {
-            console.error("Error exporting Form A:", error);
-            setSnackbarMessage(`Error exporting Form A: ${error.message}`);
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-        } finally {
-            setLoading((prev) => ({ ...prev, exportFormA: false }));
-            handleMenuClose();
-        }
-    };
+        });
+    }, [institutions, searchTerm, typeFilter, cityFilter, provinceFilter]);
 
-    // Filter institutions based on search and filters
-    const filteredInstitutions = institutions.filter((institution) => {
-        const matchesSearch = institution.name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase());
-        const matchesType = typeFilter
-            ? institution.institution_type === typeFilter
-            : true;
-        const matchesCity = cityFilter
-            ? institution.municipality_city === cityFilter
-            : true;
-        const matchesProvince = provinceFilter
-            ? institution.province === provinceFilter
-            : true;
-        return matchesSearch && matchesType && matchesCity && matchesProvince;
-    });
-
-    // Extract unique values for filter options
-    const uniqueTypes = [
-        ...new Set(institutions.map((inst) => inst.institution_type)),
-    ].sort();
-    const uniqueCities = [
-        ...new Set(
-            institutions.map((inst) => inst.municipality_city).filter(Boolean)
-        ),
-    ].sort();
-    const uniqueProvinces = [
-        ...new Set(institutions.map((inst) => inst.province).filter(Boolean)),
-    ].sort();
+    // Memoized filter options
+    const filterOptions = useMemo(
+        () => ({
+            types: getUniqueValues(institutions, "institution_type"),
+            cities: getUniqueValues(institutions, "municipality_city"),
+            provinces: getUniqueValues(institutions, "province"),
+        }),
+        [institutions]
+    );
 
     // Pagination handlers
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
+    const handleChangePage = (event, newPage) => setPage(newPage);
 
     const handleChangeRowsPerPage = (event) => {
-        const value = event.target.value;
-        setRowsPerPage(
-            value === "All" ? filteredInstitutions.length : parseInt(value, 10)
-        );
-        setPage(0); // Reset to first page when rows per page changes
+        const value =
+            event.target.value === -1
+                ? filteredInstitutions.length
+                : parseInt(event.target.value, 10);
+        setRowsPerPage(value);
+        setPage(0);
     };
 
-    // Calculate the rows to display based on pagination
-    const paginatedInstitutions =
-        rowsPerPage === filteredInstitutions.length
-            ? filteredInstitutions
-            : filteredInstitutions.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-              );
+    // Paginated data
+    const paginatedInstitutions = useMemo(() => {
+        const start = page * rowsPerPage;
+        const end =
+            rowsPerPage === filteredInstitutions.length
+                ? filteredInstitutions.length
+                : start + rowsPerPage;
+        return filteredInstitutions.slice(start, end);
+    }, [filteredInstitutions, page, rowsPerPage]);
 
-    // Determine if scrolling should be enabled (when "All" is selected)
+    // Debugging: Log initial filter values on mount
+    useEffect(() => {
+        console.log("Initial filter values on mount:", {
+            searchTerm: localStorage.getItem("searchTerm"),
+            typeFilter: localStorage.getItem("typeFilter"),
+            cityFilter: localStorage.getItem("cityFilter"),
+            provinceFilter: localStorage.getItem("provinceFilter"),
+        });
+    }, []);
 
     return (
-        <Box sx={{ mt: 2 }}>
-            {/* Search and Filter Controls */}
-            <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
-                <TextField
-                    label="Search by Name"
-                    variant="outlined"
-                    size="small"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{ flex: 1, minWidth: 200 }}
-                />
-                <FormControl sx={{ width: 200 }} size="small">
-                    <InputLabel>Type</InputLabel>
+        <Box sx={{ mt: 1, width: "100%" }}>
+            {/* Compact Filter Controls */}
+            <Box sx={{ display: "flex", gap: 1, mb: 1, flexWrap: "wrap" }}>
+                <FormControl sx={{ flex: 2, minWidth: 150 }} size="small">
+                    <TextField
+                        label="Search"
+                        variant="outlined"
+                        size="small"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputLabelProps={{ sx: { fontSize: "0.75rem" } }}
+                        sx={{ "& .MuiInputBase-root": { height: 32 } }}
+                    />
+                </FormControl>
+                <FormControl sx={{ flex: 1, width: 200 }} size="small">
+                    <InputLabel size="small" sx={{ fontSize: "0.75rem" }}>
+                        Type
+                    </InputLabel>
                     <Select
                         value={typeFilter}
                         onChange={(e) => setTypeFilter(e.target.value)}
                         label="Type"
+                        size="small"
+                        sx={{ height: 32 }}
                     >
-                        <FilterMenuItem value="">All Types</FilterMenuItem>
-                        {uniqueTypes.map((type) => (
-                            <FilterMenuItem key={type} value={type}>
+                        <MenuItem value="">All</MenuItem>
+                        {filterOptions.types.map((type) => (
+                            <MenuItem key={type} value={type}>
                                 {type}
-                            </FilterMenuItem>
+                            </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
-                <FormControl sx={{ width: 200 }} size="small">
-                    <InputLabel>City</InputLabel>
+                <FormControl sx={{ flex: 1, width: 120 }} size="small">
+                    <InputLabel size="small" sx={{ fontSize: "0.75rem" }}>
+                        City
+                    </InputLabel>
                     <Select
                         value={cityFilter}
                         onChange={(e) => setCityFilter(e.target.value)}
                         label="City"
+                        size="small"
+                        sx={{ height: 32 }}
                     >
-                        <FilterMenuItem value="">All Cities</FilterMenuItem>
-                        {uniqueCities.map((city) => (
-                            <FilterMenuItem key={city} value={city}>
+                        <MenuItem value="">All</MenuItem>
+                        {filterOptions.cities.map((city) => (
+                            <MenuItem key={city} value={city}>
                                 {city}
-                            </FilterMenuItem>
+                            </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
-                <FormControl sx={{ width: 200 }} size="small">
-                    <InputLabel>Province</InputLabel>
+                <FormControl sx={{ flex: 1, width: 120 }} size="small">
+                    <InputLabel size="small" sx={{ fontSize: "0.75rem" }}>
+                        Province
+                    </InputLabel>
                     <Select
                         value={provinceFilter}
                         onChange={(e) => setProvinceFilter(e.target.value)}
                         label="Province"
+                        size="small"
+                        sx={{ height: 32 }}
                     >
-                        <FilterMenuItem value="">All Provinces</FilterMenuItem>
-                        {uniqueProvinces.map((province) => (
-                            <FilterMenuItem key={province} value={province}>
+                        <MenuItem value="">All</MenuItem>
+                        {filterOptions.provinces.map((province) => (
+                            <MenuItem key={province} value={province}>
                                 {province}
-                            </FilterMenuItem>
+                            </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
             </Box>
 
-            <TableContainer
+            {/* TableContainer with Sticky Pagination */}
+            <Box
                 component={Paper}
                 sx={{
-                    maxHeight: "65vh",
-                    overflowY: "65vh",
+                    height: "700px", // Fixed height
+                    display: "flex",
+                    flexDirection: "column",
                 }}
             >
-                <Table
-                    size="small"
-                    stickyHeader
-                    sx={{
-                        borderCollapse: "collapse",
-                        tableLayout: "fixed", // Ensure consistent column widths
-                        width: "100%",
-                    }}
-                >
-                    <TableHead>
-                        <TableRow>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "20%", // Adjust column widths
-                                }}
-                            >
-                                Name
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "10%",
-                                }}
-                            >
-                                Region
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "20%",
-                                }}
-                            >
-                                Address
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "15%",
-                                }}
-                            >
-                                City
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "15%",
-                                }}
-                            >
-                                Province
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "10%",
-                                }}
-                            >
-                                Type
-                            </TableCell>
-                            <TableCell
-                                sx={{
-                                    fontWeight: "bold",
-                                    padding: "4px",
-                                    border: "1px solid rgba(224, 224, 224, 1)",
-                                    backgroundColor: "#f5f5f5",
-                                    fontSize: "0.75rem",
-                                    width: "10%",
-                                }}
-                            >
-                                Actions
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {paginatedInstitutions.length > 0 ? (
-                            paginatedInstitutions.map((institution) => (
-                                <TableRow
-                                    key={institution.id}
-                                    sx={{
-                                        "&:hover": {
-                                            backgroundColor: "#fafafa",
-                                        },
-                                    }}
-                                >
+                {/* Table with Scrollable Content */}
+                <Box sx={{ flex: "1 1 auto", overflowY: "auto" }}>
+                    <Table
+                        size="small"
+                        stickyHeader
+                        sx={{ tableLayout: "fixed" }}
+                    >
+                        <TableHead>
+                            <TableRow>
+                                {[
+                                    { label: "ID", width: "3%" },
+                                    { label: "Name", width: "25%" },
+                                    { label: "Region", width: "10%" },
+                                    { label: "Address", width: "20%" },
+                                    { label: "City", width: "15%" },
+                                    { label: "Province", width: "15%" },
+                                    { label: "Type", width: "10%" },
+                                    { label: "Actions", width: "5%" },
+                                ].map((col) => (
                                     <TableCell
+                                        key={col.label}
                                         sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
+                                            fontWeight: "bold",
+                                            padding: "4px 6px",
+                                            backgroundColor: "#f5f5f5",
                                             fontSize: "0.75rem",
-                                            whiteSpace: "normal", // Allow text wrapping
-                                            wordBreak: "break-word",
+                                            width: col.width,
+                                            textAlign: "center", // Center-align the label
                                         }}
                                     >
-                                        {institution.name}
+                                        {col.label}
                                     </TableCell>
-                                    <TableCell
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {paginatedInstitutions.length > 0 ? (
+                                paginatedInstitutions.map((institution) => (
+                                    <TableRow
+                                        key={institution.id}
                                         sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
-                                            fontSize: "0.75rem",
-                                            whiteSpace: "normal",
-                                            wordBreak: "break-word",
+                                            "&:hover": {
+                                                backgroundColor: "#fafafa",
+                                            },
                                         }}
                                     >
-                                        {institution.region}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
-                                            fontSize: "0.75rem",
-                                            whiteSpace: "normal",
-                                            wordBreak: "break-word",
-                                        }}
-                                    >
-                                        {institution.address_street || "N/A"}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
-                                            fontSize: "0.75rem",
-                                            whiteSpace: "normal",
-                                            wordBreak: "break-word",
-                                        }}
-                                    >
-                                        {institution.municipality_city || "N/A"}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
-                                            fontSize: "0.75rem",
-                                            whiteSpace: "normal",
-                                            wordBreak: "break-word",
-                                        }}
-                                    >
-                                        {institution.province || "N/A"}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
-                                            fontSize: "0.75rem",
-                                            whiteSpace: "normal",
-                                            wordBreak: "break-word",
-                                        }}
-                                    >
-                                        {institution.institution_type}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            padding: "4px",
-                                            border: "1px solid rgba(224, 224, 224, 1)",
-                                            display: "flex",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <IconButton
-                                            color="info"
-                                            size="small"
-                                            onClick={(e) =>
-                                                handleMenuOpen(e, institution)
-                                            }
-                                            sx={{ padding: 0 }}
-                                            aria-label={`More options for ${institution.name}`}
-                                            aria-controls={
-                                                anchorEl
-                                                    ? `menu-${institution.id}`
-                                                    : undefined
-                                            }
-                                            aria-haspopup="true"
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                                whiteSpace: "normal",
+                                                wordBreak: "break-word",
+                                            }}
                                         >
-                                            <MoreHorizIcon
-                                                sx={{ color: "#000000" }}
-                                                fontSize="small"
-                                            />
-                                        </IconButton>
-                                        <Menu
-                                            id={`menu-${institution.id}`}
-                                            anchorEl={anchorEl}
-                                            open={
-                                                Boolean(anchorEl) &&
-                                                selectedInstitution?.id ===
-                                                    institution.id
-                                            }
-                                            onClose={handleMenuClose}
-                                            anchorOrigin={{
-                                                vertical: "bottom",
-                                                horizontal: "right",
+                                            {institution.id}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                                whiteSpace: "normal",
+                                                wordBreak: "break-word",
                                             }}
-                                            transformOrigin={{
-                                                vertical: "top",
-                                                horizontal: "right",
-                                            }}
-                                            PaperProps={{
-                                                sx: {
-                                                    minWidth: "180px",
-                                                    boxShadow:
-                                                        "0px 2px 4px rgba(0, 0, 0, 0.1)",
-                                                },
-                                            }}
-                                            disableAutoFocusItem
                                         >
-                                            <MenuItem
-                                                onClick={() => {
-                                                    handleOpenDialog(
-                                                        institution
-                                                    );
-                                                    handleMenuClose();
-                                                }}
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    padding: "4px 8px",
-                                                }}
-                                            >
-                                                <VisibilityIcon
-                                                    fontSize="small"
-                                                    sx={{
-                                                        mr: 1,
-                                                        color: "#1976d2",
-                                                    }}
-                                                />
-                                                View Details
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={() => {
-                                                    handleNavigation(
-                                                        `/super-admin/institutions/campuses/${institution.id}`,
-                                                        "viewCampuses"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
-                                                disabled={loading.viewCampuses}
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    padding: "4px 8px",
-                                                }}
-                                            >
-                                                {loading.viewCampuses ? (
-                                                    <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
-                                                    />
-                                                ) : (
-                                                    <ApartmentIcon
-                                                        fontSize="small"
-                                                        sx={{
-                                                            mr: 1,
-                                                            color: "#1976d2",
-                                                        }}
-                                                    />
-                                                )}
-                                                View Campuses
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={() => {
-                                                    handleNavigation(
-                                                        `/super-admin/institutions/faculties/${institution.id}`,
-                                                        "faculties"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
-                                                disabled={loading.faculties}
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    padding: "4px 8px",
-                                                }}
-                                            >
-                                                {loading.faculties ? (
-                                                    <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
-                                                    />
-                                                ) : (
-                                                    <PeopleIcon
-                                                        fontSize="small"
-                                                        sx={{
-                                                            mr: 1,
-                                                            color: "#1976d2",
-                                                        }}
-                                                    />
-                                                )}
-                                                Faculties
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={() => {
-                                                    handleNavigation(
-                                                        `/super-admin/institutions/curricular-programs/${institution.id}`,
-                                                        "academicPrograms"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
-                                                disabled={
-                                                    loading.academicPrograms
-                                                }
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    padding: "4px 8px",
-                                                }}
-                                            >
-                                                {loading.academicPrograms ? (
-                                                    <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
-                                                    />
-                                                ) : (
-                                                    <LibraryBooksIcon
-                                                        fontSize="small"
-                                                        sx={{
-                                                            mr: 1,
-                                                            color: "#1976d2",
-                                                        }}
-                                                    />
-                                                )}
-                                                Curricular Programs
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleExportToFormA(
+                                            {institution.name}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                            }}
+                                        >
+                                            {institution.region}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                            }}
+                                        >
+                                            {institution.address_street ||
+                                                "N/A"}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                            }}
+                                        >
+                                            {institution.municipality_city ||
+                                                "N/A"}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                            }}
+                                        >
+                                            {institution.province || "N/A"}
+                                        </TableCell>
+                                        <TableCell
+                                            sx={{
+                                                padding: "4px 6px",
+                                                fontSize: "0.75rem",
+                                            }}
+                                        >
+                                            {institution.institution_type}
+                                        </TableCell>
+                                        <TableCell sx={{ padding: "4px 6px" }}>
+                                            <IconButton
+                                                color="info"
+                                                size="small"
+                                                onClick={(e) =>
+                                                    handleMenuOpen(
+                                                        e,
                                                         institution
                                                     )
                                                 }
-                                                disabled={loading.exportFormA}
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    padding: "4px 8px",
+                                                aria-label={`More options for ${institution.name}`}
+                                                aria-controls={
+                                                    anchorEl
+                                                        ? `menu-${institution.id}`
+                                                        : undefined
+                                                }
+                                                aria-haspopup="true"
+                                                sx={{ padding: 0 }}
+                                            >
+                                                <CiCircleMore size={16} />
+                                            </IconButton>
+                                            <Menu
+                                                id={`menu-${institution.id}`}
+                                                anchorEl={anchorEl}
+                                                open={
+                                                    Boolean(anchorEl) &&
+                                                    selectedInstitution?.id ===
+                                                        institution.id
+                                                }
+                                                onClose={handleMenuClose}
+                                                anchorOrigin={{
+                                                    vertical: "bottom",
+                                                    horizontal: "right",
+                                                }}
+                                                transformOrigin={{
+                                                    vertical: "top",
+                                                    horizontal: "right",
+                                                }}
+                                                PaperProps={{
+                                                    sx: {
+                                                        minWidth: "150px",
+                                                        boxShadow:
+                                                            "0px 2px 4px rgba(0, 0, 0, 0.1)",
+                                                    },
                                                 }}
                                             >
-                                                {loading.exportFormA ? (
-                                                    <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
-                                                    />
-                                                ) : (
-                                                    <DescriptionIcon
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        handleOpenDialog(
+                                                            institution
+                                                        );
+                                                        handleMenuClose();
+                                                    }}
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        padding: "4px 8px",
+                                                    }}
+                                                >
+                                                    <VisibilityIcon
                                                         fontSize="small"
                                                         sx={{
                                                             mr: 1,
                                                             color: "#1976d2",
                                                         }}
                                                     />
-                                                )}
-                                                Export to Form A
-                                            </MenuItem>
-                                        </Menu>
+                                                    Details
+                                                </MenuItem>
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        handleNavigation(
+                                                            `/super-admin/institutions/campuses/${institution.id}`,
+                                                            "viewCampuses"
+                                                        );
+                                                        handleMenuClose();
+                                                    }}
+                                                    disabled={
+                                                        loading.viewCampuses
+                                                    }
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        padding: "4px 8px",
+                                                    }}
+                                                >
+                                                    {loading.viewCampuses ? (
+                                                        <CircularProgress
+                                                            size={12}
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                    ) : (
+                                                        <ApartmentIcon
+                                                            fontSize="small"
+                                                            sx={{
+                                                                mr: 1,
+                                                                color: "#1976d2",
+                                                            }}
+                                                        />
+                                                    )}
+                                                    Campuses
+                                                </MenuItem>
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        handleNavigation(
+                                                            `/super-admin/institutions/faculties/${institution.id}`,
+                                                            "faculties"
+                                                        );
+                                                        handleMenuClose();
+                                                    }}
+                                                    disabled={loading.faculties}
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        padding: "4px 8px",
+                                                    }}
+                                                >
+                                                    {loading.faculties ? (
+                                                        <CircularProgress
+                                                            size={12}
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                    ) : (
+                                                        <PeopleIcon
+                                                            fontSize="small"
+                                                            sx={{
+                                                                mr: 1,
+                                                                color: "#1976d2",
+                                                            }}
+                                                        />
+                                                    )}
+                                                    Faculties
+                                                </MenuItem>
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        handleNavigation(
+                                                            `/super-admin/institutions/curricular-programs/${institution.id}`,
+                                                            "academicPrograms"
+                                                        );
+                                                        handleMenuClose();
+                                                    }}
+                                                    disabled={
+                                                        loading.academicPrograms
+                                                    }
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        padding: "4px 8px",
+                                                    }}
+                                                >
+                                                    {loading.academicPrograms ? (
+                                                        <CircularProgress
+                                                            size={12}
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                    ) : (
+                                                        <LibraryBooksIcon
+                                                            fontSize="small"
+                                                            sx={{
+                                                                mr: 1,
+                                                                color: "#1976d2",
+                                                            }}
+                                                        />
+                                                    )}
+                                                    Programs
+                                                </MenuItem>
+                                                <MenuItem
+                                                    onClick={() =>
+                                                        handleExportToFormA(
+                                                            institution
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        loading.exportFormA
+                                                    }
+                                                    sx={{
+                                                        fontSize: "0.75rem",
+                                                        padding: "4px 8px",
+                                                    }}
+                                                >
+                                                    {loading.exportFormA ? (
+                                                        <CircularProgress
+                                                            size={12}
+                                                            sx={{ mr: 1 }}
+                                                        />
+                                                    ) : (
+                                                        <DescriptionIcon
+                                                            fontSize="small"
+                                                            sx={{
+                                                                mr: 1,
+                                                                color: "#1976d2",
+                                                            }}
+                                                        />
+                                                    )}
+                                                    Export
+                                                </MenuItem>
+                                            </Menu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={7}
+                                        align="center"
+                                        sx={{
+                                            padding: "8px",
+                                            fontSize: "0.75rem",
+                                        }}
+                                    >
+                                        No data found
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={7}
-                                    align="center"
-                                    sx={{
-                                        padding: "4px",
-                                        border: "1px solid rgba(224, 224, 224, 1)",
-                                        fontSize: "0.75rem",
-                                    }}
-                                >
-                                    No institutions found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            {/* Pagination Component */}
-            <TablePagination
-                rowsPerPageOptions={[
-                    15,
-                    50,
-                    100,
-                    { label: "All", value: filteredInstitutions.length },
-                ]}
-                component="div"
-                count={filteredInstitutions.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                labelRowsPerPage="Rows per page:"
-            />
-            <DetailDialog
-                open={openDialog}
-                role={role}
-                onClose={handleCloseDialog}
-                institution={selectedInstitution}
-                onEdit={onEdit}
-                navigate={navigate}
-            />
+                            )}
+                        </TableBody>
+                    </Table>
+                </Box>
+
+                {/* Sticky Pagination at Bottom */}
+                <TablePagination
+                    rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                    component="div"
+                    count={filteredInstitutions.length}
+                    rowsPerPage={
+                        rowsPerPage === -1
+                            ? filteredInstitutions.length
+                            : rowsPerPage
+                    }
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Rows:"
+                    sx={{
+                        flexShrink: 0, // Prevent pagination from shrinking
+                        borderTop: "1px solid rgba(224, 224, 224, 1)", // Optional: Add a border to separate it
+                        "& .MuiTablePagination-selectLabel": {
+                            fontSize: "0.75rem",
+                        },
+                        "& .MuiTablePagination-displayedRows": {
+                            fontSize: "0.75rem",
+                        },
+                    }}
+                />
+            </Box>
+
+            {/* Detail Dialog */}
+            {selectedInstitution && (
+                <DetailDialog
+                    open={openDialog}
+                    role={role}
+                    onClose={handleCloseDialog}
+                    institution={selectedInstitution}
+                    onEdit={onEdit}
+                    navigate={navigate}
+                />
+            )}
         </Box>
     );
 };
 
+// PropTypes for type checking
 InstitutionTable.propTypes = {
     institutions: PropTypes.arrayOf(
         PropTypes.shape({
@@ -770,15 +771,11 @@ InstitutionTable.propTypes = {
             institution_type: PropTypes.oneOf(["SUC", "LUC", "PHEI"])
                 .isRequired,
         })
-    ).isRequired,
+    ),
     onEdit: PropTypes.func.isRequired,
     setSnackbarMessage: PropTypes.func.isRequired,
     setSnackbarSeverity: PropTypes.func.isRequired,
     setSnackbarOpen: PropTypes.func.isRequired,
-};
-
-InstitutionTable.defaultProps = {
-    institutions: [],
 };
 
 export default InstitutionTable;

@@ -19,7 +19,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
 import DownloadIcon from "@mui/icons-material/Download";
-import FacultyProfileSkeleton from "./FacultyProfileSkeleton";
 
 const facultyGroups = [
     {
@@ -161,7 +160,7 @@ const FacultyProfileUpload = () => {
 
                     const jsonData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 9,
+                        range: 6,
                     });
 
                     const validRows = jsonData.filter(
@@ -276,6 +275,9 @@ const FacultyProfileUpload = () => {
                             ? parseFloat(row[40])
                             : null,
                         total_work_load: row[41] ? parseFloat(row[41]) : null,
+                        data_date: new Date().toLocaleDateString("en-CA", {
+                            timeZone: "Asia/Manila",
+                        }),
                     }));
 
                     processedFacultyProfiles.forEach((profile) => {
@@ -528,23 +530,6 @@ const FacultyProfileUpload = () => {
                 </Button>
             </ButtonGroup>
 
-            {/* Tabs for faculty groups */}
-            <Tabs
-                value={selectedGroup}
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-                sx={{ mb: 2 }}
-            >
-                {facultyGroups.map((group) => (
-                    <Tab
-                        key={group.sheetName}
-                        label={group.label}
-                        value={group.sheetName}
-                    />
-                ))}
-            </Tabs>
-
             {/* Group description */}
             <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
                 {currentGroup?.description}
@@ -563,21 +548,32 @@ const FacultyProfileUpload = () => {
                 </Box>
             )}
 
-            {/* Loading and Error States */}
-            {loading && <FacultyProfileSkeleton />}
-
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
                     {error}
                 </Alert>
             )}
 
-            {!loading && !error && (
-                <FacultyProfileTable
-                    selectedGroup={selectedGroup}
-                    facultyProfiles={facultyProfiles}
-                />
-            )}
+            <FacultyProfileTable
+                selectedGroup={selectedGroup}
+                facultyProfiles={facultyProfiles}
+            />
+            {/* Tabs for faculty groups */}
+            <Tabs
+                value={selectedGroup}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{ mb: 2 }}
+            >
+                {facultyGroups.map((group) => (
+                    <Tab
+                        key={group.sheetName}
+                        label={group.label}
+                        value={group.sheetName}
+                    />
+                ))}
+            </Tabs>
         </Box>
     );
 };

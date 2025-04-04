@@ -88,37 +88,37 @@ const InstitutionManagement = () => {
                 });
 
                 const extractedInstitution = {
-                    name: String(jsonDataA1[1]?.[2] || "Unknown"),
-                    address_street: String(jsonDataA1[4]?.[2] || "Unknown"),
-                    municipality_city: String(jsonDataA1[5]?.[2] || "Unknown"),
-                    province: String(jsonDataA1[6]?.[2] || "Unknown"),
-                    region: String(jsonDataA1[7]?.[2] || "Unknown"),
-                    postal_code: String(jsonDataA1[8]?.[2] || "N/A"),
+                    name: String(jsonDataA1[4]?.[2] || "Unknown"),
+                    address_street: String(jsonDataA1[7]?.[2] || "Unknown"),
+                    municipality_city: String(jsonDataA1[8]?.[2] || "Unknown"),
+                    province: String(jsonDataA1[9]?.[2] || "Unknown"),
+                    region: String(jsonDataA1[10]?.[2] || "Unknown"),
+                    postal_code: String(jsonDataA1[11]?.[2] || "N/A"),
                     institutional_telephone: String(
-                        jsonDataA1[9]?.[2] || "N/A"
+                        jsonDataA1[12]?.[2] || "N/A"
                     ),
-                    institutional_fax: String(jsonDataA1[10]?.[2] || "N/A"),
-                    head_telephone: String(jsonDataA1[11]?.[2] || "N/A"),
-                    institutional_email: String(jsonDataA1[12]?.[2] || "N/A"),
-                    institutional_website: String(jsonDataA1[13]?.[2] || "N/A"),
-                    year_established: jsonDataA1[14]?.[2]
-                        ? String(jsonDataA1[14]?.[2])
-                        : "N/A",
-                    sec_registration: jsonDataA1[15]?.[2]
-                        ? String(jsonDataA1[15]?.[2])
-                        : "N/A",
-                    year_granted_approved: jsonDataA1[16]?.[2]
-                        ? String(jsonDataA1[16]?.[2])
-                        : "N/A",
-                    year_converted_college: jsonDataA1[17]?.[2]
+                    institutional_fax: String(jsonDataA1[13]?.[2] || "N/A"),
+                    head_telephone: String(jsonDataA1[14]?.[2] || "N/A"),
+                    institutional_email: String(jsonDataA1[15]?.[2] || "N/A"),
+                    institutional_website: String(jsonDataA1[16]?.[2] || "N/A"),
+                    year_established: jsonDataA1[17]?.[2]
                         ? String(jsonDataA1[17]?.[2])
                         : "N/A",
-                    year_converted_university: jsonDataA1[18]?.[2]
+                    sec_registration: jsonDataA1[18]?.[2]
                         ? String(jsonDataA1[18]?.[2])
                         : "N/A",
-                    head_name: String(jsonDataA1[19]?.[2] || "Unknown"),
-                    head_title: String(jsonDataA1[20]?.[2] || "N/A"),
-                    head_education: String(jsonDataA1[21]?.[2] || "N/A"),
+                    year_granted_approved: jsonDataA1[19]?.[2]
+                        ? String(jsonDataA1[19]?.[2])
+                        : "N/A",
+                    year_converted_college: jsonDataA1[20]?.[2]
+                        ? String(jsonDataA1[20]?.[2])
+                        : "N/A",
+                    year_converted_university: jsonDataA1[21]?.[2]
+                        ? String(jsonDataA1[21]?.[2])
+                        : "N/A",
+                    head_name: String(jsonDataA1[22]?.[2] || "Unknown"),
+                    head_title: String(jsonDataA1[23]?.[2] || "N/A"),
+                    head_education: String(jsonDataA1[24]?.[2] || "N/A"),
                     institution_type: selectedInstitutionType,
                 };
 
@@ -222,7 +222,13 @@ const InstitutionManagement = () => {
                 </Typography>
             </Breadcrumbs>
 
-            <ButtonGroup sx={{ mt: 3, display: "flex" }}>
+            <ButtonGroup
+                sx={{
+                    mt: 3,
+                    display: "flex",
+                    justifyContent: "flex-end", // Align to the right
+                }}
+            >
                 <Button
                     variant="contained"
                     startIcon={<UploadIcon />}

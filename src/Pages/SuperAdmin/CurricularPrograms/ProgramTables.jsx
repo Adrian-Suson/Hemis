@@ -9,33 +9,23 @@ import {
     Box,
     TextField,
     Grid,
-    Fab,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
-    IconButton,
+    Tabs,
+    Tab,
+    Paper,
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import CloseIcon from "@mui/icons-material/Close";
 
 // Register all Handsontable modules
 registerAllModules();
 
-const ProgramTables = ({ programs, loading, subTabValue }) => {
+const ProgramTables = ({ programs, loading }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredPrograms, setFilteredPrograms] = useState(programs);
-    const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
+    const [subTabValue, setSubTabValue] = useState(0); // State for sub-tabs
 
     // Apply search and filters
     useEffect(() => {
         let filtered = [...programs];
 
-        // Apply search
         if (searchQuery) {
             filtered = filtered.filter((program) =>
                 Object.values(program).some((value) =>
@@ -66,16 +56,8 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         data: "is_thesis_dissertation_required",
                         title: "Thesis/Dissertation",
                     },
-                    {
-                        data: "program_status",
-                        title: "Status",
-                        type: "numeric",
-                    },
-                    {
-                        data: "calendar_use_code",
-                        title: "Calendar",
-                        type: "numeric",
-                    },
+                    { data: "program_status", title: "Status" },
+                    { data: "calendar_use_code", title: "Calendar" },
                     {
                         data: "program_normal_length_in_years",
                         title: "Length",
@@ -91,6 +73,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         data: "total_units",
                         title: "Total Units",
                         type: "numeric",
+                        readOnly: true, // Make this read-only since it's calculated
                     },
                     {
                         data: "tuition_per_unit",
@@ -104,7 +87,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                     },
                 ],
                 data: filteredPrograms.map((program) => ({
-                    id: program.id, // Include ID for API updates
+                    id: program.id,
                     program_name: program.program_name || "-",
                     program_code: program.program_code || "-",
                     major_name: program.major_name || "-",
@@ -213,52 +196,46 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         data: "subtotal_male",
                         title: "Subtotal M",
                         type: "numeric",
+                        readOnly: true, // Already read-only
                     },
                     {
                         data: "subtotal_female",
                         title: "Subtotal F",
                         type: "numeric",
+                        readOnly: true, // Already read-only
                     },
-                    { data: "grand_total", title: "Total", type: "numeric" },
+                    {
+                        data: "grand_total",
+                        title: "Total",
+                        type: "numeric",
+                        readOnly: true, // Already read-only
+                    },
                 ],
-                data: filteredPrograms.flatMap(
-                    (program) =>
-                        program.enrollments?.map((enrollment) => ({
-                            program_id: program.id, // Include program ID for reference
-                            enrollment_id: enrollment.id, // Include enrollment ID for API updates
-                            program_name: program.program_name || "-",
-                            new_students_freshmen_male:
-                                enrollment.new_students_freshmen_male ?? 0,
-                            new_students_freshmen_female:
-                                enrollment.new_students_freshmen_female ?? 0,
-                            first_year_old_male:
-                                enrollment.first_year_old_male ?? 0,
-                            first_year_old_female:
-                                enrollment.first_year_old_female ?? 0,
-                            second_year_male: enrollment.second_year_male ?? 0,
-                            second_year_female:
-                                enrollment.second_year_female ?? 0,
-                            third_year_male: enrollment.third_year_male ?? 0,
-                            third_year_female:
-                                enrollment.third_year_female ?? 0,
-                            fourth_year_male: enrollment.fourth_year_male ?? 0,
-                            fourth_year_female:
-                                enrollment.fourth_year_female ?? 0,
-                            fifth_year_male: enrollment.fifth_year_male ?? 0,
-                            fifth_year_female:
-                                enrollment.fifth_year_female ?? 0,
-                            sixth_year_male: enrollment.sixth_year_male ?? 0,
-                            sixth_year_female:
-                                enrollment.sixth_year_female ?? 0,
-                            seventh_year_male:
-                                enrollment.seventh_year_male ?? 0,
-                            seventh_year_female:
-                                enrollment.seventh_year_female ?? 0,
-                            subtotal_male: enrollment.subtotal_male ?? 0,
-                            subtotal_female: enrollment.subtotal_female ?? 0,
-                            grand_total: enrollment.grand_total ?? 0,
-                        })) || []
-                ),
+                data: filteredPrograms.map((program) => ({
+                    id: program.id,
+                    program_name: program.program_name || "-",
+                    new_students_freshmen_male:
+                        program.new_students_freshmen_male ?? 0,
+                    new_students_freshmen_female:
+                        program.new_students_freshmen_female ?? 0,
+                    first_year_old_male: program.first_year_old_male ?? 0,
+                    first_year_old_female: program.first_year_old_female ?? 0,
+                    second_year_male: program.second_year_male ?? 0,
+                    second_year_female: program.second_year_female ?? 0,
+                    third_year_male: program.third_year_male ?? 0,
+                    third_year_female: program.third_year_female ?? 0,
+                    fourth_year_male: program.fourth_year_male ?? 0,
+                    fourth_year_female: program.fourth_year_female ?? 0,
+                    fifth_year_male: program.fifth_year_male ?? 0,
+                    fifth_year_female: program.fifth_year_female ?? 0,
+                    sixth_year_male: program.sixth_year_male ?? 0,
+                    sixth_year_female: program.sixth_year_female ?? 0,
+                    seventh_year_male: program.seventh_year_male ?? 0,
+                    seventh_year_female: program.seventh_year_female ?? 0,
+                    subtotal_male: program.subtotal_male ?? 0,
+                    subtotal_female: program.subtotal_female ?? 0,
+                    grand_total: program.grand_total ?? 0,
+                })),
             },
             2: {
                 // Statistics
@@ -278,6 +255,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         data: "total_units_actual",
                         title: "Total Units",
                         type: "numeric",
+                        readOnly: true, // Make this read-only since it's calculated
                     },
                     {
                         data: "graduates_males",
@@ -293,6 +271,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         data: "graduates_total",
                         title: "Grads Total",
                         type: "numeric",
+                        readOnly: true, // Make this read-only since it's calculated
                     },
                     {
                         data: "externally_funded_merit_scholars",
@@ -310,135 +289,142 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         type: "numeric",
                     },
                 ],
-                data: filteredPrograms
-                    .filter((program) => program.statistics)
-                    .map((program) => ({
-                        program_id: program.id, // Include program ID for reference
-                        statistics_id: program.statistics?.id, // Include statistics ID for API updates
-                        program_name: program.program_name || "-",
-                        lecture_units_actual:
-                            program.statistics?.lecture_units_actual ?? 0,
-                        laboratory_units_actual:
-                            program.statistics?.laboratory_units_actual ?? 0,
-                        total_units_actual:
-                            program.statistics?.total_units_actual ?? 0,
-                        graduates_males:
-                            program.statistics?.graduates_males ?? 0,
-                        graduates_females:
-                            program.statistics?.graduates_females ?? 0,
-                        graduates_total:
-                            program.statistics?.graduates_total ?? 0,
-                        externally_funded_merit_scholars:
-                            program.statistics
-                                ?.externally_funded_merit_scholars ?? 0,
-                        internally_funded_grantees:
-                            program.statistics?.internally_funded_grantees ?? 0,
-                        suc_funded_grantees:
-                            program.statistics?.suc_funded_grantees ?? 0,
-                    })),
+                data: filteredPrograms.map((program) => ({
+                    id: program.id,
+                    program_name: program.program_name || "-",
+                    lecture_units_actual: program.lecture_units_actual ?? 0,
+                    laboratory_units_actual:
+                        program.laboratory_units_actual ?? 0,
+                    total_units_actual: program.total_units_actual ?? 0,
+                    graduates_males: program.graduates_males ?? 0,
+                    graduates_females: program.graduates_females ?? 0,
+                    graduates_total: program.graduates_total ?? 0,
+                    externally_funded_merit_scholars:
+                        program.externally_funded_merit_scholars ?? 0,
+                    internally_funded_grantees:
+                        program.internally_funded_grantees ?? 0,
+                    suc_funded_grantees: program.suc_funded_grantees ?? 0,
+                })),
             },
         }),
         [filteredPrograms]
     );
 
-    // Handle cell changes and save to backend
+    // Handle cell changes and save to backend with subtotal/grand total updates
     const handleChanges = useCallback(
         async (changes, source) => {
             if (!changes || source === "loadData") return;
 
             const updatedPrograms = [...filteredPrograms];
             const token = localStorage.getItem("token");
+            const currentConfig =
+                columnConfigs[subTabValue] || columnConfigs[0];
 
             for (const [row, prop, , newValue] of changes) {
-                const currentConfig =
-                    columnConfigs[subTabValue] || columnConfigs[0];
                 const programData = currentConfig.data[row];
+                const programIndex = updatedPrograms.findIndex(
+                    (p) => p.id === programData.id
+                );
 
-                // Update the local data based on the subTabValue
-                if (subTabValue === 0) {
-                    // Programs tab
-                    const programIndex = updatedPrograms.findIndex(
-                        (p) => p.id === programData.id
-                    );
-                    if (programIndex !== -1) {
-                        updatedPrograms[programIndex][prop] = newValue;
+                if (programIndex !== -1) {
+                    // Update the changed field
+                    updatedPrograms[programIndex][prop] = newValue;
 
-                        try {
-                            await axios.put(
-                                `http://localhost:8000/api/programs/${programData.id}`,
-                                updatedPrograms[programIndex],
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                }
-                            );
-                        } catch (error) {
-                            console.error("Error updating program:", error);
-                        }
+                    // Recalculate totals based on the tab
+                    if (subTabValue === 0) {
+                        // Programs tab: Update total_units
+                        updatedPrograms[programIndex].total_units =
+                            (parseFloat(
+                                updatedPrograms[programIndex].lab_units
+                            ) || 0) +
+                            (parseFloat(
+                                updatedPrograms[programIndex].lecture_units
+                            ) || 0);
+                    } else if (subTabValue === 1) {
+                        // Enrollments tab: Recalculate subtotals and grand total
+                        const maleFields = [
+                            "new_students_freshmen_male",
+                            "first_year_old_male",
+                            "second_year_male",
+                            "third_year_male",
+                            "fourth_year_male",
+                            "fifth_year_male",
+                            "sixth_year_male",
+                            "seventh_year_male",
+                        ];
+                        const femaleFields = [
+                            "new_students_freshmen_female",
+                            "first_year_old_female",
+                            "second_year_female",
+                            "third_year_female",
+                            "fourth_year_female",
+                            "fifth_year_female",
+                            "sixth_year_female",
+                            "seventh_year_female",
+                        ];
+
+                        updatedPrograms[programIndex].subtotal_male =
+                            maleFields.reduce((sum, field) => {
+                                return (
+                                    sum +
+                                    (parseFloat(
+                                        updatedPrograms[programIndex][field]
+                                    ) || 0)
+                                );
+                            }, 0);
+
+                        updatedPrograms[programIndex].subtotal_female =
+                            femaleFields.reduce((sum, field) => {
+                                return (
+                                    sum +
+                                    (parseFloat(
+                                        updatedPrograms[programIndex][field]
+                                    ) || 0)
+                                );
+                            }, 0);
+
+                        updatedPrograms[programIndex].grand_total =
+                            updatedPrograms[programIndex].subtotal_male +
+                            updatedPrograms[programIndex].subtotal_female;
+                    } else if (subTabValue === 2) {
+                        // Statistics tab: Update total_units_actual and graduates_total
+                        updatedPrograms[programIndex].total_units_actual =
+                            (parseFloat(
+                                updatedPrograms[programIndex]
+                                    .lecture_units_actual
+                            ) || 0) +
+                            (parseFloat(
+                                updatedPrograms[programIndex]
+                                    .laboratory_units_actual
+                            ) || 0);
+
+                        updatedPrograms[programIndex].graduates_total =
+                            (parseFloat(
+                                updatedPrograms[programIndex].graduates_males
+                            ) || 0) +
+                            (parseFloat(
+                                updatedPrograms[programIndex].graduates_females
+                            ) || 0);
                     }
-                } else if (subTabValue === 1) {
-                    // Enrollments tab
-                    const programIndex = updatedPrograms.findIndex(
-                        (p) => p.id === programData.program_id
-                    );
-                    if (programIndex !== -1) {
-                        const enrollmentIndex = updatedPrograms[
-                            programIndex
-                        ].enrollments.findIndex(
-                            (e) => e.id === programData.enrollment_id
-                        );
-                        if (enrollmentIndex !== -1) {
-                            updatedPrograms[programIndex].enrollments[
-                                enrollmentIndex
-                            ][prop] = newValue;
 
-                            try {
-                                await axios.put(
-                                    `http://localhost:8000/api/enrollments/${programData.enrollment_id}`,
-                                    updatedPrograms[programIndex].enrollments[
-                                        enrollmentIndex
-                                    ],
-                                    {
-                                        headers: {
-                                            Authorization: `Bearer ${token}`,
-                                        },
-                                    }
-                                );
-                            } catch (error) {
-                                console.error(
-                                    "Error updating enrollment:",
-                                    error
-                                );
+                    // Update the backend
+                    try {
+                        await axios.put(
+                            `http://localhost:8000/api/programs/${programData.id}`,
+                            updatedPrograms[programIndex],
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
                             }
-                        }
-                    }
-                } else if (subTabValue === 2) {
-                    // Statistics tab
-                    const programIndex = updatedPrograms.findIndex(
-                        (p) => p.id === programData.program_id
-                    );
-                    if (programIndex !== -1) {
-                        updatedPrograms[programIndex].statistics[prop] =
-                            newValue;
-
-                        try {
-                            await axios.put(
-                                `http://localhost:8000/api/statistics/${programData.statistics_id}`,
-                                updatedPrograms[programIndex].statistics,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                }
-                            );
-                        } catch (error) {
-                            console.error("Error updating statistics:", error);
-                        }
+                        );
+                    } catch (error) {
+                        console.error("Error updating program:", error);
                     }
                 }
             }
 
+            // Update the state to reflect changes in the table
             setFilteredPrograms(updatedPrograms);
         },
         [filteredPrograms, subTabValue, columnConfigs]
@@ -446,31 +432,6 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
 
     if (loading) return <CircularProgress />;
     const currentConfig = columnConfigs[subTabValue] || columnConfigs[0];
-
-    // Reference data for the dialog
-    const referenceData = {
-        authority: [
-            { code: "GP", label: "Government Permit" },
-            { code: "GR", label: "Government Recognition" },
-            { code: "BR", label: "Board Resolution" },
-        ],
-        thesisDissertation: [
-            { code: 1, label: "Required" },
-            { code: 2, label: "Optional" },
-            { code: 3, label: "Not Required" },
-        ],
-        programStatus: [
-            { code: 1, label: "Active" },
-            { code: 2, label: "Phased Out" },
-            { code: 3, label: "Abolished" },
-        ],
-        calendar: [
-            { code: 1, label: "Sem" },
-            { code: 2, label: "Tri Sem" },
-            { code: 3, label: "Quarter Sem" },
-            { code: 4, label: "Distance Mode" },
-        ],
-    };
 
     return (
         <Box sx={{ mt: 2, position: "relative" }}>
@@ -503,12 +464,33 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         />
                     </Grid>
                 </Grid>
-            </Box>
+            </Box>  
+            {/* Sub-Tabs Navigation */}
+            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+                <Tabs
+                    value={subTabValue}
+                    onChange={(e, newValue) => setSubTabValue(newValue)}
+                    aria-label="program sub-tabs"
+                    variant="fullWidth"
+                    sx={{
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        "& .MuiTab-root": {
+                            fontSize: "0.875rem",
+                            fontWeight: "medium",
+                        },
+                    }}
+                >
+                    <Tab label="Programs" />
+                    <Tab label="Enrollments" />
+                    <Tab label="Statistics" />
+                </Tabs>
+            </Paper>
 
-            <Box
+            <Paper
                 sx={{
                     overflowX: "auto",
-                    maxHeight: "550px",
+                    maxHeight: "700px",
                     position: "relative",
                 }}
             >
@@ -517,14 +499,14 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                     columns={currentConfig.columns}
                     rowHeaders={true}
                     stretchH="all"
-                    height="550px"
+                    height="590px"
                     licenseKey="non-commercial-and-evaluation"
                     settings={{
-                        readOnly: false, // Make cells editable
+                        readOnly: false,
                         manualColumnResize: true,
                         columnSorting: true,
-                        contextMenu: true, // Enable context menu for copy/paste
-                        afterChange: handleChanges, // Handle cell changes
+                        contextMenu: true,
+                        afterChange: handleChanges,
                         nestedHeaders: [
                             subTabValue === 0
                                 ? [
@@ -578,7 +560,6 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                             const columnData = currentConfig.columns[col].data;
                             const value = currentConfig.data[row]?.[columnData];
 
-                            // Make "program_name" read-only in Enrollments and Statistics tabs
                             if (
                                 (subTabValue === 1 || subTabValue === 2) &&
                                 columnData === "program_name"
@@ -591,16 +572,12 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                                     value !== undefined && value !== null
                                         ? value
                                         : "-";
-
-                                // Apply common styles
                                 td.style.whiteSpace = "nowrap";
                                 td.style.overflow = "hidden";
                                 td.style.textOverflow = "ellipsis";
                                 td.style.maxWidth =
                                     col === 0 ? "180px" : "120px";
                                 td.title = value || "-";
-
-                                // Center-align all columns except "program_name" and "major_name"
                                 if (
                                     columnData !== "program_name" &&
                                     columnData !== "major_name"
@@ -615,110 +592,7 @@ const ProgramTables = ({ programs, loading, subTabValue }) => {
                         },
                     }}
                 />
-                {currentConfig.data.length === 0 && (
-                    <Box sx={{ textAlign: "center", p: 2, color: "#666" }}>
-                        No data available.
-                    </Box>
-                )}
-
-                {/* Floating Action Button */}
-                <Fab
-                    color="primary"
-                    aria-label="show reference"
-                    onClick={() => setOpenReferenceDialog(true)}
-                    sx={{
-                        position: "absolute",
-                        bottom: 16,
-                        right: 16,
-                    }}
-                >
-                    <InfoIcon />
-                </Fab>
-            </Box>
-
-            {/* Reference Dialog */}
-            <Dialog
-                open={openReferenceDialog}
-                onClose={() => setOpenReferenceDialog(false)}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>
-                    Reference Table
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setOpenReferenceDialog(false)}
-                        sx={{
-                            position: "absolute",
-                            right: 8,
-                            top: 8,
-                            color: (theme) => theme.palette.grey[500],
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    Authority to Offer Program
-                                </TableCell>
-                                <TableCell>
-                                    Is Thesis/Dissertation Required?
-                                </TableCell>
-                                <TableCell>Program Status</TableCell>
-                                <TableCell>Program Calendar</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {referenceData.authority.map((item, index) => (
-                                <TableRow key={`authority-${index}`}>
-                                    <TableCell>{`${item.code} - ${item.label}`}</TableCell>
-                                    {index <
-                                    referenceData.thesisDissertation.length ? (
-                                        <TableCell>
-                                            {`${referenceData.thesisDissertation[index].code} - ${referenceData.thesisDissertation[index].label}`}
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell>-</TableCell>
-                                    )}
-                                    {index <
-                                    referenceData.programStatus.length ? (
-                                        <TableCell>
-                                            {`${referenceData.programStatus[index].code} - ${referenceData.programStatus[index].label}`}
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell>-</TableCell>
-                                    )}
-                                    {index < referenceData.calendar.length ? (
-                                        <TableCell>
-                                            {`${referenceData.calendar[index].code} - ${referenceData.calendar[index].label}`}
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell>-</TableCell>
-                                    )}
-                                </TableRow>
-                            ))}
-                            {referenceData.calendar.length >
-                                referenceData.authority.length &&
-                                referenceData.calendar
-                                    .slice(referenceData.authority.length)
-                                    .map((item, index) => (
-                                        <TableRow
-                                            key={`calendar-extra-${index}`}
-                                        >
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>{`${item.code} - ${item.label}`}</TableCell>
-                                        </TableRow>
-                                    ))}
-                        </TableBody>
-                    </Table>
-                </DialogContent>
-            </Dialog>
+            </Paper>
         </Box>
     );
 };
@@ -729,24 +603,30 @@ ProgramTables.propTypes = {
         PropTypes.shape({
             id: PropTypes.number.isRequired,
             program_name: PropTypes.string.isRequired,
-            enrollments: PropTypes.arrayOf(
-                PropTypes.shape({
-                    id: PropTypes.number.isRequired, // Ensure enrollment has an ID
-                    new_students_freshmen_male: PropTypes.number,
-                    new_students_freshmen_female: PropTypes.number,
-                    grand_total: PropTypes.number,
-                })
-            ),
-            statistics: PropTypes.shape({
-                id: PropTypes.number.isRequired, // Ensure statistics has an ID
-                total_units_actual: PropTypes.number,
-                graduates_males: PropTypes.number,
-                graduates_females: PropTypes.number,
-            }),
+            program_code: PropTypes.number,
+            major_name: PropTypes.string,
+            major_code: PropTypes.number,
+            category: PropTypes.string,
+            serial: PropTypes.string,
+            year: PropTypes.string,
+            is_thesis_dissertation_required: PropTypes.string,
+            program_status: PropTypes.string,
+            calendar_use_code: PropTypes.string,
+            program_normal_length_in_years: PropTypes.number,
+            lab_units: PropTypes.number,
+            lecture_units: PropTypes.number,
+            total_units: PropTypes.number,
+            tuition_per_unit: PropTypes.number,
+            program_fee: PropTypes.number,
+            new_students_freshmen_male: PropTypes.number,
+            new_students_freshmen_female: PropTypes.number,
+            grand_total: PropTypes.number,
+            total_units_actual: PropTypes.number,
+            graduates_males: PropTypes.number,
+            graduates_females: PropTypes.number,
         })
     ).isRequired,
     loading: PropTypes.bool.isRequired,
-    subTabValue: PropTypes.number.isRequired,
 };
 
 export default ProgramTables;

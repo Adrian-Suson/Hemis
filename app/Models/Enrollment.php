@@ -30,6 +30,7 @@ class Enrollment extends Model
         'subtotal_male',
         'subtotal_female',
         'grand_total',
+        'data_date',
     ];
 
     public function program()

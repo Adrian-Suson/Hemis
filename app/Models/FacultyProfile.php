@@ -52,7 +52,8 @@ class FacultyProfile extends Model
         'production_load',
         'administrative_load',
         'other_load_credits',
-        'total_work_load'
+        'total_work_load',
+        'data_date',
     ];
 
     public function institution()

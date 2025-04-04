@@ -20,6 +20,7 @@ class ProgramStatistic extends Model
         'externally_funded_merit_scholars',
         'internally_funded_grantees',
         'suc_funded_grantees',
+        'data_date',
     ];
 
     public function program()

@@ -10,9 +10,6 @@ use Illuminate\Http\Response;
 
 class FacultyProfileController extends Controller
 {
-    /**
-     * Display a listing of the faculty profiles.
-     */
     public function index(Request $request)
     {
         $query = FacultyProfile::with('institution');
@@ -30,14 +27,11 @@ class FacultyProfileController extends Controller
         return response()->json($facultyProfiles, Response::HTTP_OK);
     }
 
-
-    /**
-     * Store a newly created faculty profile in storage.
-     */
     public function store(Request $request)
     {
         $validatedData = $request->validate([
             '*.institution_id' => 'nullable|exists:institutions,id',
+            '*.data_date' => 'required|date', // Added data_date
             '*.faculty_group' => 'nullable|string',
             '*.name' => 'nullable|string|max:255',
             '*.generic_faculty_rank' => 'nullable|integer',
@@ -82,12 +76,11 @@ class FacultyProfileController extends Controller
             '*.total_work_load' => 'nullable|numeric',
         ]);
 
-        // Remove duplicates by converting each profile to a unique string and filtering
         $uniqueProfiles = [];
         $seen = [];
 
         foreach ($validatedData as $profile) {
-            $profileString = json_encode($profile); // Stringify for comparison
+            $profileString = json_encode($profile);
             if (!in_array($profileString, $seen)) {
                 $seen[] = $profileString;
                 $uniqueProfiles[] = $profile;
@@ -98,18 +91,14 @@ class FacultyProfileController extends Controller
             return response()->json(['message' => 'No unique faculty profiles to insert'], Response::HTTP_OK);
         }
 
-        // Ensure the timezone is set to Asia/Manila
         date_default_timezone_set('Asia/Manila');
-
-        // Add timestamps to each record in the unique profiles
-        $currentTime = Carbon::now('Asia/Manila'); // Set timezone to Philippine time
+        $currentTime = Carbon::now('Asia/Manila');
         $uniqueProfiles = array_map(function ($profile) use ($currentTime) {
             $profile['created_at'] = $currentTime;
             $profile['updated_at'] = $currentTime;
             return $profile;
         }, $uniqueProfiles);
 
-        // Bulk insert the unique validated data
         FacultyProfile::insert($uniqueProfiles);
 
         return response()->json([
@@ -118,21 +107,16 @@ class FacultyProfileController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    /**
-     * Display the specified faculty profile.
-     */
     public function show(FacultyProfile $facultyProfile)
     {
         return response()->json($facultyProfile->load('institution'), Response::HTTP_OK);
     }
 
-    /**
-     * Update the specified faculty profile in storage.
-     */
     public function update(Request $request, FacultyProfile $facultyProfile)
     {
         $validated = $request->validate([
             'institution_id' => 'nullable|exists:institutions,id',
+            'data_date' => 'sometimes|required|date',
             'faculty_group' => 'nullable|string',
             'name' => 'nullable|string|max:255',
             'generic_faculty_rank' => 'nullable|integer',
@@ -181,9 +165,6 @@ class FacultyProfileController extends Controller
         return response()->json($facultyProfile, Response::HTTP_OK);
     }
 
-    /**
-     * Remove the specified faculty profile from storage.
-     */
     public function destroy(FacultyProfile $facultyProfile)
     {
         $facultyProfile->delete();

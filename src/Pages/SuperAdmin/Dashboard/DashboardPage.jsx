@@ -99,6 +99,7 @@ const Dashboard = () => {
                     loading: false,
                     error: null,
                 });
+                console.log("programsResponse.data:", programsResponse.data);
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
                 setDashboardData((prev) => ({
@@ -171,25 +172,20 @@ const Dashboard = () => {
     const enrollmentByInstitutionType = dashboardData.institutions.reduce(
         (acc, institution) => {
             const type = institution.institution_type || "Unknown";
-            // Find all programs for this institution
+
+            // Filter programs that belong to this institution
             const institutionPrograms = dashboardData.programs.filter(
                 (program) => program.institution_id === institution.id
             );
-            // Sum the enrollments for these programs
-            const enrollmentTotal = institutionPrograms.reduce(
-                (sum, program) => {
-                    return (
-                        sum +
-                        (program.enrollments?.reduce(
-                            (subSum, enrollment) =>
-                                subSum + (enrollment.grand_total || 0),
-                            0
-                        ) || 0)
-                    );
-                },
+
+            // Sum grand_total from each program (or 0 if not available)
+            const totalEnrollment = institutionPrograms.reduce(
+                (sum, program) => sum + (program.grand_total || 0),
                 0
             );
-            acc[type] = (acc[type] || 0) + enrollmentTotal;
+
+            // Add to accumulator by type
+            acc[type] = (acc[type] || 0) + totalEnrollment;
             return acc;
         },
         {}
@@ -203,13 +199,13 @@ const Dashboard = () => {
                 label: "Enrollments by Institution Type",
                 data: Object.values(enrollmentByInstitutionType),
                 backgroundColor: [
-                    "#FF6384", // Red
-                    "#36A2EB", // Blue
-                    "#FFCE56", // Yellow
-                    "#4BC0C0", // Teal
-                    "#9966FF", // Purple
-                    "#FF9F40", // Orange
-                    "#C9CBDF", // Gray
+                    "#FF6384",
+                    "#36A2EB",
+                    "#FFCE56",
+                    "#4BC0C0",
+                    "#9966FF",
+                    "#FF9F40",
+                    "#C9CBDF",
                 ],
                 borderColor: [
                     "#FF6384",

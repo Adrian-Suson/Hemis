@@ -16,6 +16,7 @@ class CreateFacultyProfilesTable extends Migration
                 ->onDelete('cascade')
                 ->nullable(); // Links to institutions table
 
+            $table->date('data_date'); // Added date column to track when data was recorded
             $table->string('faculty_group')->nullable(); // New column for faculty groups (A1, A2, A3, B, C1, C2, C3, D, E)
             $table->string('name')->nullable(); // NAME OF FACULTY (A2)
             $table->integer('generic_faculty_rank')->nullable(); // GENERIC FACULTY RANK (A3)

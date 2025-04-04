@@ -4,6 +4,7 @@ import {
     Route,
     Navigate,
 } from "react-router-dom";
+import PropTypes from "prop-types";
 
 // Import pages
 import LoginPage from "./Pages/Auth/LoginPage";
@@ -32,12 +33,25 @@ import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
 import Statistics from "./Pages/SuperAdmin/Statistics/Statistics";
 
+function ExternalRedirect({ to }) {
+    window.location.href = to;
+    return null;
+}
+
+ExternalRedirect.propTypes = {
+    to: PropTypes.string.isRequired,
+};
+
 function App() {
     return (
         <Router>
             <Routes>
                 {/* Redirect from "/" to "/login" */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route
+                    path="/egg"
+                    element={<ExternalRedirect to="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />}
+                />
 
                 {/* Public Route: Login */}
                 <Route path="/login" element={<LoginPage />} />

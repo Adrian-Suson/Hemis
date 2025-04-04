@@ -9,27 +9,17 @@ use Illuminate\Http\JsonResponse;
 
 class EnrollmentController extends Controller
 {
-    /**
-     * Display a listing of all enrollments.
-     *
-     * @return JsonResponse
-     */
     public function index(): JsonResponse
     {
         $enrollments = Enrollment::with('program')->get();
         return response()->json($enrollments);
     }
 
-    /**
-     * Store a newly created enrollment in storage.
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'program_id' => 'required|exists:programs,id',
+            'data_date' => 'required|date', // Added data_date
             'new_students_freshmen_male' => 'nullable|integer',
             'new_students_freshmen_female' => 'nullable|integer',
             'first_year_old_male' => 'nullable|integer',
@@ -55,17 +45,11 @@ class EnrollmentController extends Controller
         return response()->json($enrollment->load('program'), 201);
     }
 
-    /**
-     * Update the specified enrollment in storage.
-     *
-     * @param Request $request
-     * @param Enrollment $enrollment
-     * @return JsonResponse
-     */
     public function update(Request $request, Enrollment $enrollment): JsonResponse
     {
         $validated = $request->validate([
             'program_id' => 'sometimes|required|exists:programs,id',
+            'data_date' => 'sometimes|required|date', // Added data_date
             'new_students_freshmen_male' => 'nullable|integer',
             'new_students_freshmen_female' => 'nullable|integer',
             'first_year_old_male' => 'nullable|integer',
