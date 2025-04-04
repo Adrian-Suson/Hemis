@@ -17,12 +17,10 @@ import config from "../../../utils/config";
 import { useProgress } from "../../../Context/ProgressContext";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
-import InstitutionManagementSkeleton from "./InstitutionManagementSkeleton";
 import UploadDialog from "./UploadDialog";
 
 const InstitutionManagement = () => {
     const [institutions, setInstitutions] = useState([]);
-    const [loading, setLoading] = useState(true);
     const { showProgress, hideProgress } = useProgress();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -38,7 +36,6 @@ const InstitutionManagement = () => {
 
     const fetchInstitutions = async () => {
         try {
-            setLoading(true);
             const token = localStorage.getItem("token");
             const response = await axios.get(`${config.API_URL}/institutions`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -50,7 +47,6 @@ const InstitutionManagement = () => {
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
-            setLoading(false);
             hideProgress();
         }
     };

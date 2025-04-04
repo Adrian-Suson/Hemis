@@ -384,10 +384,7 @@ const InstitutionTable = ({
             >
                 {/* Table with Scrollable Content */}
                 <Box sx={{ flex: "1 1 auto", overflowY: "auto" }}>
-                    {loading.exportFormA ||
-                    loading.viewCampuses ||
-                    loading.faculties ||
-                    loading.academicPrograms ? (
+                    {Object.values(loading).some((isLoading) => isLoading) ? (
                         <InstitutionManagementSkeleton />
                     ) : (
                         <Table
@@ -395,8 +392,8 @@ const InstitutionTable = ({
                             stickyHeader
                             sx={{ tableLayout: "fixed" }}
                         >
-                            <TableHead>
-                                <TableRow>
+                            <TableHead >
+                                <TableRow sx={{color: "#002FFFFF",}}>
                                     {[
                                         { label: "ID", width: "3%" },
                                         { label: "Name", width: "25%" },
@@ -412,10 +409,9 @@ const InstitutionTable = ({
                                             sx={{
                                                 fontWeight: "bold",
                                                 padding: "4px 6px",
-                                                backgroundColor: "#f5f5f5",
+                                                backgroundColor: "#F5F5F5FF",
                                                 fontSize: "0.75rem",
                                                 width: col.width,
-                                                textAlign: "center", // Center-align the label
                                             }}
                                         >
                                             {col.label}
