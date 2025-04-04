@@ -243,16 +243,11 @@ const InstitutionManagement = () => {
                 </Button>
             </ButtonGroup>
 
-            {loading ? (
-                <InstitutionManagementSkeleton
-                    count={fetchInstitutions.length || 5}
-                />
-            ) : (
-                <InstitutionTable
-                    institutions={institutions}
-                    onEdit={handleEdit}
-                />
-            )}
+            <InstitutionTable
+                institutions={institutions}
+                onEdit={handleEdit}
+                count={fetchInstitutions.length || 5}
+            />
 
             {/* Upload Dialog */}
             <UploadDialog

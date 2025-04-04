@@ -67,7 +67,6 @@ const Statistics = () => {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
                     ]);
-                console.log("programs.data", programs.data);
                 setStats({
                     users: users.data,
                     facultyProfiles: faculty.data,
@@ -153,14 +152,23 @@ const Statistics = () => {
         return acc;
     }, {});
 
-    // Chart Data
+    // Chart Data with a cohesive color scheme
+    const chartColors = {
+        blue: "#2196F3",
+        pink: "#F06292",
+        teal: "#26A69A",
+        purple: "#AB47BC",
+        orange: "#FF9800",
+        grey: "#B0BEC5",
+    };
+
     const genderPieData = {
         labels: ["Male Students", "Female Students"],
         datasets: [
             {
                 data: [genderBreakdown.male, genderBreakdown.female],
-                backgroundColor: ["#36A2EB", "#FF6384"],
-                borderColor: ["#36A2EB", "#FF6384"],
+                backgroundColor: [chartColors.blue, chartColors.pink],
+                borderColor: [chartColors.blue, chartColors.pink],
                 borderWidth: 1,
             },
         ],
@@ -177,8 +185,18 @@ const Statistics = () => {
                     totalPrograms,
                     totalInstitutions,
                 ],
-                backgroundColor: ["#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
-                borderColor: ["#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
+                backgroundColor: [
+                    chartColors.orange,
+                    chartColors.teal,
+                    chartColors.purple,
+                    chartColors.grey,
+                ],
+                borderColor: [
+                    chartColors.orange,
+                    chartColors.teal,
+                    chartColors.purple,
+                    chartColors.grey,
+                ],
                 borderWidth: 1,
             },
         ],
@@ -189,8 +207,8 @@ const Statistics = () => {
         datasets: [
             {
                 data: [totalEnrollments, totalGraduates],
-                backgroundColor: ["#E91E63", "#C9CBDF"],
-                borderColor: ["#E91E63", "#C9CBDF"],
+                backgroundColor: [chartColors.blue, chartColors.grey],
+                borderColor: [chartColors.blue, chartColors.grey],
                 borderWidth: 1,
             },
         ],
@@ -203,23 +221,26 @@ const Statistics = () => {
                 label: "Enrollments by Year",
                 data: Object.values(enrollmentByYearLevel),
                 fill: false,
-                borderColor: "#36A2EB",
-                tension: 0.1,
+                borderColor: chartColors.teal,
+                backgroundColor: chartColors.teal,
+                tension: 0.3,
             },
         ],
     };
 
-    // Chart Options with smaller font sizes
-    const pieOptions = {
+    // Chart Options with improved styling
+    const chartOptions = {
         responsive: true,
-        maintainAspectRatio: false, // Allows custom height
+        maintainAspectRatio: false,
         plugins: {
             legend: {
                 position: "top",
-                labels: { font: { size: 10 } },
+                labels: { font: { size: 12, weight: "bold" }, color: "#333" },
             },
             tooltip: {
-                bodyFont: { size: 10 },
+                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                titleFont: { size: 12 },
+                bodyFont: { size: 12 },
                 callbacks: {
                     label: (context) =>
                         `${context.label}: ${context.raw.toLocaleString()}`,
@@ -229,144 +250,223 @@ const Statistics = () => {
     };
 
     const barOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                bodyFont: { size: 10 },
-                callbacks: {
-                    label: (context) => `${context.label}: ${context.raw}`,
-                },
-            },
-        },
+        ...chartOptions,
+        plugins: { ...chartOptions.plugins, legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
-            x: { ticks: { font: { size: 10 } } },
-        },
-    };
-
-    const doughnutOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: "top",
-                labels: { font: { size: 10 } },
+            y: {
+                beginAtZero: true,
+                ticks: { font: { size: 12 }, color: "#666" },
             },
-            tooltip: {
-                bodyFont: { size: 10 },
-                callbacks: {
-                    label: (context) =>
-                        `${context.label}: ${context.raw.toLocaleString()}`,
-                },
-            },
+            x: { ticks: { font: { size: 12 }, color: "#666" } },
         },
     };
 
     const lineOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: "top",
-                labels: { font: { size: 10 } },
-            },
-            tooltip: {
-                bodyFont: { size: 10 },
-                callbacks: {
-                    label: (context) =>
-                        `${
-                            context.dataset.label
-                        }: ${context.raw.toLocaleString()}`,
-                },
-            },
-        },
+        ...chartOptions,
         scales: {
-            y: { beginAtZero: true, ticks: { font: { size: 10 } } },
-            x: { ticks: { font: { size: 10 } } },
+            y: {
+                beginAtZero: true,
+                ticks: { font: { size: 12 }, color: "#666" },
+            },
+            x: { ticks: { font: { size: 12 }, color: "#666" } },
         },
     };
 
-    if (stats.loading) return <Typography>Loading...</Typography>;
-    if (stats.error)
-        return <Typography color="error">{stats.error}</Typography>;
+    if (stats.loading) {
+        return (
+            <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight="50vh"
+            >
+                <Typography variant="h6" color="textSecondary">
+                    Loading...
+                </Typography>
+            </Box>
+        );
+    }
+    if (stats.error) {
+        return (
+            <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight="50vh"
+            >
+                <Typography variant="h6" color="error">
+                    {stats.error}
+                </Typography>
+            </Box>
+        );
+    }
 
     return (
-        <Box p={3}>
-            <Typography variant="h5" gutterBottom>
-                Statistics Overview
+        <Box
+            sx={{ p: { xs: 2, md: 4 }, bgcolor: "#f5f5f5", minHeight: "100vh" }}
+        >
+            <Typography
+                variant="h4"
+                gutterBottom
+                sx={{ fontWeight: "bold", color: "#333", mb: 4 }}
+            >
+                Statistics Dashboard
             </Typography>
-            <Grid container spacing={2}>
+
+            <Grid container spacing={3}>
                 {/* Summary Cards */}
                 {[
-                    { label: "Total Users", value: totalUsers },
-                    { label: "Total Faculty", value: totalFaculty },
-                    { label: "Total Programs", value: totalPrograms },
-                    { label: "Total Institutions", value: totalInstitutions },
+                    {
+                        label: "Total Users",
+                        value: totalUsers,
+                        color: chartColors.orange,
+                    },
+                    {
+                        label: "Total Faculty",
+                        value: totalFaculty,
+                        color: chartColors.teal,
+                    },
+                    {
+                        label: "Total Programs",
+                        value: totalPrograms,
+                        color: chartColors.purple,
+                    },
+                    {
+                        label: "Total Institutions",
+                        value: totalInstitutions,
+                        color: chartColors.grey,
+                    },
                     {
                         label: "Total Enrollments",
                         value: totalEnrollments.toLocaleString(),
+                        color: chartColors.blue,
                     },
                     {
                         label: "Total Graduates",
                         value: totalGraduates.toLocaleString(),
+                        color: chartColors.pink,
                     },
                     {
                         label: "Avg Faculty Workload",
                         value: `${avgFacultyWorkload} units`,
+                        color: chartColors.purple,
                     },
                 ].map((stat, index) => (
                     <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                        <Paper sx={{ p: 2 }}>
-                            <Typography variant="h6">{stat.value}</Typography>
-                            <Typography variant="body2">
+                        <Paper
+                            elevation={3}
+                            sx={{
+                                p: 3,
+                                borderRadius: 2,
+                                bgcolor: "#fff",
+                                transition: "transform 0.2s, box-shadow 0.2s",
+                                "&:hover": {
+                                    transform: "translateY(-4px)",
+                                    boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+                                },
+                            }}
+                        >
+                            <Typography
+                                variant="h5"
+                                sx={{
+                                    fontWeight: "bold",
+                                    color: stat.color,
+                                    mb: 1,
+                                }}
+                            >
+                                {stat.value}
+                            </Typography>
+                            <Typography variant="body1" sx={{ color: "#666" }}>
                                 {stat.label}
                             </Typography>
                         </Paper>
                     </Grid>
                 ))}
 
-                {/* Smaller Charts */}
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 1, height: 200 }}>
-                        <Typography variant="subtitle2" gutterBottom>
+                {/* Charts */}
+                <Grid item xs={12} sm={6} md={6} lg={3}>
+                    <Paper
+                        elevation={2}
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: "#fff",
+                            height: 300,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                        >
                             Gender Breakdown
                         </Typography>
-                        <Divider sx={{ mb: 1 }} />
-                        <Pie data={genderPieData} options={pieOptions} />
+                        <Divider sx={{ mb: 2 }} />
+                        <Pie data={genderPieData} options={chartOptions} />
                     </Paper>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 1, height: 200 }}>
-                        <Typography variant="subtitle2" gutterBottom>
+                <Grid item xs={12} sm={6} md={6} lg={3}>
+                    <Paper
+                        elevation={2}
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: "#fff",
+                            height: 300,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                        >
                             Totals by Category
                         </Typography>
-                        <Divider sx={{ mb: 1 }} />
+                        <Divider sx={{ mb: 2 }} />
                         <Bar data={totalsBarData} options={barOptions} />
                     </Paper>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 1, height: 200 }}>
-                        <Typography variant="subtitle2" gutterBottom>
+                <Grid item xs={12} sm={6} md={6} lg={3}>
+                    <Paper
+                        elevation={2}
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: "#fff",
+                            height: 300,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                        >
                             Enrollments vs Graduates
                         </Typography>
-                        <Divider sx={{ mb: 1 }} />
+                        <Divider sx={{ mb: 2 }} />
                         <Doughnut
                             data={enrollmentDoughnutData}
-                            options={doughnutOptions}
+                            options={chartOptions}
                         />
                     </Paper>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                    <Paper sx={{ p: 1, height: 200 }}>
-                        <Typography variant="subtitle2" gutterBottom>
+                <Grid item xs={12} sm={6} md={6} lg={3}>
+                    <Paper
+                        elevation={2}
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            bgcolor: "#fff",
+                            height: 300,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                        >
                             Enrollments by Year
                         </Typography>
-                        <Divider sx={{ mb: 1 }} />
+                        <Divider sx={{ mb: 2 }} />
                         <Line data={enrollmentLineData} options={lineOptions} />
                     </Paper>
                 </Grid>

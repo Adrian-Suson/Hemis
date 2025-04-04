@@ -131,7 +131,7 @@ const CurricularProgram = () => {
                 showProgress(10 + sheetIndex * 10);
                 const sheetData = XLSX.utils.sheet_to_json(sheet, {
                     header: 1,
-                    range: 11,
+                    range: 8,
                 });
 
                 const parsedData = sheetData

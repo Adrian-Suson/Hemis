@@ -29,6 +29,7 @@ import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DetailDialog from "./DetailDialog";
 import config from "../../../utils/config";
+import InstitutionManagementSkeleton from "./InstitutionManagementSkeleton";
 
 // Constants for configuration
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, { label: "All", value: -1 }];
@@ -383,323 +384,334 @@ const InstitutionTable = ({
             >
                 {/* Table with Scrollable Content */}
                 <Box sx={{ flex: "1 1 auto", overflowY: "auto" }}>
-                    <Table
-                        size="small"
-                        stickyHeader
-                        sx={{ tableLayout: "fixed" }}
-                    >
-                        <TableHead>
-                            <TableRow>
-                                {[
-                                    { label: "ID", width: "3%" },
-                                    { label: "Name", width: "25%" },
-                                    { label: "Region", width: "10%" },
-                                    { label: "Address", width: "20%" },
-                                    { label: "City", width: "15%" },
-                                    { label: "Province", width: "15%" },
-                                    { label: "Type", width: "10%" },
-                                    { label: "Actions", width: "5%" },
-                                ].map((col) => (
-                                    <TableCell
-                                        key={col.label}
-                                        sx={{
-                                            fontWeight: "bold",
-                                            padding: "4px 6px",
-                                            backgroundColor: "#f5f5f5",
-                                            fontSize: "0.75rem",
-                                            width: col.width,
-                                            textAlign: "center", // Center-align the label
-                                        }}
-                                    >
-                                        {col.label}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {paginatedInstitutions.length > 0 ? (
-                                paginatedInstitutions.map((institution) => (
-                                    <TableRow
-                                        key={institution.id}
-                                        sx={{
-                                            "&:hover": {
-                                                backgroundColor: "#fafafa",
-                                            },
-                                        }}
-                                    >
+                    {loading.exportFormA ||
+                    loading.viewCampuses ||
+                    loading.faculties ||
+                    loading.academicPrograms ? (
+                        <InstitutionManagementSkeleton />
+                    ) : (
+                        <Table
+                            size="small"
+                            stickyHeader
+                            sx={{ tableLayout: "fixed" }}
+                        >
+                            <TableHead>
+                                <TableRow>
+                                    {[
+                                        { label: "ID", width: "3%" },
+                                        { label: "Name", width: "25%" },
+                                        { label: "Region", width: "10%" },
+                                        { label: "Address", width: "20%" },
+                                        { label: "City", width: "15%" },
+                                        { label: "Province", width: "15%" },
+                                        { label: "Type", width: "10%" },
+                                        { label: "Actions", width: "5%" },
+                                    ].map((col) => (
                                         <TableCell
+                                            key={col.label}
                                             sx={{
+                                                fontWeight: "bold",
                                                 padding: "4px 6px",
+                                                backgroundColor: "#f5f5f5",
                                                 fontSize: "0.75rem",
-                                                whiteSpace: "normal",
-                                                wordBreak: "break-word",
+                                                width: col.width,
+                                                textAlign: "center", // Center-align the label
                                             }}
                                         >
-                                            {institution.id}
+                                            {col.label}
                                         </TableCell>
-                                        <TableCell
+                                    ))}
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {paginatedInstitutions.length > 0 ? (
+                                    paginatedInstitutions.map((institution) => (
+                                        <TableRow
+                                            key={institution.id}
                                             sx={{
-                                                padding: "4px 6px",
-                                                fontSize: "0.75rem",
-                                                whiteSpace: "normal",
-                                                wordBreak: "break-word",
+                                                "&:hover": {
+                                                    backgroundColor: "#fafafa",
+                                                },
                                             }}
                                         >
-                                            {institution.name}
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{
-                                                padding: "4px 6px",
-                                                fontSize: "0.75rem",
-                                            }}
-                                        >
-                                            {institution.region}
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{
-                                                padding: "4px 6px",
-                                                fontSize: "0.75rem",
-                                            }}
-                                        >
-                                            {institution.address_street ||
-                                                "N/A"}
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{
-                                                padding: "4px 6px",
-                                                fontSize: "0.75rem",
-                                            }}
-                                        >
-                                            {institution.municipality_city ||
-                                                "N/A"}
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{
-                                                padding: "4px 6px",
-                                                fontSize: "0.75rem",
-                                            }}
-                                        >
-                                            {institution.province || "N/A"}
-                                        </TableCell>
-                                        <TableCell
-                                            sx={{
-                                                padding: "4px 6px",
-                                                fontSize: "0.75rem",
-                                            }}
-                                        >
-                                            {institution.institution_type}
-                                        </TableCell>
-                                        <TableCell sx={{ padding: "4px 6px" }}>
-                                            <IconButton
-                                                color="info"
-                                                size="small"
-                                                onClick={(e) =>
-                                                    handleMenuOpen(
-                                                        e,
-                                                        institution
-                                                    )
-                                                }
-                                                aria-label={`More options for ${institution.name}`}
-                                                aria-controls={
-                                                    anchorEl
-                                                        ? `menu-${institution.id}`
-                                                        : undefined
-                                                }
-                                                aria-haspopup="true"
-                                                sx={{ padding: 0 }}
-                                            >
-                                                <CiCircleMore size={16} />
-                                            </IconButton>
-                                            <Menu
-                                                id={`menu-${institution.id}`}
-                                                anchorEl={anchorEl}
-                                                open={
-                                                    Boolean(anchorEl) &&
-                                                    selectedInstitution?.id ===
-                                                        institution.id
-                                                }
-                                                onClose={handleMenuClose}
-                                                anchorOrigin={{
-                                                    vertical: "bottom",
-                                                    horizontal: "right",
-                                                }}
-                                                transformOrigin={{
-                                                    vertical: "top",
-                                                    horizontal: "right",
-                                                }}
-                                                PaperProps={{
-                                                    sx: {
-                                                        minWidth: "150px",
-                                                        boxShadow:
-                                                            "0px 2px 4px rgba(0, 0, 0, 0.1)",
-                                                    },
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                    whiteSpace: "normal",
+                                                    wordBreak: "break-word",
                                                 }}
                                             >
-                                                <MenuItem
-                                                    onClick={() => {
-                                                        handleOpenDialog(
-                                                            institution
-                                                        );
-                                                        handleMenuClose();
-                                                    }}
-                                                    sx={{
-                                                        fontSize: "0.75rem",
-                                                        padding: "4px 8px",
-                                                    }}
-                                                >
-                                                    <VisibilityIcon
-                                                        fontSize="small"
-                                                        sx={{
-                                                            mr: 1,
-                                                            color: "#1976d2",
-                                                        }}
-                                                    />
-                                                    Details
-                                                </MenuItem>
-                                                <MenuItem
-                                                    onClick={() => {
-                                                        handleNavigation(
-                                                            `/super-admin/institutions/campuses/${institution.id}`,
-                                                            "viewCampuses"
-                                                        );
-                                                        handleMenuClose();
-                                                    }}
-                                                    disabled={
-                                                        loading.viewCampuses
-                                                    }
-                                                    sx={{
-                                                        fontSize: "0.75rem",
-                                                        padding: "4px 8px",
-                                                    }}
-                                                >
-                                                    {loading.viewCampuses ? (
-                                                        <CircularProgress
-                                                            size={12}
-                                                            sx={{ mr: 1 }}
-                                                        />
-                                                    ) : (
-                                                        <ApartmentIcon
-                                                            fontSize="small"
-                                                            sx={{
-                                                                mr: 1,
-                                                                color: "#1976d2",
-                                                            }}
-                                                        />
-                                                    )}
-                                                    Campuses
-                                                </MenuItem>
-                                                <MenuItem
-                                                    onClick={() => {
-                                                        handleNavigation(
-                                                            `/super-admin/institutions/faculties/${institution.id}`,
-                                                            "faculties"
-                                                        );
-                                                        handleMenuClose();
-                                                    }}
-                                                    disabled={loading.faculties}
-                                                    sx={{
-                                                        fontSize: "0.75rem",
-                                                        padding: "4px 8px",
-                                                    }}
-                                                >
-                                                    {loading.faculties ? (
-                                                        <CircularProgress
-                                                            size={12}
-                                                            sx={{ mr: 1 }}
-                                                        />
-                                                    ) : (
-                                                        <PeopleIcon
-                                                            fontSize="small"
-                                                            sx={{
-                                                                mr: 1,
-                                                                color: "#1976d2",
-                                                            }}
-                                                        />
-                                                    )}
-                                                    Faculties
-                                                </MenuItem>
-                                                <MenuItem
-                                                    onClick={() => {
-                                                        handleNavigation(
-                                                            `/super-admin/institutions/curricular-programs/${institution.id}`,
-                                                            "academicPrograms"
-                                                        );
-                                                        handleMenuClose();
-                                                    }}
-                                                    disabled={
-                                                        loading.academicPrograms
-                                                    }
-                                                    sx={{
-                                                        fontSize: "0.75rem",
-                                                        padding: "4px 8px",
-                                                    }}
-                                                >
-                                                    {loading.academicPrograms ? (
-                                                        <CircularProgress
-                                                            size={12}
-                                                            sx={{ mr: 1 }}
-                                                        />
-                                                    ) : (
-                                                        <LibraryBooksIcon
-                                                            fontSize="small"
-                                                            sx={{
-                                                                mr: 1,
-                                                                color: "#1976d2",
-                                                            }}
-                                                        />
-                                                    )}
-                                                    Programs
-                                                </MenuItem>
-                                                <MenuItem
-                                                    onClick={() =>
-                                                        handleExportToFormA(
+                                                {institution.id}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                    whiteSpace: "normal",
+                                                    wordBreak: "break-word",
+                                                }}
+                                            >
+                                                {institution.name}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                }}
+                                            >
+                                                {institution.region}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                }}
+                                            >
+                                                {institution.address_street ||
+                                                    "N/A"}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                }}
+                                            >
+                                                {institution.municipality_city ||
+                                                    "N/A"}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                }}
+                                            >
+                                                {institution.province || "N/A"}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{
+                                                    padding: "4px 6px",
+                                                    fontSize: "0.75rem",
+                                                }}
+                                            >
+                                                {institution.institution_type}
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{ padding: "4px 6px" }}
+                                            >
+                                                <IconButton
+                                                    color="info"
+                                                    size="small"
+                                                    onClick={(e) =>
+                                                        handleMenuOpen(
+                                                            e,
                                                             institution
                                                         )
                                                     }
-                                                    disabled={
-                                                        loading.exportFormA
+                                                    aria-label={`More options for ${institution.name}`}
+                                                    aria-controls={
+                                                        anchorEl
+                                                            ? `menu-${institution.id}`
+                                                            : undefined
                                                     }
-                                                    sx={{
-                                                        fontSize: "0.75rem",
-                                                        padding: "4px 8px",
+                                                    aria-haspopup="true"
+                                                    sx={{ padding: 0 }}
+                                                >
+                                                    <CiCircleMore size={16} />
+                                                </IconButton>
+                                                <Menu
+                                                    id={`menu-${institution.id}`}
+                                                    anchorEl={anchorEl}
+                                                    open={
+                                                        Boolean(anchorEl) &&
+                                                        selectedInstitution?.id ===
+                                                            institution.id
+                                                    }
+                                                    onClose={handleMenuClose}
+                                                    anchorOrigin={{
+                                                        vertical: "bottom",
+                                                        horizontal: "right",
+                                                    }}
+                                                    transformOrigin={{
+                                                        vertical: "top",
+                                                        horizontal: "right",
+                                                    }}
+                                                    PaperProps={{
+                                                        sx: {
+                                                            minWidth: "150px",
+                                                            boxShadow:
+                                                                "0px 2px 4px rgba(0, 0, 0, 0.1)",
+                                                        },
                                                     }}
                                                 >
-                                                    {loading.exportFormA ? (
-                                                        <CircularProgress
-                                                            size={12}
-                                                            sx={{ mr: 1 }}
-                                                        />
-                                                    ) : (
-                                                        <DescriptionIcon
+                                                    <MenuItem
+                                                        onClick={() => {
+                                                            handleOpenDialog(
+                                                                institution
+                                                            );
+                                                            handleMenuClose();
+                                                        }}
+                                                        sx={{
+                                                            fontSize: "0.75rem",
+                                                            padding: "4px 8px",
+                                                        }}
+                                                    >
+                                                        <VisibilityIcon
                                                             fontSize="small"
                                                             sx={{
                                                                 mr: 1,
                                                                 color: "#1976d2",
                                                             }}
                                                         />
-                                                    )}
-                                                    Export
-                                                </MenuItem>
-                                            </Menu>
+                                                        Details
+                                                    </MenuItem>
+                                                    <MenuItem
+                                                        onClick={() => {
+                                                            handleNavigation(
+                                                                `/super-admin/institutions/campuses/${institution.id}`,
+                                                                "viewCampuses"
+                                                            );
+                                                            handleMenuClose();
+                                                        }}
+                                                        disabled={
+                                                            loading.viewCampuses
+                                                        }
+                                                        sx={{
+                                                            fontSize: "0.75rem",
+                                                            padding: "4px 8px",
+                                                        }}
+                                                    >
+                                                        {loading.viewCampuses ? (
+                                                            <CircularProgress
+                                                                size={12}
+                                                                sx={{ mr: 1 }}
+                                                            />
+                                                        ) : (
+                                                            <ApartmentIcon
+                                                                fontSize="small"
+                                                                sx={{
+                                                                    mr: 1,
+                                                                    color: "#1976d2",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        Campuses
+                                                    </MenuItem>
+                                                    <MenuItem
+                                                        onClick={() => {
+                                                            handleNavigation(
+                                                                `/super-admin/institutions/faculties/${institution.id}`,
+                                                                "faculties"
+                                                            );
+                                                            handleMenuClose();
+                                                        }}
+                                                        disabled={
+                                                            loading.faculties
+                                                        }
+                                                        sx={{
+                                                            fontSize: "0.75rem",
+                                                            padding: "4px 8px",
+                                                        }}
+                                                    >
+                                                        {loading.faculties ? (
+                                                            <CircularProgress
+                                                                size={12}
+                                                                sx={{ mr: 1 }}
+                                                            />
+                                                        ) : (
+                                                            <PeopleIcon
+                                                                fontSize="small"
+                                                                sx={{
+                                                                    mr: 1,
+                                                                    color: "#1976d2",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        Faculties
+                                                    </MenuItem>
+                                                    <MenuItem
+                                                        onClick={() => {
+                                                            handleNavigation(
+                                                                `/super-admin/institutions/curricular-programs/${institution.id}`,
+                                                                "academicPrograms"
+                                                            );
+                                                            handleMenuClose();
+                                                        }}
+                                                        disabled={
+                                                            loading.academicPrograms
+                                                        }
+                                                        sx={{
+                                                            fontSize: "0.75rem",
+                                                            padding: "4px 8px",
+                                                        }}
+                                                    >
+                                                        {loading.academicPrograms ? (
+                                                            <CircularProgress
+                                                                size={12}
+                                                                sx={{ mr: 1 }}
+                                                            />
+                                                        ) : (
+                                                            <LibraryBooksIcon
+                                                                fontSize="small"
+                                                                sx={{
+                                                                    mr: 1,
+                                                                    color: "#1976d2",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        Programs
+                                                    </MenuItem>
+                                                    <MenuItem
+                                                        onClick={() =>
+                                                            handleExportToFormA(
+                                                                institution
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            loading.exportFormA
+                                                        }
+                                                        sx={{
+                                                            fontSize: "0.75rem",
+                                                            padding: "4px 8px",
+                                                        }}
+                                                    >
+                                                        {loading.exportFormA ? (
+                                                            <CircularProgress
+                                                                size={12}
+                                                                sx={{ mr: 1 }}
+                                                            />
+                                                        ) : (
+                                                            <DescriptionIcon
+                                                                fontSize="small"
+                                                                sx={{
+                                                                    mr: 1,
+                                                                    color: "#1976d2",
+                                                                }}
+                                                            />
+                                                        )}
+                                                        Export
+                                                    </MenuItem>
+                                                </Menu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={7}
+                                            align="center"
+                                            sx={{
+                                                padding: "8px",
+                                                fontSize: "0.75rem",
+                                            }}
+                                        >
+                                            No data found
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={7}
-                                        align="center"
-                                        sx={{
-                                            padding: "8px",
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        No data found
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </Box>
 
                 {/* Sticky Pagination at Bottom */}
