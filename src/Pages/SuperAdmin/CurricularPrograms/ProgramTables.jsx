@@ -490,7 +490,7 @@ const ProgramTables = ({ programs, loading }) => {
             <Paper
                 sx={{
                     overflowX: "auto",
-                    maxHeight: "700px",
+                    maxHeight: "540px",
                     position: "relative",
                 }}
             >

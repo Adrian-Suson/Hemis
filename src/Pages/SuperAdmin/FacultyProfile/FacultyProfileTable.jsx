@@ -814,14 +814,14 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 {loading ? (
                     <FacultyProfileSkeleton />
                 ) : facultyProfiles.length === 0 ? (
-                    <Paper sx={{ height: "550px", overflow: "auto" }}>
+                    <Paper sx={{ height: "500px", overflow: "auto" }}>
                         <Alert severity="info" sx={{ mt: 2 }}>
                             No faculty profiles available.
                         </Alert>
                     </Paper>
                 ) : (
                     <>
-                        <Paper sx={{ height: "550px", overflow: "auto" }}>
+                        <Paper sx={{ height: "500px", overflow: "auto" }}>
                             <HotTable
                                 data={currentConfig.data}
                                 columns={currentConfig.columns}
