@@ -12,6 +12,8 @@ import {
     Alert,
     Breadcrumbs,
     Link,
+    ButtonGroup,
+    TextField, // <-- added
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import config from "../../../utils/config";
@@ -24,6 +26,7 @@ const Graduates = () => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+    const [searchTerm, setSearchTerm] = useState(""); // <-- new state for filtering
     const hotRef = useRef(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
@@ -264,8 +267,15 @@ const Graduates = () => {
             worksheet.addRow(graduate);
         });
 
-        worksheet.getRow(1).font = { bold: true };
-        worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+        // Style the header row
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } }; // White text
+        headerRow.alignment = { vertical: "middle", horizontal: "center" };
+        headerRow.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF000000" }, // Black background
+        };
 
         worksheet.columns.forEach((column) => {
             column.alignment = { vertical: "middle", wrapText: true };
@@ -278,6 +288,7 @@ const Graduates = () => {
         saveAs(blob, "Graduates_List.xlsx");
     };
 
+    // Handsontable settings remain unchanged but we'll override the data below in the render
     const hotSettings = {
         data: graduates,
         columns: [
@@ -315,6 +326,21 @@ const Graduates = () => {
         licenseKey: "non-commercial-and-evaluation",
     };
 
+    // Filter graduates based on search term. The search checks student_id, first name, last name, or program name.
+    const filteredGraduates = graduates.filter((graduate) => {
+        const term = searchTerm.toLowerCase();
+        return (
+            (graduate.student_id &&
+                graduate.student_id.toLowerCase().includes(term)) ||
+            (graduate.first_name &&
+                graduate.first_name.toLowerCase().includes(term)) ||
+            (graduate.last_name &&
+                graduate.last_name.toLowerCase().includes(term)) ||
+            (graduate.program_name &&
+                graduate.program_name.toLowerCase().includes(term))
+        );
+    });
+
     return (
         <Box sx={{ p: 3 }}>
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
@@ -337,27 +363,30 @@ const Graduates = () => {
                 <Typography color="textPrimary">List of Graduates</Typography>
             </Breadcrumbs>
 
-            <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
-                <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                    style={{ display: "none" }}
-                    id="upload-excel"
-                />
-                <label htmlFor="upload-excel">
-                    <Button
-                        variant="contained"
-                        component="span"
-                        disabled={loading}
-                        startIcon={
-                            loading ? <CircularProgress size={20} /> : null
-                        }
-                    >
-                        Upload Excel File
-                    </Button>
-                </label>
+            {/* Search Filter */}
+            <TextField
+                fullWidth
+                placeholder="Search by Student ID, Name, or Program"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                variant="outlined"
+                sx={{ mb: 3 }}
+            />
+
+            <ButtonGroup
+                sx={{ mb: 3, display: "flex", justifyContent: "flex-end" }}
+            >
+                {/* Upload Button */}
+                <Button
+                    variant="contained"
+                    component="span"
+                    disabled={loading}
+                    startIcon={loading ? <CircularProgress size={20} /> : null}
+                >
+                    Upload Excel File
+                </Button>
+
+                {/* Export Button */}
                 <Button
                     variant="contained"
                     color="primary"
@@ -366,14 +395,14 @@ const Graduates = () => {
                 >
                     Export to Excel
                 </Button>
-            </Box>
+            </ButtonGroup>
 
             {loading ? (
                 <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
                     <CircularProgress />
                 </Box>
-            ) : graduates.length > 0 ? (
-                <HotTable ref={hotRef} settings={hotSettings} />
+            ) : filteredGraduates.length > 0 ? (
+                <HotTable ref={hotRef} settings={{ ...hotSettings, data: filteredGraduates }} />
             ) : (
                 <Typography>No data available</Typography>
             )}
