@@ -7,7 +7,7 @@ use App\Models\Program;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class ProgramController extends Controller
+class CurricularProgramController extends Controller
 {
     public function index(Request $request): JsonResponse
     {

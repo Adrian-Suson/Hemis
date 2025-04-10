@@ -19,6 +19,7 @@ import {
     Select,
     MenuItem,
     Paper,
+    Box, // Added Box for layout
 } from "@mui/material";
 
 // Register all Handsontable modules
@@ -26,8 +27,8 @@ registerAllModules();
 
 const CampusHandsontable = ({ campuses: initialCampuses }) => {
     const [campuses, setCampuses] = useState(initialCampuses);
-    const [tabValue, setTabValue] = useState(0); // State for active tab
-    const [openDialog, setOpenDialog] = useState(false); // State for dialog
+    const [tabValue, setTabValue] = useState(0);
+    const [openDialog, setOpenDialog] = useState(false);
     const [newCampus, setNewCampus] = useState({
         suc_name: "",
         campus_type: "",
@@ -45,12 +46,10 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         longitude_coordinates: 0.0,
     });
 
-    // Sync local state with prop changes
     useEffect(() => {
         setCampuses(initialCampuses);
     }, [initialCampuses]);
 
-    // Define all columns
     const allColumns = useMemo(
         () => [
             { data: "suc_name", title: "Campus Name" },
@@ -87,7 +86,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         []
     );
 
-    // Group columns into tabs
     const tabbedColumns = useMemo(
         () => ({
             basic: allColumns.slice(0, 7),
@@ -98,7 +96,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         [allColumns]
     );
 
-    // Prepare data for Handsontable
     const data = useMemo(() => {
         const mappedData = campuses.map((campus) => ({
             suc_name: campus.suc_name || "",
@@ -119,7 +116,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         return mappedData;
     }, [campuses]);
 
-    // Handle changes in the table
     const handleChanges = useCallback(
         async (changes, source) => {
             if (!changes || source === "loadData") return;
@@ -156,7 +152,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         [campuses]
     );
 
-    // Handle dialog open/close
     const handleOpenDialog = () => setOpenDialog(true);
     const handleCloseDialog = () => {
         setOpenDialog(false);
@@ -178,7 +173,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         });
     };
 
-    // Handle input change in dialog
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewCampus((prev) => ({
@@ -194,7 +188,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         }));
     };
 
-    // Add new campus from dialog
     const handleAddCampus = async () => {
         const token = localStorage.getItem("token");
         try {
@@ -213,12 +206,10 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         }
     };
 
-    // Handle tab change
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
     };
 
-    // Get columns for the current tab
     const currentColumns = useMemo(() => {
         switch (tabValue) {
             case 0:
@@ -235,15 +226,17 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
     }, [tabValue, tabbedColumns]);
 
     return (
-        <div style={{ marginTop: "16px" }}>
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={handleOpenDialog}
-                sx={{ mb: 2 }}
-            >
-                Add Campus
-            </Button>
+        <Box sx={{ mt: 2 }}>
+            {/* Container for Button and Tabs */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenDialog}
+                >
+                    Add Campus
+                </Button>
+            </Box>
             <Paper sx={{ borderRadius: 1, mb: 2 }}>
                 <Tabs
                     value={tabValue}
@@ -288,15 +281,15 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                         color: "#666",
                     }}
                 >
-                    No campuses found. Click &#34;Add Campus&#34; to start.
+                    No campuses found. Click "Add Campus" to start.
                 </div>
             )}
 
-            {/* Dialog for adding a new campus with Grid layout */}
+            {/* Dialog for adding a new campus */}
             <Dialog
                 open={openDialog}
                 onClose={handleCloseDialog}
-                maxWidth="md" // Increased width to accommodate two columns
+                maxWidth="md"
                 fullWidth
             >
                 <DialogTitle>Add New Campus</DialogTitle>
@@ -466,7 +459,7 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </div>
+        </Box>
     );
 };
 

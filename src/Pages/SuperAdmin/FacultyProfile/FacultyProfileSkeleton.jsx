@@ -1,30 +1,31 @@
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableRow,
+    Breadcrumbs,
     Skeleton,
-    Paper,
+    Box,
 } from "@mui/material";
 import PropTypes from "prop-types";
 
 const FacultyProfileSkeleton = () => {
     return (
-        <Paper sx={{ height: "550px", overflow: "auto" }}>
-            <Table>
-                <TableBody>
-                    {[...Array(10)].map((_, index) => (
-                        <TableRow key={index}>
-                            {[...Array(10)].map((_, cellIndex) => (
-                                <TableCell size="small" key={cellIndex}>
-                                    <Skeleton variant="text" width={`${100 - cellIndex * 5}%`} />
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </Paper>
+        <Box sx={{ p: 2 }}>
+            {/* Breadcrumbs Skeleton */}
+            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
+                <Skeleton variant="text" width={80} />
+                <Skeleton variant="text" width={120} />
+                <Skeleton variant="text" width={150} />
+            </Breadcrumbs>
+
+            {/* Handsontable Skeleton */}
+            <Box sx={{ mt: 3 }}>
+                {/* Table Header Skeleton (if applicable) */}
+                <Skeleton
+                    variant="rectangular"
+                    width={150}
+                    height={36}
+                    sx={{ mt: 3, ml: "auto" }}
+                />
+            </Box>
+        </Box>
     );
 };
 

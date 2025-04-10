@@ -32,6 +32,7 @@ import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
 import Statistics from "./Pages/SuperAdmin/Statistics/Statistics";
+import Graduates from "./Pages/SuperAdmin/Graduates/Graduates";
 
 function ExternalRedirect({ to }) {
     window.location.href = to;
@@ -89,9 +90,14 @@ function App() {
                             element={<FacultyProfile />}
                         />
                         <Route
+                        path="/super-admin/institutions/graduates-list/:institutionId"
+                        element={<Graduates />}/>
+
+                        <Route
                             path="/super-admin/statistics"
                             element={<Statistics />}
                         />
+
                     </Route>
 
                     {/* HEI Admin Routes under /hei-admin/* */}

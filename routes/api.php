@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\FacultyProfileController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CurricularProgramController;
+use App\Http\Controllers\Api\GraduateController;
+use App\Http\Controllers\Api\StudentProfileController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -33,8 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('campuses', CampusController::class);
 
     // Program Routes
-    Route::apiResource('programs', ProgramController::class);
-    Route::get('programs/export/{category}', [ProgramController::class, 'export']);
+    Route::apiResource('programs', CurricularProgramController::class);
+    Route::get('programs/export/{category}', [CurricularProgramController::class, 'export']);
 
     // Enrollment Routes
     Route::apiResource('enrollments', EnrollmentController::class);
@@ -45,4 +48,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Faculty Profile Routes
     Route::apiResource('faculty-profiles', FacultyProfileController::class);
 
+    //graduate list
+    Route::apiResource('graduates', GraduateController::class);
 });

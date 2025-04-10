@@ -15,35 +15,11 @@ const CampusManagementSkeleton = () => {
             <Box sx={{ mt: 3 }}>
                 {/* Table Header Skeleton (if applicable) */}
                 <Skeleton
-                    variant="text"
-                    width={200}
-                    height={30}
-                    sx={{ mb: 2 }}
+                    variant="rectangular"
+                    width={150}
+                    height={36}
+                    sx={{ mt: 3, ml: "auto" }}
                 />
-
-                {/* Table Rows Skeleton */}
-                {Array.from({ length: 5 }).map((_, index) => (
-                    <Box
-                        key={index}
-                        sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            p: 2,
-                            border: 1,
-                            borderColor: "divider",
-                            borderRadius: 2,
-                            mb: 1,
-                        }}
-                    >
-                        <Skeleton variant="text" width="15%" />
-                        <Skeleton variant="text" width="15%" />
-                        <Skeleton variant="text" width="20%" />
-                        <Skeleton variant="text" width="15%" />
-                        <Skeleton variant="text" width="15%" />
-                        <Skeleton variant="text" width="10%" />
-                    </Box>
-                ))}
             </Box>
         </Box>
     );

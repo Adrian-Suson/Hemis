@@ -74,7 +74,9 @@ const CurricularProgram = () => {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { institution_id: institutionId },
             });
-            console.log("Fetched programs:", response.data);
+
+            console.log("Response data:", response.data); // Check what data is being returned
+
             if (Array.isArray(response.data)) {
                 setPrograms(response.data);
             } else {
@@ -82,12 +84,19 @@ const CurricularProgram = () => {
                 setPrograms([]);
             }
         } catch (error) {
-            console.error("Error fetching programs:", error);
+            if (error.response) {
+                console.error("Response error:", error.response.data);
+            } else if (error.request) {
+                console.error("Request error:", error.request);
+            } else {
+                console.error("General error:", error.message);
+            }
             setPrograms([]);
         } finally {
             setLoading(false);
         }
     }, [institutionId]);
+
 
     useEffect(() => {
         fetchPrograms();
