@@ -21,7 +21,7 @@ class InstitutionController extends Controller
 
         return response()->json($institutions);
     }
-
+ 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([

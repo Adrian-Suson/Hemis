@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import config from "../../../utils/config";
-import FacultyProfileSkeleton from "./FacultyProfileSkeleton";
 
 // Register all Handsontable modules
 registerAllModules();
@@ -811,9 +810,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     </Grid>
                 </Box>
 
-                {loading ? (
-                    <FacultyProfileSkeleton />
-                ) : facultyProfiles.length === 0 ? (
+                {loading || facultyProfiles.length === 0 ? (
                     <Paper sx={{ height: "500px", overflow: "auto" }}>
                         <Alert severity="info" sx={{ mt: 2 }}>
                             No faculty profiles available.
