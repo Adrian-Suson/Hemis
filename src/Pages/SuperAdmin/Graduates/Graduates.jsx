@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom"; // Import useParams
 import * as XLSX from "xlsx";
 import axios from "axios";
@@ -31,6 +31,7 @@ const Graduates = () => {
 
   useEffect(() => {
     fetchGraduates();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchGraduates = async () => {

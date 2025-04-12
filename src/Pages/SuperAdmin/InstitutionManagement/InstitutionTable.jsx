@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigate } from "react-router-dom";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import ExcelJS from "exceljs";
@@ -34,6 +35,8 @@ import {
     Typography,
     Tooltip,
 } from "@mui/material";
+import PropTypes from "prop-types";
+import { useLoading } from "../../../Context/LoadingContext";
 
 const ROWS_PER_PAGE_OPTIONS = [
     { label: "10", value: 10 },
@@ -55,7 +58,7 @@ const InstitutionTable = ({
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const role = user.role || "HEI Staff";
-
+    const {updateProgress,} = useLoading();
     const [selectedInstitution, setSelectedInstitution] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
@@ -128,6 +131,7 @@ const InstitutionTable = ({
         async (institution) => {
             setLoading((prev) => ({ ...prev, exportFormA: true }));
             try {
+                updateProgress(10);
                 const response = await fetch(
                     "/templates/Form-A-Themeplate.xlsx"
                 );
@@ -166,7 +170,7 @@ const InstitutionTable = ({
                     sheetA1.getRow(row).getCell(cell).value =
                         institution[key] || "";
                 });
-
+                updateProgress(20);
                 const token = localStorage.getItem("token");
                 const { data } = await axios.get(
                     `${config.API_URL}/campuses?institution_id=${institution.id}`,
@@ -198,7 +202,7 @@ const InstitutionTable = ({
                     ];
                     row.commit();
                 });
-
+                updateProgress(50);
                 const fileName = `Form_A_${institution.name || "Unknown"}_${
                     institution.institution_type || "Unknown"
                 }_${new Date().toISOString().split("T")[0]}.xlsx`;
@@ -219,6 +223,7 @@ const InstitutionTable = ({
                     `Form A exported successfully for ${institution.name}!`
                 );
                 setSnackbarSeverity("success");
+                updateProgress(100);
                 setSnackbarOpen(true);
             } catch (error) {
                 console.error("Error exporting Form A:", error);
@@ -296,7 +301,7 @@ const InstitutionTable = ({
                 boxShadow: 2,
                 overflow: "hidden",
                 height: "auto",
-                maxHeight: "80vh",
+                maxHeight: "75vh",
             }}
         >
             {/* Filter Controls */}
@@ -825,6 +830,14 @@ const InstitutionTable = ({
             )}
         </Box>
     );
+};
+
+InstitutionTable.propTypes = {
+    institutions: PropTypes.array.isRequired,
+    onEdit: PropTypes.func.isRequired,
+    setSnackbarMessage: PropTypes.func.isRequired,
+    setSnackbarSeverity: PropTypes.func.isRequired,
+    setSnackbarOpen: PropTypes.func.isRequired,
 };
 
 export default InstitutionTable;

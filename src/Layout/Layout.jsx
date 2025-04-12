@@ -1,12 +1,13 @@
+// src/Layout/Layout.jsx
 import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
-import Footer from "./Footer"; // Import Footer Component
+import Footer from "./Footer";
+import { useLoading } from "../Context/LoadingContext";
 
 const Layout = () => {
     return (
         <Box display="flex" flexDirection="column" width="100%" height="100vh">
-            {/* Navbar (Fixed at Top) */}
             <Box
                 sx={{
                     position: "fixed",
@@ -19,7 +20,6 @@ const Layout = () => {
             >
                 <Navbar />
             </Box>
-
             <Box display="flex" flexGrow={1} width="100%" pt="50px">
                 <Box
                     flexGrow={1}
@@ -32,8 +32,6 @@ const Layout = () => {
                     </Box>
                 </Box>
             </Box>
-
-            {/* Footer */}
             <Footer />
         </Box>
     );

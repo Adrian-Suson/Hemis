@@ -19,14 +19,18 @@ import {
     Select,
     MenuItem,
     Paper,
-    Box, // Added Box for layout
+    Box,
+    FormHelperText,
+    Autocomplete,
 } from "@mui/material";
+import { useLoading } from "../../../Context/LoadingContext";
 
 // Register all Handsontable modules
 registerAllModules();
 
 const CampusHandsontable = ({ campuses: initialCampuses }) => {
     const [campuses, setCampuses] = useState(initialCampuses);
+    const { updateProgress, hideLoading } = useLoading();
     const [tabValue, setTabValue] = useState(0);
     const [openDialog, setOpenDialog] = useState(false);
     const [newCampus, setNewCampus] = useState({
@@ -37,14 +41,90 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         municipality_city_province: "",
         former_name: "",
         year_first_operation: "",
-        land_area_hectares: 0.0,
-        distance_from_main: 0.0,
+        land_area_hectares: "",
+        distance_from_main: "",
         autonomous_code: "",
         position_title: "",
         head_full_name: "",
-        latitude_coordinates: 0.0,
-        longitude_coordinates: 0.0,
+        latitude_coordinates: "",
+        longitude_coordinates: "",
     });
+    const [errors, setErrors] = useState({});
+
+    const region9Options = [
+        "Baliguian",
+        "Godod",
+        "Gutalac",
+        "Jose Dalman",
+        "Kalawit",
+        "Katipunan",
+        "La Libertad",
+        "Labason",
+        "Leon B. Postigo",
+        "Liloy",
+        "Manukan",
+        "Mutia",
+        "Piñan",
+        "Polanco",
+        "Pres. Manuel A. Roxas",
+        "Rizal",
+        "Salug",
+        "Sergio Osmeña Sr.",
+        "Siayan",
+        "Sibuco",
+        "Sibutad",
+        "Sindangan",
+        "Siocon",
+        "Sirawai",
+        "Tampilisan", // Zamboanga del Norte Municipalities
+        "Dapitan City",
+        "Dipolog City", // Zamboanga del Norte Cities
+        "Aurora",
+        "Bayog",
+        "Dimataling",
+        "Dinas",
+        "Dumalinao",
+        "Dumingag",
+        "Guipos",
+        "Josefina",
+        "Kumalarang",
+        "Labangan",
+        "Lakewood",
+        "Lapuyan",
+        "Mahayag",
+        "Margosatubig",
+        "Midsalip",
+        "Molave",
+        "Pitogo",
+        "Ramon Magsaysay",
+        "San Miguel",
+        "San Pablo",
+        "Sominot",
+        "Tabina",
+        "Tambulig",
+        "Tigbao",
+        "Tukuran",
+        "Vincenzo A. Sagun", // Zamboanga del Sur Municipalities
+        "Pagadian City", // Zamboanga del Sur City
+        "Alicia",
+        "Buug",
+        "Diplahan",
+        "Imelda",
+        "Ipil",
+        "Kabasalan",
+        "Mabuhay",
+        "Malangas",
+        "Naga",
+        "Olutanga",
+        "Payao",
+        "Roseller T. Lim",
+        "Siay",
+        "Talusan",
+        "Titay",
+        "Tungawan", // Zamboanga Sibugay
+        "Zamboanga City",
+        "Isabela City", // Other Cities
+    ];
 
     useEffect(() => {
         setCampuses(initialCampuses);
@@ -97,7 +177,7 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
     );
 
     const data = useMemo(() => {
-        const mappedData = campuses.map((campus) => ({
+        return campuses.map((campus) => ({
             suc_name: campus.suc_name || "",
             campus_type: campus.campus_type || "",
             institutional_code: campus.institutional_code || "",
@@ -113,7 +193,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             latitude_coordinates: campus.latitude_coordinates || 0.0,
             longitude_coordinates: campus.longitude_coordinates || 0.0,
         }));
-        return mappedData;
     }, [campuses]);
 
     const handleChanges = useCallback(
@@ -153,6 +232,7 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
     );
 
     const handleOpenDialog = () => setOpenDialog(true);
+
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setNewCampus({
@@ -163,46 +243,178 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             municipality_city_province: "",
             former_name: "",
             year_first_operation: "",
-            land_area_hectares: 0.0,
-            distance_from_main: 0.0,
+            land_area_hectares: "",
+            distance_from_main: "",
             autonomous_code: "",
             position_title: "",
             head_full_name: "",
-            latitude_coordinates: 0.0,
-            longitude_coordinates: 0.0,
+            latitude_coordinates: "",
+            longitude_coordinates: "",
         });
+        setErrors({});
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+        const currentYear = 2025;
+
+        // String fields: max 255 characters, nullable
+        const stringFields = [
+            "suc_name",
+            "campus_type",
+            "institutional_code",
+            "region",
+            "municipality_city_province",
+            "former_name",
+            "autonomous_code",
+            "position_title",
+            "head_full_name",
+        ];
+        stringFields.forEach((field) => {
+            if (newCampus[field] && newCampus[field].length > 255) {
+                newErrors[field] = "Must be 255 characters or less";
+            }
+        });
+
+        // year_first_operation: nullable, integer, 1800 <= year <= current year
+        if (newCampus.year_first_operation !== "") {
+            const year = parseInt(newCampus.year_first_operation, 10);
+            if (isNaN(year)) {
+                newErrors.year_first_operation = "Must be a valid year";
+            } else if (year < 1800) {
+                newErrors.year_first_operation = "Year must be 1800 or later";
+            } else if (year > currentYear) {
+                newErrors.year_first_operation = "Year cannot be in the future";
+            }
+        }
+
+        // land_area_hectares: nullable, numeric, >= 0
+        if (newCampus.land_area_hectares !== "") {
+            const value = parseFloat(newCampus.land_area_hectares);
+            if (isNaN(value)) {
+                newErrors.land_area_hectares = "Must be a valid number";
+            } else if (value < 0) {
+                newErrors.land_area_hectares = "Must be 0 or greater";
+            }
+        }
+
+        // distance_from_main: nullable, numeric, >= 0
+        if (newCampus.distance_from_main !== "") {
+            const value = parseFloat(newCampus.distance_from_main);
+            if (isNaN(value)) {
+                newErrors.distance_from_main = "Must be a valid number";
+            } else if (value < 0) {
+                newErrors.distance_from_main = "Must be 0 or greater";
+            }
+        }
+
+        // latitude_coordinates: nullable, numeric, -90 <= value <= 90
+        if (newCampus.latitude_coordinates !== "") {
+            const value = parseFloat(newCampus.latitude_coordinates);
+            if (isNaN(value)) {
+                newErrors.latitude_coordinates = "Must be a valid number";
+            } else if (value < -90 || value > 90) {
+                newErrors.latitude_coordinates = "Must be between -90 and 90";
+            }
+        }
+
+        // longitude_coordinates: nullable, numeric, -180 <= value <= 180
+        if (newCampus.longitude_coordinates !== "") {
+            const value = parseFloat(newCampus.longitude_coordinates);
+            if (isNaN(value)) {
+                newErrors.longitude_coordinates = "Must be a valid number";
+            } else if (value < -180 || value > 180) {
+                newErrors.longitude_coordinates =
+                    "Must be between -180 and 180";
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewCampus((prev) => ({
             ...prev,
-            [name]: [
-                "land_area_hectares",
-                "distance_from_main",
-                "latitude_coordinates",
-                "longitude_coordinates",
-            ].includes(name)
-                ? parseFloat(value) || 0.0
-                : value,
+            [name]: value,
         }));
+        // Clear error for the field when user starts typing
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: undefined }));
+        }
     };
 
     const handleAddCampus = async () => {
+        if (!validateForm()) {
+            console.log("[Add Campus] Validation failed:", errors);
+            return;
+        }
+
         const token = localStorage.getItem("token");
         try {
+            setOpenDialog(false);
+
+            // Prepare payload with correct types and null for empty fields
+            const payload = {
+                suc_name: newCampus.suc_name || null,
+                campus_type: newCampus.campus_type || null,
+                institutional_code: newCampus.institutional_code || null,
+                region: newCampus.region || null,
+                municipality_city_province:
+                    newCampus.municipality_city_province || null,
+                former_name: newCampus.former_name || null,
+                year_first_operation:
+                    newCampus.year_first_operation !== ""
+                        ? parseInt(newCampus.year_first_operation, 10)
+                        : null,
+                land_area_hectares:
+                    newCampus.land_area_hectares !== ""
+                        ? parseFloat(newCampus.land_area_hectares)
+                        : null,
+                distance_from_main:
+                    newCampus.distance_from_main !== ""
+                        ? parseFloat(newCampus.distance_from_main)
+                        : null,
+                autonomous_code: newCampus.autonomous_code || null,
+                position_title: newCampus.position_title || null,
+                head_full_name: newCampus.head_full_name || null,
+                latitude_coordinates:
+                    newCampus.latitude_coordinates !== ""
+                        ? parseFloat(newCampus.latitude_coordinates)
+                        : null,
+                longitude_coordinates:
+                    newCampus.longitude_coordinates !== ""
+                        ? parseFloat(newCampus.longitude_coordinates)
+                        : null,
+            };
+
+            console.log("[Add Campus] Sending data:", payload);
+            updateProgress(50);
+
             const response = await axios.post(
                 "http://localhost:8000/api/campuses",
-                newCampus,
-                { headers: { Authorization: `Bearer ${token}` } }
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
             );
+
+            console.log("[Add Campus] Server response:", response.data);
+
             setCampuses((prev) => [
                 ...prev,
-                { ...newCampus, id: response.data.id },
+                { ...payload, id: response.data.id },
             ]);
+
+            updateProgress(100);
             handleCloseDialog();
         } catch (error) {
-            console.error("Error adding campus:", error);
+            console.error("[Add Campus] Error:", error);
+            hideLoading();
         }
     };
 
@@ -225,9 +437,11 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         }
     }, [tabValue, tabbedColumns]);
 
+    const currentYear = new Date().getFullYear();
+const years = Array.from(new Array(100), (val, index) => currentYear - index);
+
     return (
         <Box sx={{ mt: 2 }}>
-            {/* Container for Button and Tabs */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
                 <Button
                     variant="contained"
@@ -303,10 +517,16 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.suc_name}
                                 onChange={handleInputChange}
+                                error={!!errors.suc_name}
+                                helperText={errors.suc_name}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth margin="dense">
+                            <FormControl
+                                fullWidth
+                                margin="dense"
+                                error={!!errors.campus_type}
+                            >
                                 <InputLabel id="campus-type-label">
                                     Type
                                 </InputLabel>
@@ -322,6 +542,11 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                         Satellite
                                     </MenuItem>
                                 </Select>
+                                {errors.campus_type && (
+                                    <FormHelperText>
+                                        {errors.campus_type}
+                                    </FormHelperText>
+                                )}
                             </FormControl>
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -332,6 +557,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.institutional_code}
                                 onChange={handleInputChange}
+                                error={!!errors.institutional_code}
+                                helperText={errors.institutional_code}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -340,18 +567,44 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 name="region"
                                 label="Region"
                                 fullWidth
-                                value={newCampus.region}
+                                value={
+                                    newCampus.region ||
+                                    campuses[0]?.institution?.region ||
+                                    ""
+                                }
                                 onChange={handleInputChange}
+                                error={!!errors.region}
+                                helperText={errors.region}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="municipality_city_province"
-                                label="City/Province"
-                                fullWidth
-                                value={newCampus.municipality_city_province}
-                                onChange={handleInputChange}
+                            <Autocomplete
+                                options={region9Options}
+                                value={
+                                    newCampus.municipality_city_province || ""
+                                }
+                                onChange={(event, newValue) => {
+                                    handleInputChange({
+                                        target: {
+                                            name: "municipality_city_province",
+                                            value: newValue || "",
+                                        },
+                                    });
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        margin="dense"
+                                        label="City/Province"
+                                        fullWidth
+                                        error={
+                                            !!errors.municipality_city_province
+                                        }
+                                        helperText={
+                                            errors.municipality_city_province
+                                        }
+                                    />
+                                )}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -362,18 +615,34 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.former_name}
                                 onChange={handleInputChange}
+                                error={!!errors.former_name}
+                                helperText={errors.former_name}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="year_first_operation"
-                                label="Established"
-                                fullWidth
-                                value={newCampus.year_first_operation}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
+    <FormControl fullWidth margin="dense" error={!!errors.year_first_operation}>
+        <InputLabel id="year-first-operation-label">Established</InputLabel>
+        <Select
+            labelId="year-first-operation-label"
+            name="year_first_operation"
+            value={newCampus.year_first_operation}
+            onChange={handleInputChange}
+            label="Established"
+        >
+            {years.map((year) => (
+                <MenuItem key={year} value={year}>
+                    {year}
+                </MenuItem>
+            ))}
+        </Select>
+        {errors.year_first_operation && (
+            <p style={{ color: '#d32f2f', fontSize: '0.75rem', margin: '3px 14px 0' }}>
+                {errors.year_first_operation}
+            </p>
+        )}
+    </FormControl>
+</Grid>
+
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 margin="dense"
@@ -383,6 +652,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.land_area_hectares}
                                 onChange={handleInputChange}
+                                error={!!errors.land_area_hectares}
+                                helperText={errors.land_area_hectares}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -394,6 +665,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.distance_from_main}
                                 onChange={handleInputChange}
+                                error={!!errors.distance_from_main}
+                                helperText={errors.distance_from_main}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -404,6 +677,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.autonomous_code}
                                 onChange={handleInputChange}
+                                error={!!errors.autonomous_code}
+                                helperText={errors.autonomous_code}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -414,6 +689,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.position_title}
                                 onChange={handleInputChange}
+                                error={!!errors.position_title}
+                                helperText={errors.position_title}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -424,6 +701,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.head_full_name}
                                 onChange={handleInputChange}
+                                error={!!errors.head_full_name}
+                                helperText={errors.head_full_name}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -435,6 +714,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.latitude_coordinates}
                                 onChange={handleInputChange}
+                                error={!!errors.latitude_coordinates}
+                                helperText={errors.latitude_coordinates}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -446,6 +727,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                                 fullWidth
                                 value={newCampus.longitude_coordinates}
                                 onChange={handleInputChange}
+                                error={!!errors.longitude_coordinates}
+                                helperText={errors.longitude_coordinates}
                             />
                         </Grid>
                     </Grid>

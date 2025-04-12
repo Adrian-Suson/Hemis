@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -23,14 +22,14 @@ import { UploadFile as UploadIcon } from "@mui/icons-material";
 import InstitutionTable from "./InstitutionTable";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
-import { useProgress } from "../../../Context/ProgressContext";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
+import { useLoading } from "../../../Context/LoadingContext";
 
 const InstitutionManagement = () => {
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { showProgress, hideProgress } = useProgress();
+    const { showLoading, hideLoading, updateProgress } = useLoading();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("info");
@@ -51,6 +50,7 @@ const InstitutionManagement = () => {
     const fetchInstitutions = async () => {
         setLoading(true);
         try {
+            showLoading();
             const token = localStorage.getItem("token");
             const user = JSON.parse(localStorage.getItem("user"));
 
@@ -73,11 +73,13 @@ const InstitutionManagement = () => {
             setSnackbarOpen(true);
         } finally {
             setLoading(false);
+            hideLoading();
         }
     };
 
     useEffect(() => {
         fetchInstitutions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleFileUpload = async () => {
@@ -89,16 +91,16 @@ const InstitutionManagement = () => {
             setSnackbarOpen(true);
             return;
         }
-
-        showProgress(10);
+        setOpenUploadDialog(false);
+        updateProgress(10);
 
         const reader = new FileReader();
         reader.onload = async (e) => {
-            showProgress(30);
+            updateProgress(30);
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: "array" });
-                showProgress(40);
+                updateProgress(40);
 
                 const sheetA1 = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonDataA1 = XLSX.utils.sheet_to_json(sheetA1, {
@@ -140,7 +142,7 @@ const InstitutionManagement = () => {
                     institution_type: selectedInstitutionType,
                 };
 
-                showProgress(50);
+                updateProgress(50);
                 const token = localStorage.getItem("token");
                 console.log(
                     "Extracted Institution Data:",
@@ -156,7 +158,7 @@ const InstitutionManagement = () => {
                         },
                     }
                 );
-                fetchInstitutions();
+
                 setSnackbarMessage("Institution data uploaded successfully!");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
@@ -202,7 +204,7 @@ const InstitutionManagement = () => {
                         institution_id: String(institutionId),
                     }));
 
-                showProgress(70);
+                updateProgress(70);
                 await axios.post(
                     "http://localhost:8000/api/campuses",
                     processedCampuses,
@@ -210,17 +212,18 @@ const InstitutionManagement = () => {
                         headers: { Authorization: `Bearer ${token}` },
                     }
                 );
-                showProgress(100);
+                updateProgress(100);
             } catch (error) {
                 console.error("Error sending data to backend:", error);
                 setSnackbarMessage("Error uploading institution data.");
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
             } finally {
-                hideProgress();
+                hideLoading();
                 setOpenUploadDialog(false);
                 setSelectedFile(null);
                 setSelectedInstitutionType("");
+                fetchInstitutions();
             }
         };
         reader.readAsArrayBuffer(selectedFile);
@@ -421,8 +424,6 @@ const InstitutionManagement = () => {
                 onClose={() => setOpenManualDialog(false)}
                 getInstitutionType={getInstitutionType}
                 fetchInstitutions={fetchInstitutions}
-                showProgress={showProgress}
-                hideProgress={hideProgress}
                 setSnackbarOpen={setSnackbarOpen}
                 setSnackbarMessage={setSnackbarMessage}
                 setSnackbarSeverity={setSnackbarSeverity}

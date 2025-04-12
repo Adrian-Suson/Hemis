@@ -28,6 +28,7 @@ import {
 import { Pie } from "react-chartjs-2";
 // Import chartjs-plugin-datalabels
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import { useLoading } from "../../../Context/LoadingContext";
 
 // Register Chart.js components and the datalabels plugin
 ChartJS.register(
@@ -42,6 +43,8 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
+    const token = localStorage.getItem("token");
+    const {showLoading, hideLoading} = useLoading();
     const [dashboardData, setDashboardData] = useState({
         users: [],
         facultyProfiles: [],
@@ -52,65 +55,58 @@ const Dashboard = () => {
         error: null,
     });
 
-    useEffect(() => {
-        const token = localStorage.getItem("token");
+    const fetchDashboardData = async () => {
+        try {
+            showLoading();
+            const [
+                usersResponse,
+                facultyProfilesResponse,
+                programsResponse,
+                institutionsResponse,
+                campusesResponse,
+            ] = await Promise.all([
+                axios.get("http://localhost:8000/api/users", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                axios.get(`http://localhost:8000/api/faculty-profiles`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                axios.get("http://localhost:8000/api/programs", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                axios.get("http://localhost:8000/api/institutions", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                axios.get("http://localhost:8000/api/campuses", {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ]);
 
-        if (!token) {
+            setDashboardData({
+                users: usersResponse.data,
+                facultyProfiles: facultyProfilesResponse.data,
+                programs: programsResponse.data,
+                institutions: institutionsResponse.data,
+                campuses: campusesResponse.data,
+                loading: false,
+                error: null,
+            });
+            console.log("programsResponse.data:", programsResponse.data);
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
             setDashboardData((prev) => ({
                 ...prev,
-                error: "Authentication token is missing.",
+                error: "Failed to load dashboard data. Please try again.",
                 loading: false,
             }));
-            return;
+        }finally{
+            hideLoading();
         }
+    };
 
-        const fetchDashboardData = async () => {
-            try {
-                const [
-                    usersResponse,
-                    facultyProfilesResponse,
-                    programsResponse,
-                    institutionsResponse,
-                    campusesResponse,
-                ] = await Promise.all([
-                    axios.get("http://localhost:8000/api/users", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get(`http://localhost:8000/api/faculty-profiles`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get("http://localhost:8000/api/programs", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get("http://localhost:8000/api/institutions", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get("http://localhost:8000/api/campuses", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                ]);
-
-                setDashboardData({
-                    users: usersResponse.data,
-                    facultyProfiles: facultyProfilesResponse.data,
-                    programs: programsResponse.data,
-                    institutions: institutionsResponse.data,
-                    campuses: campusesResponse.data,
-                    loading: false,
-                    error: null,
-                });
-                console.log("programsResponse.data:", programsResponse.data);
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-                setDashboardData((prev) => ({
-                    ...prev,
-                    error: "Failed to load dashboard data. Please try again.",
-                    loading: false,
-                }));
-            }
-        };
-
+    useEffect(() => {
         fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Calculate overview metrics
