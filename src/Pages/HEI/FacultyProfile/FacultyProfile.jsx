@@ -16,9 +16,8 @@ import {
 } from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
-import DownloadIcon from '@mui/icons-material/Download';
+import { FaUpload, FaDownload } from "react-icons/fa"
 
 const facultyGroups = [
     {
@@ -510,7 +509,7 @@ const FacultyProfileUpload = () => {
                         variant="contained"
                         color="secondary"
                         component="span"
-                        startIcon={<UploadFileIcon />}
+                        startIcon={<FaUpload />}
                         disabled={isUploading}
                     >
                         {isUploading ? "Uploading..." : "Import Form E2"}
@@ -519,7 +518,7 @@ const FacultyProfileUpload = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<DownloadIcon/>  }
+                    startIcon={<FaDownload/>  }
                     onClick={handleExportData}
                     disabled={isUploading || loading}
                 >

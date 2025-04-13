@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from "prop-types";
+
 import { HotTable } from "@handsontable/react";
 import "handsontable/dist/handsontable.full.min.css";
 import {
@@ -91,7 +93,9 @@ const GraduatesTable = ({ graduates }) => {
                     sx={{ flex: 1, minWidth: 150 }}
                 />
                 <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>Sex</InputLabel>
+                    <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
+                        Sex
+                    </InputLabel>
                     <Select
                         value={sexFilter}
                         onChange={(e) => setSexFilter(e.target.value)}
@@ -104,7 +108,9 @@ const GraduatesTable = ({ graduates }) => {
                     </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>Year</InputLabel>
+                    <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
+                        Year
+                    </InputLabel>
                     <Select
                         value={yearFilter}
                         onChange={(e) => setYearFilter(e.target.value)}
@@ -125,6 +131,27 @@ const GraduatesTable = ({ graduates }) => {
             <HotTable settings={hotSettings} />
         </Box>
     );
+};
+
+GraduatesTable.propTypes = {
+    graduates: PropTypes.arrayOf(
+        PropTypes.shape({
+            student_id: PropTypes.string,
+            last_name: PropTypes.string,
+            first_name: PropTypes.string,
+            middle_name: PropTypes.string,
+            sex: PropTypes.oneOf(["M", "F"]),
+            date_of_birth: PropTypes.string, // Assuming date is in string format
+            date_graduated: PropTypes.string, // Assuming date is in string format
+            program_name: PropTypes.string,
+            program_major: PropTypes.string,
+            program_authority_to_operate_graduate: PropTypes.string,
+            year_granted: PropTypes.oneOfType([
+                PropTypes.string,
+                PropTypes.number,
+            ]),
+        })
+    ).isRequired,
 };
 
 export default GraduatesTable;

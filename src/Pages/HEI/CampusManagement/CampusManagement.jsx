@@ -20,8 +20,9 @@ import {
     Paper,
     Grid,
 } from "@mui/material";
-import HelpIcon from "@mui/icons-material/Help";
 import CampusHandsontable from "./CampusHandsontable";
+import { TfiHelpAlt } from "react-icons/tfi";
+
 
 const CampusManagement = () => {
     const { institutionId } = useParams();
@@ -141,7 +142,7 @@ const CampusManagement = () => {
                         right: 16,
                     }}
                 >
-                    <HelpIcon />
+                    <TfiHelpAlt />
                 </Fab>
             </Tooltip>
 

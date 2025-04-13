@@ -9,12 +9,11 @@ import {
     Link,
     Paper,
 } from "@mui/material";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import DownloadIcon from "@mui/icons-material/Download";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import config from "../../../utils/config";
 import ProgramTables from "./ProgramTables";
+import { FaUpload, FaDownload } from "react-icons/fa"; // Import react-icons
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import { useProgress } from "../../../Context/ProgressContext";
 import ExcelJS from "exceljs";
@@ -554,7 +553,7 @@ const CurricularProgram = () => {
                         variant="contained"
                         color="secondary"
                         component="span"
-                        startIcon={<UploadFileIcon />}
+                        startIcon={<FaUpload />}
                         disabled={isUploading}
                     >
                         {isUploading ? "Uploading..." : "Import Form B"}
@@ -564,7 +563,7 @@ const CurricularProgram = () => {
                 <Button
                     variant="contained"
                     color="primary"
-                    startIcon={<DownloadIcon />}
+                    startIcon={<FaDownload />}
                     onClick={handleExportData}
                     disabled={loading || !programs.length}
                 >

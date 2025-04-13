@@ -19,6 +19,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
 import DownloadIcon from "@mui/icons-material/Download";
+import {useLoading} from "../../../Context/LoadingContext"
 
 const facultyGroups = [
     {
@@ -83,6 +84,7 @@ const FacultyProfileUpload = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
+    const {showLoading, hideLoading, updateProgress} = useLoading();
     const [error, setError] = useState(null);
     const { institutionId } = useParams(); // Destructure institutionId correctly
     const navigate = useNavigate();
