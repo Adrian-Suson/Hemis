@@ -464,7 +464,7 @@ const ProgramTables = ({ programs, loading }) => {
                         />
                     </Grid>
                 </Grid>
-            </Box>  
+            </Box>
             {/* Sub-Tabs Navigation */}
             <Paper sx={{ borderRadius: 1, mb: 2 }}>
                 <Tabs
@@ -490,7 +490,7 @@ const ProgramTables = ({ programs, loading }) => {
             <Paper
                 sx={{
                     overflowX: "auto",
-                    maxHeight: "540px",
+                    maxHeight: "550px",
                     position: "relative",
                 }}
             >
@@ -499,7 +499,7 @@ const ProgramTables = ({ programs, loading }) => {
                     columns={currentConfig.columns}
                     rowHeaders={true}
                     stretchH="all"
-                    height="590px"
+                    height="550px"
                     licenseKey="non-commercial-and-evaluation"
                     settings={{
                         readOnly: false,

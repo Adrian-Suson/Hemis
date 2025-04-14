@@ -3,15 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import ExcelJS from "exceljs";
 import axios from "axios";
-import {
-    FaUserGraduate,
-    FaFileExcel,
-    FaEye,
-    FaBuilding,
-    FaUsers,
-    FaBook,
-} from "react-icons/fa";
-import { CiCircleMore } from "react-icons/ci";
 import DetailDialog from "./DetailDialog";
 import config from "../../../utils/config";
 import {
@@ -29,12 +20,20 @@ import {
     FormControl,
     Box,
     Menu,
-    Button,
     CircularProgress,
     Pagination,
     Typography,
     Tooltip,
+    IconButton,
+    Divider,
 } from "@mui/material";
+import { CiSquareMore } from "react-icons/ci";
+import { FaEye } from "react-icons/fa";
+import { BiSolidBusiness } from "react-icons/bi";
+import { HiMiniUserGroup } from "react-icons/hi2";
+import { RiBookShelfFill } from "react-icons/ri";
+import { FaUserGraduate } from "react-icons/fa6";
+import { MdOutlineDownload } from "react-icons/md";
 import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 
@@ -58,7 +57,7 @@ const InstitutionTable = ({
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const role = user.role || "HEI Staff";
-    const {updateProgress,} = useLoading();
+    const { updateProgress } = useLoading();
     const [selectedInstitution, setSelectedInstitution] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
@@ -416,7 +415,12 @@ const InstitutionTable = ({
             {/* Table */}
             <TableContainer
                 component={Paper}
-                sx={{ flex: "1 1 auto", maxHeight: "600px"  ,overflowY: "auto", borderRadius: 0 }}
+                sx={{
+                    flex: "1 1 auto",
+                    maxHeight: "600px",
+                    overflowY: "auto",
+                    borderRadius: 0,
+                }}
             >
                 <Table
                     stickyHeader
@@ -539,8 +543,12 @@ const InstitutionTable = ({
                                     <TableCell
                                         sx={{ width: "5%", py: 0.5, px: 1 }}
                                     >
-                                        <Tooltip title="More Options">
-                                            <Button
+                                        <Tooltip
+                                            title="More Options"
+                                            arrow
+                                            placement="top"
+                                        >
+                                            <IconButton
                                                 onClick={(e) =>
                                                     handleMenuOpen(
                                                         e,
@@ -549,18 +557,22 @@ const InstitutionTable = ({
                                                 }
                                                 disabled={Boolean(menuAnchorEl)}
                                                 aria-label={`More options for ${institution.name}`}
-                                                sx={{ minWidth: 0, p: 0.5 }}
+                                                size="small"
+                                                sx={{
+                                                    color: "primary.main",
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.04)",
+                                                    },
+                                                }}
                                             >
-                                                <CiCircleMore size={16} />
-                                            </Button>
+                                                <CiSquareMore style={{ fontSize: "20px" }} />
+                                            </IconButton>
                                         </Tooltip>
+
                                         <Menu
                                             anchorEl={menuAnchorEl}
-                                            open={
-                                                Boolean(menuAnchorEl) &&
-                                                selectedInstitution?.id ===
-                                                    institution.id
-                                            }
+                                            open={Boolean(menuAnchorEl)}
                                             onClose={handleMenuClose}
                                             anchorOrigin={{
                                                 vertical: "bottom",
@@ -571,142 +583,183 @@ const InstitutionTable = ({
                                                 horizontal: "right",
                                             }}
                                             PaperProps={{
+                                                elevation: 3,
                                                 sx: {
+                                                    mt: 0.5,
+                                                    minWidth: 180,
+                                                    borderRadius: 1,
                                                     boxShadow:
-                                                        "0 4px 12px rgba(0,0,0,0.15)",
+                                                        "0 4px 20px rgba(0,0,0,0.15)",
+                                                    "& .MuiList-root": {
+                                                        padding: "4px 0",
+                                                    },
                                                 },
                                             }}
                                         >
                                             <MenuItem
-                                                onClick={() => {
+                                                onClick={() =>
                                                     handleOpenDialog(
                                                         institution
-                                                    );
-                                                    handleMenuClose();
-                                                }}
+                                                    )
+                                                }
                                                 sx={{
-                                                    py: 0.5,
-                                                    fontSize: "0.75rem",
+                                                    py: 1,
+                                                    mx: 1,
+                                                    borderRadius: 1,
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.08)",
+                                                    },
                                                 }}
                                             >
                                                 <FaEye
-                                                    size={14}
-                                                    sx={{ mr: 1 }}
+                                                     style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
                                                 />
-                                                Details
+                                                <Typography variant="body2">
+                                                    View Details
+                                                </Typography>
                                             </MenuItem>
+
+                                            <Divider sx={{ my: 0.5 }} />
+
                                             <MenuItem
-                                                onClick={() => {
+                                                onClick={() =>
                                                     handleNavigation(
                                                         `/super-admin/institutions/campuses/${institution.id}`,
                                                         "viewCampuses"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
+                                                    )
+                                                }
                                                 disabled={loading.viewCampuses}
                                                 sx={{
-                                                    py: 0.5,
-                                                    fontSize: "0.75rem",
+                                                    py: 1,
+                                                    mx: 1,
+                                                    borderRadius: 1,
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.08)",
+                                                    },
                                                 }}
                                             >
                                                 {loading.viewCampuses ? (
                                                     <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                        size={18}
+                                                        sx={{ mr: 1.5 }}
                                                     />
                                                 ) : (
-                                                    <FaBuilding
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                    <BiSolidBusiness
+                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
                                                     />
                                                 )}
-                                                Campuses
+                                                <Typography variant="body2">
+                                                    Manage Campuses
+                                                </Typography>
                                             </MenuItem>
+
                                             <MenuItem
-                                                onClick={() => {
+                                                onClick={() =>
                                                     handleNavigation(
                                                         `/super-admin/institutions/faculties/${institution.id}`,
                                                         "faculties"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
+                                                    )
+                                                }
                                                 disabled={loading.faculties}
                                                 sx={{
-                                                    py: 0.5,
-                                                    fontSize: "0.75rem",
+                                                    py: 1,
+                                                    mx: 1,
+                                                    borderRadius: 1,
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.08)",
+                                                    },
                                                 }}
                                             >
                                                 {loading.faculties ? (
                                                     <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                        size={18}
+                                                        sx={{ mr: 1.5 }}
                                                     />
                                                 ) : (
-                                                    <FaUsers
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                    <HiMiniUserGroup
+                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
                                                     />
                                                 )}
-                                                Faculties
+                                                <Typography variant="body2">
+                                                    Manage Faculties
+                                                </Typography>
                                             </MenuItem>
+
                                             <MenuItem
-                                                onClick={() => {
+                                                onClick={() =>
                                                     handleNavigation(
                                                         `/super-admin/institutions/curricular-programs/${institution.id}`,
                                                         "academicPrograms"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
+                                                    )
+                                                }
                                                 disabled={
                                                     loading.academicPrograms
                                                 }
                                                 sx={{
-                                                    py: 0.5,
-                                                    fontSize: "0.75rem",
+                                                    py: 1,
+                                                    mx: 1,
+                                                    borderRadius: 1,
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.08)",
+                                                    },
                                                 }}
                                             >
                                                 {loading.academicPrograms ? (
                                                     <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                        size={18}
+                                                        sx={{ mr: 1.5 }}
                                                     />
                                                 ) : (
-                                                    <FaBook
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                    <RiBookShelfFill
+                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
                                                     />
                                                 )}
-                                                Programs
+                                                <Typography variant="body2">
+                                                    Academic Programs
+                                                </Typography>
                                             </MenuItem>
+
                                             <MenuItem
-                                                onClick={() => {
+                                                onClick={() =>
                                                     handleNavigation(
                                                         `/super-admin/institutions/graduates-list/${institution.id}`,
                                                         "academicPrograms"
-                                                    );
-                                                    handleMenuClose();
-                                                }}
+                                                    )
+                                                }
                                                 disabled={
                                                     loading.academicPrograms
                                                 }
                                                 sx={{
-                                                    py: 0.5,
-                                                    fontSize: "0.75rem",
+                                                    py: 1,
+                                                    mx: 1,
+                                                    borderRadius: 1,
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.08)",
+                                                    },
                                                 }}
                                             >
                                                 {loading.academicPrograms ? (
                                                     <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                        size={18}
+                                                        sx={{ mr: 1.5 }}
                                                     />
                                                 ) : (
                                                     <FaUserGraduate
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
                                                     />
                                                 )}
-                                                List of Graduates
+                                                <Typography variant="body2">
+                                                    List of Graduates
+                                                </Typography>
                                             </MenuItem>
+
+                                            <Divider sx={{ my: 0.5 }} />
+
                                             <MenuItem
                                                 onClick={() =>
                                                     handleExportToFormA(
@@ -715,22 +768,28 @@ const InstitutionTable = ({
                                                 }
                                                 disabled={loading.exportFormA}
                                                 sx={{
-                                                    py: 0.5,
-                                                    fontSize: "0.75rem",
+                                                    py: 1,
+                                                    mx: 1,
+                                                    borderRadius: 1,
+                                                    "&:hover": {
+                                                        backgroundColor:
+                                                            "rgba(25, 118, 210, 0.08)",
+                                                    },
                                                 }}
                                             >
                                                 {loading.exportFormA ? (
                                                     <CircularProgress
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                        size={18}
+                                                        sx={{ mr: 1.5 }}
                                                     />
                                                 ) : (
-                                                    <FaFileExcel
-                                                        size={14}
-                                                        sx={{ mr: 1 }}
+                                                    <MdOutlineDownload
+                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
                                                     />
                                                 )}
-                                                Export to Excel
+                                                <Typography variant="body2">
+                                                    Export to Excel
+                                                </Typography>
                                             </MenuItem>
                                         </Menu>
                                     </TableCell>

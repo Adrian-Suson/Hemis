@@ -8,7 +8,6 @@ import {
     Paper,
     Tabs,
     Tab,
-    Alert,
     TablePagination,
     TextField,
     FormControl,
@@ -24,22 +23,19 @@ import config from "../../../utils/config";
 registerAllModules();
 
 const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
-    const [loading, setLoading] = useState(true); // Add loading state
     const [tabIndex, setTabIndex] = useState(0);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(20);
     const [searchQuery, setSearchQuery] = useState("");
-    const [facultyProfiles, setFacultyProfiles] = useState([]);
-    const [filteredData, setFilteredData] = useState([]);
+    const [facultyProfiles, setFacultyProfiles] = useState([initialFacultyProfiles]);
+    const [filteredData, setFilteredData] = useState([initialFacultyProfiles]);
 
     // Simulate data loading
     useEffect(() => {
-        setLoading(true);
         setTimeout(() => {
             setFacultyProfiles(initialFacultyProfiles);
             setFilteredData(initialFacultyProfiles);
-            setLoading(false);
-        }, 1000); // Simulate a 1-second delay
+        }); // Simulate a 1-second delay
     }, [initialFacultyProfiles]);
 
     // Filter states for each column
@@ -810,13 +806,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     </Grid>
                 </Box>
 
-                {loading || facultyProfiles.length === 0 ? (
-                    <Paper sx={{ height: "500px", overflow: "auto" }}>
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                            No faculty profiles available.
-                        </Alert>
-                    </Paper>
-                ) : (
+
                     <>
                         <Paper sx={{ height: "500px", overflow: "auto" }}>
                             <HotTable
@@ -906,7 +896,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                             />
                         </Paper>
                     </>
-                )}
             </>
         </Box>
     );

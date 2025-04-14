@@ -337,7 +337,13 @@ const InstitutionManagement = () => {
                         </Typography>
                     </Breadcrumbs>
 
-                    <ButtonGroup sx={{ mt: 3, display: "flex" }}>
+                    <ButtonGroup
+                        sx={{
+                            mt: 3,
+                            display: "flex",
+                            justifyContent: "flex-end", // Align to the right
+                        }}
+                    >
                         <Button
                             variant="contained"
                             startIcon={<UploadIcon />}

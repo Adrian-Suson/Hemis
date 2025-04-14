@@ -5,7 +5,6 @@ import axios from "axios";
 import {
     Box,
     Typography,
-    LinearProgress,
     Tabs,
     Tab,
     Breadcrumbs,
@@ -19,7 +18,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
 import DownloadIcon from "@mui/icons-material/Download";
-import {useLoading} from "../../../Context/LoadingContext"
+import { useLoading } from "../../../Context/LoadingContext";
 
 const facultyGroups = [
     {
@@ -79,12 +78,13 @@ const facultyGroups = [
 ];
 
 const FacultyProfileUpload = () => {
-    const [selectedGroup, setSelectedGroup] = useState(facultyGroups[0].sheetName);
+    const [selectedGroup, setSelectedGroup] = useState(
+        facultyGroups[0].sheetName
+    );
     const [facultyProfiles, setFacultyProfiles] = useState([]);
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
-    const {showLoading, hideLoading, updateProgress} = useLoading();
+    const { showLoading, hideLoading, updateProgress } = useLoading();
     const [error, setError] = useState(null);
     const { institutionId } = useParams(); // Destructure institutionId correctly
     const navigate = useNavigate();
@@ -96,6 +96,7 @@ const FacultyProfileUpload = () => {
 
     const fetchFacultyProfiles = async () => {
         setLoading(true);
+        showLoading();
         setError(null);
         try {
             const token = localStorage.getItem("token");
@@ -110,13 +111,16 @@ const FacultyProfileUpload = () => {
             });
             console.log("Institution ID:", institutionId);
             console.log("API Response:", response.data);
-            setFacultyProfiles(Array.isArray(response.data) ? response.data : []);
+            setFacultyProfiles(
+                Array.isArray(response.data) ? response.data : []
+            );
         } catch (error) {
             console.error("Error fetching faculty profiles:", error);
             setError("Failed to load faculty profiles. Please try again.");
             setFacultyProfiles([]);
         } finally {
             setLoading(false);
+            hideLoading();
         }
     };
 
@@ -137,7 +141,7 @@ const FacultyProfileUpload = () => {
         if (!file) return;
 
         setIsUploading(true);
-        setUploadProgress(5);
+        updateProgress(5);
 
         const token = localStorage.getItem("token");
         if (!token) {
@@ -161,7 +165,7 @@ const FacultyProfileUpload = () => {
                     const sheetName = workbook.SheetNames[sheetIndex];
                     const sheet = workbook.Sheets[sheetName];
 
-                    setUploadProgress(10 + sheetIndex * 10);
+                    updateProgress(10 + sheetIndex * 10);
 
                     const jsonData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
@@ -294,8 +298,11 @@ const FacultyProfileUpload = () => {
                     });
                 }
 
-                console.log("Final Processed Faculty Data:", allFacultyProfiles);
-                setUploadProgress(80);
+                console.log(
+                    "Final Processed Faculty Data:",
+                    allFacultyProfiles
+                );
+                updateProgress(80);
 
                 if (allFacultyProfiles.length > 0) {
                     await axios.post(
@@ -312,12 +319,10 @@ const FacultyProfileUpload = () => {
                     alert("No valid faculty data found in the uploaded file.");
                 }
 
-                setUploadProgress(100);
-                setTimeout(() => setUploadProgress(0), 2000);
+                updateProgress(100);
             };
         } catch (error) {
             console.error("Error processing the file:", error);
-            setUploadProgress(0);
             alert("Error uploading file. Please try again.");
         } finally {
             setIsUploading(false);
@@ -337,7 +342,9 @@ const FacultyProfileUpload = () => {
         try {
             const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
             if (!response.ok) {
-                throw new Error(`Failed to load template file: HTTP ${response.status}`);
+                throw new Error(
+                    `Failed to load template file: HTTP ${response.status}`
+                );
             }
             const arrayBuffer = await response.arrayBuffer();
 
@@ -351,21 +358,33 @@ const FacultyProfileUpload = () => {
                     (profile) => profile.faculty_group === group.sheetName
                 );
                 console.log(
-                    `Sheet ${group.sheetName}: ${acc[group.sheetName].length} profiles`
+                    `Sheet ${group.sheetName}: ${
+                        acc[group.sheetName].length
+                    } profiles`
                 );
                 return acc;
             }, {});
 
-            for (let sheetIndex = 0; sheetIndex < Math.min(9, workbook.worksheets.length); sheetIndex++) {
-                const sheetName = facultyGroups[sheetIndex]?.sheetName || `Sheet${sheetIndex + 1}`;
+            for (
+                let sheetIndex = 0;
+                sheetIndex < Math.min(9, workbook.worksheets.length);
+                sheetIndex++
+            ) {
+                const sheetName =
+                    facultyGroups[sheetIndex]?.sheetName ||
+                    `Sheet${sheetIndex + 1}`;
                 const worksheet = workbook.getWorksheet(sheetIndex + 1);
                 if (!worksheet) {
-                    console.log(`Worksheet ${sheetName} not found, skipping...`);
+                    console.log(
+                        `Worksheet ${sheetName} not found, skipping...`
+                    );
                     continue;
                 }
 
                 const profilesForSheet = profilesByGroup[sheetName] || [];
-                console.log(`Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`);
+                console.log(
+                    `Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`
+                );
 
                 profilesForSheet.forEach((profile, i) => {
                     const row = worksheet.getRow(dataStartRow + i);
@@ -379,32 +398,55 @@ const FacultyProfileUpload = () => {
                     row.getCell(9).value = profile.on_leave_without_pay || 0;
                     row.getCell(10).value = profile.full_time_equivalent || 0;
                     row.getCell(11).value = profile.gender || null;
-                    row.getCell(12).value = profile.highest_degree_attained || 0;
-                    row.getCell(13).value = profile.pursuing_next_degree || null;
-                    row.getCell(14).value = profile.discipline_teaching_load_1 || null;
-                    row.getCell(15).value = profile.discipline_teaching_load_2 || null;
-                    row.getCell(16).value = profile.discipline_bachelors || null;
+                    row.getCell(12).value =
+                        profile.highest_degree_attained || 0;
+                    row.getCell(13).value =
+                        profile.pursuing_next_degree || null;
+                    row.getCell(14).value =
+                        profile.discipline_teaching_load_1 || null;
+                    row.getCell(15).value =
+                        profile.discipline_teaching_load_2 || null;
+                    row.getCell(16).value =
+                        profile.discipline_bachelors || null;
                     row.getCell(17).value = profile.discipline_masters || null;
-                    row.getCell(18).value = profile.discipline_doctorate || null;
+                    row.getCell(18).value =
+                        profile.discipline_doctorate || null;
                     row.getCell(19).value = profile.masters_with_thesis || null;
-                    row.getCell(20).value = profile.doctorate_with_dissertation || null;
-                    row.getCell(21).value = profile.undergrad_lab_credit_units || 0;
-                    row.getCell(22).value = profile.undergrad_lecture_credit_units || 0;
-                    row.getCell(23).value = profile.undergrad_total_credit_units || 0;
-                    row.getCell(24).value = profile.undergrad_lab_hours_per_week || 0;
-                    row.getCell(25).value = profile.undergrad_lecture_hours_per_week || 0;
-                    row.getCell(26).value = profile.undergrad_total_hours_per_week || 0;
-                    row.getCell(27).value = profile.undergrad_lab_contact_hours || 0;
-                    row.getCell(28).value = profile.undergrad_lecture_contact_hours || 0;
-                    row.getCell(29).value = profile.undergrad_total_contact_hours || 0;
-                    row.getCell(30).value = profile.graduate_lab_credit_units || 0;
-                    row.getCell(31).value = profile.graduate_lecture_credit_units || 0;
-                    row.getCell(32).value = profile.graduate_total_credit_units || 0;
-                    row.getCell(33).value = profile.graduate_lab_contact_hours || 0;
-                    row.getCell(34).value = profile.graduate_lecture_contact_hours || 0;
-                    row.getCell(35).value = profile.graduate_total_contact_hours || 0;
+                    row.getCell(20).value =
+                        profile.doctorate_with_dissertation || null;
+                    row.getCell(21).value =
+                        profile.undergrad_lab_credit_units || 0;
+                    row.getCell(22).value =
+                        profile.undergrad_lecture_credit_units || 0;
+                    row.getCell(23).value =
+                        profile.undergrad_total_credit_units || 0;
+                    row.getCell(24).value =
+                        profile.undergrad_lab_hours_per_week || 0;
+                    row.getCell(25).value =
+                        profile.undergrad_lecture_hours_per_week || 0;
+                    row.getCell(26).value =
+                        profile.undergrad_total_hours_per_week || 0;
+                    row.getCell(27).value =
+                        profile.undergrad_lab_contact_hours || 0;
+                    row.getCell(28).value =
+                        profile.undergrad_lecture_contact_hours || 0;
+                    row.getCell(29).value =
+                        profile.undergrad_total_contact_hours || 0;
+                    row.getCell(30).value =
+                        profile.graduate_lab_credit_units || 0;
+                    row.getCell(31).value =
+                        profile.graduate_lecture_credit_units || 0;
+                    row.getCell(32).value =
+                        profile.graduate_total_credit_units || 0;
+                    row.getCell(33).value =
+                        profile.graduate_lab_contact_hours || 0;
+                    row.getCell(34).value =
+                        profile.graduate_lecture_contact_hours || 0;
+                    row.getCell(35).value =
+                        profile.graduate_total_contact_hours || 0;
                     row.getCell(36).value = profile.research_load || 0;
-                    row.getCell(37).value = profile.extension_services_load || 0;
+                    row.getCell(37).value =
+                        profile.extension_services_load || 0;
                     row.getCell(38).value = profile.study_load || 0;
                     row.getCell(39).value = profile.production_load || 0;
                     row.getCell(40).value = profile.administrative_load || 0;
@@ -414,7 +456,9 @@ const FacultyProfileUpload = () => {
                 });
             }
 
-            const fileName = `Form_E2_Faculty_Profiles_${new Date().toISOString().split("T")[0]}.xlsx`;
+            const fileName = `Form_E2_Faculty_Profiles_${
+                new Date().toISOString().split("T")[0]
+            }.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -487,21 +531,13 @@ const FacultyProfileUpload = () => {
 
             {/* Group description */}
             <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
-                {facultyGroups.find((group) => group.sheetName === selectedGroup)?.description}
+                {
+                    facultyGroups.find(
+                        (group) => group.sheetName === selectedGroup
+                    )?.description
+                }
             </Typography>
 
-            {/* Progress Bar */}
-            {uploadProgress > 0 && (
-                <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                        Uploading... {uploadProgress}%
-                    </Typography>
-                    <LinearProgress
-                        variant="determinate"
-                        value={uploadProgress}
-                    />
-                </Box>
-            )}
 
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
