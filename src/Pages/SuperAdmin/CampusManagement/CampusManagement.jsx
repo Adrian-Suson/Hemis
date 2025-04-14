@@ -7,16 +7,20 @@ import { Box, Breadcrumbs, Link, Typography } from "@mui/material";
 import CampusHandsontable from "./CampusHandsontable";
 import CampusManagementSkeleton from "./CampusManagementSkeleton"; // Import the skeleton component
 import { useLoading } from "../../../Context/LoadingContext";
+import { decryptId } from "../../../utils/encryption";
 
 const CampusManagement = () => {
-    const { institutionId } = useParams();
+    const { institutionId: encryptedInstitutionId } = useParams();
     const [campuses, setCampuses] = useState([]);
     const {showLoading, hideLoading} = useLoading();
     const [institutionName, setInstitutionName] = useState("");
-    const [loading, setLoading] = useState(true); // Add loading state
+    const [loading, setLoading] = useState(true);
+
 
     const fetchCampuses = async () => {
         try {
+            // Decrypt the institutionId
+            const institutionId = decryptId(encryptedInstitutionId)
             setLoading(true);
             showLoading();
             const token = localStorage.getItem("token");
@@ -41,7 +45,7 @@ const CampusManagement = () => {
 
     useEffect(() => {
         fetchCampuses();
-    }, [institutionId]);
+    }, []);
 
     // Show skeleton while loading
     if (loading) {

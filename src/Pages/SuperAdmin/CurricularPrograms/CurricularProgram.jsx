@@ -34,9 +34,10 @@ import CustomSnackbar from "../../../Components/CustomSnackbar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLoading } from "../../../Context/LoadingContext";
 import ExcelJS from "exceljs";
+import { decryptId } from "../../../utils/encryption";
 
 const CurricularProgram = () => {
-    const { institutionId } = useParams();
+    const { institutionId: encryptedInstitutionId } = useParams();
     const [programs, setPrograms] = useState([]);
     const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
     const [mainTabValue, setMainTabValue] = useState(0);
@@ -65,6 +66,7 @@ const CurricularProgram = () => {
 
     const fetchPrograms = async () => {
         try {
+            const institutionId = decryptId(encryptedInstitutionId);
             showLoading();
             const token = localStorage.getItem("token");
             if (!institutionId) {
@@ -111,6 +113,7 @@ const CurricularProgram = () => {
         }
 
         const token = localStorage.getItem("token");
+        const institutionId = decryptId(encryptedInstitutionId);
 
         if (!institutionId || !token) {
             setSnackbar({
