@@ -808,14 +808,14 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
 
 
                     <>
-                        <Paper sx={{ height: "500px", overflow: "auto" }}>
+                        <Paper sx={{ height: "520px", overflow: "auto" }}>
                             <HotTable
                                 data={currentConfig.data}
                                 columns={currentConfig.columns}
                                 colHeaders={true}
                                 rowHeaders={true}
                                 stretchH="all"
-                                height="100%"
+                                height="465px"
                                 licenseKey="non-commercial-and-evaluation"
                                 settings={{
                                     readOnly: false,

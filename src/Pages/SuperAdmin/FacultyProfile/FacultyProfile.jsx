@@ -19,6 +19,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useLoading } from "../../../Context/LoadingContext";
+import { decryptId } from "../../../utils/encryption";
 
 const facultyGroups = [
     {
@@ -86,31 +87,50 @@ const FacultyProfileUpload = () => {
     const [loading, setLoading] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const [error, setError] = useState(null);
-    const { institutionId } = useParams(); // Destructure institutionId correctly
+    const { institutionId: encryptedInstitutionId } = useParams();
     const navigate = useNavigate();
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
         fetchFacultyProfiles();
-    }, [institutionId]);
+    }, []);
 
     const fetchFacultyProfiles = async () => {
         setLoading(true);
         showLoading();
         setError(null);
+
+        // Decrypt the institutionId
+        const institutionId = decryptId(
+            decodeURIComponent(encryptedInstitutionId)
+        );
+
+        // Validate decrypted ID
+        if (!institutionId || isNaN(institutionId)) {
+            setError("Invalid institution ID.");
+            setLoading(false);
+            hideLoading();
+            setFacultyProfiles([]);
+            return;
+        }
+
         try {
             const token = localStorage.getItem("token");
             if (!token) {
                 setError("Authentication token is missing.");
                 setLoading(false);
+                hideLoading();
                 return;
             }
+
             const url = `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId}`;
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
+
             console.log("Institution ID:", institutionId);
             console.log("API Response:", response.data);
+
             setFacultyProfiles(
                 Array.isArray(response.data) ? response.data : []
             );
@@ -183,6 +203,9 @@ const FacultyProfileUpload = () => {
                         console.log(`Skipping empty sheet: ${sheetName}`);
                         continue;
                     }
+                    const institutionId = decryptId(
+                        decodeURIComponent(encryptedInstitutionId)
+                    );
 
                     const processedFacultyProfiles = validRows.map((row) => ({
                         institution_id: institutionId,
@@ -537,7 +560,6 @@ const FacultyProfileUpload = () => {
                     )?.description
                 }
             </Typography>
-
 
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>

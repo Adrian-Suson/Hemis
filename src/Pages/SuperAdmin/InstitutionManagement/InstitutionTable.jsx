@@ -36,6 +36,7 @@ import { FaUserGraduate } from "react-icons/fa6";
 import { MdOutlineDownload } from "react-icons/md";
 import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
+import { encryptId } from "../../../utils/encryption";
 
 const ROWS_PER_PAGE_OPTIONS = [
     { label: "10", value: 10 },
@@ -115,16 +116,7 @@ const InstitutionTable = ({
         menuButtonRef.current?.focus();
     };
 
-    const handleNavigation = useCallback(
-        (path, type) => {
-            setLoading((prev) => ({ ...prev, [type]: true }));
-            setTimeout(() => {
-                navigate(path);
-                setLoading((prev) => ({ ...prev, [type]: false }));
-            }, 500);
-        },
-        [navigate]
-    );
+
 
     const handleExportToFormA = useCallback(
         async (institution) => {
@@ -287,6 +279,15 @@ const InstitutionTable = ({
                 : start + rowsPerPage;
         return filteredInstitutions.slice(start, end);
     }, [filteredInstitutions, page, rowsPerPage]);
+
+    const handleNavigation = (path, action) => {
+        if (!selectedInstitution) return;
+        setLoading((prev) => ({ ...prev, [action]: true }));
+        const encryptedId = encryptId(selectedInstitution.id);
+        navigate(`${path}/${encodeURIComponent(encryptedId)}`); 
+        setLoading((prev) => ({ ...prev, [action]: false }));
+        handleMenuClose();
+      };
 
     return (
         <Box
@@ -566,7 +567,9 @@ const InstitutionTable = ({
                                                     },
                                                 }}
                                             >
-                                                <CiSquareMore style={{ fontSize: "20px" }} />
+                                                <CiSquareMore
+                                                    style={{ fontSize: "20px" }}
+                                                />
                                             </IconButton>
                                         </Tooltip>
 
@@ -613,7 +616,11 @@ const InstitutionTable = ({
                                                 }}
                                             >
                                                 <FaEye
-                                                     style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
+                                                    style={{
+                                                        fontSize: "20px",
+                                                        marginRight: "5px",
+                                                        color: "#438FFF",
+                                                    }}
                                                 />
                                                 <Typography variant="body2">
                                                     View Details
@@ -625,7 +632,7 @@ const InstitutionTable = ({
                                             <MenuItem
                                                 onClick={() =>
                                                     handleNavigation(
-                                                        `/super-admin/institutions/campuses/${institution.id}`,
+                                                        "/super-admin/institutions/campuses",
                                                         "viewCampuses"
                                                     )
                                                 }
@@ -647,7 +654,11 @@ const InstitutionTable = ({
                                                     />
                                                 ) : (
                                                     <BiSolidBusiness
-                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
+                                                        style={{
+                                                            fontSize: "20px",
+                                                            marginRight: "5px",
+                                                            color: "#438FFF",
+                                                        }}
                                                     />
                                                 )}
                                                 <Typography variant="body2">
@@ -658,7 +669,7 @@ const InstitutionTable = ({
                                             <MenuItem
                                                 onClick={() =>
                                                     handleNavigation(
-                                                        `/super-admin/institutions/faculties/${institution.id}`,
+                                                        "/super-admin/institutions/faculties",
                                                         "faculties"
                                                     )
                                                 }
@@ -680,7 +691,11 @@ const InstitutionTable = ({
                                                     />
                                                 ) : (
                                                     <HiMiniUserGroup
-                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
+                                                        style={{
+                                                            fontSize: "20px",
+                                                            marginRight: "5px",
+                                                            color: "#438FFF",
+                                                        }}
                                                     />
                                                 )}
                                                 <Typography variant="body2">
@@ -691,7 +706,7 @@ const InstitutionTable = ({
                                             <MenuItem
                                                 onClick={() =>
                                                     handleNavigation(
-                                                        `/super-admin/institutions/curricular-programs/${institution.id}`,
+                                                        "/super-admin/institutions/curricular-programs",
                                                         "academicPrograms"
                                                     )
                                                 }
@@ -715,7 +730,11 @@ const InstitutionTable = ({
                                                     />
                                                 ) : (
                                                     <RiBookShelfFill
-                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
+                                                        style={{
+                                                            fontSize: "20px",
+                                                            marginRight: "5px",
+                                                            color: "#438FFF",
+                                                        }}
                                                     />
                                                 )}
                                                 <Typography variant="body2">
@@ -726,7 +745,7 @@ const InstitutionTable = ({
                                             <MenuItem
                                                 onClick={() =>
                                                     handleNavigation(
-                                                        `/super-admin/institutions/graduates-list/${institution.id}`,
+                                                        "/super-admin/institutions/graduates-list",
                                                         "academicPrograms"
                                                     )
                                                 }
@@ -750,7 +769,11 @@ const InstitutionTable = ({
                                                     />
                                                 ) : (
                                                     <FaUserGraduate
-                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
+                                                        style={{
+                                                            fontSize: "20px",
+                                                            marginRight: "5px",
+                                                            color: "#438FFF",
+                                                        }}
                                                     />
                                                 )}
                                                 <Typography variant="body2">
@@ -784,7 +807,11 @@ const InstitutionTable = ({
                                                     />
                                                 ) : (
                                                     <MdOutlineDownload
-                                                    style={{ fontSize: "20px", marginRight: "5px", color: "#438FFF" }}
+                                                        style={{
+                                                            fontSize: "20px",
+                                                            marginRight: "5px",
+                                                            color: "#438FFF",
+                                                        }}
                                                     />
                                                 )}
                                                 <Typography variant="body2">

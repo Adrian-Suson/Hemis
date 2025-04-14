@@ -20,6 +20,7 @@ import {
     TableHead,
     TableRow,
     IconButton,
+    ButtonGroup,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -198,7 +199,8 @@ const CurricularProgram = () => {
                                 graduates_females: row[40] || null,
                                 graduates_total:
                                     (row[39] || null) + (row[40] || null),
-                                externally_funded_merit_scholars: row[42] || null,
+                                externally_funded_merit_scholars:
+                                    row[42] || null,
                                 internally_funded_grantees: row[43] || null,
                                 suc_funded_grantees: row[44] || null,
                             };
@@ -250,7 +252,10 @@ const CurricularProgram = () => {
                         severity: "success",
                     });
                 } catch (error) {
-                    console.error("Error importing data:", error.response?.data);
+                    console.error(
+                        "Error importing data:",
+                        error.response?.data
+                    );
                     setSnackbar({
                         open: true,
                         message:
@@ -450,11 +455,10 @@ const CurricularProgram = () => {
                 <Typography color="textPrimary">Curricular Program</Typography>
             </Breadcrumbs>
 
-            <Box
+            <ButtonGroup
                 sx={{
                     mb: 2,
                     display: "flex",
-                    gap: 2,
                     justifyContent: "flex-end",
                 }}
             >
@@ -467,14 +471,7 @@ const CurricularProgram = () => {
                 >
                     Export to Excel
                 </Button>
-                <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    style={{ display: "none" }}
-                    id="file-upload"
-                    onChange={handleFileUpload}
-                    disabled={isUploading}
-                />
+
                 <label htmlFor="file-upload">
                     <Button
                         variant="contained"
@@ -485,8 +482,16 @@ const CurricularProgram = () => {
                     >
                         {isUploading ? "Uploading..." : "Import Form B"}
                     </Button>
+                    <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        style={{ display: "none" }}
+                        id="file-upload"
+                        onChange={handleFileUpload}
+                        disabled={isUploading}
+                    />
                 </label>
-            </Box>
+            </ButtonGroup>
 
             <ProgramTables programs={filteredPrograms} />
             <Tabs
