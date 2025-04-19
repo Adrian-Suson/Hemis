@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     TextField,
@@ -6,20 +6,38 @@ import {
     Container,
     Typography,
     Paper,
-    Grid,
+    Box,
     Alert,
     Link,
+    InputAdornment,
+    IconButton,
+    useMediaQuery,
+    useTheme,
+    Fade,
 } from "@mui/material";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import axios from "axios";
-import BFImage from "../../assets/cover.jpg"; // Background image
-import Logo from "../../assets/ChedLogo.png"; // CHED Region 9 Logo
+import Logo from "../../assets/ChedLogo.png";
+import BFImage from "../../assets/cover.jpg"; // added background image import
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleLogin = async (event) => {
         event.preventDefault();
@@ -73,6 +91,10 @@ const LoginPage = () => {
         }
     };
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
     return (
         <Container
             component="main"
@@ -80,105 +102,219 @@ const LoginPage = () => {
             sx={{
                 height: "100vh",
                 display: "flex",
-                justifyContent: "center",
+                justifyContent: { xs: "center", sm: "flex-end" }, // move form to right on larger screens
                 alignItems: "center",
-                backgroundImage: `url(${BFImage})`,
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${BFImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 padding: 0,
-                overflow: "hidden",
             }}
         >
-            <Paper
-                elevation={6}
-                sx={{
-                    padding: "30px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    backgroundColor: "rgba(255, 255, 255, 0.9)",
-                    maxWidth: "400px",
-                    width: "100%",
-                    borderRadius: "10px",
-                }}
-            >
-                {/* CHED Region 9 Logo */}
-                <img
-                    src={Logo}
-                    alt="CHED Region 9 Logo"
-                    style={{
-                        width: "80px",
-                        height: "80px",
-                        marginBottom: "10px",
+            <Fade in={mounted} timeout={600}>
+                <Paper
+                    elevation={isMobile ? 1 : 2}
+                    sx={{
+                        padding: { xs: 3, sm: 4, md: 5 },
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        backgroundColor: "#ffffff",
+                        opacity: 0.9, // added opacity to the form
+                        width: { xs: "90%", sm: "450px" },
+                        borderRadius: "12px",
+                        mr: { xs: 0, sm: 4 }, // add some right margin for spacing
                     }}
-                />
-
-                <Typography variant="h5" gutterBottom>
-                    CHEDRO IX - Higher Education Management System
-                </Typography>
-                <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
                 >
-                    Commission on Higher Education Regional Office 9
-                </Typography>
-
-                {error && (
-                    <Alert severity="error" sx={{ width: "100%", mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
-
-                <form onSubmit={handleLogin} style={{ width: "100%" }}>
-                    <TextField
-                        label="Email Address"
-                        variant="outlined"
-                        fullWidth
-                        size="small"
-                        margin="normal"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={loading}
-                        required
-                    />
-                    <TextField
-                        label="Password"
-                        variant="outlined"
-                        type="password"
-                        fullWidth
-                        size="small"
-                        margin="normal"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={loading}
-                        required
-                    />
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        sx={{ marginTop: "16px" }}
-                        disabled={loading}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            mb: 4
+                        }}
                     >
-                        {loading ? "Logging in..." : "Login"}
-                    </Button>
-                    <Grid
-                        container
-                        justifyContent="center"
-                        sx={{ marginTop: "16px" }}
+                        <img
+                            src={Logo}
+                            alt="CHED Region 9 Logo"
+                            style={{
+                                width: "70px",
+                                height: "70px",
+                                marginBottom: "24px",
+                            }}
+                        />
+
+                        <Typography
+                            variant="h5"
+                            component="h1"
+                            sx={{
+                                fontWeight: 600,
+                                color: "#333",
+                                textAlign: "center",
+                                mb: 1
+                            }}
+                        >
+                            Sign in to CHEDRO IX
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "#666",
+                                textAlign: "center",
+                                maxWidth: "320px"
+                            }}
+                        >
+                            Higher Education Management System
+                        </Typography>
+                    </Box>
+
+                    {error && (
+                        <Fade in={!!error}>
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    width: "100%",
+                                    mb: 3,
+                                    borderRadius: "8px",
+                                    border: "1px solid rgba(211, 47, 47, 0.1)",
+                                    backgroundColor: "rgba(211, 47, 47, 0.05)",
+                                    '& .MuiAlert-message': {
+                                        width: '100%'
+                                    }
+                                }}
+                                onClose={() => setError("")}
+                            >
+                                {error}
+                            </Alert>
+                        </Fade>
+                    )}
+
+                    <Box
+                        component="form"
+                        onSubmit={handleLogin}
+                        sx={{
+                            width: "100%",
+                            mt: error ? 0 : 2
+                        }}
                     >
-                        <Grid item>
+                        <TextField
+                            label="Email Address"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={loading}
+                            required
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <EmailOutlinedIcon sx={{ color: "#9e9e9e" }} />
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                mb: 2.5,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '8px',
+                                    backgroundColor: "#f8f9fa",
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: '#bdbdbd',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: '#1976d2',
+                                    }
+                                },
+                                '& .MuiInputLabel-root': {
+                                    color: "#757575"
+                                }
+                            }}
+                        />
+                        <TextField
+                            label="Password"
+                            variant="outlined"
+                            type={showPassword ? "text" : "password"}
+                            fullWidth
+                            margin="normal"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={loading}
+                            required
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LockOutlinedIcon sx={{ color: "#9e9e9e" }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            aria-label="toggle password visibility"
+                                            onClick={togglePasswordVisibility}
+                                            edge="end"
+                                            sx={{ color: "#9e9e9e" }}
+                                        >
+                                            {showPassword ?
+                                                <VisibilityOffOutlinedIcon /> :
+                                                <VisibilityOutlinedIcon />
+                                            }
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                mb: 4,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '8px',
+                                    backgroundColor: "#f8f9fa",
+                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: '#bdbdbd',
+                                    },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                        borderColor: '#1976d2',
+                                    }
+                                },
+                                '& .MuiInputLabel-root': {
+                                    color: "#757575"
+                                }
+                            }}
+                        />
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            disabled={loading}
+                            sx={{
+                                py: 1.5,
+                                borderRadius: '8px',
+                                textTransform: 'none',
+                                fontWeight: 500,
+                                fontSize: '1rem',
+                                backgroundColor: "#1976d2",
+                                boxShadow: 'none',
+                                '&:hover': {
+                                    backgroundColor: "#1565c0",
+                                    boxShadow: 'none',
+                                }
+                            }}
+                        >
+                            {loading ? "Signing in..." : "Sign in"}
+                        </Button>
+
+                        <Box
+                            sx={{
+                                mt: 4,
+                                textAlign: "center",
+                                pt: 2
+                            }}
+                        >
                             <Typography
                                 variant="body2"
-                                color="textSecondary"
                                 sx={{
-                                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                                    mt: 0,
+                                    fontSize: "0.875rem",
+                                    color: "#757575"
                                 }}
                             >
-                                Powered by:{" "}
+                                Powered by{" "}
                                 <Link
                                     href="https://chedro9.ph"
                                     target="_blank"
@@ -186,19 +322,19 @@ const LoginPage = () => {
                                     sx={{
                                         color: "#1976d2",
                                         textDecoration: "none",
+                                        fontWeight: 500,
                                         "&:hover": {
                                             textDecoration: "underline",
-                                            color: "#115293",
                                         },
                                     }}
                                 >
                                     CHED Region 9
                                 </Link>
                             </Typography>
-                        </Grid>
-                    </Grid>
-                </form>
-            </Paper>
+                        </Box>
+                    </Box>
+                </Paper>
+            </Fade>
         </Container>
     );
 };

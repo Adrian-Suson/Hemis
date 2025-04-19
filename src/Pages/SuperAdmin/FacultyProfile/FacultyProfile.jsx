@@ -12,11 +12,21 @@ import {
     Button,
     Alert,
     ButtonGroup,
+    Toolbar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    alpha,
+    useTheme,
+    Paper,
+    IconButton,
 } from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ExcelJS from "exceljs";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
@@ -89,6 +99,10 @@ const FacultyProfileUpload = () => {
     const [error, setError] = useState(null);
     const { institutionId: encryptedInstitutionId } = useParams();
     const navigate = useNavigate();
+    const [institutionName, setInstitutionName] = useState("");
+    const [openUploadDialog, setOpenUploadDialog] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const theme = useTheme();
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -133,6 +147,9 @@ const FacultyProfileUpload = () => {
 
             setFacultyProfiles(
                 Array.isArray(response.data) ? response.data : []
+            );
+            setInstitutionName(
+                response.data[0]?.institution.name || "Unknown Institution"
             );
         } catch (error) {
             console.error("Error fetching faculty profiles:", error);
@@ -206,7 +223,7 @@ const FacultyProfileUpload = () => {
                     const institutionId = decryptId(
                         decodeURIComponent(encryptedInstitutionId)
                     );
-
+                    updateProgress(20 + sheetIndex * 10);
                     const processedFacultyProfiles = validRows.map((row) => ({
                         institution_id: institutionId,
                         faculty_group: sheetName,
@@ -352,10 +369,11 @@ const FacultyProfileUpload = () => {
         }
     };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            processExcelFile(file);
+    const handleFileUpload = () => {
+        if (selectedFile) {
+            setOpenUploadDialog(false);
+            processExcelFile(selectedFile);
+            setSelectedFile(null);
         }
     };
 
@@ -381,8 +399,7 @@ const FacultyProfileUpload = () => {
                     (profile) => profile.faculty_group === group.sheetName
                 );
                 console.log(
-                    `Sheet ${group.sheetName}: ${
-                        acc[group.sheetName].length
+                    `Sheet ${group.sheetName}: ${acc[group.sheetName].length
                     } profiles`
                 );
                 return acc;
@@ -479,9 +496,8 @@ const FacultyProfileUpload = () => {
                 });
             }
 
-            const fileName = `Form_E2_Faculty_Profiles_${
-                new Date().toISOString().split("T")[0]
-            }.xlsx`;
+            const fileName = `Form_E2_Faculty_Profiles_${new Date().toISOString().split("T")[0]
+                }.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -517,61 +533,189 @@ const FacultyProfileUpload = () => {
                 >
                     Institution Management
                 </Link>
-                <Typography color="textPrimary">Faculties</Typography>
+                <Typography color="text.primary">
+                    {institutionName
+                        ? `${institutionName} Campuses`
+                        : "Campuses"}
+                </Typography>
             </Breadcrumbs>
 
-            {/* File Upload and Export Buttons */}
-            <ButtonGroup sx={{ mb: 2, display: "flex" }}>
-                <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    style={{ display: "none" }}
-                    id="file-upload"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                />
-                <label htmlFor="file-upload">
+            <Toolbar
+                sx={{
+                    pl: { sm: 2 },
+                    pr: { xs: 1, sm: 1 },
+                    mb: 2,
+                    backgroundColor: "background.paper",
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    minHeight: 56,
+                }}
+            >
+                <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{ flexGrow: 1, fontWeight: "medium" }}
+                >
+                    Faculties Managment
+                </Typography>
+
+                {/* File Upload and Export Buttons */}
+                <ButtonGroup>
                     <Button
                         variant="contained"
                         color="secondary"
                         component="span"
                         startIcon={<UploadFileIcon />}
                         disabled={isUploading}
+                        onClick={() => setOpenUploadDialog(true)}
                     >
                         {isUploading ? "Uploading..." : "Import Form E2"}
                     </Button>
-                </label>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<DownloadIcon />}
-                    onClick={handleExportData}
-                    disabled={isUploading || loading}
-                >
-                    Export Data
-                </Button>
-            </ButtonGroup>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleExportData}
+                        disabled={isUploading || loading}
+                    >
+                        Export Data
+                    </Button>
+                </ButtonGroup>
+            </Toolbar>
 
-            {/* Group description */}
-            <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
-                {
-                    facultyGroups.find(
-                        (group) => group.sheetName === selectedGroup
-                    )?.description
-                }
-            </Typography>
+            {/* Upload Dialog */}
+            <Dialog
+                open={openUploadDialog}
+                onClose={() => setOpenUploadDialog(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: 500,
+                    },
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        px: 3,
+                        py: 2,
+                    }}
+                >
+                    <Typography fontWeight={600}>
+                        Upload Institution Form A
+                    </Typography>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Please select an institution type and upload the Form A Excel document.
+                    </Typography>
+
+                    <Box
+                        onDrop={e => {
+                            e.preventDefault();
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                setSelectedFile(e.dataTransfer.files[0]);
+                            }
+                        }}
+                        onDragOver={e => e.preventDefault()}
+                        sx={{
+                            p: 1.5,
+                            border: `1px dashed ${theme.palette.primary.main}`,
+                            borderRadius: 1.5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1,
+                            cursor: 'pointer',
+                            bgcolor: 'background.paper'
+                        }}
+                        onClick={() => document.getElementById('upload-input').click()}
+                    >
+                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
+                        <Typography>Drag & drop file or click to browse</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Supported formats: .xlsx, .xls
+                        </Typography>
+                        <input
+                            id="upload-input"
+                            type="file"
+                            hidden
+                            accept=".xlsx, .xls"
+                            onChange={e => setSelectedFile(e.target.files[0])}
+                        />
+                    </Box>
+
+                    {selectedFile && (
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                mt: 2,
+                                p: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderRadius: 1.5
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
+                                <Box>
+                                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                                        {selectedFile.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {(selectedFile.size / 1024).toFixed(2)} KB
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => setSelectedFile(null)}
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
+                                }}
+                            >
+                                &times;
+                            </IconButton>
+                        </Paper>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                    <Button
+                        onClick={() => setOpenUploadDialog(false)}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            color: theme.palette.text.primary
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleFileUpload}
+                        variant="contained"
+                        disabled={!selectedFile || isUploading}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            borderRadius: 1.5,
+                            px: 3
+                        }}
+                    >
+                        Upload
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
                     {error}
                 </Alert>
-            )}
-
-            {/* Loading Indicator */}
-            {loading && (
-                <Typography variant="body2" sx={{ mt: 2 }}>
-                    Loading faculty profiles...
-                </Typography>
             )}
 
             <FacultyProfileTable

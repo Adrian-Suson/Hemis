@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigate } from "react-router-dom";
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import ExcelJS from "exceljs";
 import axios from "axios";
 import DetailDialog from "./DetailDialog";
@@ -13,12 +13,6 @@ import {
     TableHead,
     TableRow,
     Paper,
-    TextField,
-    Select,
-    MenuItem,
-    InputLabel,
-    FormControl,
-    Box,
     Menu,
     CircularProgress,
     Pagination,
@@ -26,6 +20,11 @@ import {
     Tooltip,
     IconButton,
     Divider,
+    Box,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Select,
 } from "@mui/material";
 import { CiSquareMore } from "react-icons/ci";
 import { FaEye } from "react-icons/fa";
@@ -42,11 +41,9 @@ const ROWS_PER_PAGE_OPTIONS = [
     { label: "10", value: 10 },
     { label: "25", value: 25 },
     { label: "50", value: 50 },
+    { label: "100", value: 100 },
     { label: "All", value: -1 },
 ];
-
-const getUniqueValues = (arr, key) =>
-    [...new Set(arr.map((item) => item[key]).filter(Boolean))].sort();
 
 const InstitutionTable = ({
     institutions = [],
@@ -54,6 +51,10 @@ const InstitutionTable = ({
     setSnackbarMessage,
     setSnackbarSeverity,
     setSnackbarOpen,
+    searchTerm = "",
+    typeFilter = "",
+    cityFilter = "",
+    provinceFilter = "",
 }) => {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -68,30 +69,11 @@ const InstitutionTable = ({
         academicPrograms: false,
         exportFormA: false,
     });
-    const [searchTerm, setSearchTerm] = useState(
-        localStorage.getItem("searchTerm") || ""
-    );
-    const [typeFilter, setTypeFilter] = useState(
-        localStorage.getItem("typeFilter") || ""
-    );
-    const [cityFilter, setCityFilter] = useState(
-        localStorage.getItem("cityFilter") || ""
-    );
-    const [provinceFilter, setProvinceFilter] = useState(
-        localStorage.getItem("provinceFilter") || ""
-    );
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(
         ROWS_PER_PAGE_OPTIONS[0].value
     );
     const menuButtonRef = useRef(null);
-
-    useEffect(() => {
-        localStorage.setItem("searchTerm", searchTerm);
-        localStorage.setItem("typeFilter", typeFilter);
-        localStorage.setItem("cityFilter", cityFilter);
-        localStorage.setItem("provinceFilter", provinceFilter);
-    }, [searchTerm, typeFilter, cityFilter, provinceFilter]);
 
     const handleOpenDialog = (institution) => {
         localStorage.setItem("institutionId", institution.id);
@@ -115,8 +97,6 @@ const InstitutionTable = ({
         setMenuAnchorEl(null);
         menuButtonRef.current?.focus();
     };
-
-
 
     const handleExportToFormA = useCallback(
         async (institution) => {
@@ -194,9 +174,8 @@ const InstitutionTable = ({
                     row.commit();
                 });
                 updateProgress(50);
-                const fileName = `Form_A_${institution.name || "Unknown"}_${
-                    institution.institution_type || "Unknown"
-                }_${new Date().toISOString().split("T")[0]}.xlsx`;
+                const fileName = `Form_A_${institution.name || "Unknown"}_${institution.institution_type || "Unknown"
+                    }_${new Date().toISOString().split("T")[0]}.xlsx`;
                 const buffer = await workbook.xlsx.writeBuffer();
                 const blob = new Blob([buffer], {
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -249,15 +228,6 @@ const InstitutionTable = ({
         });
     }, [institutions, searchTerm, typeFilter, cityFilter, provinceFilter]);
 
-    const filterOptions = useMemo(
-        () => ({
-            types: getUniqueValues(institutions, "institution_type"),
-            cities: getUniqueValues(institutions, "municipality_city"),
-            provinces: getUniqueValues(institutions, "province"),
-        }),
-        [institutions]
-    );
-
     const handleChangePage = (event, newPage) => {
         setPage(newPage - 1); // MUI Pagination is 1-based
     };
@@ -284,10 +254,10 @@ const InstitutionTable = ({
         if (!selectedInstitution) return;
         setLoading((prev) => ({ ...prev, [action]: true }));
         const encryptedId = encryptId(selectedInstitution.id);
-        navigate(`${path}/${encodeURIComponent(encryptedId)}`); 
+        navigate(`${path}/${encodeURIComponent(encryptedId)}`);
         setLoading((prev) => ({ ...prev, [action]: false }));
         handleMenuClose();
-      };
+    };
 
     return (
         <Box
@@ -304,115 +274,6 @@ const InstitutionTable = ({
                 maxHeight: "75vh",
             }}
         >
-            {/* Filter Controls */}
-            <Box
-                sx={{
-                    p: 1,
-                    borderBottom: 1,
-                    borderColor: "divider",
-                    display: "flex",
-                    gap: 1,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    bgcolor: "grey.50",
-                }}
-            >
-                <TextField
-                    label="Search"
-                    variant="outlined"
-                    size="small"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{
-                        flex: "1 1 150px",
-                        minWidth: 120,
-                        "& .MuiInputBase-root": { height: 32 },
-                    }}
-                    InputProps={{ sx: { fontSize: "0.875rem" } }}
-                    InputLabelProps={{ sx: { fontSize: "0.75rem" } }}
-                />
-                <FormControl
-                    variant="outlined"
-                    size="small"
-                    sx={{ flex: "1 1 100px", minWidth: 100 }}
-                >
-                    <InputLabel sx={{ fontSize: "0.75rem" }}>Type</InputLabel>
-                    <Select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        label="Type"
-                        sx={{ height: 32, fontSize: "0.875rem" }}
-                    >
-                        <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
-                            All Types
-                        </MenuItem>
-                        {filterOptions.types.map((type) => (
-                            <MenuItem
-                                key={type}
-                                value={type}
-                                sx={{ fontSize: "0.875rem" }}
-                            >
-                                {type}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-                <FormControl
-                    variant="outlined"
-                    size="small"
-                    sx={{ flex: "1 1 100px", minWidth: 100 }}
-                >
-                    <InputLabel sx={{ fontSize: "0.75rem" }}>City</InputLabel>
-                    <Select
-                        value={cityFilter}
-                        onChange={(e) => setCityFilter(e.target.value)}
-                        label="City"
-                        sx={{ height: 32, fontSize: "0.875rem" }}
-                    >
-                        <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
-                            All Cities
-                        </MenuItem>
-                        {filterOptions.cities.map((city) => (
-                            <MenuItem
-                                key={city}
-                                value={city}
-                                sx={{ fontSize: "0.875rem" }}
-                            >
-                                {city}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-                <FormControl
-                    variant="outlined"
-                    size="small"
-                    sx={{ flex: "1 1 100px", minWidth: 100 }}
-                >
-                    <InputLabel sx={{ fontSize: "0.75rem" }}>
-                        Province
-                    </InputLabel>
-                    <Select
-                        value={provinceFilter}
-                        onChange={(e) => setProvinceFilter(e.target.value)}
-                        label="Province"
-                        sx={{ height: 32, fontSize: "0.875rem" }}
-                    >
-                        <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
-                            All Provinces
-                        </MenuItem>
-                        {filterOptions.provinces.map((province) => (
-                            <MenuItem
-                                key={province}
-                                value={province}
-                                sx={{ fontSize: "0.875rem" }}
-                            >
-                                {province}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Box>
-
             {/* Table */}
             <TableContainer
                 component={Paper}
@@ -920,10 +781,14 @@ const InstitutionTable = ({
 
 InstitutionTable.propTypes = {
     institutions: PropTypes.array.isRequired,
-    onEdit: PropTypes.func.isRequired,
+    onEdit: PropTypes.func,
     setSnackbarMessage: PropTypes.func.isRequired,
     setSnackbarSeverity: PropTypes.func.isRequired,
     setSnackbarOpen: PropTypes.func.isRequired,
+    searchTerm: PropTypes.string,
+    typeFilter: PropTypes.string,
+    cityFilter: PropTypes.string,
+    provinceFilter: PropTypes.string,
 };
 
 export default InstitutionTable;

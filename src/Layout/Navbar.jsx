@@ -507,7 +507,6 @@ const Navbar = () => {
                                         >
                                             Profile
                                         </button>
-                                        <hr style={{ margin: "0" }} />
                                         <button
                                             onClick={handleLogout}
                                             disabled={loading}
@@ -743,7 +742,7 @@ const Navbar = () => {
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
             />
         </>
-    );
+         );
 };
 
 export default Navbar;

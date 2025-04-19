@@ -7,6 +7,7 @@ use App\Models\Institution;
 use Illuminate\Http\Request;
 use App\Models\Campus;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class CampusController extends Controller
 {
@@ -38,42 +39,56 @@ class CampusController extends Controller
         ]);
     }
 
-    // Create a new campus
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            '*.suc_name' => 'nullable|string|max:255',
-            '*.campus_type' => 'nullable|string|max:255',
-            '*.institutional_code' => 'nullable|string|max:255',
-            '*.region' => 'nullable|string|max:255',
-            '*.municipality_city_province' => 'nullable|string|max:255',
-            '*.year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
-            '*.land_area_hectares' => 'nullable|numeric|min:0',
-            '*.distance_from_main' => 'nullable|numeric|min:0',
-            '*.autonomous_code' => 'nullable|string|max:255',
-            '*.position_title' => 'nullable|string|max:255',
-            '*.head_full_name' => 'nullable|string|max:255',
-            '*.former_name' => 'nullable|string|max:255',
-            '*.latitude_coordinates' => 'nullable|numeric|between:-90,90',
-            '*.longitude_coordinates' => 'nullable|numeric|between:-180,180',
-            '*.institution_id' => 'required|exists:institutions,id',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                '*.suc_name' => 'nullable|string|max:255',
+                '*.campus_type' => 'nullable|string|max:255',
+                '*.institutional_code' => 'nullable|string|max:255',
+                '*.region' => 'nullable|string|max:255',
+                '*.municipality_city_province' => 'nullable|string|max:255',
+                '*.year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
+                '*.land_area_hectares' => 'nullable|numeric|min:0',
+                '*.distance_from_main' => 'nullable|numeric|min:0',
+                '*.autonomous_code' => 'nullable|string|max:255',
+                '*.position_title' => 'nullable|string|max:255',
+                '*.head_full_name' => 'nullable|string|max:255',
+                '*.former_name' => 'nullable|string|max:255',
+                '*.latitude_coordinates' => 'nullable|numeric|between:-90,90',
+                '*.longitude_coordinates' => 'nullable|numeric|between:-180,180',
+                '*.institution_id' => 'required|exists:institutions,id',
+            ]);
 
-        // Ensure the timezone is set to Asia/Manila (redundant if already set in config/app.php)
-        date_default_timezone_set('Asia/Manila');
+            // Add timestamps to each record
+            $currentTime = Carbon::now('Asia/Manila');
+            $validatedData = array_map(function ($campus) use ($currentTime) {
+                $campus['created_at'] = $currentTime;
+                $campus['updated_at'] = $currentTime;
+                return $campus;
+            }, $validatedData);
 
-        // Add timestamps to each record in the validated data
-        $currentTime = Carbon::now('Asia/Manila'); // Explicitly set timezone to Philippine time
-        $validatedData = array_map(function ($campus) use ($currentTime) {
-            $campus['created_at'] = $currentTime;
-            $campus['updated_at'] = $currentTime;
-            return $campus;
-        }, $validatedData);
+            // Perform bulk insert
+            Campus::insert($validatedData);
 
-        // Bulk insert campuses
-        $campuses = Campus::insert($validatedData);
+            return response()->json(['message' => 'Campuses added successfully'], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('Error inserting campuses: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'exception' => $e,
+            ]);
 
-        return response()->json(['message' => 'Campuses added successfully'], 201);
+            return response()->json([
+                'message' => 'Failed to add campuses. Please try again.',
+                'error' => $e->getMessage(), // Include error message for debugging (remove in production)
+            ], 500);
+        }
     }
     // Get a single campus
     public function show($id)

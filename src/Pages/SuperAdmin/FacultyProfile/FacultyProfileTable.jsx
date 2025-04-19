@@ -8,13 +8,14 @@ import {
     Paper,
     Tabs,
     Tab,
-    TablePagination,
     TextField,
     FormControl,
     InputLabel,
     Select,
     MenuItem,
     Grid,
+    Pagination,
+    Typography,
 } from "@mui/material";
 import axios from "axios";
 import config from "../../../utils/config";
@@ -22,10 +23,19 @@ import config from "../../../utils/config";
 // Register all Handsontable modules
 registerAllModules();
 
+const ROWS_PER_PAGE_OPTIONS = [
+    { label: "10", value: 10 },
+    { label: "25", value: 25 },
+    { label: "50", value: 50 },
+    { label: "100", value: 100 },
+    { label: "All", value: -1 },
+];
+
+
 const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(20);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchQuery, setSearchQuery] = useState("");
     const [facultyProfiles, setFacultyProfiles] = useState([initialFacultyProfiles]);
     const [filteredData, setFilteredData] = useState([initialFacultyProfiles]);
@@ -145,8 +155,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     (profile.gender === 1
                         ? "Male"
                         : profile.gender === 2
-                        ? "Female"
-                        : "-") === genderFilter
+                            ? "Female"
+                            : "-") === genderFilter
             );
         }
 
@@ -497,318 +507,310 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
 
     return (
         <Box sx={{ mt: 3 }}>
-            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+            <Paper sx={{ borderRadius: 1, mb: 1}}>
+            <Box sx={{ my: 1, px: 1 }}>
                 <Tabs
                     value={tabIndex}
                     onChange={handleTabChange}
                     variant="fullWidth"
-                    sx={{
-                        borderBottom: 1,
-                        borderColor: "divider",
-                        "& .MuiTab-root": {
-                            fontSize: "0.875rem",
-                            fontWeight: "medium",
-                        },
-                    }}
                 >
                     <Tab label="Personal Info" />
                     <Tab label="Education" />
                     <Tab label="Teaching Load" />
                     <Tab label="Other Loads" />
                 </Tabs>
-            </Paper>
-
-            <>
-                {/* Search and Filter Section */}
-                <Box sx={{ mb: 1 }}>
-                    <Grid container spacing={1} alignItems="center">
-                        <Grid item xs={12} sm={2}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label="Search"
-                                variant="outlined"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
-                                sx={{
-                                    "& .MuiInputBase-root": {
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                    },
-                                    "& .MuiInputLabel-root": {
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                    },
-                                    "& .MuiInputLabel-shrink": {
-                                        transform:
-                                            "translate(14px, -6px) scale(0.75)",
-                                    },
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={6} sm={2}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                            >
-                                <InputLabel
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                        "&.MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                >
-                                    Faculty Rank
-                                </InputLabel>
-                                <Select
-                                    value={facultyRankFilter}
-                                    onChange={(e) =>
-                                        setFacultyRankFilter(e.target.value)
-                                    }
-                                    label="Faculty Rank"
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                        "& .MuiSelect-select": {
-                                            padding: "6px 32px 6px 12px",
-                                        },
-                                    }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.75rem" }}
-                                    >
-                                        All
-                                    </MenuItem>
-                                    {uniqueFacultyRanks.map((rank) => (
-                                        <MenuItem
-                                            key={rank}
-                                            value={rank}
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            {rank}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={6} sm={2}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                            >
-                                <InputLabel
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                        "&.MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                >
-                                    Home College
-                                </InputLabel>
-                                <Select
-                                    value={homeCollegeFilter}
-                                    onChange={(e) =>
-                                        setHomeCollegeFilter(e.target.value)
-                                    }
-                                    label="Home College"
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                        "& .MuiSelect-select": {
-                                            padding: "6px 32px 6px 12px",
-                                        },
-                                    }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.75rem" }}
-                                    >
-                                        All
-                                    </MenuItem>
-                                    {uniqueHomeColleges.map((college) => (
-                                        <MenuItem
-                                            key={college}
-                                            value={college}
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            {college}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={6} sm={2}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                            >
-                                <InputLabel
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                        "&.MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                >
-                                    Tenured
-                                </InputLabel>
-                                <Select
-                                    value={isTenuredFilter}
-                                    onChange={(e) =>
-                                        setIsTenuredFilter(e.target.value)
-                                    }
-                                    label="Tenured"
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                        "& .MuiSelect-select": {
-                                            padding: "6px 32px 6px 12px",
-                                        },
-                                    }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.75rem" }}
-                                    >
-                                        All
-                                    </MenuItem>
-                                    {uniqueTenuredOptions.map((option) => (
-                                        <MenuItem
-                                            key={option}
-                                            value={option}
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            {option}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={6} sm={2}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                            >
-                                <InputLabel
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                        "&.MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                >
-                                    Gender
-                                </InputLabel>
-                                <Select
-                                    value={genderFilter}
-                                    onChange={(e) =>
-                                        setGenderFilter(e.target.value)
-                                    }
-                                    label="Gender"
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                        "& .MuiSelect-select": {
-                                            padding: "6px 32px 6px 12px",
-                                        },
-                                    }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.75rem" }}
-                                    >
-                                        All
-                                    </MenuItem>
-                                    {uniqueGenderOptions.map((option) => (
-                                        <MenuItem
-                                            key={option}
-                                            value={option}
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            {option}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={6} sm={2}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                            >
-                                <InputLabel
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                        "&.MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                >
-                                    Year
-                                </InputLabel>
-                                <Select
-                                    value={yearFilter}
-                                    onChange={(e) =>
-                                        setYearFilter(e.target.value)
-                                    }
-                                    label="Year"
-                                    sx={{
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                        "& .MuiSelect-select": {
-                                            padding: "6px 32px 6px 12px",
-                                        },
-                                    }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.75rem" }}
-                                    >
-                                        All
-                                    </MenuItem>
-                                    {uniqueYears.map((year) => (
-                                        <MenuItem
-                                            key={year}
-                                            value={year}
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            {year}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
                 </Box>
+                <>
+                    {/* Search and Filter Section */}
+                    <Box sx={{ my: 1, px: 1 }}>
+                        <Grid container spacing={1} alignItems="center">
+                            <Grid item xs={12} sm={2}>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Search"
+                                    variant="outlined"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search..."
+                                    sx={{
+                                        "& .MuiInputBase-root": {
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                        },
+                                        "& .MuiInputLabel-root": {
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                        },
+                                        "& .MuiInputLabel-shrink": {
+                                            transform:
+                                                "translate(14px, -6px) scale(0.75)",
+                                        },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={6} sm={2}>
+                                <FormControl
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    <InputLabel
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                            "&.MuiInputLabel-shrink": {
+                                                transform:
+                                                    "translate(14px, -6px) scale(0.75)",
+                                            },
+                                        }}
+                                    >
+                                        Faculty Rank
+                                    </InputLabel>
+                                    <Select
+                                        value={facultyRankFilter}
+                                        onChange={(e) =>
+                                            setFacultyRankFilter(e.target.value)
+                                        }
+                                        label="Faculty Rank"
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                            "& .MuiSelect-select": {
+                                                padding: "6px 32px 6px 12px",
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem
+                                            value=""
+                                            sx={{ fontSize: "0.75rem" }}
+                                        >
+                                            All
+                                        </MenuItem>
+                                        {uniqueFacultyRanks.map((rank) => (
+                                            <MenuItem
+                                                key={rank}
+                                                value={rank}
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                {rank}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={6} sm={2}>
+                                <FormControl
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    <InputLabel
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                            "&.MuiInputLabel-shrink": {
+                                                transform:
+                                                    "translate(14px, -6px) scale(0.75)",
+                                            },
+                                        }}
+                                    >
+                                        Home College
+                                    </InputLabel>
+                                    <Select
+                                        value={homeCollegeFilter}
+                                        onChange={(e) =>
+                                            setHomeCollegeFilter(e.target.value)
+                                        }
+                                        label="Home College"
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                            "& .MuiSelect-select": {
+                                                padding: "6px 32px 6px 12px",
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem
+                                            value=""
+                                            sx={{ fontSize: "0.75rem" }}
+                                        >
+                                            All
+                                        </MenuItem>
+                                        {uniqueHomeColleges.map((college) => (
+                                            <MenuItem
+                                                key={college}
+                                                value={college}
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                {college}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={6} sm={2}>
+                                <FormControl
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    <InputLabel
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                            "&.MuiInputLabel-shrink": {
+                                                transform:
+                                                    "translate(14px, -6px) scale(0.75)",
+                                            },
+                                        }}
+                                    >
+                                        Tenured
+                                    </InputLabel>
+                                    <Select
+                                        value={isTenuredFilter}
+                                        onChange={(e) =>
+                                            setIsTenuredFilter(e.target.value)
+                                        }
+                                        label="Tenured"
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                            "& .MuiSelect-select": {
+                                                padding: "6px 32px 6px 12px",
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem
+                                            value=""
+                                            sx={{ fontSize: "0.75rem" }}
+                                        >
+                                            All
+                                        </MenuItem>
+                                        {uniqueTenuredOptions.map((option) => (
+                                            <MenuItem
+                                                key={option}
+                                                value={option}
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                {option}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={6} sm={2}>
+                                <FormControl
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    <InputLabel
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                            "&.MuiInputLabel-shrink": {
+                                                transform:
+                                                    "translate(14px, -6px) scale(0.75)",
+                                            },
+                                        }}
+                                    >
+                                        Gender
+                                    </InputLabel>
+                                    <Select
+                                        value={genderFilter}
+                                        onChange={(e) =>
+                                            setGenderFilter(e.target.value)
+                                        }
+                                        label="Gender"
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                            "& .MuiSelect-select": {
+                                                padding: "6px 32px 6px 12px",
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem
+                                            value=""
+                                            sx={{ fontSize: "0.75rem" }}
+                                        >
+                                            All
+                                        </MenuItem>
+                                        {uniqueGenderOptions.map((option) => (
+                                            <MenuItem
+                                                key={option}
+                                                value={option}
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                {option}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={6} sm={2}>
+                                <FormControl
+                                    fullWidth
+                                    variant="outlined"
+                                    size="small"
+                                >
+                                    <InputLabel
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            transform:
+                                                "translate(14px, 8px) scale(1)",
+                                            "&.MuiInputLabel-shrink": {
+                                                transform:
+                                                    "translate(14px, -6px) scale(0.75)",
+                                            },
+                                        }}
+                                    >
+                                        Year
+                                    </InputLabel>
+                                    <Select
+                                        value={yearFilter}
+                                        onChange={(e) =>
+                                            setYearFilter(e.target.value)
+                                        }
+                                        label="Year"
+                                        sx={{
+                                            fontSize: "0.75rem",
+                                            height: "32px",
+                                            "& .MuiSelect-select": {
+                                                padding: "6px 32px 6px 12px",
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem
+                                            value=""
+                                            sx={{ fontSize: "0.75rem" }}
+                                        >
+                                            All
+                                        </MenuItem>
+                                        {uniqueYears.map((year) => (
+                                            <MenuItem
+                                                key={year}
+                                                value={year}
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                {year}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+                    </Box>
 
 
                     <>
-                        <Paper sx={{ height: "520px", overflow: "auto" }}>
+                        <Paper sx={{ maxHeight:"490px", height:"auto", overflow: "auto", px: 1 }}>
                             <HotTable
                                 data={currentConfig.data}
                                 columns={currentConfig.columns}
@@ -826,31 +828,31 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                     nestedHeaders:
                                         tabIndex === 2
                                             ? [
-                                                  [
-                                                      { label: "", colspan: 1 },
-                                                      {
-                                                          label: "UNDERGRADUATE TEACHING LOAD",
-                                                          colspan: 9,
-                                                      },
-                                                      {
-                                                          label: "GRADUATE TEACHING LOAD",
-                                                          colspan: 6,
-                                                      },
-                                                  ],
-                                                  currentConfig.columns.map(
-                                                      (col) => col.title
-                                                  ),
-                                              ]
+                                                [
+                                                    { label: "", colspan: 1 },
+                                                    {
+                                                        label: "UNDERGRADUATE TEACHING LOAD",
+                                                        colspan: 9,
+                                                    },
+                                                    {
+                                                        label: "GRADUATE TEACHING LOAD",
+                                                        colspan: 6,
+                                                    },
+                                                ],
+                                                currentConfig.columns.map(
+                                                    (col) => col.title
+                                                ),
+                                            ]
                                             : [
-                                                  currentConfig.columns.map(
-                                                      (col) => col.title
-                                                  ),
-                                              ],
+                                                currentConfig.columns.map(
+                                                    (col) => col.title
+                                                ),
+                                            ],
                                     cells: (row, col) => {
                                         const cellProperties = {};
                                         const value =
                                             currentConfig.data[row]?.[
-                                                currentConfig.columns[col].data
+                                            currentConfig.columns[col].data
                                             ];
                                         const columnData =
                                             currentConfig.columns[col].data;
@@ -861,7 +863,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                         ) => {
                                             td.innerHTML =
                                                 value !== undefined &&
-                                                value !== null
+                                                    value !== null
                                                     ? value
                                                     : "-";
                                             td.style.whiteSpace = "nowrap";
@@ -879,24 +881,66 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                     },
                                 }}
                             />
-                            <TablePagination
-                                rowsPerPageOptions={[20, 50, 100]}
-                                component="div"
-                                count={filteredData.length}
-                                rowsPerPage={rowsPerPage}
-                                page={page}
-                                onPageChange={handleChangePage}
-                                onRowsPerPageChange={handleChangeRowsPerPage}
+                        </Paper>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                alignItems: "center",
+                                p: 1,
+                                borderTop: 1,
+                                borderColor: "divider",
+                                bgcolor: "grey.50",
+                            }}
+                        >
+                            <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
+                                <InputLabel sx={{ fontSize: "0.75rem" }}>Rows</InputLabel>
+                                <Select
+                                    value={rowsPerPage}
+                                    onChange={handleChangeRowsPerPage}
+                                    label="Rows"
+                                    sx={{ height: 32, fontSize: "0.875rem" }}
+                                >
+                                    {ROWS_PER_PAGE_OPTIONS.map((option) => (
+                                        <MenuItem
+                                            key={option.value}
+                                            value={option.value}
+                                            sx={{ fontSize: "0.875rem" }}
+                                        >
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mr: 1, fontSize: "0.75rem" }}
+                            >
+                                {filteredData.length === 0
+                                    ? "0-0"
+                                    : `${page * rowsPerPage + 1}-${Math.min(
+                                        (page + 1) * rowsPerPage,
+                                        filteredData.length
+                                    )}`}{" "}
+                                of {filteredData.length}
+                            </Typography>
+                            <Pagination
+                                count={Math.ceil(filteredData.length / rowsPerPage) || 1}
+                                page={page + 1}
+                                onChange={(_, value) => handleChangePage(null, value - 1)}
+                                size="small"
+                                color="primary"
+                                showFirstButton
+                                showLastButton
                                 sx={{
-                                    position: "sticky",
-                                    bottom: 0,
-                                    backgroundColor: "white",
-                                    zIndex: 1,
+                                    "& .MuiPaginationItem-root": { fontSize: "0.75rem" },
                                 }}
                             />
-                        </Paper>
+                        </Box>
                     </>
-            </>
+                </>
+            </Paper>
         </Box>
     );
 };

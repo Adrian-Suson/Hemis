@@ -7,7 +7,6 @@ import {
     Typography,
     Breadcrumbs,
     Link,
-    ButtonGroup,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -17,8 +16,17 @@ import {
     Select,
     MenuItem,
     Skeleton,
+    Paper,
+    IconButton,
+    useTheme,
+    alpha,
+    TextField,
 } from "@mui/material";
-import { UploadFile as UploadIcon } from "@mui/icons-material";
+import {
+    UploadFile as UploadIcon,
+    Add as AddIcon,
+    FileDownload as DownloadIcon,
+} from "@mui/icons-material";
 import InstitutionTable from "./InstitutionTable";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
@@ -27,6 +35,7 @@ import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import { useLoading } from "../../../Context/LoadingContext";
 
 const InstitutionManagement = () => {
+    const theme = useTheme();
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showLoading, hideLoading, updateProgress } = useLoading();
@@ -37,6 +46,29 @@ const InstitutionManagement = () => {
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedInstitutionType, setSelectedInstitutionType] = useState("");
     const [selectedFile, setSelectedFile] = useState(null);
+
+    // Add filter states here
+    const [searchTerm, setSearchTerm] = useState(localStorage.getItem("searchTerm") || "");
+    const [typeFilter, setTypeFilter] = useState(localStorage.getItem("typeFilter") || "");
+    const [cityFilter, setCityFilter] = useState(localStorage.getItem("cityFilter") || "");
+    const [provinceFilter, setProvinceFilter] = useState(localStorage.getItem("provinceFilter") || "");
+
+    // Compute filter options
+    const getUniqueValues = (arr, key) =>
+        [...new Set(arr.map((item) => item[key]).filter(Boolean))].sort();
+    const filterOptions = {
+        types: getUniqueValues(institutions, "institution_type"),
+        cities: getUniqueValues(institutions, "municipality_city"),
+        provinces: getUniqueValues(institutions, "province"),
+    };
+
+    // Persist filters to localStorage
+    useEffect(() => {
+        localStorage.setItem("searchTerm", searchTerm);
+        localStorage.setItem("typeFilter", typeFilter);
+        localStorage.setItem("cityFilter", cityFilter);
+        localStorage.setItem("provinceFilter", provinceFilter);
+    }, [searchTerm, typeFilter, cityFilter, provinceFilter]);
 
     const handleCloseSnackbar = () => {
         setSnackbarOpen(false);
@@ -58,14 +90,16 @@ const InstitutionManagement = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
+            let institutionsData = [];
             if (user?.role !== "Super Admin") {
-                const filteredInstitutions = response.data.filter(
+                institutionsData = response.data.filter(
                     (institution) => institution.id === user?.institution_id
                 );
-                setInstitutions(filteredInstitutions);
             } else {
-                setInstitutions(response.data);
+                institutionsData = response.data;
             }
+
+            setInstitutions(institutionsData);
         } catch (error) {
             console.error("Error fetching institutions:", error);
             setSnackbarMessage("Failed to load institution data.");
@@ -127,15 +161,9 @@ const InstitutionManagement = () => {
                     institutional_website: String(jsonDataA1[16]?.[2] || ""),
                     year_established: toNullableInteger(jsonDataA1[17]?.[2]),
                     sec_registration: String(jsonDataA1[18]?.[2] || ""),
-                    year_granted_approved: toNullableInteger(
-                        jsonDataA1[19]?.[2]
-                    ),
-                    year_converted_college: toNullableInteger(
-                        jsonDataA1[20]?.[2]
-                    ),
-                    year_converted_university: toNullableInteger(
-                        jsonDataA1[21]?.[2]
-                    ),
+                    year_granted_approved: toNullableInteger(jsonDataA1[19]?.[2]),
+                    year_converted_college: toNullableInteger(jsonDataA1[20]?.[2]),
+                    year_converted_university: toNullableInteger(jsonDataA1[21]?.[2]),
                     head_name: String(jsonDataA1[22]?.[2] || ""),
                     head_title: String(jsonDataA1[23]?.[2] || ""),
                     head_education: String(jsonDataA1[24]?.[2] || ""),
@@ -144,10 +172,6 @@ const InstitutionManagement = () => {
 
                 updateProgress(50);
                 const token = localStorage.getItem("token");
-                console.log(
-                    "Extracted Institution Data:",
-                    extractedInstitution
-                );
                 const institutionResponse = await axios.post(
                     "http://localhost:8000/api/institutions",
                     extractedInstitution,
@@ -170,40 +194,55 @@ const InstitutionManagement = () => {
                     header: 1,
                 });
 
-                const startRow = 13;
+                const startRow = 10;
+                const currentYear = new Date().getFullYear();
+
                 const processedCampuses = jsonDataA2
                     .slice(startRow)
-                    .filter((row) =>
-                        row.some((cell) => cell !== undefined && cell !== "")
-                    )
-                    .map((row) => ({
-                        suc_name: String(row[1] || ""),
-                        campus_type: String(row[2] || ""),
-                        institutional_code: String(row[3] || ""),
-                        region: String(row[4] || ""),
-                        municipality_city_province: String(row[5] || ""),
-                        year_first_operation: row[6]
-                            ? String(parseInt(row[6], 10))
-                            : "",
-                        land_area_hectares: row[7]
-                            ? String(parseFloat(row[7]))
-                            : "0.0",
-                        distance_from_main: row[8]
-                            ? String(parseFloat(row[8]))
-                            : "0.0",
-                        autonomous_code: String(row[9] || ""),
-                        position_title: String(row[10] || ""),
-                        head_full_name: String(row[11] || ""),
-                        former_name: String(row[12] || ""),
-                        latitude_coordinates: row[13]
-                            ? String(parseFloat(row[13]))
-                            : "0.0",
-                        longitude_coordinates: row[14]
-                            ? String(parseFloat(row[14]))
-                            : "0.0",
-                        institution_id: String(institutionId),
-                    }));
+                    .filter((row) => row.some((cell) => cell !== undefined && cell !== ""))
+                    .map((row) => {
+                        const parseNumeric = (value, min, max) => {
+                            if (value === undefined || value === "" || isNaN(value)) return null;
+                            const num = parseFloat(value);
+                            if (min !== undefined && num < min) return null;
+                            if (max !== undefined && num > max) return null;
+                            return num;
+                        };
 
+                        const parseInteger = (value, min, max) => {
+                            if (value === undefined || value === "" || isNaN(value)) return null;
+                            const int = parseInt(value, 10);
+                            if (min !== undefined && int < min) return null;
+                            if (max !== undefined && int > max) return null;
+                            return int;
+                        };
+
+                        const parseString = (value) => {
+                            if (value === undefined || value === "") return null;
+                            const str = String(value).trim();
+                            return str.length > 255 ? str.substring(0, 255) : str;
+                        };
+
+                        return {
+                            suc_name: parseString(row[1]),
+                            campus_type: parseString(row[2]),
+                            institutional_code: parseString(row[3]),
+                            region: parseString(row[4]),
+                            municipality_city_province: parseString(row[5]),
+                            year_first_operation: parseInteger(row[6], 1800, currentYear),
+                            land_area_hectares: parseNumeric(row[7], 0),
+                            distance_from_main: parseNumeric(row[8], 0),
+                            autonomous_code: parseString(row[9]),
+                            position_title: parseString(row[10]),
+                            head_full_name: parseString(row[11]),
+                            former_name: parseString(row[12]),
+                            latitude_coordinates: parseNumeric(row[13], -90, 90),
+                            longitude_coordinates: parseNumeric(row[14], -180, 180),
+                            institution_id: parseInt(institutionId, 10) || null,
+                        };
+                    });
+
+                console.log("processedCampuses", processedCampuses);
                 updateProgress(70);
                 await axios.post(
                     "http://localhost:8000/api/campuses",
@@ -212,10 +251,15 @@ const InstitutionManagement = () => {
                         headers: { Authorization: `Bearer ${token}` },
                     }
                 );
+
+                setSnackbarMessage("Campuses added successfully!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
                 updateProgress(100);
             } catch (error) {
                 console.error("Error sending data to backend:", error);
-                setSnackbarMessage("Error uploading institution data.");
+                const errorMessage = error.response?.data?.message || "Error uploading institution or campus data.";
+                setSnackbarMessage(errorMessage);
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
             } finally {
@@ -226,155 +270,249 @@ const InstitutionManagement = () => {
                 fetchInstitutions();
             }
         };
+
         reader.readAsArrayBuffer(selectedFile);
     };
 
+    const handleManualAdd = () => {
+        setOpenManualDialog(true);
+    };
+
     return (
-        <Box sx={{ p: 3 }}>
+        <Box >
             {loading ? (
-                <>
+                <Box sx={{ p: 3 }}>
                     {/* Breadcrumbs Skeleton */}
-                    <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
+                    <Box sx={{ my: 2, display: "flex", alignItems: "center" }}>
                         <Skeleton variant="text" width={80} height={20} />
                         <Typography sx={{ mx: 1 }}>›</Typography>
                         <Skeleton variant="text" width={150} height={20} />
                     </Box>
-
                     {/* Button Skeleton */}
-                    <Skeleton
-                        variant="rounded"
-                        width={150}
-                        height={36}
-                        sx={{ mt: 3 }}
-                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                        <Skeleton variant="rounded" width={150} height={36} />
+                        <Skeleton variant="rounded" width={150} height={36} sx={{ ml: 1 }} />
+                    </Box>
 
                     {/* Table Skeleton */}
-                    <Box sx={{ mt: 2 }}>
-                        <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-                            <Skeleton
-                                variant="rounded"
-                                width="25%"
-                                height={32}
-                            />
-                            <Skeleton
-                                variant="rounded"
-                                width="15%"
-                                height={32}
-                            />
-                            <Skeleton
-                                variant="rounded"
-                                width="15%"
-                                height={32}
-                            />
-                            <Skeleton
-                                variant="rounded"
-                                width="15%"
-                                height={32}
-                            />
-                        </Box>
-                        <Skeleton variant="rounded" width="100%" height={30} />
-                        {[...Array(5)].map((_, index) => (
-                            <Skeleton
-                                key={index}
-                                variant="rounded"
-                                width="100%"
-                                height={24}
-                                sx={{ mt: 0.5 }}
-                            />
-                        ))}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                mt: 1,
-                            }}
-                        >
-                            <Skeleton
-                                variant="rounded"
-                                width={80}
-                                height={32}
-                                sx={{ mr: 1 }}
-                            />
-                            <Skeleton
-                                variant="text"
-                                width={100}
-                                height={20}
-                                sx={{ mr: 1 }}
-                            />
-                            <Skeleton
-                                variant="rounded"
-                                width={120}
-                                height={32}
-                            />
-                        </Box>
-                    </Box>
-                </>
+                    <Skeleton variant="rounded" width="100%" height={400} />
+                </Box>
             ) : (
-                <>
-                    <Breadcrumbs
-                        separator="›"
-                        aria-label="breadcrumb"
-                        sx={{ mb: 2 }}
-                    >
-                        <Link
-                            underline="hover"
-                            color="inherit"
-                            component={RouterLink}
-                            to={
-                                JSON.parse(localStorage.getItem("user"))
-                                    ?.role === "Super Admin"
-                                    ? "/super-admin/dashboard"
-                                    : JSON.parse(localStorage.getItem("user"))
-                                          ?.role === "HEI Admin"
-                                    ? "/hei-admin/dashboard"
-                                    : "/hei-staff/dashboard"
-                            }
+                <Box sx={{ p: 3 }}>
+                    {/* Header Section */}
+                    <Box sx={{ my: 2 }}>
+                        <Breadcrumbs
+                            separator="›"
+                            aria-label="breadcrumb"
+                            sx={{ mb: 1 }}
                         >
-                            Dashboard
-                        </Link>
-                        <Typography color="text.primary">
-                            Institution Management
-                        </Typography>
-                    </Breadcrumbs>
+                            <Link
+                                underline="hover"
+                                color="inherit"
+                                component={RouterLink}
+                                to={
+                                    JSON.parse(localStorage.getItem("user"))
+                                        ?.role === "Super Admin"
+                                        ? "/super-admin/dashboard"
+                                        : JSON.parse(localStorage.getItem("user"))
+                                            ?.role === "HEI Admin"
+                                            ? "/hei-admin/dashboard"
+                                            : "/hei-staff/dashboard"
+                                }
+                            >
+                                Dashboard
+                            </Link>
+                            <Typography color="text.primary">
+                                Institution Management
+                            </Typography>
+                        </Breadcrumbs>
+                    </Box>
 
-                    <ButtonGroup
+                    {/* Filter Controls and Actions in One Row */}
+                    <Box
                         sx={{
-                            mt: 3,
+                            p: 1,
+                            borderBottom: 1,
+                            borderColor: "divider",
                             display: "flex",
-                            justifyContent: "flex-end", // Align to the right
+                            alignItems: "center",
+                            bgcolor: "grey.50",
+                            mb: 2,
+                            gap: 2,
                         }}
                     >
-                        <Button
-                            variant="contained"
-                            startIcon={<UploadIcon />}
-                            sx={{
-                                backgroundColor: "primary.main",
-                                color: "white",
-                                "&:hover": { backgroundColor: "primary.dark" },
-                            }}
-                            onClick={() => setOpenUploadDialog(true)}
-                        >
-                            Upload Form A
-                        </Button>
-                    </ButtonGroup>
+                        {/* Filters (left) */}
+                        <Box sx={{ display: "flex", gap: 1, flex: 1, flexWrap: "wrap", alignItems: "center" }}>
+                            <TextField
+                                label="Search"
+                                variant="outlined"
+                                size="small"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                sx={{
+                                    flex: "1 1 150px",
+                                    minWidth: 120,
+                                    "& .MuiInputBase-root": { height: 32 },
+                                }}
+                                InputProps={{ sx: { fontSize: "0.875rem" } }}
+                                InputLabelProps={{ sx: { fontSize: "0.75rem" } }}
+                            />
+                            <FormControl
+                                variant="outlined"
+                                size="small"
+                                sx={{ flex: "1 1 100px", minWidth: 100 }}
+                            >
+                                <InputLabel sx={{ fontSize: "0.75rem" }}>Type</InputLabel>
+                                <Select
+                                    value={typeFilter}
+                                    onChange={(e) => setTypeFilter(e.target.value)}
+                                    label="Type"
+                                    sx={{ height: 32, fontSize: "0.875rem" }}
+                                >
+                                    <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
+                                        All Types
+                                    </MenuItem>
+                                    {filterOptions.types.map((type) => (
+                                        <MenuItem
+                                            key={type}
+                                            value={type}
+                                            sx={{ fontSize: "0.875rem" }}
+                                        >
+                                            {type}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl
+                                variant="outlined"
+                                size="small"
+                                sx={{ flex: "1 1 100px", minWidth: 100 }}
+                            >
+                                <InputLabel sx={{ fontSize: "0.75rem" }}>City</InputLabel>
+                                <Select
+                                    value={cityFilter}
+                                    onChange={(e) => setCityFilter(e.target.value)}
+                                    label="City"
+                                    sx={{ height: 32, fontSize: "0.875rem" }}
+                                >
+                                    <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
+                                        All Cities
+                                    </MenuItem>
+                                    {filterOptions.cities.map((city) => (
+                                        <MenuItem
+                                            key={city}
+                                            value={city}
+                                            sx={{ fontSize: "0.875rem" }}
+                                        >
+                                            {city}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl
+                                variant="outlined"
+                                size="small"
+                                sx={{ flex: "1 1 100px", minWidth: 100 }}
+                            >
+                                <InputLabel sx={{ fontSize: "0.75rem" }}>
+                                    Province
+                                </InputLabel>
+                                <Select
+                                    value={provinceFilter}
+                                    onChange={(e) => setProvinceFilter(e.target.value)}
+                                    label="Province"
+                                    sx={{ height: 32, fontSize: "0.875rem" }}
+                                >
+                                    <MenuItem value="" sx={{ fontSize: "0.875rem" }}>
+                                        All Provinces
+                                    </MenuItem>
+                                    {filterOptions.provinces.map((province) => (
+                                        <MenuItem
+                                            key={province}
+                                            value={province}
+                                            sx={{ fontSize: "0.875rem" }}
+                                        >
+                                            {province}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        {/* Actions (right) */}
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<AddIcon />}
+                                onClick={handleManualAdd}
+                                sx={{
+                                    borderRadius: 1.5,
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                Add Institution
+                            </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={<UploadIcon />}
+                                onClick={() => setOpenUploadDialog(true)}
+                                sx={{
+                                    borderRadius: 1.5,
+                                    bgcolor: theme.palette.primary.main,
+                                    color: "white",
+                                    "&:hover": { bgcolor: theme.palette.primary.dark },
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                Upload Form A
+                            </Button>
+                        </Box>
+                    </Box>
 
-                    <InstitutionTable
-                        institutions={institutions}
-                        setSnackbarMessage={setSnackbarMessage}
-                        setSnackbarSeverity={setSnackbarSeverity}
-                        setSnackbarOpen={setSnackbarOpen}
-                    />
-                </>
+                    {/* Table Section */}
+                    <Box>
+                        <InstitutionTable
+                            institutions={institutions}
+                            setSnackbarMessage={setSnackbarMessage}
+                            setSnackbarSeverity={setSnackbarSeverity}
+                            setSnackbarOpen={setSnackbarOpen}
+                            searchTerm={searchTerm}
+                            typeFilter={typeFilter}
+                            cityFilter={cityFilter}
+                            provinceFilter={provinceFilter}
+                        />
+                    </Box>
+                </Box>
             )}
 
             {/* Upload Dialog */}
             <Dialog
                 open={openUploadDialog}
                 onClose={() => setOpenUploadDialog(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: 500
+                    }
+                }}
             >
-                <DialogTitle>Upload Institution Form A</DialogTitle>
-                <DialogContent>
-                    <FormControl fullWidth sx={{ mt: 2 }}>
+                <DialogTitle sx={{
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    px: 3,
+                    py: 2
+                }}>
+                    <Typography fontWeight={600}>
+                        Upload Institution Form A
+                    </Typography>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Please select an institution type and upload the Form A Excel document.
+                    </Typography>
+
+                    <FormControl fullWidth sx={{ mb: 2 }}>
                         <InputLabel id="institution-type-label">
                             Institution Type
                         </InputLabel>
@@ -391,34 +529,100 @@ const InstitutionManagement = () => {
                             <MenuItem value="Private">Private</MenuItem>
                         </Select>
                     </FormControl>
-                    <Button
-                        variant="outlined"
-                        component="label"
-                        fullWidth
-                        sx={{ mt: 2 }}
+
+                    <Box
+                        onDrop={e => {
+                            e.preventDefault();
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                setSelectedFile(e.dataTransfer.files[0]);
+                            }
+                        }}
+                        onDragOver={e => e.preventDefault()}
+                        sx={{
+                            p: 1.5,
+                            border: `1px dashed ${theme.palette.primary.main}`,
+                            borderRadius: 1.5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 1,
+                            cursor: 'pointer',
+                            bgcolor: 'background.paper'
+                        }}
+                        onClick={() => document.getElementById('upload-input').click()}
                     >
-                        Select File
+                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
+                        <Typography>Drag & drop file or click to browse</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Supported formats: .xlsx, .xls
+                        </Typography>
                         <input
+                            id="upload-input"
                             type="file"
                             hidden
                             accept=".xlsx, .xls"
-                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                            onChange={e => setSelectedFile(e.target.files[0])}
                         />
-                    </Button>
+                    </Box>
+
                     {selectedFile && (
-                        <Typography sx={{ mt: 1, color: "text.secondary" }}>
-                            Selected: {selectedFile.name}
-                        </Typography>
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                mt: 2,
+                                p: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderRadius: 1.5
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
+                                <Box>
+                                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                                        {selectedFile.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {(selectedFile.size / 1024).toFixed(2)} KB
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => setSelectedFile(null)}
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
+                                }}
+                            >
+                                &times;
+                            </IconButton>
+                        </Paper>
                     )}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenUploadDialog(false)}>
+                <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                    <Button
+                        onClick={() => setOpenUploadDialog(false)}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            color: theme.palette.text.primary
+                        }}
+                    >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleFileUpload}
                         variant="contained"
                         disabled={!selectedFile || !selectedInstitutionType}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            borderRadius: 1.5,
+                            px: 3
+                        }}
                     >
                         Upload
                     </Button>
@@ -446,5 +650,6 @@ const InstitutionManagement = () => {
         </Box>
     );
 };
+
 
 export default InstitutionManagement;

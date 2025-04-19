@@ -2,14 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Campus extends Model
 {
-    public $timestamps = true;
-    use HasFactory;
-
     protected $fillable = [
         'suc_name',
         'campus_type',
@@ -26,11 +22,11 @@ class Campus extends Model
         'latitude_coordinates',
         'longitude_coordinates',
         'institution_id',
+        'created_at',
+        'updated_at',
     ];
 
-    /**
-     * Relationship with Institution
-     */
+    // Define the relationship with Institution
     public function institution()
     {
         return $this->belongsTo(Institution::class);

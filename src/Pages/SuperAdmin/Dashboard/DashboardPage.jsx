@@ -1,20 +1,6 @@
 import { useState, useEffect } from "react";
-import {
-    Box,
-    Typography,
-    Grid,
-    Avatar,
-    Paper,
-    Divider,
-    Skeleton,
-} from "@mui/material";
 import axios from "axios";
-import PersonIcon from "@mui/icons-material/Person";
-import PeopleIcon from "@mui/icons-material/People";
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
-import SchoolIcon from "@mui/icons-material/School";
-import BusinessIcon from "@mui/icons-material/Business";
-// Import Chart.js and react-chartjs-2 components
+import { FaUser, FaUsers, FaBook, FaGraduationCap, FaBuilding } from "react-icons/fa";
 import {
     Chart as ChartJS,
     ArcElement,
@@ -26,7 +12,6 @@ import {
     PointElement,
 } from "chart.js";
 import { Pie } from "react-chartjs-2";
-// Import chartjs-plugin-datalabels
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { useLoading } from "../../../Context/LoadingContext";
 
@@ -39,12 +24,12 @@ ChartJS.register(
     CategoryScale,
     LinearScale,
     PointElement,
-    ChartDataLabels // Register the datalabels plugin
+    ChartDataLabels
 );
 
 const Dashboard = () => {
     const token = localStorage.getItem("token");
-    const {showLoading, hideLoading} = useLoading();
+    const { showLoading, hideLoading } = useLoading();
     const [dashboardData, setDashboardData] = useState({
         users: [],
         facultyProfiles: [],
@@ -99,14 +84,14 @@ const Dashboard = () => {
                 error: "Failed to load dashboard data. Please try again.",
                 loading: false,
             }));
-        }finally{
+        } finally {
             hideLoading();
         }
     };
 
     useEffect(() => {
         fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Calculate overview metrics
@@ -168,19 +153,13 @@ const Dashboard = () => {
     const enrollmentByInstitutionType = dashboardData.institutions.reduce(
         (acc, institution) => {
             const type = institution.institution_type || "Unknown";
-
-            // Filter programs that belong to this institution
             const institutionPrograms = dashboardData.programs.filter(
                 (program) => program.institution_id === institution.id
             );
-
-            // Sum grand_total from each program (or 0 if not available)
             const totalEnrollment = institutionPrograms.reduce(
                 (sum, program) => sum + (program.grand_total || 0),
                 0
             );
-
-            // Add to accumulator by type
             acc[type] = (acc[type] || 0) + totalEnrollment;
             return acc;
         },
@@ -239,16 +218,14 @@ const Dashboard = () => {
                 },
             },
             datalabels: {
-                color: "#fff", // White text for better contrast on colored segments
-                formatter: (value) => {
-                    return value; // Display the raw value
-                },
+                color: "#fff",
+                formatter: (value) => value,
                 font: {
                     weight: "bold",
                     size: 14,
                 },
-                anchor: "center", // Position the label in the center of the segment
-                align: "center", // Align the label in the center
+                anchor: "center",
+                align: "center",
                 textAlign: "center",
             },
         },
@@ -256,117 +233,134 @@ const Dashboard = () => {
 
     // Skeleton Loader Component
     const DashboardSkeleton = () => (
-        <Box sx={{ my: 5, p: 4, height: "100vh", overflowY: "auto" }}>
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                }}
-            >
-                <Box>
-                    <Skeleton
-                        variant="text"
-                        width={300}
-                        height={40}
-                        sx={{ mb: 1 }}
-                    />
-                    <Skeleton variant="text" width={200} height={20} />
-                </Box>
-            </Box>
+        <div style={{ margin: "40px 0", padding: "32px", height: "100vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                    <div
+                        style={{
+                            width: "300px",
+                            height: "40px",
+                            background: "#e0e0e0",
+                            borderRadius: "4px",
+                            marginBottom: "8px",
+                        }}
+                    ></div>
+                    <div
+                        style={{
+                            width: "200px",
+                            height: "20px",
+                            background: "#e0e0e0",
+                            borderRadius: "4px",
+                        }}
+                    ></div>
+                </div>
+            </div>
 
             {/* Overview Metrics Cards Skeleton */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "24px",
+                    marginBottom: "32px",
+                }}
+            >
                 {Array.from({ length: 5 }).map((_, index) => (
-                    <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
+                    <div
+                        key={index}
+                        style={{
+                            padding: "24px",
+                            borderRadius: "8px",
+                            background: "#fff",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                            height: "100%",
+                        }}
+                    >
+                        <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
+                            <div
+                                style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    background: "#e0e0e0",
+                                    borderRadius: "50%",
+                                    marginRight: "8px",
                                 }}
-                            >
-                                <Skeleton
-                                    variant="circular"
-                                    width={40}
-                                    height={40}
-                                    sx={{ mr: 1 }}
-                                />
-                                <Skeleton variant="text" width={80} />
-                            </Box>
-                            <Skeleton variant="text" width={60} height={40} />
-                            <Skeleton variant="text" width={120} height={20} />
-                        </Paper>
-                    </Grid>
+                            ></div>
+                            <div
+                                style={{
+                                    width: "80px",
+                                    height: "20px",
+                                    background: "#e0e0e0",
+                                    borderRadius: "4px",
+                                }}
+                            ></div>
+                        </div>
+                        <div
+                            style={{
+                                width: "60px",
+                                height: "40px",
+                                background: "#e0e0e0",
+                                borderRadius: "4px",
+                                marginBottom: "8px",
+                            }}
+                        ></div>
+                        <div
+                            style={{
+                                width: "120px",
+                                height: "20px",
+                                background: "#e0e0e0",
+                                borderRadius: "4px",
+                            }}
+                        ></div>
+                    </div>
                 ))}
-            </Grid>
+            </div>
 
             {/* Pie Charts Skeleton (Side by Side) */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={6}>
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 3,
-                            borderRadius: 2,
-                            border: 1,
-                            borderColor: "divider",
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                    gap: "24px",
+                    marginBottom: "32px",
+                }}
+            >
+                {[1, 2].map((_, index) => (
+                    <div
+                        key={index}
+                        style={{
+                            padding: "24px",
+                            borderRadius: "8px",
+                            border: "1px solid #e0e0e0",
+                            background: "#fff",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                             height: "100%",
                         }}
                     >
-                        <Skeleton
-                            variant="text"
-                            width={200}
-                            height={30}
-                            sx={{ mb: 2 }}
-                        />
-                        <Divider sx={{ mb: 3 }} />
-                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                            <Skeleton
-                                variant="circular"
-                                width={300}
-                                height={300}
-                            />
-                        </Box>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 3,
-                            borderRadius: 2,
-                            border: 1,
-                            borderColor: "divider",
-                            height: "100%",
-                        }}
-                    >
-                        <Skeleton
-                            variant="text"
-                            width={200}
-                            height={30}
-                            sx={{ mb: 2 }}
-                        />
-                        <Divider sx={{ mb: 3 }} />
-                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                            <Skeleton
-                                variant="circular"
-                                width={300}
-                                height={300}
-                            />
-                        </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
-        </Box>
+                        <div
+                            style={{
+                                width: "200px",
+                                height: "30px",
+                                background: "#e0e0e0",
+                                borderRadius: "4px",
+                                marginBottom: "16px",
+                            }}
+                        ></div>
+                        <hr style={{ margin: "0 0 24px 0", borderColor: "#e0e0e0" }} />
+                        <div style={{ maxWidth: "400px", margin: "0 auto" }}>
+                            <div
+                                style={{
+                                    width: "300px",
+                                    height: "300px",
+                                    background: "#e0e0e0",
+                                    borderRadius: "50%",
+                                }}
+                            ></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 
     if (dashboardData.loading) {
@@ -375,212 +369,276 @@ const Dashboard = () => {
 
     if (dashboardData.error) {
         return (
-            <Box sx={{ p: 3 }}>
-                <Typography color="error">{dashboardData.error}</Typography>
-            </Box>
+            <div style={{ padding: "24px" }}>
+                <span style={{ color: "#d32f2f", fontSize: "16px" }}>{dashboardData.error}</span>
+            </div>
         );
     }
 
     return (
-        <Box
-            p={5}
-            sx={{
-                height: "100vh",
-                overflowY: "auto",
-                "&::-webkit-scrollbar": {
-                    width: "8px",
-                },
-                "&::-webkit-scrollbar-track": {
-                    background: "#f1f1f1",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                    background: "#888",
-                    borderRadius: "4px",
-                },
-                "&::-webkit-scrollbar-thumb:hover": {
-                    background: "#555",
-                },
-            }}
-        >
-            <Box>
-                {/* Header with refresh action */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 4,
-                    }}
-                >
-                    <Box>
-                        <Typography
-                            variant="h4"
-                            fontWeight="bold"
-                            color="primary"
-                        >
-                            Administration Dashboard
-                        </Typography>
-                        <Typography variant="subtitle1" color="text.secondary">
-                            Overview of all system data and statistics
-                        </Typography>
-                    </Box>
-                </Box>
-                <Grid container spacing={2} sx={{ mb: 4 }}>
-                    {[
-                        {
-                            label: "Users",
-                            value: totalUsers,
-                            color: "primary",
-                            Icon: PersonIcon,
-                        },
-                        {
-                            label: "Faculty",
-                            value: totalFaculty,
-                            color: "success",
-                            Icon: PeopleIcon,
-                        },
-                        {
-                            label: "Programs",
-                            value: totalPrograms,
-                            color: "warning",
-                            Icon: LibraryBooksIcon,
-                        },
-                        {
-                            label: "Enrollments",
-                            value: totalEnrollments.toLocaleString(),
-                            color: "info",
-                            Icon: SchoolIcon,
-                        },
-                        {
-                            label: "Institutions",
-                            value: totalInstitutions,
-                            color: "secondary",
-                            Icon: BusinessIcon,
-                        },
-                    ].map(({ label, value, color, Icon }, index) => (
-                        <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
-                            <Paper
-                                sx={{
-                                    p: 2,
-                                    bgcolor: `${color}.light`,
-                                    color: `${color}.contrastText`,
+        <>
+            <div
+                style={{
+                    padding: "40px",
+                    height: "100vh",
+                    overflowY: "auto",
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "#888 #f1f1f1",
+                }}
+            >
+                <div>
+                    {/* Header */}
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: "32px",
+                        }}
+                    >
+                        <div>
+                            <h1
+                                style={{
+                                    fontSize: "32px",
+                                    fontWeight: "bold",
+                                    color: "#1976d2",
+                                    margin: 0,
                                 }}
                             >
-                                <Box
-                                    sx={{
+                                Administration Dashboard
+                            </h1>
+                            <p
+                                style={{
+                                    fontSize: "16px",
+                                    color: "#6b7280",
+                                    margin: "4px 0 0 0",
+                                }}
+                            >
+                                Overview of all system data and statistics
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Overview Metrics Cards */}
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                            gap: "16px",
+                            marginBottom: "32px",
+                        }}
+                    >
+                        {[
+                            {
+                                label: "Users",
+                                value: totalUsers,
+                                color: { light: "#bbdefb", main: "#1976d2" },
+                                Icon: FaUser,
+                            },
+                            {
+                                label: "Faculty",
+                                value: totalFaculty,
+                                color: { light: "#c8e6c9", main: "#388e3c" },
+                                Icon: FaUsers,
+                            },
+                            {
+                                label: "Programs",
+                                value: totalPrograms,
+                                color: { light: "#ffecb3", main: "#f57c00" },
+                                Icon: FaBook,
+                            },
+                            {
+                                label: "Enrollments",
+                                value: totalEnrollments.toLocaleString(),
+                                color: { light: "#b3e5fc", main: "#0288d1" },
+                                Icon: FaGraduationCap,
+                            },
+                            {
+                                label: "Institutions",
+                                value: totalInstitutions,
+                                color: { light: "#e1bee7", main: "#7b1fa2" },
+                                Icon: FaBuilding,
+                            },
+                        ].map(({ label, value, color, Icon }, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "16px",
+                                    background: color.light,
+                                    color: "#000",
+                                    borderRadius: "8px",
+                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                }}
+                            >
+                                <div
+                                    style={{
                                         display: "flex",
                                         alignItems: "center",
-                                        mb: 1,
+                                        marginBottom: "8px",
                                     }}
                                 >
-                                    <Avatar
-                                        sx={{ bgcolor: `${color}.main`, mr: 1 }}
+                                    <span
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "40px",
+                                            height: "40px",
+                                            background: color.main,
+                                            color: "#fff",
+                                            borderRadius: "50%",
+                                            marginRight: "8px",
+                                            fontSize: "20px",
+                                        }}
                                     >
                                         <Icon />
-                                    </Avatar>
-                                    <Typography variant="h6">
-                                        {label}
-                                    </Typography>
-                                </Box>
-                                <Typography variant="h3" fontWeight="bold">
+                                    </span>
+                                    <h2 style={{ fontSize: "20px", margin: 0 }}>{label}</h2>
+                                </div>
+                                <h3 style={{ fontSize: "36px", fontWeight: "bold", margin: "0 0 8px 0" }}>
                                     {value}
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    sx={{ mt: 1, opacity: 0.8 }}
+                                </h3>
+                                <p
+                                    style={{
+                                        fontSize: "14px",
+                                        opacity: 0.8,
+                                        margin: 0,
+                                    }}
                                 >
                                     {label === "Users"
                                         ? "Registered system users"
                                         : label === "Faculty"
-                                        ? "Registered faculty members"
-                                        : label === "Programs"
-                                        ? "Total academic programs"
-                                        : label === "Enrollments"
-                                        ? "Total student enrollments"
-                                        : "Educational institutions"}
-                                </Typography>
-                            </Paper>
-                        </Grid>
-                    ))}
-                </Grid>
+                                            ? "Registered faculty members"
+                                            : label === "Programs"
+                                                ? "Total academic programs"
+                                                : label === "Enrollments"
+                                                    ? "Total student enrollments"
+                                                    : "Educational institutions"}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
 
-                {/* Pie Charts Section (Side by Side) */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    {/* Pie Chart for Institution Types */}
-                    <Grid item xs={12} md={6}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                border: 1,
-                                borderColor: "divider",
+                    {/* Pie Charts Section (Side by Side) */}
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                            gap: "24px",
+                            marginBottom: "32px",
+                        }}
+                    >
+                        {/* Pie Chart for Institution Types */}
+                        <div
+                            style={{
+                                padding: "24px",
+                                borderRadius: "8px",
+                                border: "1px solid #e0e0e0",
+                                background: "#fff",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                                 height: "100%",
                             }}
                         >
-                            <Typography variant="h5" fontWeight="medium" mb={2}>
+                            <h4
+                                style={{
+                                    fontSize: "18px",
+                                    fontWeight: "500",
+                                    margin: "0 0 16px 0",
+                                }}
+                            >
                                 Institution Types Distribution
-                            </Typography>
-                            <Divider sx={{ mb: 3 }} />
+                            </h4>
+                            <hr style={{ margin: "0 0 24px 0", borderColor: "#e0e0e0" }} />
                             {Object.keys(institutionTypeCounts).length > 0 ? (
-                                <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                                    <Pie
-                                        data={institutionPieChartData}
-                                        options={pieChartOptions}
-                                    />
-                                </Box>
+                                <div style={{ maxWidth: "300px", margin: "0 auto" }}>
+                                    <Pie data={institutionPieChartData} options={pieChartOptions} />
+                                </div>
                             ) : (
-                                <Typography
-                                    color="text.secondary"
-                                    textAlign="center"
-                                >
+                                <p style={{ color: "#6b7280", textAlign: "center", margin: 0 }}>
                                     No institution type data available.
-                                </Typography>
+                                </p>
                             )}
-                        </Paper>
-                    </Grid>
+                        </div>
 
-                    {/* Pie Chart for Enrollments by Institution Type */}
-                    <Grid item xs={12} md={6}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                border: 1,
-                                borderColor: "divider",
+                        {/* Pie Chart for Enrollments by Institution Type */}
+                        <div
+                            style={{
+                                padding: "18px",
+                                borderRadius: "8px",
+                                border: "1px solid #e0e0e0",
+                                background: "#fff",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                                 height: "100%",
                             }}
                         >
-                            <Typography variant="h5" fontWeight="medium" mb={2}>
+                            <h4
+                                style={{
+                                    fontSize: "18px",
+                                    fontWeight: "500",
+                                    margin: "0 0 16px 0",
+                                }}
+                            >
                                 Enrollments by Institution Type
-                            </Typography>
-                            <Divider sx={{ mb: 3 }} />
-                            {Object.keys(enrollmentByInstitutionType).length >
-                                0 &&
-                            Object.values(enrollmentByInstitutionType).some(
-                                (value) => value > 0
-                            ) ? (
-                                <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                                    <Pie
-                                        data={enrollmentPieChartData}
-                                        options={pieChartOptions}
-                                    />
-                                </Box>
+                            </h4>
+                            <hr style={{ margin: "0 0 24px 0", borderColor: "#e0e0e0" }} />
+                            {Object.keys(enrollmentByInstitutionType).length > 0 &&
+                                Object.values(enrollmentByInstitutionType).some((value) => value > 0) ? (
+                                <div style={{ maxWidth: "300px", margin: "0 auto" }}>
+                                    <Pie data={enrollmentPieChartData} options={pieChartOptions} />
+                                </div>
                             ) : (
-                                <Typography
-                                    color="text.secondary"
-                                    textAlign="center"
-                                >
-                                    No enrollment data available for institution
-                                    types.
-                                </Typography>
+                                <p style={{ color: "#6b7280", textAlign: "center", margin: 0 }}>
+                                    No enrollment data available for institution types.
+                                </p>
                             )}
-                        </Paper>
-                    </Grid>
-                </Grid>
-            </Box>
-        </Box>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Responsive Styles */}
+            <style>
+                {`
+          @media (max-width: 600px) {
+            .dashboard-container {
+              padding: 16px;
+            }
+            .dashboard-grid {
+              grid-template-columns: 1fr;
+            }
+            .dashboard-header h1 {
+              font-size: 24px;
+            }
+            .dashboard-header p {
+              font-size: 14px;
+            }
+            .metric-card {
+              padding: 12px;
+            }
+            .metric-card h2 {
+              font-size: 18px;
+            }
+            .metric-card h3 {
+              font-size: 28px;
+            }
+            .metric-card p {
+              font-size: 12px;
+            }
+            .pie-chart-container {
+              padding: 16px;
+            }
+            .pie-chart-container h2 {
+              font-size: 20px;
+            }
+          }
+          @media (max-width: 960px) {
+            .dashboard-grid {
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+          }
+        `}
+            </style>
+        </>
     );
 };
 

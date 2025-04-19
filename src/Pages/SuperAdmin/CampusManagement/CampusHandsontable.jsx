@@ -22,6 +22,8 @@ import {
     Box,
     FormHelperText,
     Autocomplete,
+    Toolbar,
+    Typography,
 } from "@mui/material";
 import { useLoading } from "../../../Context/LoadingContext";
 
@@ -76,9 +78,9 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         "Sindangan",
         "Siocon",
         "Sirawai",
-        "Tampilisan", // Zamboanga del Norte Municipalities
+        "Tampilisan",
         "Dapitan City",
-        "Dipolog City", // Zamboanga del Norte Cities
+        "Dipolog City",
         "Aurora",
         "Bayog",
         "Dimataling",
@@ -104,8 +106,8 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         "Tambulig",
         "Tigbao",
         "Tukuran",
-        "Vincenzo A. Sagun", // Zamboanga del Sur Municipalities
-        "Pagadian City", // Zamboanga del Sur City
+        "Vincenzo A. Sagun",
+        "Pagadian City",
         "Alicia",
         "Buug",
         "Diplahan",
@@ -121,9 +123,9 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         "Siay",
         "Talusan",
         "Titay",
-        "Tungawan", // Zamboanga Sibugay
+        "Tungawan",
         "Zamboanga City",
-        "Isabela City", // Other Cities
+        "Isabela City",
     ];
 
     useEffect(() => {
@@ -168,10 +170,10 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
 
     const tabbedColumns = useMemo(
         () => ({
-            basic: allColumns.slice(0, 7),
-            metrics: allColumns.slice(7, 10),
-            leadership: allColumns.slice(10, 12),
-            coordinates: allColumns.slice(12, 14),
+            basic: [allColumns[0], ...allColumns.slice(1, 7)],
+            metrics: [allColumns[0], ...allColumns.slice(7, 10)],
+            leadership: [allColumns[0], ...allColumns.slice(10, 12)],
+            coordinates: [allColumns[0], ...allColumns.slice(12, 14)],
         }),
         [allColumns]
     );
@@ -258,7 +260,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         const newErrors = {};
         const currentYear = 2025;
 
-        // String fields: max 255 characters, nullable
         const stringFields = [
             "suc_name",
             "campus_type",
@@ -276,7 +277,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             }
         });
 
-        // year_first_operation: nullable, integer, 1800 <= year <= current year
         if (newCampus.year_first_operation !== "") {
             const year = parseInt(newCampus.year_first_operation, 10);
             if (isNaN(year)) {
@@ -288,7 +288,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             }
         }
 
-        // land_area_hectares: nullable, numeric, >= 0
         if (newCampus.land_area_hectares !== "") {
             const value = parseFloat(newCampus.land_area_hectares);
             if (isNaN(value)) {
@@ -298,7 +297,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             }
         }
 
-        // distance_from_main: nullable, numeric, >= 0
         if (newCampus.distance_from_main !== "") {
             const value = parseFloat(newCampus.distance_from_main);
             if (isNaN(value)) {
@@ -308,7 +306,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             }
         }
 
-        // latitude_coordinates: nullable, numeric, -90 <= value <= 90
         if (newCampus.latitude_coordinates !== "") {
             const value = parseFloat(newCampus.latitude_coordinates);
             if (isNaN(value)) {
@@ -318,7 +315,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             }
         }
 
-        // longitude_coordinates: nullable, numeric, -180 <= value <= 180
         if (newCampus.longitude_coordinates !== "") {
             const value = parseFloat(newCampus.longitude_coordinates);
             if (isNaN(value)) {
@@ -339,7 +335,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             ...prev,
             [name]: value,
         }));
-        // Clear error for the field when user starts typing
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: undefined }));
         }
@@ -355,7 +350,6 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         try {
             setOpenDialog(false);
 
-            // Prepare payload with correct types and null for empty fields
             const payload = {
                 suc_name: newCampus.suc_name || null,
                 campus_type: newCampus.campus_type || null,
@@ -438,19 +432,44 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
     }, [tabValue, tabbedColumns]);
 
     const currentYear = new Date().getFullYear();
-const years = Array.from(new Array(100), (val, index) => currentYear - index);
+    const years = Array.from(new Array(100), (val, index) => currentYear - index);
 
     return (
         <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+            {/* Toolbar for the button and title */}
+            <Toolbar
+                sx={{
+                    pl: { sm: 2 },
+                    pr: { xs: 1, sm: 1 },
+                    mb: 2,
+                    backgroundColor: "background.paper",
+                    borderBottom: 1,
+                    borderColor: "divider",
+                }}
+            >
+                <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{ flexGrow: 1, fontWeight: "medium" }}
+                >
+                    Campus Management
+                </Typography>
                 <Button
                     variant="contained"
                     color="primary"
                     onClick={handleOpenDialog}
+                    sx={{
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        fontWeight: "medium",
+                        px: 3,
+                        py: 1,
+                    }}
                 >
                     Add Campus
                 </Button>
-            </Box>
+            </Toolbar>
+
             <Paper sx={{ borderRadius: 1, mb: 2 }}>
                 <Tabs
                     value={tabValue}
@@ -471,33 +490,34 @@ const years = Array.from(new Array(100), (val, index) => currentYear - index);
                     <Tab label="Leadership" />
                     <Tab label="Coordinates" />
                 </Tabs>
-            </Paper>
-            <HotTable
-                data={data}
-                columns={currentColumns}
-                colHeaders={true}
-                rowHeaders={true}
-                stretchH="all"
-                height="65vh"
-                licenseKey="non-commercial-and-evaluation"
-                settings={{
-                    manualColumnResize: true,
-                    columnSorting: true,
-                    contextMenu: true,
-                    afterChange: handleChanges,
-                }}
-            />
-            {data.length === 0 && (
-                <div
-                    style={{
-                        textAlign: "center",
-                        padding: "20px",
-                        color: "#666",
+
+                <HotTable
+                    data={data}
+                    columns={currentColumns}
+                    colHeaders={true}
+                    rowHeaders={true}
+                    stretchH="all"
+                    height="65vh"
+                    licenseKey="non-commercial-and-evaluation"
+                    settings={{
+                        manualColumnResize: true,
+                        columnSorting: true,
+                        contextMenu: true,
+                        afterChange: handleChanges,
                     }}
-                >
-                    No campuses found. Click "Add Campus" to start.
-                </div>
-            )}
+                />
+                {data.length === 0 && (
+                    <div
+                        style={{
+                            textAlign: "center",
+                            padding: "20px",
+                            color: "#666",
+                        }}
+                    >
+                        No campuses found. Click &#34;Add Campus&#34; to start.
+                    </div>
+                )}
+            </Paper>
 
             {/* Dialog for adding a new campus */}
             <Dialog
@@ -620,29 +640,34 @@ const years = Array.from(new Array(100), (val, index) => currentYear - index);
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-    <FormControl fullWidth margin="dense" error={!!errors.year_first_operation}>
-        <InputLabel id="year-first-operation-label">Established</InputLabel>
-        <Select
-            labelId="year-first-operation-label"
-            name="year_first_operation"
-            value={newCampus.year_first_operation}
-            onChange={handleInputChange}
-            label="Established"
-        >
-            {years.map((year) => (
-                <MenuItem key={year} value={year}>
-                    {year}
-                </MenuItem>
-            ))}
-        </Select>
-        {errors.year_first_operation && (
-            <p style={{ color: '#d32f2f', fontSize: '0.75rem', margin: '3px 14px 0' }}>
-                {errors.year_first_operation}
-            </p>
-        )}
-    </FormControl>
-</Grid>
-
+                            <FormControl
+                                fullWidth
+                                margin="dense"
+                                error={!!errors.year_first_operation}
+                            >
+                                <InputLabel id="year-first-operation-label">
+                                    Established
+                                </InputLabel>
+                                <Select
+                                    labelId="year-first-operation-label"
+                                    name="year_first_operation"
+                                    value={newCampus.year_first_operation}
+                                    onChange={handleInputChange}
+                                    label="Established"
+                                >
+                                    {years.map((year) => (
+                                        <MenuItem key={year} value={year}>
+                                            {year}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                                {errors.year_first_operation && (
+                                    <FormHelperText>
+                                        {errors.year_first_operation}
+                                    </FormHelperText>
+                                )}
+                            </FormControl>
+                        </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 margin="dense"

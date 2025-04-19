@@ -1,26 +1,25 @@
 // CampusManagementSkeleton.jsx
-import { Box, Breadcrumbs, Skeleton } from "@mui/material";
+import { Box, Skeleton, Typography } from "@mui/material";
 
 const CampusManagementSkeleton = () => {
     return (
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 3 }}>
             {/* Breadcrumbs Skeleton */}
-            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
-                <Skeleton variant="text" width={80} />
-                <Skeleton variant="text" width={120} />
-                <Skeleton variant="text" width={150} />
-            </Breadcrumbs>
+            <Box sx={{ my: 2, display: "flex", alignItems: "center" }}>
+                <Skeleton variant="text" width={80} height={20} />
+                <Typography sx={{ mx: 1 }}>›</Typography>
+                <Skeleton variant="text" width={150} height={20} />
+                <Typography sx={{ mx: 1 }}>›</Typography>
+                <Skeleton variant="text" width={150} height={20} />
 
-            {/* Handsontable Skeleton */}
-            <Box sx={{ mt: 3 }}>
-                {/* Table Header Skeleton (if applicable) */}
-                <Skeleton
-                    variant="rectangular"
-                    width={150}
-                    height={36}
-                    sx={{ mt: 3, ml: "auto" }}
-                />
             </Box>
+            {/* Button Skeleton */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Skeleton variant="rounded" width={150} height={36} sx={{ ml: 1 }} />
+            </Box>
+
+            {/* Table Skeleton */}
+            <Skeleton variant="rounded" width="100%" height={500} />
         </Box>
     );
 };

@@ -10,24 +10,21 @@ class CreateCampusesTable extends Migration
     {
         Schema::create('campuses', function (Blueprint $table) {
             $table->id();
-            $table->string('suc_name');
-            $table->string('campus_type');
-            $table->string('institutional_code');
-            $table->string('region');
-            $table->string('municipality_city_province');
-            $table->string('year_first_operation');
-            $table->decimal('land_area_hectares', 8, 2);
-            $table->decimal('distance_from_main', 8, 2);
-            $table->string('autonomous_code');
-            $table->string('position_title');
-            $table->string('head_full_name');
-            $table->string('former_name')->nullable();
-            $table->decimal('latitude_coordinates', 10, 8);
-            $table->decimal('longitude_coordinates', 11, 8);
-
-            // Foreign key linking to the institutions table
-            $table->foreignId('institution_id')->constrained('institutions')->onDelete('cascade');
-
+            $table->string('suc_name', 255)->nullable();
+            $table->string('campus_type', 255)->nullable();
+            $table->string('institutional_code', 255)->nullable();
+            $table->string('region', 255)->nullable();
+            $table->string('municipality_city_province', 255)->nullable();
+            $table->integer('year_first_operation')->nullable();
+            $table->decimal('land_area_hectares', 10, 2)->nullable();
+            $table->decimal('distance_from_main', 10, 2)->nullable();
+            $table->string('autonomous_code', 255)->nullable();
+            $table->string('position_title', 255)->nullable();
+            $table->string('head_full_name', 255)->nullable();
+            $table->string('former_name', 255)->nullable();
+            $table->decimal('latitude_coordinates', 9, 6)->nullable();
+            $table->decimal('longitude_coordinates', 9, 6)->nullable();
+            $table->foreignId('institution_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }
