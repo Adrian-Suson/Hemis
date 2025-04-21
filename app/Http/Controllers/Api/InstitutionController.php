@@ -21,7 +21,7 @@ class InstitutionController extends Controller
 
         return response()->json($institutions);
     }
- 
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -34,7 +34,7 @@ class InstitutionController extends Controller
             'institutional_telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
             'head_telephone' => 'nullable|string|max:20',
-            'institutional_email' => 'nullable|email|max:255',
+            'institutional_email' => 'nullable|string|max:255',
             'institutional_website' => 'nullable|string|max:255',
             'year_established' => 'nullable|integer',
             'sec_registration' => 'nullable|string|max:255',
@@ -59,8 +59,8 @@ class InstitutionController extends Controller
     public function update(Request $request, Institution $institution): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'region' => 'sometimes|required|string|max:255',
+            'name' => 'required|string|max:255',
+            'region' => 'required|string|max:255',
             'address_street' => 'nullable|string|max:255',
             'municipality_city' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
@@ -68,7 +68,7 @@ class InstitutionController extends Controller
             'institutional_telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
             'head_telephone' => 'nullable|string|max:20',
-            'institutional_email' => 'nullable|email|max:255',
+            'institutional_email' => 'nullable|string|max:255',
             'institutional_website' => 'nullable|string|max:255',
             'year_established' => 'nullable|integer',
             'sec_registration' => 'nullable|string|max:255',

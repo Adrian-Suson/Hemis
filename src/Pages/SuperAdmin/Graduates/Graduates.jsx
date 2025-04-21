@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom"; // Import useParams
+import { useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import {
@@ -12,6 +12,11 @@ import {
     Breadcrumbs,
     Link,
     ButtonGroup,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import config from "../../../utils/config";
@@ -19,6 +24,7 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
+import GraduatesSkeleton from "./GraduatesSkeleton";
 
 const Graduates = () => {
     const [graduates, setGraduates] = useState([]);
@@ -27,9 +33,12 @@ const Graduates = () => {
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+    const [searchTerm, setSearchTerm] = useState(""); // Moved from GraduatesTable
+    const [sexFilter, setSexFilter] = useState(""); // Moved from GraduatesTable
+    const [yearFilter, setYearFilter] = useState(""); // Moved from GraduatesTable
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
-    const { institutionId } = useParams(); // Call useParams at top level
+    const { institutionId } = useParams();
 
     useEffect(() => {
         fetchGraduates();
@@ -165,7 +174,7 @@ const Graduates = () => {
                         };
 
                         return {
-                            institution_id: institutionId, // Use passed institutionId
+                            institution_id: institutionId,
                             student_id: row[0] ? String(row[0]) : null,
                             last_name: row[1] ? String(row[1]) : null,
                             first_name: row[2] ? String(row[2]) : null,
@@ -286,7 +295,7 @@ const Graduates = () => {
             { header: "Year Granted", key: "year_granted", width: 15 },
         ];
 
-        graduates.forEach((graduate) => {
+        filteredGraduates.forEach((graduate) => {
             worksheet.addRow(graduate);
         });
 
@@ -310,6 +319,35 @@ const Graduates = () => {
         saveAs(blob, "Graduates_List.xlsx");
     };
 
+    // Get unique years for the year filter dropdown
+    const uniqueYears = [
+        ...new Set(graduates.map((g) => g.year_granted).filter(Boolean)),
+    ].sort();
+
+    // Filter graduates based on search term and selection filters
+    const filteredGraduates = graduates.filter((graduate) => {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch =
+            !searchTerm ||
+            (graduate.student_id &&
+                graduate.student_id.toLowerCase().includes(term)) ||
+            (graduate.first_name &&
+                graduate.first_name.toLowerCase().includes(term)) ||
+            (graduate.last_name &&
+                graduate.last_name.toLowerCase().includes(term)) ||
+            (graduate.program_name &&
+                graduate.program_name.toLowerCase().includes(term));
+
+        const matchesSex = !sexFilter || graduate.sex === sexFilter;
+        const matchesYear =
+            !yearFilter || String(graduate.year_granted) === yearFilter;
+
+        return matchesSearch && matchesSex && matchesYear;
+    });
+    if (loading) {
+        return <GraduatesSkeleton />;
+    }
+
     return (
         <Box sx={{ p: 3 }}>
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
@@ -332,40 +370,80 @@ const Graduates = () => {
                 <Typography color="textPrimary">List of Graduates</Typography>
             </Breadcrumbs>
 
-            <ButtonGroup
-                sx={{ mb: 3, display: "flex", justifyContent: "flex-end" }}
-            >
-                <Button
-                    variant="contained"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading}
-                    startIcon={loading ? <CircularProgress size={20} /> : null}
-                >
-                    Upload Excel File
-                </Button>
-                <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                    style={{ display: "none" }}
-                    id="upload-excel"
-                />
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={exportToExcel}
-                    disabled={loading || graduates.length === 0}
-                >
-                    Export to Excel
-                </Button>
-            </ButtonGroup>
+            {/* Search, Filter, and Button Controls */}
+            <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+                <Box sx={{ display: "flex", gap: 1, flex: 1, flexWrap: "wrap" }}>
+                    <TextField
+                        placeholder="Search ID, Name, Program"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ flex: 1, minWidth: 150 }}
+                    />
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
+                            Sex
+                        </InputLabel>
+                        <Select
+                            value={sexFilter}
+                            onChange={(e) => setSexFilter(e.target.value)}
+                            label="Sex"
+                            size="small"
+                        >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="M">Male</MenuItem>
+                            <MenuItem value="F">Female</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
+                            Year
+                        </InputLabel>
+                        <Select
+                            value={yearFilter}
+                            onChange={(e) => setYearFilter(e.target.value)}
+                            label="Year"
+                            size="small"
+                        >
+                            <MenuItem value="">All</MenuItem>
+                            {uniqueYears.map((year) => (
+                                <MenuItem key={year} value={String(year)}>
+                                    {year}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+                <ButtonGroup>
+                    <Button
+                        variant="contained"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} /> : null}
+                    >
+                        Upload Excel File
+                    </Button>
+                    <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={handleFileUpload}
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        id="upload-excel"
+                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={exportToExcel}
+                        disabled={loading || graduates.length === 0}
+                    >
+                        Export to Excel
+                    </Button>
+                </ButtonGroup>
+            </Box>
 
-            {graduates.length > 0 ? (
-                <GraduatesTable graduates={graduates} />
-            ) : (
-                <Typography>No data available</Typography>
-            )}
+            <GraduatesTable graduates={filteredGraduates} />
 
             <Snackbar
                 open={snackbarOpen}

@@ -1,43 +1,59 @@
 import { HotTable } from "@handsontable/react";
 import "handsontable/dist/handsontable.full.min.css";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { registerAllModules } from "handsontable/registry";
 import PropTypes from "prop-types";
 import axios from "axios";
 import {
     CircularProgress,
     Box,
-    TextField,
-    Grid,
     Tabs,
     Tab,
     Paper,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Typography,
+    Pagination,
 } from "@mui/material";
 
 // Register all Handsontable modules
 registerAllModules();
 
+const ROWS_PER_PAGE_OPTIONS = [
+    { label: "25", value: 25 },
+    { label: "50", value: 50 },
+    { label: "100", value: 100 },
+    { label: "All", value: -1 },
+];
+
 const ProgramTables = ({ programs, loading }) => {
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filteredPrograms, setFilteredPrograms] = useState(programs);
     const [subTabValue, setSubTabValue] = useState(0); // State for sub-tabs
+    const [page, setPage] = useState(0); // State for current page
+    const [rowsPerPage, setRowsPerPage] = useState(25); // State for rows per page
 
-    // Apply search and filters
-    useEffect(() => {
-        let filtered = [...programs];
+    // Handle page change
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
 
-        if (searchQuery) {
-            filtered = filtered.filter((program) =>
-                Object.values(program).some((value) =>
-                    String(value)
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                )
-            );
+    // Handle rows per page change
+    const handleChangeRowsPerPage = (event) => {
+        const newRowsPerPage = event.target.value;
+        setRowsPerPage(newRowsPerPage);
+        setPage(0); // Reset to first page when rows per page changes
+    };
+
+    // Paginate the programs data
+    const paginatedData = useMemo(() => {
+        if (rowsPerPage === -1) {
+            return programs; // Show all rows if "All" is selected
         }
-
-        setFilteredPrograms(filtered);
-    }, [programs, searchQuery]);
+        const startIndex = page * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        return programs.slice(startIndex, endIndex);
+    }, [programs, page, rowsPerPage]);
 
     // Define column configurations for each subTabValue
     const columnConfigs = useMemo(
@@ -86,7 +102,7 @@ const ProgramTables = ({ programs, loading }) => {
                         type: "numeric",
                     },
                 ],
-                data: filteredPrograms.map((program) => ({
+                data: paginatedData.map((program) => ({
                     id: program.id,
                     program_name: program.program_name || "-",
                     program_code: program.program_code || "-",
@@ -211,7 +227,7 @@ const ProgramTables = ({ programs, loading }) => {
                         readOnly: true, // Already read-only
                     },
                 ],
-                data: filteredPrograms.map((program) => ({
+                data: paginatedData.map((program) => ({
                     id: program.id,
                     program_name: program.program_name || "-",
                     new_students_freshmen_male:
@@ -289,7 +305,7 @@ const ProgramTables = ({ programs, loading }) => {
                         type: "numeric",
                     },
                 ],
-                data: filteredPrograms.map((program) => ({
+                data: paginatedData.map((program) => ({
                     id: program.id,
                     program_name: program.program_name || "-",
                     lecture_units_actual: program.lecture_units_actual ?? 0,
@@ -307,7 +323,7 @@ const ProgramTables = ({ programs, loading }) => {
                 })),
             },
         }),
-        [filteredPrograms]
+        [paginatedData]
     );
 
     // Handle cell changes and save to backend with subtotal/grand total updates
@@ -315,7 +331,7 @@ const ProgramTables = ({ programs, loading }) => {
         async (changes, source) => {
             if (!changes || source === "loadData") return;
 
-            const updatedPrograms = [...filteredPrograms];
+            const updatedPrograms = [...programs];
             const token = localStorage.getItem("token");
             const currentConfig =
                 columnConfigs[subTabValue] || columnConfigs[0];
@@ -424,10 +440,10 @@ const ProgramTables = ({ programs, loading }) => {
                 }
             }
 
-            // Update the state to reflect changes in the table
-            setFilteredPrograms(updatedPrograms);
+            // Note: Since programs state is managed in CurricularProgram, you may need to lift this state update
+            // Consider passing a callback to update programs in the parent component
         },
-        [filteredPrograms, subTabValue, columnConfigs]
+        [programs, subTabValue, columnConfigs]
     );
 
     if (loading) return <CircularProgress />;
@@ -435,38 +451,8 @@ const ProgramTables = ({ programs, loading }) => {
 
     return (
         <Box sx={{ mt: 2, position: "relative" }}>
-            {/* Search and Filter Section */}
-            <Box sx={{ mb: 1 }}>
-                <Grid container spacing={1} alignItems="center">
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            fullWidth
-                            size="small"
-                            label="Search"
-                            variant="outlined"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search..."
-                            sx={{
-                                "& .MuiInputBase-root": {
-                                    fontSize: "0.75rem",
-                                    height: "32px",
-                                },
-                                "& .MuiInputLabel-root": {
-                                    fontSize: "0.75rem",
-                                    transform: "translate(14px, 8px) scale(1)",
-                                },
-                                "& .MuiInputLabel-shrink": {
-                                    transform:
-                                        "translate(14px, -6px) scale(0.75)",
-                                },
-                            }}
-                        />
-                    </Grid>
-                </Grid>
-            </Box>
             {/* Sub-Tabs Navigation */}
-            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+            <Paper sx={{ borderRadius: 1}}>
                 <Tabs
                     value={subTabValue}
                     onChange={(e, newValue) => setSubTabValue(newValue)}
@@ -499,7 +485,7 @@ const ProgramTables = ({ programs, loading }) => {
                     columns={currentConfig.columns}
                     rowHeaders={true}
                     stretchH="all"
-                    height="550px"
+                    height="auto"
                     licenseKey="non-commercial-and-evaluation"
                     settings={{
                         readOnly: false,
@@ -592,6 +578,66 @@ const ProgramTables = ({ programs, loading }) => {
                         },
                     }}
                 />
+                {/* Pagination Controls */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        p: 1,
+                        borderTop: 1,
+                        borderColor: "divider",
+                        bgcolor: "grey.50",
+                        position: "sticky", // Make pagination sticky
+                        bottom: -.5, // Stick to the bottom of the container
+                        zIndex: 99999, // Ensure it stays above other content
+                    }}
+                >
+                    <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
+                        <InputLabel sx={{ fontSize: "0.75rem" }}>Rows</InputLabel>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={handleChangeRowsPerPage}
+                            label="Rows"
+                            sx={{ height: 32, fontSize: "0.875rem" }}
+                        >
+                            {ROWS_PER_PAGE_OPTIONS.map((option) => (
+                                <MenuItem
+                                    key={option.value}
+                                    value={option.value}
+                                    sx={{ fontSize: "0.875rem" }}
+                                >
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mr: 1, fontSize: "0.75rem" }}
+                    >
+                        {programs.length === 0
+                            ? "0-0"
+                            : `${page * rowsPerPage + 1}-${Math.min(
+                                  (page + 1) * rowsPerPage,
+                                  programs.length
+                              )}`}{" "}
+                        of {programs.length}
+                    </Typography>
+                    <Pagination
+                        count={Math.ceil(programs.length / rowsPerPage) || 1}
+                        page={page + 1}
+                        onChange={(_, value) => handleChangePage(null, value - 1)}
+                        size="small"
+                        color="primary"
+                        showFirstButton
+                        showLastButton
+                        sx={{
+                            "& .MuiPaginationItem-root": { fontSize: "0.75rem" },
+                        }}
+                    />
+                </Box>
             </Paper>
         </Box>
     );

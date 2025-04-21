@@ -21,20 +21,27 @@ import {
     TableRow,
     IconButton,
     ButtonGroup,
+    DialogActions,
+    Paper,
+    alpha,
+    TextField,
+    Grid,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
+import UploadIcon from "@mui/icons-material/Upload";
+import CloseIcon from "@mui/icons-material/Close";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import config from "../../../utils/config";
 import ProgramTables from "./ProgramTables";
-import CloseIcon from "@mui/icons-material/Close";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLoading } from "../../../Context/LoadingContext";
 import ExcelJS from "exceljs";
 import { decryptId } from "../../../utils/encryption";
+import CurricularProgramSkeleton from "./CurricularProgramSkeleton";
 
 const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -42,12 +49,16 @@ const CurricularProgram = () => {
     const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
     const [mainTabValue, setMainTabValue] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [openUploadDialog, setOpenUploadDialog] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
         severity: "success",
     });
+    const [searchQuery, setSearchQuery] = useState(""); // Added search state
     const navigate = useNavigate();
     const theme = useTheme();
 
@@ -68,6 +79,7 @@ const CurricularProgram = () => {
         try {
             const institutionId = decryptId(encryptedInstitutionId);
             showLoading();
+            setLoading(true);
             const token = localStorage.getItem("token");
             if (!institutionId) {
                 console.error("No institution ID found in localStorage");
@@ -97,6 +109,7 @@ const CurricularProgram = () => {
             }
             setPrograms([]);
         } finally {
+            setLoading(false);
             hideLoading();
         }
     };
@@ -105,9 +118,27 @@ const CurricularProgram = () => {
         fetchPrograms();
     }, []);
 
-    const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) {
+    // Filter programs based on search query and mainTabValue
+    const filteredPrograms = useMemo(() => {
+        let filtered = programs.filter(
+            (program) => program.program_type === categories[mainTabValue]
+        );
+
+        if (searchQuery) {
+            filtered = filtered.filter((program) =>
+                Object.values(program).some((value) =>
+                    String(value)
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase())
+                )
+            );
+        }
+
+        return filtered;
+    }, [programs, mainTabValue, categories, searchQuery]);
+
+    const handleFileUpload = async () => {
+        if (!selectedFile) {
             console.log("No file selected for upload");
             return;
         }
@@ -123,10 +154,13 @@ const CurricularProgram = () => {
                     : "Please log in first.",
                 severity: "warning",
             });
+            setOpenUploadDialog(false);
+            setSelectedFile(null);
             return;
         }
         updateProgress(10);
         setIsUploading(true);
+        setLoading(true);
 
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -203,9 +237,9 @@ const CurricularProgram = () => {
                                 graduates_total:
                                     (row[39] || null) + (row[40] || null),
                                 externally_funded_merit_scholars:
-                                    row[42] || null,
-                                internally_funded_grantees: row[43] || null,
-                                suc_funded_grantees: row[44] || null,
+                                    row[41] || null,
+                                internally_funded_grantees: row[42] || null,
+                                suc_funded_grantees: row[43] || null,
                             };
                         })
                         .filter((data) => !!data.program_name);
@@ -224,7 +258,10 @@ const CurricularProgram = () => {
                         severity: "warning",
                     });
                     setIsUploading(false);
+                    setOpenUploadDialog(false);
+                    setSelectedFile(null);
                     updateProgress();
+                    setLoading(false);
                     return;
                 }
 
@@ -267,7 +304,10 @@ const CurricularProgram = () => {
                     });
                 } finally {
                     setIsUploading(false);
+                    setOpenUploadDialog(false);
+                    setSelectedFile(null);
                     updateProgress();
+                    setLoading(false);
                 }
             } catch (error) {
                 console.error("Error processing file:", error.message);
@@ -278,15 +318,19 @@ const CurricularProgram = () => {
                     severity: "error",
                 });
                 setIsUploading(false);
+                setOpenUploadDialog(false);
+                setSelectedFile(null);
                 updateProgress();
+                setLoading(false);
             }
         };
 
-        reader.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(selectedFile);
     };
 
     const handleExportToExcel = async () => {
         console.log("Programs before export:", programs);
+        setLoading(true);
         try {
             updateProgress(10);
             const response = await fetch("/templates/Form-B-Themeplate.xlsx");
@@ -301,7 +345,7 @@ const CurricularProgram = () => {
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(arrayBuffer);
 
-            const dataStartRow = 9; // Matches import range: 8 (0-based index 8 = row 9 in Excel)
+            const dataStartRow = 9;
 
             const programsByCategory = categories.reduce((acc, category) => {
                 acc[category] = programs.filter(
@@ -340,7 +384,7 @@ const CurricularProgram = () => {
                     row.getCell(12).value =
                         program.program_normal_length_in_years || 0;
                     row.getCell(13).value = program.lab_units || 0;
-                    row.getCell(14).value = program.lecture_units || 0;
+                    row.getCell(14).value = program.lecture_unt || 0;
                     row.getCell(15).value = program.total_units || 0;
                     row.getCell(16).value = program.tuition_per_unit || 0;
                     row.getCell(17).value = program.program_fee || 0;
@@ -348,20 +392,20 @@ const CurricularProgram = () => {
                         program.new_students_freshmen_male || 0;
                     row.getCell(19).value =
                         program.new_students_freshmen_female || 0;
-                    row.getCell(20).value = program.first_year_old_male || 0;
-                    row.getCell(21).value = program.first_year_old_female || 0;
-                    row.getCell(22).value = program.second_year_male || 0;
-                    row.getCell(23).value = program.second_year_female || 0;
-                    row.getCell(24).value = program.third_year_male || 0;
-                    row.getCell(25).value = program.third_year_female || 0;
-                    row.getCell(26).value = program.fourth_year_male || 0;
-                    row.getCell(27).value = program.fourth_year_female || 0;
-                    row.getCell(28).value = program.fifth_year_male || 0;
-                    row.getCell(29).value = program.fifth_year_female || 0;
-                    row.getCell(30).value = program.sixth_year_male || 0;
-                    row.getCell(31).value = program.sixth_year_female || 0;
-                    row.getCell(32).value = program.seventh_year_male || 0;
-                    row.getCell(33).value = program.seventh_year_female || 0;
+                    row.getCell(20).value = program["1st_year_male"] || 0;
+                    row.getCell(21).value = program["1st_year_female"] || 0;
+                    row.getCell(22).value = program["2nd_year_male"] || 0;
+                    row.getCell(23).value = program["2nd_year_female"] || 0;
+                    row.getCell(24).value = program["3rd_year_male"] || 0;
+                    row.getCell(25).value = program["3rd_year_female"] || 0;
+                    row.getCell(26).value = program["4th_year_male"] || 0;
+                    row.getCell(27).value = program["4th_year_female"] || 0;
+                    row.getCell(28).value = program["5th_year_male"] || 0;
+                    row.getCell(29).value = program["5th_year_female"] || 0;
+                    row.getCell(30).value = program["6th_year_male"] || 0;
+                    row.getCell(31).value = program["6th_year_female"] || 0;
+                    row.getCell(32).value = program["7th_year_male"] || 0;
+                    row.getCell(33).value = program["7th_year_female"] || 0;
                     row.getCell(34).value = program.subtotal_male || 0;
                     row.getCell(35).value = program.subtotal_female || 0;
                     row.getCell(36).value = program.grand_total || 0;
@@ -398,6 +442,8 @@ const CurricularProgram = () => {
         } catch (error) {
             console.error("Error exporting data:", error);
             alert("Error exporting data. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -405,12 +451,6 @@ const CurricularProgram = () => {
         if (reason === "clickaway") return;
         setSnackbar((prev) => ({ ...prev, open: false }));
     };
-
-    const filteredPrograms = useMemo(() => {
-        return programs.filter(
-            (program) => program.program_type === categories[mainTabValue]
-        );
-    }, [programs, mainTabValue, categories]);
 
     const referenceData = {
         authority: [
@@ -436,8 +476,13 @@ const CurricularProgram = () => {
         ],
     };
 
+    // Show skeleton while loading
+    if (loading) {
+        return <CurricularProgramSkeleton />;
+    }
+
     return (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, my: 2 }}>
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
@@ -458,45 +503,218 @@ const CurricularProgram = () => {
                 <Typography color="textPrimary">Curricular Program</Typography>
             </Breadcrumbs>
 
-            <ButtonGroup
-                sx={{
-                    mb: 2,
-                    display: "flex",
-                    justifyContent: "flex-end",
-                }}
-            >
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<DownloadIcon />}
-                    onClick={handleExportToExcel}
-                    disabled={isUploading}
-                >
-                    Export to Excel
-                </Button>
-
-                <label htmlFor="file-upload">
+            {/* Search and Button Group Section */}
+            <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
+                <Grid container spacing={1} alignItems="center">
+                    <Grid item xs={12} sm={4}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="Search"
+                            variant="outlined"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search..."
+                            sx={{
+                                "& .MuiInputBase-root": {
+                                    fontSize: "0.75rem",
+                                    height: "32px",
+                                },
+                                "& .MuiInputLabel-root": {
+                                    fontSize: "0.75rem",
+                                    transform: "translate(14px, 8px) scale(1)",
+                                },
+                                "& .MuiInputLabel-shrink": {
+                                    transform:
+                                        "translate(14px, -6px) scale(0.75)",
+                                },
+                            }}
+                        />
+                    </Grid>
+                </Grid>
+                <ButtonGroup sx={{ flexShrink: 0 }}>
                     <Button
                         variant="contained"
                         color="secondary"
-                        component="span"
                         startIcon={<UploadFileIcon />}
+                        onClick={() => setOpenUploadDialog(true)}
                         disabled={isUploading}
                     >
                         {isUploading ? "Uploading..." : "Import Form B"}
                     </Button>
-                    <input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        style={{ display: "none" }}
-                        id="file-upload"
-                        onChange={handleFileUpload}
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleExportToExcel}
                         disabled={isUploading}
-                    />
-                </label>
-            </ButtonGroup>
+                    >
+                        Export to Excel
+                    </Button>
+                </ButtonGroup>
+            </Box>
 
-            <ProgramTables programs={filteredPrograms} />
+            {/* Upload Dialog */}
+            <Dialog
+                open={openUploadDialog}
+                onClose={() => setOpenUploadDialog(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: 500,
+                    },
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        px: 3,
+                        py: 2,
+                    }}
+                >
+                    <Typography fontWeight={600}>
+                        Upload Institution Form B
+                    </Typography>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 3 }}
+                    >
+                        Please upload the Form B Excel document.
+                    </Typography>
+
+                    <Box
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            if (
+                                e.dataTransfer.files &&
+                                e.dataTransfer.files[0]
+                            ) {
+                                setSelectedFile(e.dataTransfer.files[0]);
+                            }
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        sx={{
+                            p: 1.5,
+                            border: `1px dashed ${theme.palette.primary.main}`,
+                            borderRadius: 1.5,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 1,
+                            cursor: "pointer",
+                            bgcolor: "background.paper",
+                        }}
+                        onClick={() =>
+                            document.getElementById("upload-input").click()
+                        }
+                    >
+                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
+                        <Typography>
+                            Drag & drop file or click to browse
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Supported formats: .xlsx, .xls
+                        </Typography>
+                        <input
+                            id="upload-input"
+                            type="file"
+                            hidden
+                            accept=".xlsx, .xls"
+                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                        />
+                    </Box>
+
+                    {selectedFile && (
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                mt: 2,
+                                p: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                borderRadius: 1.5,
+                            }}
+                        >
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
+                                <Box>
+                                    <Typography
+                                        variant="body2"
+                                        noWrap
+                                        sx={{ maxWidth: 200 }}
+                                    >
+                                        {selectedFile.name}
+                                    </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
+                                        KB
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => setSelectedFile(null)}
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    "&:hover": {
+                                        bgcolor: alpha(
+                                            theme.palette.error.main,
+                                            0.1
+                                        ),
+                                    },
+                                }}
+                            >
+                                ×
+                            </IconButton>
+                        </Paper>
+                    )}
+                </DialogContent>
+                <DialogActions
+                    sx={{
+                        px: 3,
+                        py: 2,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                    }}
+                >
+                    <Button
+                        onClick={() => {
+                            setOpenUploadDialog(false);
+                            setSelectedFile(null);
+                        }}
+                        sx={{
+                            textTransform: "none",
+                            fontWeight: 500,
+                            color: theme.palette.text.primary,
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleFileUpload}
+                        variant="contained"
+                        disabled={!selectedFile || isUploading}
+                        sx={{
+                            textTransform: "none",
+                            fontWeight: 500,
+                            borderRadius: 1.5,
+                            px: 3,
+                        }}
+                    >
+                        Upload
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <ProgramTables programs={filteredPrograms} loading={loading} />
             <Tabs
                 value={mainTabValue}
                 onChange={(event, newValue) => setMainTabValue(newValue)}

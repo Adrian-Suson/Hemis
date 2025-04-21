@@ -38,7 +38,6 @@ import { useLoading } from "../../../Context/LoadingContext";
 import { encryptId } from "../../../utils/encryption";
 
 const ROWS_PER_PAGE_OPTIONS = [
-    { label: "10", value: 10 },
     { label: "25", value: 25 },
     { label: "50", value: 50 },
     { label: "100", value: 100 },
@@ -70,9 +69,7 @@ const InstitutionTable = ({
         exportFormA: false,
     });
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(
-        ROWS_PER_PAGE_OPTIONS[0].value
-    );
+    const [rowsPerPage, setRowsPerPage] = useState(25);
     const menuButtonRef = useRef(null);
 
     const handleOpenDialog = (institution) => {
@@ -100,6 +97,7 @@ const InstitutionTable = ({
 
     const handleExportToFormA = useCallback(
         async (institution) => {
+            console.log("Exporting Form A for institution:", institution);
             setLoading((prev) => ({ ...prev, exportFormA: true }));
             try {
                 updateProgress(10);
@@ -174,8 +172,9 @@ const InstitutionTable = ({
                     row.commit();
                 });
                 updateProgress(50);
-                const fileName = `Form_A_${institution.name || "Unknown"}_${institution.institution_type || "Unknown"
-                    }_${new Date().toISOString().split("T")[0]}.xlsx`;
+                const fileName = `Form_A_${institution.name || "Unknown"}_${
+                    institution.institution_type || "Unknown"
+                }_${new Date().toISOString().split("T")[0]}.xlsx`;
                 const buffer = await workbook.xlsx.writeBuffer();
                 const blob = new Blob([buffer], {
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

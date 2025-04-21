@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Grid, Paper, Divider } from "@mui/material";
+import {
+    Box,
+    Typography,
+    Grid,
+    Paper,
+    Divider,
+    Skeleton,
+} from "@mui/material";
 import axios from "axios";
 import {
     Chart as ChartJS,
@@ -13,6 +20,7 @@ import {
     Legend,
 } from "chart.js";
 import { Pie, Bar, Doughnut, Line } from "react-chartjs-2";
+import { motion } from "framer-motion";
 
 // Register Chart.js components
 ChartJS.register(
@@ -99,14 +107,7 @@ const Statistics = () => {
         (sum, program) => sum + (program.graduates_total || 0),
         0
     );
-    const avgFacultyWorkload = stats.facultyProfiles.length
-        ? (
-              stats.facultyProfiles.reduce(
-                  (sum, f) => sum + (f.total_work_load || 0),
-                  0
-              ) / stats.facultyProfiles.length
-          ).toFixed(2)
-        : 0;
+
     const genderBreakdown = stats.programs.reduce(
         (acc, program) => ({
             male: acc.male + (program.subtotal_male || 0),
@@ -152,14 +153,14 @@ const Statistics = () => {
         return acc;
     }, {});
 
-    // Chart Data with a cohesive color scheme
+    // Chart Data with a modern color scheme
     const chartColors = {
-        blue: "#2196F3",
-        pink: "#F06292",
-        teal: "#26A69A",
-        purple: "#AB47BC",
-        orange: "#FF9800",
-        grey: "#B0BEC5",
+        primary: "#3B82F6", // Blue
+        secondary: "#EC4899", // Pink
+        teal: "#14B8A6", // Teal
+        purple: "#8B5CF6", // Purple
+        orange: "#F59E0B", // Orange
+        grey: "#6B7280", // Grey
     };
 
     const genderPieData = {
@@ -167,9 +168,9 @@ const Statistics = () => {
         datasets: [
             {
                 data: [genderBreakdown.male, genderBreakdown.female],
-                backgroundColor: [chartColors.blue, chartColors.pink],
-                borderColor: [chartColors.blue, chartColors.pink],
-                borderWidth: 1,
+                backgroundColor: [chartColors.primary, chartColors.secondary],
+                borderColor: ["#fff", "#fff"],
+                borderWidth: 2,
             },
         ],
     };
@@ -185,19 +186,10 @@ const Statistics = () => {
                     totalPrograms,
                     totalInstitutions,
                 ],
-                backgroundColor: [
-                    chartColors.orange,
-                    chartColors.teal,
-                    chartColors.purple,
-                    chartColors.grey,
-                ],
-                borderColor: [
-                    chartColors.orange,
-                    chartColors.teal,
-                    chartColors.purple,
-                    chartColors.grey,
-                ],
+                backgroundColor: chartColors.teal,
+                borderColor: chartColors.teal,
                 borderWidth: 1,
+                borderRadius: 4,
             },
         ],
     };
@@ -207,9 +199,9 @@ const Statistics = () => {
         datasets: [
             {
                 data: [totalEnrollments, totalGraduates],
-                backgroundColor: [chartColors.blue, chartColors.grey],
-                borderColor: [chartColors.blue, chartColors.grey],
-                borderWidth: 1,
+                backgroundColor: [chartColors.purple, chartColors.grey],
+                borderColor: ["#fff", "#fff"],
+                borderWidth: 2,
             },
         ],
     };
@@ -220,27 +212,36 @@ const Statistics = () => {
             {
                 label: "Enrollments by Year",
                 data: Object.values(enrollmentByYearLevel),
-                fill: false,
-                borderColor: chartColors.teal,
-                backgroundColor: chartColors.teal,
-                tension: 0.3,
+                fill: true,
+                backgroundColor: `${chartColors.primary}33`, // Semi-transparent fill
+                borderColor: chartColors.primary,
+                tension: 0.4,
+                pointBackgroundColor: chartColors.primary,
+                pointBorderColor: "#fff",
+                pointBorderWidth: 2,
             },
         ],
     };
 
-    // Chart Options with improved styling
+    // Chart Options with enhanced styling
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: {
                 position: "top",
-                labels: { font: { size: 12, weight: "bold" }, color: "#333" },
+                labels: {
+                    font: { size: 14, family: "'Inter', sans-serif" },
+                    color: "#1F2937",
+                    padding: 15,
+                },
             },
             tooltip: {
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-                titleFont: { size: 12 },
-                bodyFont: { size: 12 },
+                backgroundColor: "#1F2937",
+                titleFont: { size: 14, family: "'Inter', sans-serif" },
+                bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                padding: 10,
+                cornerRadius: 4,
                 callbacks: {
                     label: (context) =>
                         `${context.label}: ${context.raw.toLocaleString()}`,
@@ -255,9 +256,19 @@ const Statistics = () => {
         scales: {
             y: {
                 beginAtZero: true,
-                ticks: { font: { size: 12 }, color: "#666" },
+                ticks: {
+                    font: { size: 12, family: "'Inter', sans-serif" },
+                    color: "#6B7280",
+                },
+                grid: { color: "#E5E7EB" },
             },
-            x: { ticks: { font: { size: 12 }, color: "#666" } },
+            x: {
+                ticks: {
+                    font: { size: 12, family: "'Inter', sans-serif" },
+                    color: "#6B7280",
+                },
+                grid: { display: false },
+            },
         },
     };
 
@@ -266,211 +277,454 @@ const Statistics = () => {
         scales: {
             y: {
                 beginAtZero: true,
-                ticks: { font: { size: 12 }, color: "#666" },
+                ticks: {
+                    font: { size: 12, family: "'Inter', sans-serif" },
+                    color: "#6B7280",
+                },
+                grid: { color: "#E5E7EB" },
             },
-            x: { ticks: { font: { size: 12 }, color: "#666" } },
+            x: {
+                ticks: {
+                    font: { size: 12, family: "'Inter', sans-serif" },
+                    color: "#6B7280",
+                },
+                grid: { display: false },
+            },
         },
+    };
+
+    // Animation variants for framer-motion
+    const cardVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+        hover: { scale: 1.03, boxShadow: "0 12px 24px rgba(0,0,0,0.15)" },
+    };
+
+    const chartVariants = {
+        hidden: { opacity: 0, scale: 0.95 },
+        visible: { opacity: 1, scale: 1, transition: { duration: 0.6 } },
+    };
+
+    const skeletonVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { duration: 0.5 } },
     };
 
     if (stats.loading) {
         return (
-            <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight="50vh"
-            >
-                <Typography variant="h6" color="textSecondary">
-                    Loading...
-                </Typography>
+            <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+                {/* Skeleton Header */}
+                <Box
+                    sx={{
+                        py: 4,
+                        px: { xs: 2, md: 4 },
+                        bgcolor: "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
+                        color: "#fff",
+                        textAlign: "center",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                >
+                    <motion.div
+                        variants={skeletonVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <Skeleton
+                            variant="text"
+                            width="40%"
+                            height={60}
+                            sx={{ mx: "auto", bgcolor: "rgba(255,255,255,0.2)" }}
+                        />
+                        <Skeleton
+                            variant="text"
+                            width="20%"
+                            height={30}
+                            sx={{ mx: "auto", bgcolor: "rgba(255,255,255,0.2)" }}
+                        />
+                    </motion.div>
+                </Box>
+
+                {/* Skeleton Content */}
+                <Box sx={{ p: { xs: 2, md: 4 } }}>
+                    <Grid container spacing={3}>
+                        {/* Skeleton Summary Cards */}
+                        {[...Array(6)].map((_, index) => (
+                            <Grid
+                                item
+                                xs={12}
+                                sm={6}
+                                md={4}
+                                lg={2}
+                                key={index}
+                                sx={{ display: "flex" }}
+                            >
+                                <motion.div
+                                    variants={skeletonVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    transition={{ delay: index * 0.1 }}
+                                    style={{ flex: 1 }}
+                                >
+                                    <Skeleton
+                                        variant="rectangular"
+                                        height={120}
+                                        animation="wave"
+                                        sx={{
+                                            borderRadius: 3,
+                                            bgcolor: "grey.200",
+                                        }}
+                                    />
+                                </motion.div>
+                            </Grid>
+                        ))}
+
+                        {/* Skeleton Charts */}
+                        {[...Array(4)].map((_, index) => (
+                            <Grid
+                                item
+                                xs={12}
+                                md={6}
+                                lg={3}
+                                key={index}
+                            >
+                                <motion.div
+                                    variants={skeletonVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    transition={{ delay: index * 0.2 }}
+                                >
+                                    <Skeleton
+                                        variant="rectangular"
+                                        height={350}
+                                        animation="wave"
+                                        sx={{
+                                            borderRadius: 3,
+                                            bgcolor: "grey.200",
+                                        }}
+                                    />
+                                </motion.div>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
             </Box>
         );
     }
+
     if (stats.error) {
         return (
             <Box
                 display="flex"
                 justifyContent="center"
                 alignItems="center"
-                minHeight="50vh"
+                minHeight="100vh"
+                bgcolor="#f5f5f5"
             >
-                <Typography variant="h6" color="error">
-                    {stats.error}
-                </Typography>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <Typography variant="h5" color="error" align="center">
+                        {stats.error}
+                    </Typography>
+                </motion.div>
             </Box>
         );
     }
 
     return (
-        <Box
-            sx={{ p: { xs: 2, md: 4 }, bgcolor: "#f5f5f5", minHeight: "100vh" }}
-        >
-            <Typography
-                variant="h4"
-                gutterBottom
-                sx={{ fontWeight: "bold", color: "#333", mb: 4 }}
+        <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+            {/* Header */}
+            <Box
+                sx={{
+                    py: 4,
+                    px: { xs: 2, md: 4 },
+                    bgcolor: "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
+                    color: "#fff",
+                    textAlign: "center",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                }}
             >
-                Statistics Dashboard
-            </Typography>
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                >
+                    <Typography
+                        variant="h3"
+                        sx={{
+                            fontWeight: 700,
+                            fontFamily: "'Inter', sans-serif",
+                            mb: 1,
+                        }}
+                    >
+                        Statistics Dashboard
+                    </Typography>
+                    <Typography
+                        variant="subtitle1"
+                        sx={{ fontSize: "1.1rem", opacity: 0.9 }}
+                    >
+                        Insights into Users, Faculty, Programs, and More
+                    </Typography>
+                </motion.div>
+            </Box>
 
-            <Grid container spacing={3}>
-                {/* Summary Cards */}
-                {[
-                    {
-                        label: "Total Users",
-                        value: totalUsers,
-                        color: chartColors.orange,
-                    },
-                    {
-                        label: "Total Faculty",
-                        value: totalFaculty,
-                        color: chartColors.teal,
-                    },
-                    {
-                        label: "Total Programs",
-                        value: totalPrograms,
-                        color: chartColors.purple,
-                    },
-                    {
-                        label: "Total Institutions",
-                        value: totalInstitutions,
-                        color: chartColors.grey,
-                    },
-                    {
-                        label: "Total Enrollments",
-                        value: totalEnrollments.toLocaleString(),
-                        color: chartColors.blue,
-                    },
-                    {
-                        label: "Total Graduates",
-                        value: totalGraduates.toLocaleString(),
-                        color: chartColors.pink,
-                    },
-                    {
-                        label: "Avg Faculty Workload",
-                        value: `${avgFacultyWorkload} units`,
-                        color: chartColors.purple,
-                    },
-                ].map((stat, index) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                        <Paper
-                            elevation={3}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "#fff",
-                                transition: "transform 0.2s, box-shadow 0.2s",
-                                "&:hover": {
-                                    transform: "translateY(-4px)",
-                                    boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-                                },
-                            }}
+            {/* Content */}
+            <Box sx={{ p: { xs: 2, md: 4 } }}>
+                <Grid container spacing={3}>
+                    {/* Summary Cards */}
+                    {[
+                        {
+                            label: "Total Users",
+                            value: totalUsers,
+                            color: chartColors.orange,
+                        },
+                        {
+                            label: "Total Faculty",
+                            value: totalFaculty,
+                            color: chartColors.teal,
+                        },
+                        {
+                            label: "Total Programs",
+                            value: totalPrograms,
+                            color: chartColors.purple,
+                        },
+                        {
+                            label: "Total Institutions",
+                            value: totalInstitutions,
+                            color: chartColors.grey,
+                        },
+                        {
+                            label: "Total Enrollments",
+                            value: totalEnrollments.toLocaleString(),
+                            color: chartColors.primary,
+                        },
+                        {
+                            label: "Total Graduates",
+                            value: totalGraduates.toLocaleString(),
+                            color: chartColors.secondary,
+                        },
+                    ].map((stat, index) => (
+                        <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={4}
+                            lg={2}
+                            key={index}
+                            sx={{ display: "flex" }}
                         >
-                            <Typography
-                                variant="h5"
+                            <motion.div
+                                variants={cardVariants}
+                                initial="hidden"
+                                animate="visible"
+                                whileHover="hover"
+                                transition={{ delay: index * 0.1 }}
+                                style={{ flex: 1 }}
+                            >
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 3,
+                                        borderRadius: 3,
+                                        bgcolor: "#fff",
+                                        border: `1px solid ${chartColors.grey}22`,
+                                        height: "100%",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "space-between",
+                                        transition: "all 0.3s ease",
+                                    }}
+                                >
+                                    <Typography
+                                        variant="h4"
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: stat.color,
+                                            fontFamily:
+                                                "'Inter', sans-serif",
+                                        }}
+                                    >
+                                        {stat.value}
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "#6B7280",
+                                            fontFamily:
+                                                "'Inter', sans-serif",
+                                        }}
+                                    >
+                                        {stat.label}
+                                    </Typography>
+                                </Paper>
+                            </motion.div>
+                        </Grid>
+                    ))}
+
+                    {/* Charts */}
+                    <Grid item xs={12} md={6} lg={3}>
+                        <motion.div
+                            variants={chartVariants}
+                            initial="hidden"
+                            animate="visible"
+                        >
+                            <Paper
+                                elevation={0}
                                 sx={{
-                                    fontWeight: "bold",
-                                    color: stat.color,
-                                    mb: 1,
+                                    p: 3,
+                                    borderRadius: 3,
+                                    bgcolor: "#fff",
+                                    border: `1px solid ${chartColors.grey}22`,
+                                    height: 350,
+                                    display: "flex",
+                                    flexDirection: "column",
                                 }}
                             >
-                                {stat.value}
-                            </Typography>
-                            <Typography variant="body1" sx={{ color: "#666" }}>
-                                {stat.label}
-                            </Typography>
-                        </Paper>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 600,
+                                        color: "#1F2937",
+                                        fontFamily: "'Inter', sans-serif",
+                                        mb: 1,
+                                    }}
+                                >
+                                    Gender Breakdown
+                                </Typography>
+                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
+                                <Box sx={{ flex: 1 }}>
+                                    <Pie
+                                        data={genderPieData}
+                                        options={chartOptions}
+                                    />
+                                </Box>
+                            </Paper>
+                        </motion.div>
                     </Grid>
-                ))}
 
-                {/* Charts */}
-                <Grid item xs={12} sm={6} md={6} lg={3}>
-                    <Paper
-                        elevation={2}
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: "#fff",
-                            height: 300,
-                        }}
-                    >
-                        <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                    <Grid item xs={12} md={6} lg={3}>
+                        <motion.div
+                            variants={chartVariants}
+                            initial="hidden"
+                            animate="visible"
                         >
-                            Gender Breakdown
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Pie data={genderPieData} options={chartOptions} />
-                    </Paper>
-                </Grid>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: 3,
+                                    bgcolor: "#fff",
+                                    border: `1px solid ${chartColors.grey}22`,
+                                    height: 350,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                }}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 600,
+                                        color: "#1F2937",
+                                        fontFamily: "'Inter', sans-serif",
+                                        mb: 1,
+                                    }}
+                                >
+                                    Totals by Category
+                                </Typography>
+                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
+                                <Box sx={{ flex: 1 }}>
+                                    <Bar
+                                        data={totalsBarData}
+                                        options={barOptions}
+                                    />
+                                </Box>
+                            </Paper>
+                        </motion.div>
+                    </Grid>
 
-                <Grid item xs={12} sm={6} md={6} lg={3}>
-                    <Paper
-                        elevation={2}
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: "#fff",
-                            height: 300,
-                        }}
-                    >
-                        <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                    <Grid item xs={12} md={6} lg={3}>
+                        <motion.div
+                            variants={chartVariants}
+                            initial="hidden"
+                            animate="visible"
                         >
-                            Totals by Category
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Bar data={totalsBarData} options={barOptions} />
-                    </Paper>
-                </Grid>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: 3,
+                                    bgcolor: "#fff",
+                                    border: `1px solid ${chartColors.grey}22`,
+                                    height: 350,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                }}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 600,
+                                        color: "#1F2937",
+                                        fontFamily: "'Inter', sans-serif",
+                                        mb: 1,
+                                    }}
+                                >
+                                    Enrollments vs Graduates
+                                </Typography>
+                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
+                                <Box sx={{ flex: 1 }}>
+                                    <Doughnut
+                                        data={enrollmentDoughnutData}
+                                        options={chartOptions}
+                                    />
+                                </Box>
+                            </Paper>
+                        </motion.div>
+                    </Grid>
 
-                <Grid item xs={12} sm={6} md={6} lg={3}>
-                    <Paper
-                        elevation={2}
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: "#fff",
-                            height: 300,
-                        }}
-                    >
-                        <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
+                    <Grid item xs={12} md={6} lg={3}>
+                        <motion.div
+                            variants={chartVariants}
+                            initial="hidden"
+                            animate="visible"
                         >
-                            Enrollments vs Graduates
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Doughnut
-                            data={enrollmentDoughnutData}
-                            options={chartOptions}
-                        />
-                    </Paper>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: 3,
+                                    bgcolor: "#fff",
+                                    border: `1px solid ${chartColors.grey}22`,
+                                    height: 350,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                }}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 600,
+                                        color: "#1F2937",
+                                        fontFamily: "'Inter', sans-serif",
+                                        mb: 1,
+                                    }}
+                                >
+                                    Enrollments by Year
+                                </Typography>
+                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
+                                <Box sx={{ flex: 1 }}>
+                                    <Line
+                                        data={enrollmentLineData}
+                                        options={lineOptions}
+                                    />
+                                </Box>
+                            </Paper>
+                        </motion.div>
+                    </Grid>
                 </Grid>
-
-                <Grid item xs={12} sm={6} md={6} lg={3}>
-                    <Paper
-                        elevation={2}
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: "#fff",
-                            height: 300,
-                        }}
-                    >
-                        <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: "bold", color: "#333", mb: 1 }}
-                        >
-                            Enrollments by Year
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Line data={enrollmentLineData} options={lineOptions} />
-                    </Paper>
-                </Grid>
-            </Grid>
+            </Box>
         </Box>
     );
 };

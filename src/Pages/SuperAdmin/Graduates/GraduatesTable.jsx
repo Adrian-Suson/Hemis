@@ -1,69 +1,67 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PropTypes from "prop-types";
-
 import { HotTable } from "@handsontable/react";
 import "handsontable/dist/handsontable.full.min.css";
 import {
     Box,
-    TextField,
+    Paper,
     FormControl,
     InputLabel,
     Select,
     MenuItem,
+    Typography,
+    Pagination,
 } from "@mui/material";
 
+const ROWS_PER_PAGE_OPTIONS = [
+    { label: "10", value: 10 },
+    { label: "25", value: 25 },
+    { label: "50", value: 50 },
+    { label: "100", value: 100 },
+    { label: "All", value: -1 },
+];
+
 const GraduatesTable = ({ graduates }) => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [sexFilter, setSexFilter] = useState("");
-    const [yearFilter, setYearFilter] = useState("");
+    const [page, setPage] = useState(0); // State for current page
+    const [rowsPerPage, setRowsPerPage] = useState(10); // State for rows per page
 
-    // Get unique years for the year filter dropdown
-    const uniqueYears = [
-        ...new Set(graduates.map((g) => g.year_granted).filter(Boolean)),
-    ].sort();
+    // Handle page change
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
 
-    // Filter graduates based on search term and selection filters
-    const filteredGraduates = graduates.filter((graduate) => {
-        const term = searchTerm.toLowerCase();
-        const matchesSearch =
-            !searchTerm ||
-            (graduate.student_id &&
-                graduate.student_id.toLowerCase().includes(term)) ||
-            (graduate.first_name &&
-                graduate.first_name.toLowerCase().includes(term)) ||
-            (graduate.last_name &&
-                graduate.last_name.toLowerCase().includes(term)) ||
-            (graduate.program_name &&
-                graduate.program_name.toLowerCase().includes(term));
+    // Handle rows per page change
+    const handleChangeRowsPerPage = (event) => {
+        const newRowsPerPage = event.target.value;
+        setRowsPerPage(newRowsPerPage);
+        setPage(0); // Reset to first page when rows per page changes
+    };
 
-        const matchesSex = !sexFilter || graduate.sex === sexFilter;
-        const matchesYear =
-            !yearFilter || String(graduate.year_granted) === yearFilter;
-
-        return matchesSearch && matchesSex && matchesYear;
-    });
+    // Paginate the graduates data
+    const paginatedData = useMemo(() => {
+        if (rowsPerPage === -1) {
+            return graduates; // Show all rows if "All" is selected
+        }
+        const startIndex = page * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        return graduates.slice(startIndex, endIndex);
+    }, [graduates, page, rowsPerPage]);
 
     const hotSettings = {
-        data: filteredGraduates, // Use filtered graduates
+        data: paginatedData,
         columns: [
             { data: "student_id", title: "Student ID" },
             { data: "last_name", title: "Last Name" },
             { data: "first_name", title: "First Name" },
             { data: "middle_name", title: "Middle Name" },
-            { data: "sex", title: "Sex", type: "dropdown", source: ["M", "F"] },
+            { data: "sex", title: "Sex" },
             {
                 data: "date_of_birth",
                 title: "Date of Birth",
-                type: "date",
-                dateFormat: "MM/DD/YYYY",
-                correctFormat: true,
             },
             {
                 data: "date_graduated",
                 title: "Date Graduated",
-                type: "date",
-                dateFormat: "MM/DD/YYYY",
-                correctFormat: true,
             },
             { data: "program_name", title: "Program Name" },
             { data: "program_major", title: "Program Major" },
@@ -76,59 +74,79 @@ const GraduatesTable = ({ graduates }) => {
         colHeaders: true,
         rowHeaders: true,
         stretchH: "all",
-        height: 400,
+        height: "auto",
         licenseKey: "non-commercial-and-evaluation",
     };
 
     return (
         <Box sx={{ mb: 2 }}>
-            {/* Filter Controls */}
-            <Box sx={{ mb: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                <TextField
-                    placeholder="Search ID, Name, Program"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    variant="outlined"
-                    size="small"
-                    sx={{ flex: 1, minWidth: 150 }}
-                />
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
-                        Sex
-                    </InputLabel>
-                    <Select
-                        value={sexFilter}
-                        onChange={(e) => setSexFilter(e.target.value)}
-                        label="Sex"
-                        size="small"
-                    >
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="M">Male</MenuItem>
-                        <MenuItem value="F">Female</MenuItem>
-                    </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
-                        Year
-                    </InputLabel>
-                    <Select
-                        value={yearFilter}
-                        onChange={(e) => setYearFilter(e.target.value)}
-                        label="Year"
-                        size="small"
-                    >
-                        <MenuItem value="">All</MenuItem>
-                        {uniqueYears.map((year) => (
-                            <MenuItem key={year} value={String(year)}>
-                                {year}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Box>
+            <Paper sx={{ maxHeight: 550, overflowX: "auto" }}>
+                <HotTable settings={hotSettings} />
 
-            {/* Table */}
-            <HotTable settings={hotSettings} />
+                {/* Pagination Controls */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        p: 1,
+                        borderTop: 1,
+                        borderColor: "divider",
+                        bgcolor: "grey.50",
+                    }}
+                >
+                    <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
+                        <InputLabel sx={{ fontSize: "0.75rem" }}>
+                            Rows
+                        </InputLabel>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={handleChangeRowsPerPage}
+                            label="Rows"
+                            sx={{ height: 32, fontSize: "0.875rem" }}
+                        >
+                            {ROWS_PER_PAGE_OPTIONS.map((option) => (
+                                <MenuItem
+                                    key={option.value}
+                                    value={option.value}
+                                    sx={{ fontSize: "0.875rem" }}
+                                >
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mr: 1, fontSize: "0.75rem" }}
+                    >
+                        {graduates.length === 0
+                            ? "0-0"
+                            : `${page * rowsPerPage + 1}-${Math.min(
+                                  (page + 1) * rowsPerPage,
+                                  graduates.length
+                              )}`}{" "}
+                        of {graduates.length}
+                    </Typography>
+                    <Pagination
+                        count={Math.ceil(graduates.length / rowsPerPage) || 1}
+                        page={page + 1}
+                        onChange={(_, value) =>
+                            handleChangePage(null, value - 1)
+                        }
+                        size="small"
+                        color="primary"
+                        showFirstButton
+                        showLastButton
+                        sx={{
+                            "& .MuiPaginationItem-root": {
+                                fontSize: "0.75rem",
+                            },
+                        }}
+                    />
+                </Box>
+            </Paper>
         </Box>
     );
 };
@@ -141,8 +159,8 @@ GraduatesTable.propTypes = {
             first_name: PropTypes.string,
             middle_name: PropTypes.string,
             sex: PropTypes.oneOf(["M", "F"]),
-            date_of_birth: PropTypes.string, // Assuming date is in string format
-            date_graduated: PropTypes.string, // Assuming date is in string format
+            date_of_birth: PropTypes.string,
+            date_graduated: PropTypes.string,
             program_name: PropTypes.string,
             program_major: PropTypes.string,
             program_authority_to_operate_graduate: PropTypes.string,

@@ -11,23 +11,27 @@ import {
     Divider,
     IconButton,
     Box,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 import axios from "axios";
 import PropTypes from "prop-types";
+import { useLoading } from "../../../Context/LoadingContext";
 
 function ManualInstitutionDialog({
     open,
     onClose,
     getInstitutionType,
     fetchInstitutions,
-    showProgress,
-    hideProgress,
     setSnackbarOpen,
     setSnackbarMessage,
     setSnackbarSeverity,
 }) {
+    const { updateProgress } = useLoading();
     // Local state for the form fields
     const [manualData, setManualData] = useState({
         name: "",
@@ -48,13 +52,14 @@ function ManualInstitutionDialog({
         year_converted_university: "",
         head_name: "",
         head_title: "",
+        institution_type: "",
         head_education: "",
     });
 
     // Local state for form errors
     const [formErrors, setFormErrors] = useState({});
 
-    // Update state as user types
+    // Update state as user types or selects
     const handleChange = (e) => {
         setManualData((prev) => ({
             ...prev,
@@ -83,6 +88,7 @@ function ManualInstitutionDialog({
             year_converted_university: "",
             head_name: "",
             head_title: "",
+            institution_type: "",
             head_education: "",
         });
         setFormErrors({});
@@ -94,8 +100,7 @@ function ManualInstitutionDialog({
         resetForm();
     };
 
-    // 1. Validate fields to mirror your backend rules
-    //    Return an object of errors. If empty, form is valid.
+    // Validate fields to mirror backend rules
     const validateForm = () => {
         const errors = {};
 
@@ -114,20 +119,13 @@ function ManualInstitutionDialog({
         }
 
         // address_street: nullable|string|max:255
-        if (
-            manualData.address_street &&
-            manualData.address_street.length > 255
-        ) {
+        if (manualData.address_street && manualData.address_street.length > 255) {
             errors.address_street = "Street must not exceed 255 characters.";
         }
 
         // municipality_city: nullable|string|max:255
-        if (
-            manualData.municipality_city &&
-            manualData.municipality_city.length > 255
-        ) {
-            errors.municipality_city =
-                "Municipality/City must not exceed 255 characters.";
+        if (manualData.municipality_city && manualData.municipality_city.length > 255) {
+            errors.municipality_city = "Municipality/City must not exceed 255 characters.";
         }
 
         // province: nullable|string|max:255
@@ -141,36 +139,25 @@ function ManualInstitutionDialog({
         }
 
         // institutional_telephone: nullable|string|max:20
-        if (
-            manualData.institutional_telephone &&
-            manualData.institutional_telephone.length > 20
-        ) {
+        if (manualData.institutional_telephone && manualData.institutional_telephone.length > 20) {
             errors.institutional_telephone = "Max 20 characters.";
         }
 
         // institutional_fax: nullable|string|max:20
-        if (
-            manualData.institutional_fax &&
-            manualData.institutional_fax.length > 20
-        ) {
+        if (manualData.institutional_fax && manualData.institutional_fax.length > 20) {
             errors.institutional_fax = "Max 20 characters.";
         }
 
         // head_telephone: nullable|string|max:20
-        if (
-            manualData.head_telephone &&
-            manualData.head_telephone.length > 20
-        ) {
+        if (manualData.head_telephone && manualData.head_telephone.length > 20) {
             errors.head_telephone = "Max 20 characters.";
         }
 
         // institutional_email: nullable|email|max:255
         if (manualData.institutional_email) {
             if (manualData.institutional_email.length > 255) {
-                errors.institutional_email =
-                    "Email must not exceed 255 characters.";
+                errors.institutional_email = "Email must not exceed 255 characters.";
             } else {
-                // Basic email regex check
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(manualData.institutional_email)) {
                     errors.institutional_email = "Invalid email format.";
@@ -179,52 +166,32 @@ function ManualInstitutionDialog({
         }
 
         // institutional_website: nullable|string|max:255
-        if (
-            manualData.institutional_website &&
-            manualData.institutional_website.length > 255
-        ) {
-            errors.institutional_website =
-                "Website must not exceed 255 characters.";
+        if (manualData.institutional_website && manualData.institutional_website.length > 255) {
+            errors.institutional_website = "Website must not exceed 255 characters.";
         }
 
         // year_established: nullable|integer
-        if (
-            manualData.year_established &&
-            !/^\d+$/.test(manualData.year_established)
-        ) {
+        if (manualData.year_established && !/^\d+$/.test(manualData.year_established)) {
             errors.year_established = "Must be an integer.";
         }
 
         // sec_registration: nullable|string|max:255
-        if (
-            manualData.sec_registration &&
-            manualData.sec_registration.length > 255
-        ) {
-            errors.sec_registration =
-                "SEC Registration must not exceed 255 characters.";
+        if (manualData.sec_registration && manualData.sec_registration.length > 255) {
+            errors.sec_registration = "SEC Registration must not exceed 255 characters.";
         }
 
         // year_granted_approved: nullable|integer
-        if (
-            manualData.year_granted_approved &&
-            !/^\d+$/.test(manualData.year_granted_approved)
-        ) {
+        if (manualData.year_granted_approved && !/^\d+$/.test(manualData.year_granted_approved)) {
             errors.year_granted_approved = "Must be an integer.";
         }
 
         // year_converted_college: nullable|integer
-        if (
-            manualData.year_converted_college &&
-            !/^\d+$/.test(manualData.year_converted_college)
-        ) {
+        if (manualData.year_converted_college && !/^\d+$/.test(manualData.year_converted_college)) {
             errors.year_converted_college = "Must be an integer.";
         }
 
         // year_converted_university: nullable|integer
-        if (
-            manualData.year_converted_university &&
-            !/^\d+$/.test(manualData.year_converted_university)
-        ) {
+        if (manualData.year_converted_university && !/^\d+$/.test(manualData.year_converted_university)) {
             errors.year_converted_university = "Must be an integer.";
         }
 
@@ -239,12 +206,15 @@ function ManualInstitutionDialog({
         }
 
         // head_education: nullable|string|max:255
-        if (
-            manualData.head_education &&
-            manualData.head_education.length > 255
-        ) {
-            errors.head_education =
-                "Head education must not exceed 255 characters.";
+        if (manualData.head_education && manualData.head_education.length > 255) {
+            errors.head_education = "Head education must not exceed 255 characters.";
+        }
+
+        // institution_type: required|in:SUC,LUC,Private
+        if (!manualData.institution_type) {
+            errors.institution_type = "Institution type is required.";
+        } else if (!["SUC", "LUC", "Private"].includes(manualData.institution_type)) {
+            errors.institution_type = "Invalid institution type. Choose SUC, LUC, or Private.";
         }
 
         return errors;
@@ -252,22 +222,20 @@ function ManualInstitutionDialog({
 
     // Submit form data to server
     const handleSave = async () => {
-        // 2. Run client-side validation
         const errors = validateForm();
         if (Object.keys(errors).length > 0) {
-            // If there are errors, set them and don't submit
             setFormErrors(errors);
             return;
         }
 
-        showProgress(10);
+        updateProgress(10);
         try {
             const token = localStorage.getItem("token");
 
-            // Merge form data with the institution type from parent
+            // Merge form data with the institution type from parent (if needed)
             const payload = {
                 ...manualData,
-                institution_type: getInstitutionType(),
+                institution_type: manualData.institution_type || getInstitutionType(),
             };
 
             await axios.post(
@@ -281,15 +249,10 @@ function ManualInstitutionDialog({
                 }
             );
 
-            // Refresh the list in parent
             fetchInstitutions();
-
-            // Show success in Snackbar
             setSnackbarMessage("Institution data successfully added!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
-
-            // Close dialog
             handleClose();
         } catch (error) {
             console.error("Error sending manual data to backend:", error);
@@ -297,7 +260,7 @@ function ManualInstitutionDialog({
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
-            hideProgress();
+            updateProgress(100);
         }
     };
 
@@ -360,7 +323,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.name}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12} sm={4}>
                             <TextField
                                 name="region"
                                 size="small"
@@ -369,12 +332,11 @@ function ManualInstitutionDialog({
                                 onChange={handleChange}
                                 fullWidth
                                 variant="outlined"
-                                required
                                 error={!!formErrors.region}
                                 helperText={formErrors.region}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12} sm={4}>
                             <TextField
                                 name="sec_registration"
                                 size="small"
@@ -386,6 +348,30 @@ function ManualInstitutionDialog({
                                 error={!!formErrors.sec_registration}
                                 helperText={formErrors.sec_registration}
                             />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth variant="outlined" size="small" required error={!!formErrors.institution_type}>
+                                <InputLabel id="institution-type-label">Institution Type</InputLabel>
+                                <Select
+                                    labelId="institution-type-label"
+                                    name="institution_type"
+                                    value={manualData.institution_type}
+                                    onChange={handleChange}
+                                    label="Institution Type"
+                                    required
+                                    error={!!formErrors.institution_type}
+                                >
+                                    <MenuItem value=""><em>Select Type</em></MenuItem>
+                                    <MenuItem value="SUC">SUC</MenuItem>
+                                    <MenuItem value="LUC">LUC</MenuItem>
+                                    <MenuItem value="Private">Private</MenuItem>
+                                </Select>
+                                {formErrors.institution_type && (
+                                    <Typography variant="caption" color="error">
+                                        {formErrors.institution_type}
+                                    </Typography>
+                                )}
+                            </FormControl>
                         </Grid>
                     </Grid>
                 </Box>
@@ -656,9 +642,7 @@ function ManualInstitutionDialog({
                                 fullWidth
                                 variant="outlined"
                                 error={!!formErrors.year_converted_university}
-                                helperText={
-                                    formErrors.year_converted_university
-                                }
+                                helperText={formErrors.year_converted_university}
                             />
                         </Grid>
                     </Grid>
@@ -693,8 +677,6 @@ ManualInstitutionDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
     getInstitutionType: PropTypes.func.isRequired,
     fetchInstitutions: PropTypes.func.isRequired,
-    showProgress: PropTypes.func.isRequired,
-    hideProgress: PropTypes.func.isRequired,
     setSnackbarOpen: PropTypes.func.isRequired,
     setSnackbarMessage: PropTypes.func.isRequired,
     setSnackbarSeverity: PropTypes.func.isRequired,

@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
+import FacultyProfileSkeleton from "./FacultyProfileSkeleton";
 import ExcelJS from "exceljs";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import UploadIcon from "@mui/icons-material/Upload";
@@ -514,8 +515,14 @@ const FacultyProfileUpload = () => {
         }
     };
 
+    // Show skeleton while loading
+        if (loading) {
+            return <FacultyProfileSkeleton />;
+        }
+
     return (
-        <Box sx={{ p: 3 }}>
+
+        <Box sx={{ p: 3, my: 2 }}>
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
@@ -605,12 +612,12 @@ const FacultyProfileUpload = () => {
                     }}
                 >
                     <Typography fontWeight={600}>
-                        Upload Institution Form A
+                        Upload Institution Form E2
                     </Typography>
                 </DialogTitle>
                 <DialogContent sx={{ p: 3 }}>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        Please select an institution type and upload the Form A Excel document.
+                        Please upload the Form E2 Excel document.
                     </Typography>
 
                     <Box

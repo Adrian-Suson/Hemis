@@ -24,7 +24,6 @@ import config from "../../../utils/config";
 registerAllModules();
 
 const ROWS_PER_PAGE_OPTIONS = [
-    { label: "10", value: 10 },
     { label: "25", value: 25 },
     { label: "50", value: 50 },
     { label: "100", value: 100 },
@@ -35,7 +34,7 @@ const ROWS_PER_PAGE_OPTIONS = [
 const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [rowsPerPage, setRowsPerPage] = useState(25);
     const [searchQuery, setSearchQuery] = useState("");
     const [facultyProfiles, setFacultyProfiles] = useState([initialFacultyProfiles]);
     const [filteredData, setFilteredData] = useState([initialFacultyProfiles]);
@@ -817,7 +816,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                 colHeaders={true}
                                 rowHeaders={true}
                                 stretchH="all"
-                                height="465px"
+                                height="auto"
                                 licenseKey="non-commercial-and-evaluation"
                                 settings={{
                                     readOnly: false,

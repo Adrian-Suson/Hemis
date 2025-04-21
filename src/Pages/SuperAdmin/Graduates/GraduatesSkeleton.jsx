@@ -1,7 +1,7 @@
 // CampusManagementSkeleton.jsx
 import { Box, Skeleton, Typography } from "@mui/material";
 
-const FacultyProfileSkeleton = () => {
+const GraduatesSkeleton = () => {
     return (
         <Box sx={{ p: 3 }}>
             {/* Breadcrumbs Skeleton */}
@@ -34,4 +34,4 @@ const FacultyProfileSkeleton = () => {
     );
 };
 
-export default FacultyProfileSkeleton;
+export default GraduatesSkeleton;
