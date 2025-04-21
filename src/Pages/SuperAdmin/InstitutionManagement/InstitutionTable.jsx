@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigate } from "react-router-dom";
 import { useRef, useState, useCallback, useMemo } from "react";
 import ExcelJS from "exceljs";
@@ -204,7 +203,12 @@ const InstitutionTable = ({
                 handleMenuClose();
             }
         },
-        [setSnackbarMessage, setSnackbarSeverity, setSnackbarOpen]
+        [
+            setSnackbarMessage,
+            setSnackbarSeverity,
+            setSnackbarOpen,
+            updateProgress,
+        ]
     );
 
     const filteredInstitutions = useMemo(() => {
@@ -646,7 +650,7 @@ const InstitutionTable = ({
                                             <MenuItem
                                                 onClick={() =>
                                                     handleExportToFormA(
-                                                        institution
+                                                        selectedInstitution
                                                     )
                                                 }
                                                 disabled={loading.exportFormA}
