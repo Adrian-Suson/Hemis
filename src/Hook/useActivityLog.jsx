@@ -1,6 +1,7 @@
 // src/hooks/useActivityLog.js
 import { useState, useCallback } from 'react';
 import axios from 'axios';
+import config from '../utils/config';
 
 const useActivityLog = () => {
     const [logs, setLogs] = useState([]);
@@ -15,7 +16,7 @@ const useActivityLog = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get('/api/activity-logs', {
+            const response = await axios.get(`${config.API_URL}/activity-logs`, {
                 params: {
                     page: newPage,
                     per_page: 20,
@@ -43,7 +44,7 @@ const useActivityLog = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post('/api/activity-logs', {
+            const response = await axios.post(`${config.API_URL}/activity-logs`, {
                 action: logData.action,
                 description: logData.description,
                 model_type: logData.modelType,

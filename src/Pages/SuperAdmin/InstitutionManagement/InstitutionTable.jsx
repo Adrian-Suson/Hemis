@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import axios from "axios";
 import DetailDialog from "./DetailDialog";
 import config from "../../../utils/config";
+import useActivityLog from "../../../Hook/useActivityLog";
 import {
     Table,
     TableBody,
@@ -45,7 +46,7 @@ const ROWS_PER_PAGE_OPTIONS = [
 
 const InstitutionTable = ({
     institutions = [],
-    onEdit,
+    fetchInstitutions,
     setSnackbarMessage,
     setSnackbarSeverity,
     setSnackbarOpen,
@@ -55,9 +56,8 @@ const InstitutionTable = ({
     provinceFilter = "",
 }) => {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const role = user.role || "HEI Staff";
     const { updateProgress } = useLoading();
+    const { createLog } = useActivityLog();
     const [selectedInstitution, setSelectedInstitution] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
@@ -260,6 +260,28 @@ const InstitutionTable = ({
         navigate(`${path}/${encodeURIComponent(encryptedId)}`);
         setLoading((prev) => ({ ...prev, [action]: false }));
         handleMenuClose();
+    };
+
+    const handleEditInstitution = async (updatedInstitution) => {
+        // Update the institution in the local state
+        setSelectedInstitution((prev) => ({
+            ...prev,
+            ...updatedInstitution,
+        }));
+
+        // Log the edit action
+        await createLog({
+            action: "edited_institution",
+            description: `Edited institution: ${updatedInstitution.name}`,
+            modelType: "App\\Models\\Institution",
+            modelId: updatedInstitution.id,
+            properties: updatedInstitution,
+        });
+
+        // Optionally refresh the institution list
+        if (fetchInstitutions) {
+            fetchInstitutions();
+        }
     };
 
     return (
@@ -466,7 +488,7 @@ const InstitutionTable = ({
                                             <MenuItem
                                                 onClick={() =>
                                                     handleOpenDialog(
-                                                        institution
+                                                        selectedInstitution
                                                     )
                                                 }
                                                 sx={{
@@ -771,11 +793,13 @@ const InstitutionTable = ({
             {selectedInstitution && (
                 <DetailDialog
                     open={openDialog}
-                    role={role}
                     onClose={handleCloseDialog}
                     institution={selectedInstitution}
-                    onEdit={onEdit}
-                    navigate={navigate}
+                    onEdit={handleEditInstitution}
+                    fetchInstitutions={fetchInstitutions}
+                    setSnackbarOpen={setSnackbarOpen}
+                    setSnackbarMessage={setSnackbarMessage}
+                    setSnackbarSeverity={setSnackbarSeverity}
                 />
             )}
         </Box>
@@ -786,6 +810,7 @@ InstitutionTable.propTypes = {
     institutions: PropTypes.array.isRequired,
     onEdit: PropTypes.func,
     setSnackbarMessage: PropTypes.func.isRequired,
+    fetchInstitutions: PropTypes.func.isRequired,
     setSnackbarSeverity: PropTypes.func.isRequired,
     setSnackbarOpen: PropTypes.func.isRequired,
     searchTerm: PropTypes.string,

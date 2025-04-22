@@ -1,3 +1,4 @@
+// src/components/DetailDialog.jsx
 import { useState } from "react";
 import {
     Dialog,
@@ -12,10 +13,17 @@ import {
     IconButton,
     TextField,
     Button,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from "@mui/material";
 import PropTypes from "prop-types";
 import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
+import useActivityLog from "../../../Hook/useActivityLog";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
 const DetailDialog = ({
     open,
@@ -25,10 +33,35 @@ const DetailDialog = ({
     setSnackbarOpen,
     setSnackbarMessage,
     setSnackbarSeverity,
+    fetchInstitutions, // Added to refresh institution list
 }) => {
+    const { createLog } = useActivityLog();
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState(institution || {});
+    const [formData, setFormData] = useState({
+        id: institution?.id || null,
+        name: institution?.name || "",
+        region: institution?.region || "",
+        address_street: institution?.address_street || "",
+        municipality_city: institution?.municipality_city || "",
+        province: institution?.province || "",
+        postal_code: institution?.postal_code || "",
+        institutional_telephone: institution?.institutional_telephone || "",
+        institutional_fax: institution?.institutional_fax || "",
+        head_telephone: institution?.head_telephone || "",
+        institutional_email: institution?.institutional_email || "",
+        institutional_website: institution?.institutional_website || "",
+        year_established: institution?.year_established || null,
+        sec_registration: institution?.sec_registration || "",
+        year_granted_approved: institution?.year_granted_approved || null,
+        year_converted_college: institution?.year_converted_college || null,
+        year_converted_university: institution?.year_converted_university || null,
+        head_name: institution?.head_name || "",
+        head_title: institution?.head_title || "",
+        head_education: institution?.head_education || "",
+        institution_type: institution?.institution_type || "",
+    });
     const [errors, setErrors] = useState({});
+    const currentYear = new Date().getFullYear(); // Get the current year
 
     if (!institution) return null;
 
@@ -50,8 +83,33 @@ const DetailDialog = ({
             newErrors.name = "Must be 255 characters or less.";
         }
 
+        if (!formData.region?.trim()) {
+            newErrors.region = "Region is required.";
+        } else if (formData.region.length > 255) {
+            newErrors.region = "Must be 255 characters or less.";
+        }
+
         if (!formData.id || isNaN(parseInt(formData.id, 10))) {
             newErrors.id = "Valid institution ID is required.";
+        }
+
+        if (formData.address_street && formData.address_street.length > 255) {
+            newErrors.address_street = "Must be 255 characters or less.";
+        }
+
+        if (
+            formData.municipality_city &&
+            formData.municipality_city.length > 255
+        ) {
+            newErrors.municipality_city = "Must be 255 characters or less.";
+        }
+
+        if (formData.province && formData.province.length > 255) {
+            newErrors.province = "Must be 255 characters or less.";
+        }
+
+        if (formData.postal_code && formData.postal_code.length > 10) {
+            newErrors.postal_code = "Must be 10 characters or less.";
         }
 
         if (
@@ -89,6 +147,51 @@ const DetailDialog = ({
             }
         });
 
+        if (
+            formData.institutional_telephone &&
+            formData.institutional_telephone.length > 20
+        ) {
+            newErrors.institutional_telephone =
+                "Must be 20 characters or less.";
+        }
+
+        if (
+            formData.institutional_fax &&
+            formData.institutional_fax.length > 20
+        ) {
+            newErrors.institutional_fax = "Must be 20 characters or less.";
+        }
+
+        if (formData.head_telephone && formData.head_telephone.length > 20) {
+            newErrors.head_telephone = "Must be 20 characters or less.";
+        }
+
+        if (
+            formData.sec_registration &&
+            formData.sec_registration.length > 255
+        ) {
+            newErrors.sec_registration = "Must be 255 characters or less.";
+        }
+
+        if (formData.head_name && formData.head_name.length > 255) {
+            newErrors.head_name = "Must be 255 characters or less.";
+        }
+
+        if (formData.head_title && formData.head_title.length > 255) {
+            newErrors.head_title = "Must be 255 characters or less.";
+        }
+
+        if (formData.head_education && formData.head_education.length > 255) {
+            newErrors.head_education = "Must be 255 characters or less.";
+        }
+
+        if (
+            formData.institution_type &&
+            !["SUC", "LUC", "Private"].includes(formData.institution_type)
+        ) {
+            newErrors.institution_type = "Must be SUC, LUC, or Private.";
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -101,15 +204,47 @@ const DetailDialog = ({
         }
     };
 
+    const handleYearChange = (field, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            [field]: value ? value.getFullYear() : null,
+        }));
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
+    };
+
     const handleEdit = () => {
         setIsEditing(true);
-        setFormData(institution); // Reset to original data
         setErrors({});
     };
 
     const handleCancel = () => {
         setIsEditing(false);
-        setFormData(institution); // Reset to original data
+        setFormData({
+            id: institution.id,
+            name: institution.name || "",
+            region: institution.region || "",
+            address_street: institution.address_street || "",
+            municipality_city: institution.municipality_city || "",
+            province: institution.province || "",
+            postal_code: institution.postal_code || "",
+            institutional_telephone: institution.institutional_telephone || "",
+            institutional_fax: institution.institutional_fax || "",
+            head_telephone: institution.head_telephone || "",
+            institutional_email: institution.institutional_email || "",
+            institutional_website: institution.institutional_website || "",
+            year_established: institution.year_established || null,
+            sec_registration: institution.sec_registration || "",
+            year_granted_approved: institution.year_granted_approved || null,
+            year_converted_college: institution.year_converted_college || null,
+            year_converted_university:
+                institution.year_converted_university || null,
+            head_name: institution.head_name || "",
+            head_title: institution.head_title || "",
+            head_education: institution.head_education || "",
+            institution_type: institution.institution_type || "",
+        });
         setErrors({});
     };
 
@@ -123,6 +258,10 @@ const DetailDialog = ({
         try {
             const payload = {
                 name: formData.name || null,
+                region: formData.region || null,
+                address_street: formData.address_street || null,
+                municipality_city: formData.municipality_city || null,
+                province: formData.province || null,
                 postal_code: formData.postal_code || null,
                 institutional_telephone:
                     formData.institutional_telephone || null,
@@ -146,6 +285,7 @@ const DetailDialog = ({
                 head_name: formData.head_name || null,
                 head_title: formData.head_title || null,
                 head_education: formData.head_education || null,
+                institution_type: formData.institution_type || null,
             };
 
             console.log("[Update Institution] Sending data:", payload);
@@ -163,21 +303,29 @@ const DetailDialog = ({
 
             console.log("[Update Institution] Server response:", response.data);
 
-            onEdit(response.data.data || payload); // Notify parent of update
+            // Log the update action
+            await createLog({
+                action: "updated_institution",
+                description: `Updated institution: ${formData.name}`,
+                modelType: "App\\Models\\Institution",
+                modelId: formData.id,
+                properties: {
+                    name: formData.name,
+                    institution_type: formData.institution_type,
+                },
+            });
+
+            // Use payload as a fallback if response.data is undefined
+            onEdit(response.data || payload);
             showSnackbar("Institution updated successfully!", "success");
             setIsEditing(false);
-            // Optionally navigate, e.g., to institution list
-            // navigate("/institutions");
+            fetchInstitutions(); // Refresh institution list
         } catch (error) {
-            console.error("[Update Institution] Error:", error);
+            console.error("[Update Institution] Error:", error.response?.data || error.message);
             let errorMessage =
                 "Failed to update institution. Please try again.";
             if (error.response?.status === 422) {
                 const validationErrors = error.response.data.errors;
-                console.log(
-                    "[Update Institution] Full Error Response:",
-                    error.response.data
-                );
                 console.log(
                     "[Update Institution] Validation Errors:",
                     validationErrors
@@ -185,7 +333,6 @@ const DetailDialog = ({
                 errorMessage =
                     "Validation failed: " +
                     Object.values(validationErrors).flat().join(", ");
-                // Map backend errors to form fields
                 const mappedErrors = {};
                 Object.keys(validationErrors).forEach((key) => {
                     const field = key.split(".").pop();
@@ -202,20 +349,77 @@ const DetailDialog = ({
         return (
             <Grid item xs={12} sm={6} key={label}>
                 {isEditing ? (
-                    <TextField
-                        fullWidth
-                        label={label}
-                        name={field}
-                        value={formData[field] || ""}
-                        onChange={handleInputChange}
-                        error={!!errors[field]}
-                        helperText={errors[field]}
-                        size="small"
-                        variant="outlined"
-                        sx={{ mt: 1 }}
-                        type={field.includes("year") ? "number" : "text"}
-                        required={field === "name"}
-                    />
+                    field === "institution_type" ? (
+                        <FormControl
+                            fullWidth
+                            size="small"
+                            sx={{ mt: 1 }}
+                            error={!!errors[field]}
+                        >
+                            <InputLabel>{label}</InputLabel>
+                            <Select
+                                name={field}
+                                value={formData[field] || ""}
+                                onChange={handleInputChange}
+                                label={label}
+                            >
+                                <MenuItem value="">
+                                    <em>Select Type</em>
+                                </MenuItem>
+                                <MenuItem value="SUC">SUC</MenuItem>
+                                <MenuItem value="LUC">LUC</MenuItem>
+                                <MenuItem value="Private">Private</MenuItem>
+                            </Select>
+                            {errors[field] && (
+                                <Typography
+                                    variant="caption"
+                                    color="error"
+                                    sx={{ mt: 0.5 }}
+                                >
+                                    {errors[field]}
+                                </Typography>
+                            )}
+                        </FormControl>
+                    ) : field.includes("year") ? (
+                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                                views={["year"]}
+                                label={label}
+                                value={
+                                    formData[field]
+                                        ? new Date(formData[field], 0)
+                                        : null
+                                }
+                                onChange={(value) =>
+                                    handleYearChange(field, value)
+                                }
+                                maxDate={new Date(currentYear, 11, 31)} // Restrict to current year or earlier
+                                sx={{ mt: 1 }}
+                                slotProps={{
+                                    textField: {
+                                        size: "small",
+                                        fullWidth: true,
+                                        error: !!errors[field],
+                                        helperText: errors[field],
+                                    },
+                                }}
+                            />
+                        </LocalizationProvider>
+                    ) : (
+                        <TextField
+                            fullWidth
+                            label={label}
+                            name={field}
+                            value={formData[field] || ""}
+                            onChange={handleInputChange}
+                            error={!!errors[field]}
+                            helperText={errors[field]}
+                            size="small"
+                            variant="outlined"
+                            sx={{ mt: 1 }}
+                            required={field === "name" || field === "region"}
+                        />
+                    )
                 ) : (
                     <Typography
                         variant="body1"
@@ -256,7 +460,6 @@ const DetailDialog = ({
             aria-labelledby="institution-details-dialog"
             sx={{ "& .MuiDialog-paper": { borderRadius: 2, boxShadow: 3 } }}
         >
-            {/* Dialog Header with Close Icon */}
             <DialogTitle
                 id="institution-details-dialog"
                 sx={{
@@ -287,9 +490,51 @@ const DetailDialog = ({
                 </IconButton>
             </DialogTitle>
 
-            {/* Dialog Content */}
             <DialogContent sx={{ p: 4, backgroundColor: "#f9f9f9" }}>
                 <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                    <Box sx={{ mb: 3 }}>
+                        <Typography
+                            variant="h6"
+                            sx={{ mb: 1, color: "#424242" }}
+                        >
+                            General Information
+                        </Typography>
+                        <Divider sx={{ mb: 2 }} />
+                        <Grid container spacing={2}>
+                            {formatField("Name", "name", institution.name)}
+                            {formatField(
+                                "Institution Type",
+                                "institution_type",
+                                institution.institution_type
+                            )}
+                            {formatField(
+                                "Region",
+                                "region",
+                                institution.region
+                            )}
+                            {formatField(
+                                "Street Address",
+                                "address_street",
+                                institution.address_street
+                            )}
+                            {formatField(
+                                "Municipality/City",
+                                "municipality_city",
+                                institution.municipality_city
+                            )}
+                            {formatField(
+                                "Province",
+                                "province",
+                                institution.province
+                            )}
+                            {formatField(
+                                "Postal Code",
+                                "postal_code",
+                                institution.postal_code
+                            )}
+                        </Grid>
+                    </Box>
+
                     <Box sx={{ mb: 3 }}>
                         <Typography
                             variant="h6"
@@ -299,11 +544,6 @@ const DetailDialog = ({
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
                         <Grid container spacing={2}>
-                            {formatField(
-                                "Postal Code",
-                                "postal_code",
-                                institution.postal_code
-                            )}
                             {formatField(
                                 "Institutional Telephone",
                                 "institutional_telephone",
@@ -341,7 +581,6 @@ const DetailDialog = ({
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
                         <Grid container spacing={2}>
-                            {formatField("Name", "name", institution.name)}
                             {formatField(
                                 "Year Established",
                                 "year_established",
@@ -399,7 +638,6 @@ const DetailDialog = ({
                 </Paper>
             </DialogContent>
 
-            {/* Dialog Actions */}
             <DialogActions
                 sx={{
                     p: 2,
@@ -423,6 +661,7 @@ const DetailDialog = ({
                             color="primary"
                             variant="contained"
                             sx={{ textTransform: "none" }}
+                            disabled={!formData.name || !formData.region}
                         >
                             Save
                         </Button>
@@ -448,6 +687,10 @@ DetailDialog.propTypes = {
     institution: PropTypes.shape({
         id: PropTypes.number.isRequired,
         name: PropTypes.string,
+        region: PropTypes.string,
+        address_street: PropTypes.string,
+        municipality_city: PropTypes.string,
+        province: PropTypes.string,
         postal_code: PropTypes.string,
         institutional_telephone: PropTypes.string,
         institutional_fax: PropTypes.string,
@@ -474,16 +717,18 @@ DetailDialog.propTypes = {
         head_name: PropTypes.string,
         head_title: PropTypes.string,
         head_education: PropTypes.string,
+        institution_type: PropTypes.string,
     }),
     onEdit: PropTypes.func.isRequired,
-    navigate: PropTypes.func.isRequired,
     setSnackbarOpen: PropTypes.func,
     setSnackbarMessage: PropTypes.func,
     setSnackbarSeverity: PropTypes.func,
+    fetchInstitutions: PropTypes.func, // Added for refreshing
 };
 
 DetailDialog.defaultProps = {
     institution: null,
+    fetchInstitutions: () => {},
 };
 
 export default DetailDialog;
