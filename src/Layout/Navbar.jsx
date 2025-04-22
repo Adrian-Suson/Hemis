@@ -52,7 +52,11 @@ const Navbar = () => {
             "Super Admin": [
                 { text: "Dashboard", path: "/super-admin/dashboard" },
                 { text: "Institutions", path: "/super-admin/institutions" },
-                { text: "Admin", path: "/super-admin", isAdmin: true },
+               // { text: "Admin", path: "/super-admin", isAdmin: true },
+               /* {
+                    text: "User Management",
+                    path: "/super-admin/user-management",
+                },*/
             ],
             "HEI Admin": [
                 { text: "Dashboard", path: "/hei-admin/dashboard" },
@@ -71,7 +75,6 @@ const Navbar = () => {
     const adminMenuItems = useMemo(() => {
         const items = {
             "Super Admin": [
-                { text: "Statistics", path: "/super-admin/statistics" },
                 {
                     text: "User Management",
                     path: "/super-admin/user-management",
@@ -508,6 +511,31 @@ const Navbar = () => {
                                             Profile
                                         </button>
                                         <button
+                                            onClick={() => {
+                                                handleMenuClose();
+                                                handleNavigation(
+                                                    "/super-admin/user-management"
+                                                );
+                                            }}
+                                            disabled={loading}
+                                            style={{
+                                                width: "100%",
+                                                padding: "12px 16px",
+                                                background: "none",
+                                                border: "none",
+                                                textAlign: "left",
+                                                cursor: loading
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                                opacity: loading ? 0.6 : 1,
+                                                fontSize: "0.9rem",
+                                                color: "#333",
+                                            }}
+                                            aria-label="User Management"
+                                        >
+                                            User Management
+                                        </button>
+                                        <button
                                             onClick={handleLogout}
                                             disabled={loading}
                                             style={{
@@ -742,7 +770,7 @@ const Navbar = () => {
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
             />
         </>
-         );
+    );
 };
 
 export default Navbar;
