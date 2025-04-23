@@ -1,41 +1,78 @@
-// src/Layout/Layout.jsx
-import { Box } from "@mui/material";
+import { useState } from "react";
+import { Box, useMediaQuery, IconButton } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import { Outlet } from "react-router-dom";
+import PropTypes from "prop-types";
+import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import Footer from "./Footer";
 
-const Layout = () => {
+const Layout = ({ userRole }) => {
+    const isNonMobile = useMediaQuery("(min-width: 600px)");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isMinimized, setIsMinimized] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     return (
-        <Box display="flex" flexDirection="column" width="100%" height="100vh">
-            <Box
-                sx={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    zIndex: 1100,
-                    height: "50px",
-                }}
-            >
-                <Navbar />
-            </Box>
-            <Box display="flex" flexGrow={1} width="100%" pt="50px">
+        <Box
+            display={isNonMobile ? "flex" : "block"}
+            width="100%"
+            height="100%"
+        >
+            {/* Show burger menu on mobile */}
+            {!isNonMobile && (
                 <Box
-                    flexGrow={1}
-                    display="flex"
-                    flexDirection="column"
-                    overflow="auto"
+                    sx={{
+                        position: "fixed",
+                        top: "10px",
+                        left: "10px",
+                        zIndex: 1100,
+                    }}
                 >
-                    <Box flexGrow={1} px={1.5}>
-                        <Outlet />
-                    </Box>
+                    <IconButton
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        sx={{
+                            color: "primary.main",
+                            backgroundColor: "background.paper",
+                            "&:hover": { backgroundColor: "background.paper" },
+                        }}
+                    >
+                        <MenuIcon />
+                    </IconButton>
                 </Box>
+            )}
+
+            {!isNonMobile && (
+                <Sidebar
+                    userRole={userRole}
+                    isNonMobile={isNonMobile}
+                    drawerWidth="300px"
+                    isSidebarOpen={isNonMobile ? isSidebarOpen : mobileMenuOpen}
+                    setIsSidebarOpen={
+                        isNonMobile ? setIsSidebarOpen : setMobileMenuOpen
+                    }
+                    isMinimized={isMinimized}
+                    setIsMinimized={setIsMinimized}
+                />
+            )}
+
+            <Box flexGrow={1}>
+                {isNonMobile && (
+                    <Navbar
+                        isNonMobile={isNonMobile}
+                        isSidebarOpen={isSidebarOpen}
+                        setIsSidebarOpen={setIsSidebarOpen}
+                        isMinimized={isMinimized}
+                        setIsMinimized={setIsMinimized}
+                    />
+                )}
+                <Outlet />
             </Box>
-            <Footer />
         </Box>
     );
 };
 
-Layout.propTypes = {};
+Layout.propTypes = {
+    userRole: PropTypes.string,
+};
 
 export default Layout;

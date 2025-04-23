@@ -6,6 +6,8 @@ import {
     Paper,
     Divider,
     Skeleton,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import axios from "axios";
 import {
@@ -35,6 +37,9 @@ ChartJS.register(
 );
 
 const DashboardPage = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // Detect mobile screens (below 600px)
+
     const [stats, setStats] = useState({
         users: [],
         facultyProfiles: [],
@@ -223,7 +228,7 @@ const DashboardPage = () => {
         ],
     };
 
-    // Chart Options with enhanced styling
+    // Chart Options with enhanced styling, adjusted for mobile
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -231,16 +236,25 @@ const DashboardPage = () => {
             legend: {
                 position: "top",
                 labels: {
-                    font: { size: 14, family: "'Inter', sans-serif" },
+                    font: {
+                        size: isMobile ? 12 : 14,
+                        family: "'Inter', sans-serif",
+                    },
                     color: "#1F2937",
-                    padding: 15,
+                    padding: isMobile ? 10 : 15,
                 },
             },
             tooltip: {
                 backgroundColor: "#1F2937",
-                titleFont: { size: 14, family: "'Inter', sans-serif" },
-                bodyFont: { size: 12, family: "'Inter', sans-serif" },
-                padding: 10,
+                titleFont: {
+                    size: isMobile ? 12 : 14,
+                    family: "'Inter', sans-serif",
+                },
+                bodyFont: {
+                    size: isMobile ? 10 : 12,
+                    family: "'Inter', sans-serif",
+                },
+                padding: isMobile ? 8 : 10,
                 cornerRadius: 4,
                 callbacks: {
                     label: (context) =>
@@ -257,14 +271,20 @@ const DashboardPage = () => {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    font: { size: 12, family: "'Inter', sans-serif" },
+                    font: {
+                        size: isMobile ? 10 : 12,
+                        family: "'Inter', sans-serif",
+                    },
                     color: "#6B7280",
                 },
                 grid: { color: "#E5E7EB" },
             },
             x: {
                 ticks: {
-                    font: { size: 12, family: "'Inter', sans-serif" },
+                    font: {
+                        size: isMobile ? 10 : 12,
+                        family: "'Inter', sans-serif",
+                    },
                     color: "#6B7280",
                 },
                 grid: { display: false },
@@ -278,14 +298,20 @@ const DashboardPage = () => {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    font: { size: 12, family: "'Inter', sans-serif" },
+                    font: {
+                        size: isMobile ? 10 : 12,
+                        family: "'Inter', sans-serif",
+                    },
                     color: "#6B7280",
                 },
                 grid: { color: "#E5E7EB" },
             },
             x: {
                 ticks: {
-                    font: { size: 12, family: "'Inter', sans-serif" },
+                    font: {
+                        size: isMobile ? 10 : 12,
+                        family: "'Inter', sans-serif",
+                    },
                     color: "#6B7280",
                 },
                 grid: { display: false },
@@ -312,13 +338,24 @@ const DashboardPage = () => {
 
     if (stats.loading) {
         return (
-            <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+            <Box
+                sx={{
+                    bgcolor: "#f5f5f5",
+                    minHeight: "100vh",
+                    overflowY: "auto",
+                    height: "100vh",
+                    WebkitOverflowScrolling: "touch",
+                    width: "100%",
+                    maxWidth: "100vw",
+                }}
+            >
                 {/* Skeleton Header */}
                 <Box
                     sx={{
-                        py: 4,
-                        px: { xs: 2, md: 4 },
-                        bgcolor: "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
+                        py: isMobile ? 2 : 4,
+                        px: isMobile ? 1 : { xs: 2, md: 4 },
+                        bgcolor:
+                            "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
                         color: "#fff",
                         textAlign: "center",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -332,21 +369,27 @@ const DashboardPage = () => {
                         <Skeleton
                             variant="text"
                             width="40%"
-                            height={60}
-                            sx={{ mx: "auto", bgcolor: "rgba(255,255,255,0.2)" }}
+                            height={isMobile ? 40 : 60}
+                            sx={{
+                                mx: "auto",
+                                bgcolor: "rgba(255,255,255,0.2)",
+                            }}
                         />
                         <Skeleton
                             variant="text"
                             width="20%"
-                            height={30}
-                            sx={{ mx: "auto", bgcolor: "rgba(255,255,255,0.2)" }}
+                            height={isMobile ? 20 : 30}
+                            sx={{
+                                mx: "auto",
+                                bgcolor: "rgba(255,255,255,0.2)",
+                            }}
                         />
                     </motion.div>
                 </Box>
 
                 {/* Skeleton Content */}
-                <Box sx={{ p: { xs: 2, md: 4 } }}>
-                    <Grid container spacing={3}>
+                <Box sx={{ p: isMobile ? 1 : { xs: 2, md: 4 } }}>
+                    <Grid container spacing={isMobile ? 1 : 3}>
                         {/* Skeleton Summary Cards */}
                         {[...Array(6)].map((_, index) => (
                             <Grid
@@ -367,7 +410,7 @@ const DashboardPage = () => {
                                 >
                                     <Skeleton
                                         variant="rectangular"
-                                        height={120}
+                                        height={isMobile ? 100 : 120}
                                         animation="wave"
                                         sx={{
                                             borderRadius: 3,
@@ -380,13 +423,7 @@ const DashboardPage = () => {
 
                         {/* Skeleton Charts */}
                         {[...Array(4)].map((_, index) => (
-                            <Grid
-                                item
-                                xs={12}
-                                md={6}
-                                lg={3}
-                                key={index}
-                            >
+                            <Grid item xs={12} sm={6} md={6} lg={3} key={index}>
                                 <motion.div
                                     variants={skeletonVariants}
                                     initial="hidden"
@@ -395,7 +432,7 @@ const DashboardPage = () => {
                                 >
                                     <Skeleton
                                         variant="rectangular"
-                                        height={350}
+                                        height={isMobile ? 250 : 350}
                                         animation="wave"
                                         sx={{
                                             borderRadius: 3,
@@ -414,18 +451,30 @@ const DashboardPage = () => {
     if (stats.error) {
         return (
             <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                minHeight="100vh"
-                bgcolor="#f5f5f5"
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    minHeight: "100vh",
+                    bgcolor: "#f5f5f5",
+                    overflowY: "auto",
+                    height: "100vh",
+                    WebkitOverflowScrolling: "touch",
+                    width: "100%",
+                    maxWidth: "100vw",
+                }}
             >
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Typography variant="h5" color="error" align="center">
+                    <Typography
+                        variant="h5"
+                        color="error"
+                        align="center"
+                        sx={{ fontSize: isMobile ? "1.25rem" : "1.5rem" }}
+                    >
                         {stats.error}
                     </Typography>
                 </motion.div>
@@ -434,13 +483,24 @@ const DashboardPage = () => {
     }
 
     return (
-        <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+        <Box
+            sx={{
+                bgcolor: "#f5f5f5",
+                minHeight: "100vh",
+                overflowY: "auto",
+                height: "100vh",
+                WebkitOverflowScrolling: "touch",
+                width: "100%",
+                maxWidth: "100vw",
+            }}
+        >
             {/* Header */}
             <Box
                 sx={{
-                    py: 4,
-                    px: { xs: 2, md: 4 },
-                    bgcolor: "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
+                    py: isMobile ? 2 : { xs: 2, md: 4 },
+                    px: isMobile ? 1 : { xs: 2, md: 4 },
+                    bgcolor:
+                        "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)",
                     color: "#fff",
                     textAlign: "center",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -457,13 +517,21 @@ const DashboardPage = () => {
                             fontWeight: 700,
                             fontFamily: "'Inter', sans-serif",
                             mb: 1,
+                            fontSize: isMobile
+                                ? "1.5rem"
+                                : { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
                         }}
                     >
                         Statistics Dashboard
                     </Typography>
                     <Typography
                         variant="subtitle1"
-                        sx={{ fontSize: "1.1rem", opacity: 0.9 }}
+                        sx={{
+                            fontSize: isMobile
+                                ? "0.75rem"
+                                : { xs: "0.875rem", sm: "1.1rem" },
+                            opacity: 0.9,
+                        }}
                     >
                         Insights into Users, Faculty, Programs, and More
                     </Typography>
@@ -471,8 +539,12 @@ const DashboardPage = () => {
             </Box>
 
             {/* Content */}
-            <Box sx={{ p: { xs: 2, md: 4 } }}>
-                <Grid container spacing={3}>
+            <Box sx={{ p: isMobile ? 1 : { xs: 1, sm: 2, md: 4 } }}>
+                <Grid
+                    container
+                    spacing={isMobile ? 1 : { xs: 2, md: 3 }}
+                    sx={{ width: "100%", margin: 0 }}
+                >
                     {/* Summary Cards */}
                     {[
                         {
@@ -508,7 +580,7 @@ const DashboardPage = () => {
                     ].map((stat, index) => (
                         <Grid
                             item
-                            xs={12}
+                            xs={6}
                             sm={6}
                             md={4}
                             lg={2}
@@ -526,15 +598,17 @@ const DashboardPage = () => {
                                 <Paper
                                     elevation={0}
                                     sx={{
-                                        p: 3,
+                                        p: isMobile ? 2 : 3,
                                         borderRadius: 3,
                                         bgcolor: "#fff",
                                         border: `1px solid ${chartColors.grey}22`,
                                         height: "100%",
+                                        minHeight: isMobile ? 100 : 120,
                                         display: "flex",
                                         flexDirection: "column",
                                         justifyContent: "space-between",
                                         transition: "all 0.3s ease",
+                                        overflow: "hidden",
                                     }}
                                 >
                                     <Typography
@@ -542,8 +616,10 @@ const DashboardPage = () => {
                                         sx={{
                                             fontWeight: 700,
                                             color: stat.color,
-                                            fontFamily:
-                                                "'Inter', sans-serif",
+                                            fontFamily: "'Inter', sans-serif",
+                                            fontSize: isMobile
+                                                ? "1.5rem"
+                                                : "2rem",
                                         }}
                                     >
                                         {stat.value}
@@ -552,8 +628,10 @@ const DashboardPage = () => {
                                         variant="body2"
                                         sx={{
                                             color: "#6B7280",
-                                            fontFamily:
-                                                "'Inter', sans-serif",
+                                            fontFamily: "'Inter', sans-serif",
+                                            fontSize: isMobile
+                                                ? "0.75rem"
+                                                : "0.875rem",
                                         }}
                                     >
                                         {stat.label}
@@ -564,165 +642,90 @@ const DashboardPage = () => {
                     ))}
 
                     {/* Charts */}
-                    <Grid item xs={12} md={6} lg={3}>
-                        <motion.div
-                            variants={chartVariants}
-                            initial="hidden"
-                            animate="visible"
+                    {[
+                        {
+                            title: "Gender Breakdown",
+                            ChartComponent: Pie,
+                            data: genderPieData,
+                            options: chartOptions,
+                        },
+                        {
+                            title: "Totals by Category",
+                            ChartComponent: Bar,
+                            data: totalsBarData,
+                            options: barOptions,
+                        },
+                        {
+                            title: "Enrollments vs Graduates",
+                            ChartComponent: Doughnut,
+                            data: enrollmentDoughnutData,
+                            options: chartOptions,
+                        },
+                        {
+                            title: "Enrollments by Year",
+                            ChartComponent: Line,
+                            data: enrollmentLineData,
+                            options: lineOptions,
+                        },
+                    ].map((chart, index) => (
+                        <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={6}
+                            lg={3}
+                            key={index}
+                            sx={{ display: "flex" }}
                         >
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 3,
-                                    borderRadius: 3,
-                                    bgcolor: "#fff",
-                                    border: `1px solid ${chartColors.grey}22`,
-                                    height: 350,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                }}
+                            <motion.div
+                                variants={chartVariants}
+                                initial="hidden"
+                                animate="visible"
+                                style={{ flex: 1 }}
                             >
-                                <Typography
-                                    variant="h6"
+                                <Paper
+                                    elevation={0}
                                     sx={{
-                                        fontWeight: 600,
-                                        color: "#1F2937",
-                                        fontFamily: "'Inter', sans-serif",
-                                        mb: 1,
+                                        p: isMobile ? 2 : { xs: 2, md: 3 },
+                                        borderRadius: 3,
+                                        bgcolor: "#fff",
+                                        border: `1px solid ${chartColors.grey}22`,
+                                        height: isMobile
+                                            ? 250
+                                            : { xs: 300, sm: 350 },
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        overflow: "hidden",
+                                        width: "100%",
                                     }}
                                 >
-                                    Gender Breakdown
-                                </Typography>
-                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
-                                <Box sx={{ flex: 1 }}>
-                                    <Pie
-                                        data={genderPieData}
-                                        options={chartOptions}
+                                    <Typography
+                                        variant="h6"
+                                        sx={{
+                                            fontWeight: 600,
+                                            color: "#1F2937",
+                                            fontFamily: "'Inter', sans-serif",
+                                            mb: 1,
+                                            fontSize: isMobile
+                                                ? "0.875rem"
+                                                : { xs: "1rem", sm: "1.25rem" },
+                                        }}
+                                    >
+                                        {chart.title}
+                                    </Typography>
+                                    <Divider
+                                        sx={{ mb: 2, bgcolor: "#E5E7EB" }}
                                     />
-                                </Box>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-
-                    <Grid item xs={12} md={6} lg={3}>
-                        <motion.div
-                            variants={chartVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 3,
-                                    borderRadius: 3,
-                                    bgcolor: "#fff",
-                                    border: `1px solid ${chartColors.grey}22`,
-                                    height: 350,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                }}
-                            >
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        fontWeight: 600,
-                                        color: "#1F2937",
-                                        fontFamily: "'Inter', sans-serif",
-                                        mb: 1,
-                                    }}
-                                >
-                                    Totals by Category
-                                </Typography>
-                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
-                                <Box sx={{ flex: 1 }}>
-                                    <Bar
-                                        data={totalsBarData}
-                                        options={barOptions}
-                                    />
-                                </Box>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-
-                    <Grid item xs={12} md={6} lg={3}>
-                        <motion.div
-                            variants={chartVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 3,
-                                    borderRadius: 3,
-                                    bgcolor: "#fff",
-                                    border: `1px solid ${chartColors.grey}22`,
-                                    height: 350,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                }}
-                            >
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        fontWeight: 600,
-                                        color: "#1F2937",
-                                        fontFamily: "'Inter', sans-serif",
-                                        mb: 1,
-                                    }}
-                                >
-                                    Enrollments vs Graduates
-                                </Typography>
-                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
-                                <Box sx={{ flex: 1 }}>
-                                    <Doughnut
-                                        data={enrollmentDoughnutData}
-                                        options={chartOptions}
-                                    />
-                                </Box>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-
-                    <Grid item xs={12} md={6} lg={3}>
-                        <motion.div
-                            variants={chartVariants}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 3,
-                                    borderRadius: 3,
-                                    bgcolor: "#fff",
-                                    border: `1px solid ${chartColors.grey}22`,
-                                    height: 350,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                }}
-                            >
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        fontWeight: 600,
-                                        color: "#1F2937",
-                                        fontFamily: "'Inter', sans-serif",
-                                        mb: 1,
-                                    }}
-                                >
-                                    Enrollments by Year
-                                </Typography>
-                                <Divider sx={{ mb: 2, bgcolor: "#E5E7EB" }} />
-                                <Box sx={{ flex: 1 }}>
-                                    <Line
-                                        data={enrollmentLineData}
-                                        options={lineOptions}
-                                    />
-                                </Box>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
+                                    <Box sx={{ flex: 1 }}>
+                                        <chart.ChartComponent
+                                            data={chart.data}
+                                            options={chart.options}
+                                        />
+                                    </Box>
+                                </Paper>
+                            </motion.div>
+                        </Grid>
+                    ))}
                 </Grid>
             </Box>
         </Box>
