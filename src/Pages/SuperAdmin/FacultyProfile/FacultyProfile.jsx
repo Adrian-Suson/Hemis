@@ -91,7 +91,8 @@ const facultyGroups = [
 
 const FacultyProfileUpload = () => {
     const [selectedGroup, setSelectedGroup] = useState(
-        facultyGroups[0].sheetName
+        facultyGroups[0].sheetName,
+        facultyGroups[0].description
     );
     const [facultyProfiles, setFacultyProfiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -108,6 +109,7 @@ const FacultyProfileUpload = () => {
     // Fetch all faculty profiles on component mount
     useEffect(() => {
         fetchFacultyProfiles();
+        console.log('selectedGroup:', selectedGroup)
     }, []);
 
     const fetchFacultyProfiles = async () => {
@@ -551,9 +553,8 @@ const FacultyProfileUpload = () => {
                 sx={{
                     pl: { sm: 2 },
                     pr: { xs: 1, sm: 1 },
-                    mb: 2,
+                    mb: 0.5,
                     backgroundColor: "background.paper",
-                    borderBottom: 1,
                     borderColor: "divider",
                     display: "flex",
                     alignItems: "center",
@@ -566,6 +567,10 @@ const FacultyProfileUpload = () => {
                     sx={{ flexGrow: 1, fontWeight: "medium" }}
                 >
                     Faculties Managment
+                </Typography>
+
+                <Typography variant="body1" color="initial">
+                    {selectedGroup}
                 </Typography>
 
                 {/* File Upload and Export Buttons */}

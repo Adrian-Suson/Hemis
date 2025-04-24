@@ -1,4 +1,5 @@
 /* Ensure the html and body elements fill the viewport */
+@import "tailwindcss";
 
 
 html,

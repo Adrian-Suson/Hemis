@@ -304,7 +304,7 @@ const InstitutionTable = ({
                 component={Paper}
                 sx={{
                     flex: "1 1 auto",
-                    maxHeight: "600px",
+                    maxHeight: "50vh",
                     overflowY: "auto",
                     borderRadius: 0,
                 }}

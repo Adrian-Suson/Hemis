@@ -505,9 +505,9 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const currentConfig = columnConfigs[tabIndex];
 
     return (
-        <Box sx={{ mt: 3 }}>
+        <Box>
             <Paper sx={{ borderRadius: 1, mb: 1}}>
-            <Box sx={{ my: 1, px: 1 }}>
+            <Box sx={{px: 1 }}>
                 <Tabs
                     value={tabIndex}
                     onChange={handleTabChange}
@@ -809,7 +809,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
 
 
                     <>
-                        <Paper sx={{ maxHeight:"490px", height:"auto", overflow: "auto", px: 1 }}>
+                        <Paper sx={{ maxHeight:"35vh", height:"auto", overflow: "auto", px: 1, borderRadius: "none" }}>
                             <HotTable
                                 data={currentConfig.data}
                                 columns={currentConfig.columns}

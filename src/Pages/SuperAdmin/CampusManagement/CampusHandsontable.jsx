@@ -284,7 +284,7 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                 </Button>
             </Toolbar>
 
-            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+            <Paper sx={{ borderRadius: 1, mb: 2, maxHeight: "80vh" }}>
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
