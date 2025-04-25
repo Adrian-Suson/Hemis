@@ -14,13 +14,28 @@ class Region9InstitutionSeeder extends Seeder
         $faker = Faker::create('en_PH');
 
         $facultyGroups = [
-            'GROUP A1', 'GROUP A2', 'GROUP A3', 'GROUP B',
-            'GROUP C1', 'GROUP C2', 'GROUP C3', 'GROUP D', 'GROUP E',
+            'GROUP A1',
+            'GROUP A2',
+            'GROUP A3',
+            'GROUP B',
+            'GROUP C1',
+            'GROUP C2',
+            'GROUP C3',
+            'GROUP D',
+            'GROUP E',
         ];
 
         $institutionPrefixes = [
-            'Zamboanga', 'Peninsula', 'Sibugay', 'Basilan', 'Dipolog',
-            'Pagadian', 'Dapitan', 'Isabela', 'Sindangan', 'Ipil'
+            'Zamboanga',
+            'Peninsula',
+            'Sibugay',
+            'Basilan',
+            'Dipolog',
+            'Pagadian',
+            'Dapitan',
+            'Isabela',
+            'Sindangan',
+            'Ipil'
         ];
         $institutionTypes = ['SUC', 'LUC', 'Private'];
 
@@ -40,7 +55,7 @@ class Region9InstitutionSeeder extends Seeder
             $prefix = $faker->unique()->randomElement($institutionPrefixes);
             $type = $faker->randomElement($institutionTypes);
             $institutionName = "$prefix " . ($type === 'SUC' ? 'State University' : ($type === 'LUC' ? 'Local College' : 'College')) .
-                              ($i > 0 && $faker->boolean(50) ? " $i" : '');
+                ($i > 0 && $faker->boolean(50) ? " $i" : '');
 
             $institutionId = DB::table('institutions')->insertGetId([
                 'name' => $institutionName,
@@ -74,7 +89,7 @@ class Region9InstitutionSeeder extends Seeder
                     'suc_name' => $campusName,
                     'campus_type' => $index === 0 ? 'Main' : $faker->randomElement(['Satellite', 'Extension']),
                     'institutional_code' => strtoupper(substr($prefix, 0, 3)) . '-' .
-                                           strtoupper(substr($location['city'], 0, 3)) . $faker->numerify('###'),
+                        strtoupper(substr($location['city'], 0, 3)) . $faker->numerify('###'),
                     'region' => 'Region 9',
                     'municipality_city_province' => "{$location['city']}, {$location['province']}",
                     'year_first_operation' => $faker->year($max = '2020'),
@@ -102,8 +117,13 @@ class Region9InstitutionSeeder extends Seeder
             ];
 
             $programTypes = [
-                'DOCTORAL', 'MASTERS', 'POST-BACCALAUREATE', 'BACCALAUREATE',
-                'PRE-BACCALAUREATE', 'VOC/TECH', 'BASIC EDUCATION'
+                'DOCTORAL',
+                'MASTERS',
+                'POST-BACCALAUREATE',
+                'BACCALAUREATE',
+                'PRE-BACCALAUREATE',
+                'VOC/TECH',
+                'BASIC EDUCATION'
             ];
 
             for ($j = 0; $j < $programCount; $j++) {
@@ -168,10 +188,6 @@ class Region9InstitutionSeeder extends Seeder
                     '6th_year_female' => $femaleSixthYear,
                     '7th_year_male' => $maleSeventhYear,
                     '7th_year_female' => $femaleSeventhYear,
-                    'subtotal_male' => $maleFreshmen + $maleFirstYear + $maleSecondYear + $maleThirdYear + $maleFourthYear + $maleFifthYear + $maleSixthYear + $maleSeventhYear,
-                    'subtotal_female' => $femaleFreshmen + $femaleFirstYear + $femaleSecondYear + $femaleThirdYear + $femaleFourthYear + $femaleFifthYear + $femaleSixthYear + $femaleSeventhYear,
-                    'grand_total' => $maleFreshmen + $femaleFreshmen + $maleFirstYear + $femaleFirstYear + $maleSecondYear + $femaleSecondYear + $maleThirdYear + $femaleThirdYear + $maleFourthYear + $femaleFourthYear + $maleFifthYear + $femaleFifthYear + $maleSixthYear + $femaleSixthYear + $maleSeventhYear + $femaleSeventhYear,
-                    'lecture_units_actual' => $lectureUnits,
                     'laboratory_units_actual' => $labUnits,
                     'total_units_actual' => $labUnits + $lectureUnits,
                     'graduates_males' => $faker->numberBetween(5, 50),

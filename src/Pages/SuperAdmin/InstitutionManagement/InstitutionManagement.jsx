@@ -21,6 +21,8 @@ import {
     useTheme,
     alpha,
     TextField,
+    useMediaQuery,
+    Grid
 } from "@mui/material";
 import {
     UploadFile as UploadIcon,
@@ -41,6 +43,7 @@ const InstitutionManagement = () => {
     const [loading, setLoading] = useState(true);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const { createLog } = useActivityLog(); // Use the hook
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("info");
@@ -333,9 +336,9 @@ const InstitutionManagement = () => {
     };
 
     return (
-        <Box>
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {loading ? (
-                <Box sx={{ p: 3 }}>
+                <Box>
                     {/* Breadcrumbs Skeleton */}
                     <Box sx={{ my: 2, display: "flex", alignItems: "center" }}>
                         <Skeleton variant="text" width={80} height={20} />
@@ -348,6 +351,8 @@ const InstitutionManagement = () => {
                             display: "flex",
                             justifyContent: "flex-end",
                             mb: 2,
+                            flexWrap: "wrap", // Ensure buttons wrap on smaller screens
+                            gap: 1,
                         }}
                     >
                         <Skeleton variant="rounded" width={150} height={36} />
@@ -358,18 +363,21 @@ const InstitutionManagement = () => {
                             sx={{ ml: 1 }}
                         />
                     </Box>
-
                     {/* Table Skeleton */}
                     <Skeleton variant="rounded" width="100%" height={400} />
                 </Box>
             ) : (
-                <Box sx={{ p: 3 }}>
+                <Box>
                     {/* Header Section */}
-                    <Box sx={{ my: 2 }}>
+                    <Box sx={{ my: { xs: 1, sm: 2 } }}>
                         <Breadcrumbs
                             separator="›"
                             aria-label="breadcrumb"
-                            sx={{ mb: 1 }}
+                            sx={{
+                                mb: 1,
+                                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                                flexWrap: "wrap",
+                            }}
                         >
                             <Link
                                 underline="hover"
@@ -385,190 +393,325 @@ const InstitutionManagement = () => {
                                         ? "/hei-admin/dashboard"
                                         : "/hei-staff/dashboard"
                                 }
+                                sx={{
+                                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                                }}
                             >
                                 Dashboard
                             </Link>
-                            <Typography color="text.primary">
+                            <Typography
+                                color="text.primary"
+                                sx={{
+                                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                                }}
+                            >
                                 Institution Management
                             </Typography>
                         </Breadcrumbs>
                     </Box>
 
-                    {/* Filter Controls and Actions in One Row */}
+                    {/* Filter Controls and Actions */}
                     <Box
                         sx={{
                             p: 1,
                             borderBottom: 1,
                             borderColor: "divider",
-                            display: "flex",
-                            alignItems: "center",
                             bgcolor: "grey.50",
                             mb: 2,
-                            gap: 2,
                         }}
                     >
-                        {/* Filters (left) */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                gap: 1,
-                                flex: 1,
-                                flexWrap: "wrap",
-                                alignItems: "center",
-                            }}
-                        >
-                            <TextField
-                                label="Search"
-                                variant="outlined"
-                                size="small"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                sx={{
-                                    flex: "1 1 150px",
-                                    minWidth: 120,
-                                    "& .MuiInputBase-root": { height: 32 },
-                                }}
-                                InputProps={{ sx: { fontSize: "0.875rem" } }}
-                                InputLabelProps={{
-                                    sx: { fontSize: "0.75rem" },
-                                }}
-                            />
-                            <FormControl
-                                variant="outlined"
-                                size="small"
-                                sx={{ flex: "1 1 100px", minWidth: 100 }}
-                            >
-                                <InputLabel sx={{ fontSize: "0.75rem" }}>
-                                    Type
-                                </InputLabel>
-                                <Select
-                                    value={typeFilter}
-                                    onChange={(e) =>
-                                        setTypeFilter(e.target.value)
-                                    }
-                                    label="Type"
-                                    sx={{ height: 32, fontSize: "0.875rem" }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.875rem" }}
-                                    >
-                                        All Types
-                                    </MenuItem>
-                                    {filterOptions.types.map((type) => (
-                                        <MenuItem
-                                            key={type}
-                                            value={type}
-                                            sx={{ fontSize: "0.875rem" }}
+                        <Grid container spacing={2} alignItems="center">
+                            {/* Filters */}
+                            <Grid item xs={12} md={8}>
+                                <Grid container spacing={1}>
+                                    <Grid item xs={12} sm={6} md={3}>
+                                        <TextField
+                                            label="Search"
+                                            variant="outlined"
+                                            size="small"
+                                            value={searchTerm}
+                                            onChange={(e) =>
+                                                setSearchTerm(e.target.value)
+                                            }
+                                            fullWidth
+                                            sx={{
+                                                "& .MuiInputBase-root": {
+                                                    height: 32,
+                                                },
+                                                "& .MuiInputLabel-root": {
+                                                    fontSize: "0.75rem",
+                                                },
+                                                "& .MuiInputBase-input": {
+                                                    fontSize: "0.875rem",
+                                                },
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6} md={3}>
+                                        <FormControl
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
                                         >
-                                            {type}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <FormControl
-                                variant="outlined"
-                                size="small"
-                                sx={{ flex: "1 1 100px", minWidth: 100 }}
-                            >
-                                <InputLabel sx={{ fontSize: "0.75rem" }}>
-                                    City
-                                </InputLabel>
-                                <Select
-                                    value={cityFilter}
-                                    onChange={(e) =>
-                                        setCityFilter(e.target.value)
-                                    }
-                                    label="City"
-                                    sx={{ height: 32, fontSize: "0.875rem" }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.875rem" }}
-                                    >
-                                        All Cities
-                                    </MenuItem>
-                                    {filterOptions.cities.map((city) => (
-                                        <MenuItem
-                                            key={city}
-                                            value={city}
-                                            sx={{ fontSize: "0.875rem" }}
+                                            <InputLabel
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                Type
+                                            </InputLabel>
+                                            <Select
+                                                value={typeFilter}
+                                                onChange={(e) =>
+                                                    setTypeFilter(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                label="Type"
+                                                sx={{
+                                                    height: 32,
+                                                    fontSize: "0.875rem",
+                                                }}
+                                            >
+                                                <MenuItem
+                                                    value=""
+                                                    sx={{
+                                                        fontSize: "0.875rem",
+                                                    }}
+                                                >
+                                                    All Types
+                                                </MenuItem>
+                                                {filterOptions.types.map(
+                                                    (type) => (
+                                                        <MenuItem
+                                                            key={type}
+                                                            value={type}
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            {type}
+                                                        </MenuItem>
+                                                    )
+                                                )}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6} md={3}>
+                                        <FormControl
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
                                         >
-                                            {city}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                            <FormControl
-                                variant="outlined"
-                                size="small"
-                                sx={{ flex: "1 1 100px", minWidth: 100 }}
-                            >
-                                <InputLabel sx={{ fontSize: "0.75rem" }}>
-                                    Province
-                                </InputLabel>
-                                <Select
-                                    value={provinceFilter}
-                                    onChange={(e) =>
-                                        setProvinceFilter(e.target.value)
-                                    }
-                                    label="Province"
-                                    sx={{ height: 32, fontSize: "0.875rem" }}
-                                >
-                                    <MenuItem
-                                        value=""
-                                        sx={{ fontSize: "0.875rem" }}
-                                    >
-                                        All Provinces
-                                    </MenuItem>
-                                    {filterOptions.provinces.map((province) => (
-                                        <MenuItem
-                                            key={province}
-                                            value={province}
-                                            sx={{ fontSize: "0.875rem" }}
+                                            <InputLabel
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                City
+                                            </InputLabel>
+                                            <Select
+                                                value={cityFilter}
+                                                onChange={(e) =>
+                                                    setCityFilter(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                label="City"
+                                                sx={{
+                                                    height: 32,
+                                                    fontSize: "0.875rem",
+                                                }}
+                                            >
+                                                <MenuItem
+                                                    value=""
+                                                    sx={{
+                                                        fontSize: "0.875rem",
+                                                    }}
+                                                >
+                                                    All Cities
+                                                </MenuItem>
+                                                {filterOptions.cities.map(
+                                                    (city) => (
+                                                        <MenuItem
+                                                            key={city}
+                                                            value={city}
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            {city}
+                                                        </MenuItem>
+                                                    )
+                                                )}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6} md={3}>
+                                        <FormControl
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
                                         >
-                                            {province}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        {/* Actions (right) */}
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                            <Button
-                                variant="outlined"
-                                startIcon={<AddIcon />}
-                                onClick={handleManualAdd}
+                                            <InputLabel
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                Province
+                                            </InputLabel>
+                                            <Select
+                                                value={provinceFilter}
+                                                onChange={(e) =>
+                                                    setProvinceFilter(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                label="Province"
+                                                sx={{
+                                                    height: 32,
+                                                    fontSize: "0.875rem",
+                                                }}
+                                            >
+                                                <MenuItem
+                                                    value=""
+                                                    sx={{
+                                                        fontSize: "0.875rem",
+                                                    }}
+                                                >
+                                                    All Provinces
+                                                </MenuItem>
+                                                {filterOptions.provinces.map(
+                                                    (province) => (
+                                                        <MenuItem
+                                                            key={province}
+                                                            value={province}
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            {province}
+                                                        </MenuItem>
+                                                    )
+                                                )}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                            {/* Actions */}
+                            <Grid
+                                item
+                                xs={12}
+                                md={4}
                                 sx={{
-                                    borderRadius: 1.5,
-                                    textTransform: "none",
-                                    fontWeight: 500,
-                                }}
-                            >
-                                Add Institution
-                            </Button>
-                            <Button
-                                variant="contained"
-                                startIcon={<UploadIcon />}
-                                onClick={() => setOpenUploadDialog(true)}
-                                sx={{
-                                    borderRadius: 1.5,
-                                    bgcolor: theme.palette.primary.main,
-                                    color: "white",
-                                    "&:hover": {
-                                        bgcolor: theme.palette.primary.dark,
+                                    display: "flex",
+                                    justifyContent: {
+                                        xs: "flex-start",
+                                        md: "flex-end",
                                     },
-                                    textTransform: "none",
-                                    fontWeight: 500,
+                                    gap: 1,
+                                    flexWrap: "wrap", // Ensure buttons wrap on smaller screens
                                 }}
                             >
-                                Upload Form A
-                            </Button>
-                        </Box>
+                                {isMobile ? (
+                                    <>
+                                        <IconButton
+                                            onClick={handleManualAdd}
+                                            sx={{
+                                                color: theme.palette.primary
+                                                    .main,
+                                                borderRadius: 1.5,
+                                                bgcolor: alpha(
+                                                    theme.palette.primary.main,
+                                                    0.1
+                                                ),
+                                                "&:hover": {
+                                                    bgcolor: alpha(
+                                                        theme.palette.primary
+                                                            .main,
+                                                        0.2
+                                                    ),
+                                                },
+                                            }}
+                                        >
+                                            <AddIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            onClick={() =>
+                                                setOpenUploadDialog(true)
+                                            }
+                                            sx={{
+                                                color: theme.palette.primary
+                                                    .main,
+                                                borderRadius: 1.5,
+                                                bgcolor: alpha(
+                                                    theme.palette.primary.main,
+                                                    0.1
+                                                ),
+                                                "&:hover": {
+                                                    bgcolor: alpha(
+                                                        theme.palette.primary
+                                                            .main,
+                                                        0.2
+                                                    ),
+                                                },
+                                            }}
+                                        >
+                                            <UploadIcon />
+                                        </IconButton>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<AddIcon />}
+                                            onClick={handleManualAdd}
+                                            size="medium"
+                                            sx={{
+                                                borderRadius: 1.5,
+                                                textTransform: "none",
+                                                fontWeight: 500,
+                                                flex: {
+                                                    xs: "1 1 100%",
+                                                    sm: "0 1 auto",
+                                                },
+                                                minWidth: {
+                                                    xs: "auto",
+                                                    sm: 150,
+                                                },
+                                            }}
+                                        >
+                                            Add Institution
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<UploadIcon />}
+                                            onClick={() =>
+                                                setOpenUploadDialog(true)
+                                            }
+                                            size="medium"
+                                            sx={{
+                                                borderRadius: 1.5,
+                                                textTransform: "none",
+                                                fontWeight: 500,
+                                                flex: {
+                                                    xs: "1 1 100%",
+                                                    sm: "0 1 auto",
+                                                },
+                                                minWidth: {
+                                                    xs: "auto",
+                                                    sm: 150,
+                                                },
+                                            }}
+                                        >
+                                            Upload Form A
+                                        </Button>
+                                    </>
+                                )}
+                            </Grid>
+                        </Grid>
                     </Box>
 
                     {/* Table Section */}
-                    <Box>
+                    <Box sx={{ overflowX: "auto" }}>
                         <InstitutionTable
                             institutions={institutions}
                             setSnackbarMessage={setSnackbarMessage}
@@ -580,7 +723,6 @@ const InstitutionManagement = () => {
                             cityFilter={cityFilter}
                             provinceFilter={provinceFilter}
                             onEdit={(updatedInstitution) => {
-                                // Update the institution in the local state
                                 setInstitutions((prev) =>
                                     prev.map((inst) =>
                                         inst.id === updatedInstitution.id
@@ -598,10 +740,12 @@ const InstitutionManagement = () => {
             <Dialog
                 open={openUploadDialog}
                 onClose={() => setOpenUploadDialog(false)}
+                fullScreen={isMobile}
                 PaperProps={{
                     sx: {
-                        borderRadius: 2,
-                        maxWidth: 500,
+                        borderRadius: { xs: 0, sm: 2 },
+                        maxWidth: { xs: "100%", sm: 500 },
+                        width: "100%",
                     },
                 }}
             >
@@ -609,19 +753,25 @@ const InstitutionManagement = () => {
                     sx={{
                         bgcolor: alpha(theme.palette.primary.main, 0.05),
                         borderBottom: `1px solid ${theme.palette.divider}`,
-                        px: 3,
+                        px: { xs: 2, sm: 3 },
                         py: 2,
                     }}
                 >
-                    <Typography fontWeight={600}>
+                    <Typography
+                        fontWeight={600}
+                        fontSize={{ xs: "1rem", sm: "1.25rem" }}
+                    >
                         Upload Institution Form A
                     </Typography>
                 </DialogTitle>
-                <DialogContent sx={{ p: 3 }}>
+                <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
                     <Typography
                         variant="body2"
                         color="text.secondary"
-                        sx={{ mb: 3 }}
+                        sx={{
+                            mb: 3,
+                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                        }}
                     >
                         Please select an institution type and upload the Form A
                         Excel document.
@@ -638,6 +788,7 @@ const InstitutionManagement = () => {
                             onChange={(e) =>
                                 setSelectedInstitutionType(e.target.value)
                             }
+                            sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
                         >
                             <MenuItem value="SUC">SUC</MenuItem>
                             <MenuItem value="LUC">LUC</MenuItem>
@@ -667,13 +818,19 @@ const InstitutionManagement = () => {
                             gap: 1,
                             cursor: "pointer",
                             bgcolor: "background.paper",
+                            minHeight: 100,
                         }}
                         onClick={() =>
                             document.getElementById("upload-input").click()
                         }
                     >
-                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography>
+                        <UploadIcon
+                            color="primary"
+                            sx={{ fontSize: { xs: 24, sm: 28 } }}
+                        />
+                        <Typography
+                            sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
+                        >
                             Drag & drop file or click to browse
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -706,7 +863,7 @@ const InstitutionManagement = () => {
                                     <Typography
                                         variant="body2"
                                         noWrap
-                                        sx={{ maxWidth: 200 }}
+                                        sx={{ maxWidth: { xs: 150, sm: 200 } }}
                                     >
                                         {selectedFile.name}
                                     </Typography>
@@ -732,16 +889,17 @@ const InstitutionManagement = () => {
                                     },
                                 }}
                             >
-                                &times;
+                                ×
                             </IconButton>
                         </Paper>
                     )}
                 </DialogContent>
                 <DialogActions
                     sx={{
-                        px: 3,
+                        px: { xs: 2, sm: 3 },
                         py: 2,
                         borderTop: `1px solid ${theme.palette.divider}`,
+                        justifyContent: "space-between",
                     }}
                 >
                     <Button
@@ -750,6 +908,7 @@ const InstitutionManagement = () => {
                             textTransform: "none",
                             fontWeight: 500,
                             color: theme.palette.text.primary,
+                            fontSize: { xs: "0.875rem", sm: "1rem" },
                         }}
                     >
                         Cancel
@@ -763,6 +922,7 @@ const InstitutionManagement = () => {
                             fontWeight: 500,
                             borderRadius: 1.5,
                             px: 3,
+                            fontSize: { xs: "0.875rem", sm: "1rem" },
                         }}
                     >
                         Upload

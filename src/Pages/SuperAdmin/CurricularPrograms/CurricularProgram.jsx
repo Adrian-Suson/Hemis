@@ -181,14 +181,32 @@ const CurricularProgram = () => {
 
                     const sheetData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 8,
+                        range: 11,
                     });
 
                     const parsedData = sheetData
                         .map((row) => {
                             const labUnits = row[12] || 0;
                             const lectureUnits = row[13] || 0;
-
+                            // Calculate total number of students from the relevant columns
+                            const maleTotal = 
+                                Number(row[17] || 0) + // new_students_freshmen_male
+                                Number(row[19] || 0) + // 1st_year_male
+                                Number(row[21] || 0) + // 2nd_year_male
+                                Number(row[23] || 0) + // 3rd_year_male
+                                Number(row[25] || 0) + // 4th_year_male
+                                Number(row[27] || 0) + // 5th_year_male
+                                Number(row[29] || 0) + // 6th_year_male
+                                Number(row[31] || 0);  // 7th_year_male
+                            const femaleTotal = 
+                                Number(row[18] || 0) + // new_students_freshmen_female
+                                Number(row[20] || 0) + // 1st_year_female
+                                Number(row[22] || 0) + // 2nd_year_female
+                                Number(row[24] || 0) + // 3rd_year_female
+                                Number(row[26] || 0) + // 4th_year_female
+                                Number(row[28] || 0) + // 5th_year_female
+                                Number(row[30] || 0) + // 6th_year_female
+                                Number(row[32] || 0);  // 7th_year_female
                             return {
                                 institution_id: institutionId,
                                 program_name: row[1] || null,
@@ -225,9 +243,9 @@ const CurricularProgram = () => {
                                 "6th_year_female": row[30] || null,
                                 "7th_year_male": row[31] || null,
                                 "7th_year_female": row[32] || null,
-                                subtotal_male: row[33] || null,
-                                subtotal_female: row[34] || null,
-                                grand_total: row[35] || null,
+                                subtotal_male: maleTotal,
+                                subtotal_female: femaleTotal,
+                                grand_total: maleTotal + femaleTotal,
                                 lecture_units_actual: row[36] || null,
                                 laboratory_units_actual: row[37] || null,
                                 total_units_actual:
@@ -714,7 +732,7 @@ const CurricularProgram = () => {
                 </DialogActions>
             </Dialog>
 
-            <ProgramTables programs={filteredPrograms} loading={loading} />
+            <ProgramTables programs={filteredPrograms} loading={loading} fetchPrograms={fetchPrograms} />
             <Tabs
                 value={mainTabValue}
                 onChange={(event, newValue) => setMainTabValue(newValue)}

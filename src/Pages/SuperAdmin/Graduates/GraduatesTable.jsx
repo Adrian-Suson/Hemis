@@ -74,19 +74,24 @@ const GraduatesTable = ({ graduates }) => {
         colHeaders: true,
         rowHeaders: true,
         stretchH: "all",
-        height: "auto",
+        height: "450",
         licenseKey: "non-commercial-and-evaluation",
     };
 
     return (
         <Box sx={{ mb: 2 }}>
-            <Paper sx={{ maxHeight: 550, overflowX: "auto" }}>
+            <Paper sx={{ maxHeight: "50vh", overflowX: "auto" }}>
                 <HotTable settings={hotSettings} />
 
                 {/* Pagination Controls */}
                 <Box
                     sx={{
                         display: "flex",
+                        position: "sticky",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 1,
                         justifyContent: "flex-end",
                         alignItems: "center",
                         p: 1,

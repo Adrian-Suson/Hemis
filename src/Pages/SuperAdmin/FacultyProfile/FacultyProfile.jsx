@@ -91,8 +91,7 @@ const facultyGroups = [
 
 const FacultyProfileUpload = () => {
     const [selectedGroup, setSelectedGroup] = useState(
-        facultyGroups[0].sheetName,
-        facultyGroups[0].description
+        facultyGroups[0].sheetName
     );
     const [facultyProfiles, setFacultyProfiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -109,7 +108,7 @@ const FacultyProfileUpload = () => {
     // Fetch all faculty profiles on component mount
     useEffect(() => {
         fetchFacultyProfiles();
-        console.log('selectedGroup:', selectedGroup)
+        console.log("selectedGroup:", selectedGroup);
     }, []);
 
     const fetchFacultyProfiles = async () => {
@@ -402,7 +401,8 @@ const FacultyProfileUpload = () => {
                     (profile) => profile.faculty_group === group.sheetName
                 );
                 console.log(
-                    `Sheet ${group.sheetName}: ${acc[group.sheetName].length
+                    `Sheet ${group.sheetName}: ${
+                        acc[group.sheetName].length
                     } profiles`
                 );
                 return acc;
@@ -499,8 +499,9 @@ const FacultyProfileUpload = () => {
                 });
             }
 
-            const fileName = `Form_E2_Faculty_Profiles_${new Date().toISOString().split("T")[0]
-                }.xlsx`;
+            const fileName = `Form_E2_Faculty_Profiles_${
+                new Date().toISOString().split("T")[0]
+            }.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -518,12 +519,11 @@ const FacultyProfileUpload = () => {
     };
 
     // Show skeleton while loading
-        if (loading) {
-            return <FacultyProfileSkeleton />;
-        }
+    if (loading) {
+        return <FacultyProfileSkeleton />;
+    }
 
     return (
-
         <Box sx={{ p: 3, my: 2 }}>
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
@@ -555,23 +555,34 @@ const FacultyProfileUpload = () => {
                     pr: { xs: 1, sm: 1 },
                     mb: 0.5,
                     backgroundColor: "background.paper",
+                    justifyContent: "space-between",
                     borderColor: "divider",
                     display: "flex",
                     alignItems: "center",
                     minHeight: 56,
                 }}
             >
-                <Typography
-                    variant="h6"
-                    component="div"
-                    sx={{ flexGrow: 1, fontWeight: "medium" }}
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                    }}
                 >
-                    Faculties Managment
-                </Typography>
+                    <Typography
+                        variant="h5"
+                        component="div"
+                        sx={{ flexGrow: 1, fontWeight: "medium" }}
+                    >
+                        Faculties Managment
+                    </Typography>
 
-                <Typography variant="body1" color="initial">
-                    {selectedGroup}
-                </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                        {facultyGroups.find(
+                            (group) => group.sheetName === selectedGroup
+                        )?.description || "No description available"}
+                    </Typography>
+                </Box>
 
                 {/* File Upload and Export Buttons */}
                 <ButtonGroup>
@@ -621,34 +632,45 @@ const FacultyProfileUpload = () => {
                     </Typography>
                 </DialogTitle>
                 <DialogContent sx={{ p: 3 }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 3 }}
+                    >
                         Please upload the Form E2 Excel document.
                     </Typography>
 
                     <Box
-                        onDrop={e => {
+                        onDrop={(e) => {
                             e.preventDefault();
-                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            if (
+                                e.dataTransfer.files &&
+                                e.dataTransfer.files[0]
+                            ) {
                                 setSelectedFile(e.dataTransfer.files[0]);
                             }
                         }}
-                        onDragOver={e => e.preventDefault()}
+                        onDragOver={(e) => e.preventDefault()}
                         sx={{
                             p: 1.5,
                             border: `1px dashed ${theme.palette.primary.main}`,
                             borderRadius: 1.5,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
                             gap: 1,
-                            cursor: 'pointer',
-                            bgcolor: 'background.paper'
+                            cursor: "pointer",
+                            bgcolor: "background.paper",
                         }}
-                        onClick={() => document.getElementById('upload-input').click()}
+                        onClick={() =>
+                            document.getElementById("upload-input").click()
+                        }
                     >
                         <UploadIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography>Drag & drop file or click to browse</Typography>
+                        <Typography>
+                            Drag & drop file or click to browse
+                        </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Supported formats: .xlsx, .xls
                         </Typography>
@@ -657,7 +679,7 @@ const FacultyProfileUpload = () => {
                             type="file"
                             hidden
                             accept=".xlsx, .xls"
-                            onChange={e => setSelectedFile(e.target.files[0])}
+                            onChange={(e) => setSelectedFile(e.target.files[0])}
                         />
                     </Box>
 
@@ -667,20 +689,28 @@ const FacultyProfileUpload = () => {
                             sx={{
                                 mt: 2,
                                 p: 1.5,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderRadius: 1.5
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                borderRadius: 1.5,
                             }}
                         >
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
                                 <DownloadIcon color="primary" sx={{ mr: 1 }} />
                                 <Box>
-                                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                                    <Typography
+                                        variant="body2"
+                                        noWrap
+                                        sx={{ maxWidth: 200 }}
+                                    >
                                         {selectedFile.name}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {(selectedFile.size / 1024).toFixed(2)} KB
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
+                                        KB
                                     </Typography>
                                 </Box>
                             </Box>
@@ -689,7 +719,12 @@ const FacultyProfileUpload = () => {
                                 onClick={() => setSelectedFile(null)}
                                 sx={{
                                     color: theme.palette.error.main,
-                                    '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
+                                    "&:hover": {
+                                        bgcolor: alpha(
+                                            theme.palette.error.main,
+                                            0.1
+                                        ),
+                                    },
                                 }}
                             >
                                 &times;
@@ -697,13 +732,19 @@ const FacultyProfileUpload = () => {
                         </Paper>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+                <DialogActions
+                    sx={{
+                        px: 3,
+                        py: 2,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                    }}
+                >
                     <Button
                         onClick={() => setOpenUploadDialog(false)}
                         sx={{
-                            textTransform: 'none',
+                            textTransform: "none",
                             fontWeight: 500,
-                            color: theme.palette.text.primary
+                            color: theme.palette.text.primary,
                         }}
                     >
                         Cancel
@@ -713,10 +754,10 @@ const FacultyProfileUpload = () => {
                         variant="contained"
                         disabled={!selectedFile || isUploading}
                         sx={{
-                            textTransform: 'none',
+                            textTransform: "none",
                             fontWeight: 500,
                             borderRadius: 1.5,
-                            px: 3
+                            px: 3,
                         }}
                     >
                         Upload

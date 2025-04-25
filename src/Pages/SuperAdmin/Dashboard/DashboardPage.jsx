@@ -10,6 +10,16 @@ import {
 } from "chart.js";
 import { Pie } from "react-chartjs-2";
 import { motion } from "framer-motion";
+import {
+    Box,
+    Grid,
+    Card,
+    CardContent,
+    Typography,
+    CircularProgress,
+    Alert,
+    Divider,
+} from "@mui/material";
 
 // Register Chart.js components for Pie charts
 ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -103,32 +113,32 @@ const DashboardPage = () => {
             (program.new_students_freshmen_female || 0);
         acc["1st Year"] =
             (acc["1st Year"] || 0) +
-            (program.first_year_old_male || 0) +
-            (program.first_year_old_female || 0);
+            (program["1st_year_male"] || 0) +
+            (program["1st_year_female"] || 0);
         acc["2nd Year"] =
             (acc["2nd Year"] || 0) +
-            (program.second_year_male || 0) +
-            (program.second_year_female || 0);
+            (program["2nd_year_male"] || 0) +
+            (program["2nd_year_female"] || 0);
         acc["3rd Year"] =
             (acc["3rd Year"] || 0) +
-            (program.third_year_male || 0) +
-            (program.third_year_female || 0);
+            (program["3rd_year_male"] || 0) +
+            (program["3rd_year_female"] || 0);
         acc["4th Year"] =
             (acc["4th Year"] || 0) +
-            (program.fourth_year_male || 0) +
-            (program.fourth_year_female || 0);
+            (program["4th_year_male"] || 0) +
+            (program["4th_year_female"] || 0);
         acc["5th Year"] =
             (acc["5th Year"] || 0) +
-            (program.fifth_year_male || 0) +
-            (program.fifth_year_female || 0);
+            (program["5th_year_male"] || 0) +
+            (program["5th_year_female"] || 0);
         acc["6th Year"] =
             (acc["6th Year"] || 0) +
-            (program.sixth_year_male || 0) +
-            (program.sixth_year_female || 0);
+            (program["6th_year_male"] || 0) +
+            (program["6th_year_female"] || 0);
         acc["7th Year"] =
             (acc["7th Year"] || 0) +
-            (program.seventh_year_male || 0) +
-            (program.seventh_year_female || 0);
+            (program["7th_year_male"] || 0) +
+            (program["7th_year_female"] || 0);
         return acc;
     }, {});
 
@@ -213,13 +223,22 @@ const DashboardPage = () => {
 
     const chartOptions = {
         responsive: true,
+        maintainAspectRatio: false, // Allow custom height
         plugins: {
             legend: {
                 display: true,
                 position: "top",
+                labels: {
+                    font: {
+                        size: 12, // Smaller legend font
+                    },
+                },
             },
             tooltip: {
                 enabled: true,
+                bodyFont: {
+                    size: 12, // Smaller tooltip font
+                },
             },
         },
     };
@@ -232,182 +251,204 @@ const DashboardPage = () => {
 
     if (stats.loading) {
         return (
-            <div className="bg-gray-100 overflow-y-auto h-[90vh] w-full max-w-full p-2 sm:p-4 box-border">
-                <div className="p-2 sm:p-4 bg-gradient-to-r from-primary to-purple-500 text-white text-center shadow-lg mb-4">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <div className="w-2/5 h-10 sm:h-16 mx-auto bg-white/20"></div>
-                        <div className="w-1/5 h-5 sm:h-8 mx-auto bg-white/20 mt-2"></div>
-                    </motion.div>
-                </div>
-                <div
-                    className="p-2 sm:p-4
-
-"
-                >
-                    <div className="flex flex-wrap justify-around">
-                        {[...Array(6)].map((_, index) => (
-                            <motion.div
-                                key={index}
-                                className="flex-1 m-2 min-w-[100%] sm:min-w-[12rem]"
-                                variants={cardVariants}
-                                initial="hidden"
-                                animate="visible"
-                                whileHover="hover"
-                            >
-                                <div className="h-24 sm:h-32 bg-gray-200 rounded-lg"></div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "90vh",
+                    bgcolor: "grey.100",
+                    p: { xs: 2, sm: 4 },
+                }}
+            >
+                <CircularProgress />
+            </Box>
         );
     }
 
     if (stats.error) {
         return (
-            <div className="bg-gray-100 flex justify-center items-center h-[90vh]">
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "90vh",
+                    bgcolor: "grey.100",
+                    p: { xs: 2, sm: 4 },
+                }}
+            >
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <h5 className="text-red-500 text-lg sm:text-2xl">
-                        {stats.error}
-                    </h5>
+                    <Alert severity="error">{stats.error}</Alert>
                 </motion.div>
-            </div>
+            </Box>
         );
     }
 
     return (
-        <div className="bg-gray-100 overflow-y-auto h-[90vh] w-full max-w-full p-2 sm:p-4 box-border">
-            <div className="p-2 sm:p-4 bg-gradient-to-r from-primary to-purple-500 text-white text-center shadow-lg mb-4 sm:hidden">
-                <h1 className="font-bold text-sm sm:text-2xl mb-2">
+        <Box
+            sx={{
+                bgcolor: "grey.100",
+                overflowY: "auto",
+                height: "90vh",
+                width: "100%",
+                p: { xs: 2, sm: 4 },
+                boxSizing: "border-box",
+            }}
+        >
+            {/* Header */}
+            <Box
+                sx={{
+                    p: { xs: 2, sm: 4 },
+                    bgcolor: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                    color: "white",
+                    textAlign: "center",
+                    boxShadow: 3,
+                    mb: 4,
+                    display: { xs: "block", sm: "none" },
+                }}
+            >
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
                     Statistics Dashboard
-                </h1>
-                <p className="text-xs sm:text-base opacity-90">
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
                     Insights into Users, Faculty, Programs, and More
-                </p>
-            </div>
-            <div className="p-2 sm:p-4">
-                <div className="flex flex-wrap justify-around">
-                    {[
-                        {
-                            label: "Total Users",
-                            value: totalUsers,
-                            color: "text-orange",
-                        },
-                        {
-                            label: "Total Faculty",
-                            value: totalFaculty,
-                            color: "text-teal",
-                        },
-                        {
-                            label: "Total Programs",
-                            value: totalPrograms,
-                            color: "text-purple",
-                        },
-                        {
-                            label: "Total Institutions",
-                            value: totalInstitutions,
-                            color: "text-grey",
-                        },
-                        {
-                            label: "Total Enrollments",
-                            value: totalEnrollments.toLocaleString(),
-                            color: "text-primary",
-                        },
-                        {
-                            label: "Total Graduates",
-                            value: totalGraduates.toLocaleString(),
-                            color: "text-secondary",
-                        },
-                    ].map((stat, index) => (
+                </Typography>
+            </Box>
+
+            {/* Stats Cards */}
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                {[
+                    {
+                        label: "Total Users",
+                        value: totalUsers,
+                        color: "warning.main",
+                    },
+                    {
+                        label: "Total Faculty",
+                        value: totalFaculty,
+                        color: "success.main",
+                    },
+                    {
+                        label: "Total Programs",
+                        value: totalPrograms,
+                        color: "secondary.main",
+                    },
+                    {
+                        label: "Total Institutions",
+                        value: totalInstitutions,
+                        color: "text.secondary",
+                    },
+                    {
+                        label: "Total Enrollments",
+                        value: totalEnrollments.toLocaleString(),
+                        color: "primary.main",
+                    },
+                    {
+                        label: "Total Graduates",
+                        value: totalGraduates.toLocaleString(),
+                        color: "error.main",
+                    },
+                ].map((stat, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
                         <motion.div
-                            key={index}
-                            className="bg-white border border-gray-200/20 rounded-lg p-2 sm:p-4 m-2 flex-1 min-w-[100%] sm:min-w-[12rem] flex flex-col justify-between"
                             variants={cardVariants}
                             initial="hidden"
                             animate="visible"
                             whileHover="hover"
                         >
-                            <h4
-                                className={`font-bold ${stat.color} text-lg sm:text-2xl mb-2`}
-                            >
-                                {stat.value}
-                            </h4>
-                            <p className="text-gray-500 text-sm sm:text-base">
-                                {stat.label}
-                            </p>
+                            <Card sx={{ border: 1, borderColor: "grey.200" }}>
+                                <CardContent sx={{ p: 2 }}>
+                                    <Typography
+                                        variant="h5"
+                                        color={stat.color}
+                                        fontWeight="bold"
+                                        gutterBottom
+                                    >
+                                        {stat.value}
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        {stat.label}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
                         </motion.div>
-                    ))}
-                </div>
-                <div className="mt-4 flex flex-wrap justify-around">
-                    {[
-                        {
-                            title: "Gender Breakdown",
-                            ChartComponent: Pie,
-                            data: genderPieData,
-                            options: chartOptions,
-                        },
-                        {
-                            title: "Totals by Category",
-                            ChartComponent: Pie,
-                            data: totalsPieData,
-                            options: chartOptions,
-                        },
-                        {
-                            title: "Enrollments vs Graduates",
-                            ChartComponent: Pie,
-                            data: enrollmentPieData,
-                            options: chartOptions,
-                        },
-                        {
-                            title: "Enrollments by Year",
-                            ChartComponent: Pie,
-                            data: yearLevelPieData,
-                            options: chartOptions,
-                        },
-                    ].map((chart, index) => (
+                    </Grid>
+                ))}
+            </Grid>
+
+            {/* Charts */}
+            <Grid container spacing={2}>
+                {[
+                    {
+                        title: "Gender Breakdown",
+                        ChartComponent: Pie,
+                        data: genderPieData,
+                        options: chartOptions,
+                    },
+                    {
+                        title: "Totals by Category",
+                        ChartComponent: Pie,
+                        data: totalsPieData,
+                        options: chartOptions,
+                    },
+                    {
+                        title: "Enrollments vs Graduates",
+                        ChartComponent: Pie,
+                        data: enrollmentPieData,
+                        options: chartOptions,
+                    },
+                    {
+                        title: "Enrollments by Year",
+                        ChartComponent: Pie,
+                        data: yearLevelPieData,
+                        options: chartOptions,
+                    },
+                ].map((chart, index) => (
+                    <Grid item xs={12} sm={6} md={3} key={index}>
                         <motion.div
-                            key={index}
-                            className="flex-1 m-2 min-w-[100%] sm:min-w-[15rem]"
-                            variants={{
-                                hidden: { opacity: 0, y: 20 },
-                                visible: {
-                                    opacity: 1,
-                                    y: 0,
-                                    transition: { duration: 0.5 },
-                                },
-                                hover: {
-                                    scale: 1.03,
-                                    boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
-                                },
-                            }}
+                            variants={cardVariants}
                             initial="hidden"
                             animate="visible"
+                            whileHover="hover"
                         >
-                            <div className="bg-white border border-gray-200/20 rounded-lg p-2 sm:p-4">
-                                <h6 className="font-semibold text-sm sm:text-xl text-gray-800 mb-2">
-                                    {chart.title}
-                                </h6>
-                                <hr className="border-t border-gray-200 mb-2" />
-                                <div>
-                                    <chart.ChartComponent
-                                        data={chart.data}
-                                        options={chart.options}
-                                    />
-                                </div>
-                            </div>
+                            <Card sx={{ border: 1, borderColor: "grey.200" }}>
+                                <CardContent sx={{ p: 2 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="medium"
+                                        color="text.primary"
+                                        gutterBottom
+                                    >
+                                        {chart.title}
+                                    </Typography>
+                                    <Divider sx={{ mb: 2 }} />
+                                    <Box
+                                        sx={{
+                                            position: "relative",
+                                            height: 200, // Fixed height for smaller charts
+                                            width: "100%",
+                                        }}
+                                    >
+                                        <chart.ChartComponent
+                                            data={chart.data}
+                                            options={chart.options}
+                                        />
+                                    </Box>
+                                </CardContent>
+                            </Card>
                         </motion.div>
-                    ))}
-                </div>
-            </div>
-        </div>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
     );
 };
 

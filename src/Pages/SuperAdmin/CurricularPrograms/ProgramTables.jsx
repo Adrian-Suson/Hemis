@@ -1,6 +1,6 @@
 import { HotTable } from "@handsontable/react";
 import "handsontable/dist/handsontable.full.min.css";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { registerAllModules } from "handsontable/registry";
 import PropTypes from "prop-types";
 import axios from "axios";
@@ -16,6 +16,7 @@ import {
     MenuItem,
     Typography,
     Pagination,
+    Alert,
 } from "@mui/material";
 
 // Register all Handsontable modules
@@ -28,38 +29,120 @@ const ROWS_PER_PAGE_OPTIONS = [
     { label: "All", value: -1 },
 ];
 
-const ProgramTables = ({ programs, loading }) => {
-    const [subTabValue, setSubTabValue] = useState(0); // State for sub-tabs
-    const [page, setPage] = useState(0); // State for current page
-    const [rowsPerPage, setRowsPerPage] = useState(25); // State for rows per page
+const ProgramTables = ({ programs, loading, fetchPrograms }) => {
+    const [subTabValue, setSubTabValue] = useState(0);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(25);
+    const [error, setError] = useState(null);
 
-    // Handle page change
-    const handleChangePage = (event, newPage) => {
+    useEffect(() => {
+        const savedTab = localStorage.getItem('selectedSubTab');
+        if (savedTab !== null) {
+            setSubTabValue(Number(savedTab));
+        }
+    }, []);
+
+    const handleChangePage = useCallback((event, newPage) => {
         setPage(newPage);
-    };
+    }, []);
 
-    // Handle rows per page change
-    const handleChangeRowsPerPage = (event) => {
+    const handleChangeRowsPerPage = useCallback((event) => {
         const newRowsPerPage = event.target.value;
         setRowsPerPage(newRowsPerPage);
-        setPage(0); // Reset to first page when rows per page changes
-    };
+        setPage(0);
+    }, []);
 
-    // Paginate the programs data
     const paginatedData = useMemo(() => {
         if (rowsPerPage === -1) {
-            return programs; // Show all rows if "All" is selected
+            return programs;
         }
         const startIndex = page * rowsPerPage;
         const endIndex = startIndex + rowsPerPage;
         return programs.slice(startIndex, endIndex);
     }, [programs, page, rowsPerPage]);
 
-    // Define column configurations for each subTabValue
+    // Data validation function aligned with backend
+    const validateProgramData = (data) => {
+        const errors = [];
+        if (!data.program_name || data.program_name.length > 255) {
+            errors.push(
+                "Program name must be a string between 1 and 255 characters."
+            );
+        }
+        if (!data.institution_id) {
+            errors.push("Institution ID is required.");
+        }
+        if (!data.program_type) {
+            errors.push("Program type is required.");
+        }
+        // Validate string fields
+        [
+            "is_thesis_dissertation_required",
+            "program_status",
+            "calendar_use_code",
+            "Year",
+            "category",
+            "serial",
+        ].forEach((field) => {
+            if (
+                data[field] &&
+                (typeof data[field] !== "string" || data[field].length > 255)
+            ) {
+                errors.push(
+                    `${field} must be a string with max 255 characters or null.`
+                );
+            }
+        });
+        // Validate numeric fields
+        [
+            "lab_units",
+            "lecture_units",
+            "total_units",
+            "tuition_per_unit",
+            "program_fee",
+            "new_students_freshmen_male",
+            "new_students_freshmen_female",
+            "1st_year_male",
+            "1st_year_female",
+            "2nd_year_male",
+            "2nd_year_female",
+            "3rd_year_male",
+            "3rd_year_female",
+            "4th_year_male",
+            "4th_year_female",
+            "5th_year_male",
+            "5th_year_female",
+            "6th_year_male",
+            "6th_year_female",
+            "7th_year_male",
+            "7th_year_female",
+            "subtotal_male",
+            "subtotal_female",
+            "grand_total",
+            "lecture_units_actual",
+            "laboratory_units_actual",
+            "total_units_actual",
+            "graduates_males",
+            "graduates_females",
+            "graduates_total",
+            "externally_funded_merit_scholars",
+            "internally_funded_grantees",
+            "suc_funded_grantees",
+            "program_normal_length_in_years",
+        ].forEach((field) => {
+            if (
+                data[field] !== null &&
+                (isNaN(data[field]) || data[field] < 0)
+            ) {
+                errors.push(`${field} must be a non-negative number or null.`);
+            }
+        });
+        return errors.length ? errors : null;
+    };
+
     const columnConfigs = useMemo(
         () => ({
             0: {
-                // Programs
                 columns: [
                     { data: "program_name", title: "Program Name" },
                     { data: "program_code", title: "Program Code" },
@@ -67,7 +150,7 @@ const ProgramTables = ({ programs, loading }) => {
                     { data: "major_code", title: "Major Code" },
                     { data: "category", title: "Category" },
                     { data: "serial", title: "Serial" },
-                    { data: "year", title: "Year" },
+                    { data: "Year", title: "Year" },
                     {
                         data: "is_thesis_dissertation_required",
                         title: "Thesis/Dissertation",
@@ -89,7 +172,7 @@ const ProgramTables = ({ programs, loading }) => {
                         data: "total_units",
                         title: "Total Units",
                         type: "numeric",
-                        readOnly: true, // Make this read-only since it's calculated
+                        readOnly: true,
                     },
                     {
                         data: "tuition_per_unit",
@@ -110,24 +193,27 @@ const ProgramTables = ({ programs, loading }) => {
                     major_code: program.major_code || "-",
                     category: program.category || "-",
                     serial: program.serial || "-",
-                    year: program.year || "-",
+                    Year: program.Year || "-",
                     is_thesis_dissertation_required:
                         program.is_thesis_dissertation_required || "-",
                     program_status: program.program_status || "-",
                     calendar_use_code: program.calendar_use_code || "-",
                     program_normal_length_in_years:
-                        program.program_normal_length_in_years || "-",
-                    lab_units: program.lab_units || 0,
-                    lecture_units: program.lecture_units || 0,
-                    total_units: program.total_units || 0,
-                    tuition_per_unit: program.tuition_per_unit || 0,
-                    program_fee: program.program_fee || 0,
+                        program.program_normal_length_in_years ?? 0,
+                    lab_units: program.lab_units ?? 0,
+                    lecture_units: program.lecture_units ?? 0,
+                    total_units: program.total_units ?? 0,
+                    tuition_per_unit: program.tuition_per_unit ?? 0,
+                    program_fee: program.program_fee ?? 0,
                 })),
             },
             1: {
-                // Enrollments
                 columns: [
-                    { data: "program_name", title: "Program Name" },
+                    {
+                        data: "program_name",
+                        title: "Program Name",
+                        readOnly: true,
+                    },
                     {
                         data: "new_students_freshmen_male",
                         title: "Freshmen M",
@@ -139,72 +225,72 @@ const ProgramTables = ({ programs, loading }) => {
                         type: "numeric",
                     },
                     {
-                        data: "first_year_old_male",
+                        data: "1st_year_male",
                         title: "1st Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "first_year_old_female",
+                        data: "1st_year_female",
                         title: "1st Yr F",
                         type: "numeric",
                     },
                     {
-                        data: "second_year_male",
+                        data: "2nd_year_male",
                         title: "2nd Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "second_year_female",
+                        data: "2nd_year_female",
                         title: "2nd Yr F",
                         type: "numeric",
                     },
                     {
-                        data: "third_year_male",
+                        data: "3rd_year_male",
                         title: "3rd Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "third_year_female",
+                        data: "3rd_year_female",
                         title: "3rd Yr F",
                         type: "numeric",
                     },
                     {
-                        data: "fourth_year_male",
+                        data: "4th_year_male",
                         title: "4th Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "fourth_year_female",
+                        data: "4th_year_female",
                         title: "4th Yr F",
                         type: "numeric",
                     },
                     {
-                        data: "fifth_year_male",
+                        data: "5th_year_male",
                         title: "5th Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "fifth_year_female",
+                        data: "5th_year_female",
                         title: "5th Yr F",
                         type: "numeric",
                     },
                     {
-                        data: "sixth_year_male",
+                        data: "6th_year_male",
                         title: "6th Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "sixth_year_female",
+                        data: "6th_year_female",
                         title: "6th Yr F",
                         type: "numeric",
                     },
                     {
-                        data: "seventh_year_male",
+                        data: "7th_year_male",
                         title: "7th Yr M",
                         type: "numeric",
                     },
                     {
-                        data: "seventh_year_female",
+                        data: "7th_year_female",
                         title: "7th Yr F",
                         type: "numeric",
                     },
@@ -212,19 +298,19 @@ const ProgramTables = ({ programs, loading }) => {
                         data: "subtotal_male",
                         title: "Subtotal M",
                         type: "numeric",
-                        readOnly: true, // Already read-only
+                        readOnly: true,
                     },
                     {
                         data: "subtotal_female",
                         title: "Subtotal F",
                         type: "numeric",
-                        readOnly: true, // Already read-only
+                        readOnly: true,
                     },
                     {
                         data: "grand_total",
                         title: "Total",
                         type: "numeric",
-                        readOnly: true, // Already read-only
+                        readOnly: true,
                     },
                 ],
                 data: paginatedData.map((program) => ({
@@ -234,29 +320,32 @@ const ProgramTables = ({ programs, loading }) => {
                         program.new_students_freshmen_male ?? 0,
                     new_students_freshmen_female:
                         program.new_students_freshmen_female ?? 0,
-                    first_year_old_male: program.first_year_old_male ?? 0,
-                    first_year_old_female: program.first_year_old_female ?? 0,
-                    second_year_male: program.second_year_male ?? 0,
-                    second_year_female: program.second_year_female ?? 0,
-                    third_year_male: program.third_year_male ?? 0,
-                    third_year_female: program.third_year_female ?? 0,
-                    fourth_year_male: program.fourth_year_male ?? 0,
-                    fourth_year_female: program.fourth_year_female ?? 0,
-                    fifth_year_male: program.fifth_year_male ?? 0,
-                    fifth_year_female: program.fifth_year_female ?? 0,
-                    sixth_year_male: program.sixth_year_male ?? 0,
-                    sixth_year_female: program.sixth_year_female ?? 0,
-                    seventh_year_male: program.seventh_year_male ?? 0,
-                    seventh_year_female: program.seventh_year_female ?? 0,
+                    "1st_year_male": program["1st_year_male"] ?? 0,
+                    "1st_year_female": program["1st_year_female"] ?? 0,
+                    "2nd_year_male": program["2nd_year_male"] ?? 0,
+                    "2nd_year_female": program["2nd_year_female"] ?? 0,
+                    "3rd_year_male": program["3rd_year_male"] ?? 0,
+                    "3rd_year_female": program["3rd_year_female"] ?? 0,
+                    "4th_year_male": program["4th_year_male"] ?? 0,
+                    "4th_year_female": program["4th_year_female"] ?? 0,
+                    "5th_year_male": program["5th_year_male"] ?? 0,
+                    "5th_year_female": program["5th_year_female"] ?? 0,
+                    "6th_year_male": program["6th_year_male"] ?? 0,
+                    "6th_year_female": program["6th_year_female"] ?? 0,
+                    "7th_year_male": program["7th_year_male"] ?? 0,
+                    "7th_year_female": program["7th_year_female"] ?? 0,
                     subtotal_male: program.subtotal_male ?? 0,
                     subtotal_female: program.subtotal_female ?? 0,
                     grand_total: program.grand_total ?? 0,
                 })),
             },
             2: {
-                // Statistics
                 columns: [
-                    { data: "program_name", title: "Program Name" },
+                    {
+                        data: "program_name",
+                        title: "Program Name",
+                        readOnly: true,
+                    },
                     {
                         data: "lecture_units_actual",
                         title: "Lecture Units",
@@ -271,7 +360,7 @@ const ProgramTables = ({ programs, loading }) => {
                         data: "total_units_actual",
                         title: "Total Units",
                         type: "numeric",
-                        readOnly: true, // Make this read-only since it's calculated
+                        readOnly: true,
                     },
                     {
                         data: "graduates_males",
@@ -287,7 +376,7 @@ const ProgramTables = ({ programs, loading }) => {
                         data: "graduates_total",
                         title: "Grads Total",
                         type: "numeric",
-                        readOnly: true, // Make this read-only since it's calculated
+                        readOnly: true,
                     },
                     {
                         data: "externally_funded_merit_scholars",
@@ -326,29 +415,39 @@ const ProgramTables = ({ programs, loading }) => {
         [paginatedData]
     );
 
-    // Handle cell changes and save to backend with subtotal/grand total updates
     const handleChanges = useCallback(
         async (changes, source) => {
             if (!changes || source === "loadData") return;
 
-            const updatedPrograms = [...programs];
             const token = localStorage.getItem("token");
+            if (!token) {
+                setError(
+                    "Authentication token is missing. Please log in again."
+                );
+                return;
+            }
+
+            const updatedPrograms = [...programs];
             const currentConfig =
                 columnConfigs[subTabValue] || columnConfigs[0];
+            const updates = [];
+            const originalValues = [];
 
-            for (const [row, prop, , newValue] of changes) {
+            for (const [row, prop, oldValue, newValue] of changes) {
                 const programData = currentConfig.data[row];
                 const programIndex = updatedPrograms.findIndex(
                     (p) => p.id === programData.id
                 );
 
                 if (programIndex !== -1) {
+                    // Store original value for potential reversion
+                    originalValues.push({ programIndex, prop, oldValue });
+
                     // Update the changed field
                     updatedPrograms[programIndex][prop] = newValue;
 
-                    // Recalculate totals based on the tab
+                    // Recalculate totals
                     if (subTabValue === 0) {
-                        // Programs tab: Update total_units
                         updatedPrograms[programIndex].total_units =
                             (parseFloat(
                                 updatedPrograms[programIndex].lab_units
@@ -357,53 +456,48 @@ const ProgramTables = ({ programs, loading }) => {
                                 updatedPrograms[programIndex].lecture_units
                             ) || 0);
                     } else if (subTabValue === 1) {
-                        // Enrollments tab: Recalculate subtotals and grand total
                         const maleFields = [
                             "new_students_freshmen_male",
-                            "first_year_old_male",
-                            "second_year_male",
-                            "third_year_male",
-                            "fourth_year_male",
-                            "fifth_year_male",
-                            "sixth_year_male",
-                            "seventh_year_male",
+                            "1st_year_male",
+                            "2nd_year_male",
+                            "3rd_year_male",
+                            "4th_year_male",
+                            "5th_year_male",
+                            "6th_year_male",
+                            "7th_year_male",
                         ];
                         const femaleFields = [
                             "new_students_freshmen_female",
-                            "first_year_old_female",
-                            "second_year_female",
-                            "third_year_female",
-                            "fourth_year_female",
-                            "fifth_year_female",
-                            "sixth_year_female",
-                            "seventh_year_female",
+                            "1st_year_female",
+                            "2nd_year_female",
+                            "3rd_year_female",
+                            "4th_year_female",
+                            "5th_year_female",
+                            "6th_year_female",
+                            "7th_year_female",
                         ];
-
                         updatedPrograms[programIndex].subtotal_male =
-                            maleFields.reduce((sum, field) => {
-                                return (
+                            maleFields.reduce(
+                                (sum, field) =>
                                     sum +
                                     (parseFloat(
                                         updatedPrograms[programIndex][field]
-                                    ) || 0)
-                                );
-                            }, 0);
-
+                                    ) || 0),
+                                0
+                            );
                         updatedPrograms[programIndex].subtotal_female =
-                            femaleFields.reduce((sum, field) => {
-                                return (
+                            femaleFields.reduce(
+                                (sum, field) =>
                                     sum +
                                     (parseFloat(
                                         updatedPrograms[programIndex][field]
-                                    ) || 0)
-                                );
-                            }, 0);
-
+                                    ) || 0),
+                                0
+                            );
                         updatedPrograms[programIndex].grand_total =
                             updatedPrograms[programIndex].subtotal_male +
                             updatedPrograms[programIndex].subtotal_female;
                     } else if (subTabValue === 2) {
-                        // Statistics tab: Update total_units_actual and graduates_total
                         updatedPrograms[programIndex].total_units_actual =
                             (parseFloat(
                                 updatedPrograms[programIndex]
@@ -413,7 +507,6 @@ const ProgramTables = ({ programs, loading }) => {
                                 updatedPrograms[programIndex]
                                     .laboratory_units_actual
                             ) || 0);
-
                         updatedPrograms[programIndex].graduates_total =
                             (parseFloat(
                                 updatedPrograms[programIndex].graduates_males
@@ -423,39 +516,79 @@ const ProgramTables = ({ programs, loading }) => {
                             ) || 0);
                     }
 
-                    // Update the backend
-                    try {
-                        await axios.put(
-                            `http://localhost:8000/api/programs/${programData.id}`,
-                            updatedPrograms[programIndex],
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`,
-                                },
-                            }
+                    // Validate data
+                    const validationErrors = validateProgramData(
+                        updatedPrograms[programIndex]
+                    );
+                    if (validationErrors) {
+                        setError(
+                            `Validation failed: ${validationErrors.join(", ")}`
                         );
-                    } catch (error) {
-                        console.error("Error updating program:", error);
+                        continue;
                     }
+
+                    updates.push(updatedPrograms[programIndex]);
                 }
             }
 
-            // Note: Since programs state is managed in CurricularProgram, you may need to lift this state update
-            // Consider passing a callback to update programs in the parent component
+            if (updates.length > 0) {
+                try {
+                    await Promise.all(
+                        updates.map((program) =>
+                            axios.put(
+                                `http://localhost:8000/api/programs/${program.id}`,
+                                program,
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                    },
+                                }
+                            )
+                        )
+                    );
+                    setError(null);
+                    fetchPrograms();
+                } catch (error) {
+                    // Revert changes
+                    originalValues.forEach(
+                        ({ programIndex, prop, oldValue }) => {
+                            updatedPrograms[programIndex][prop] = oldValue;
+                        }
+                    );
+                    const errorMessage =
+                        error.response?.data?.error ||
+                        "Failed to update programs. Changes have been reverted.";
+                    setError(errorMessage);
+                    console.error("Error updating programs:", error);
+                }
+            }
         },
-        [programs, subTabValue, columnConfigs]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [programs, subTabValue, columnConfigs, setError]
     );
 
     if (loading) return <CircularProgress />;
+
     const currentConfig = columnConfigs[subTabValue] || columnConfigs[0];
 
     return (
         <Box sx={{ mt: 2, position: "relative" }}>
-            {/* Sub-Tabs Navigation */}
-            <Paper sx={{ borderRadius: 1}}>
+            {error && (
+                <Alert
+                    severity="error"
+                    sx={{ mb: 2 }}
+                    onClose={() => setError(null)}
+                >
+                    {error}
+                </Alert>
+            )}
+            <Paper sx={{ borderRadius: 1 }}>
                 <Tabs
                     value={subTabValue}
-                    onChange={(e, newValue) => setSubTabValue(newValue)}
+                    onChange={(e, newValue) => {
+                        setSubTabValue(newValue);
+                        localStorage.setItem('selectedSubTab', newValue);
+                    }}
                     aria-label="program sub-tabs"
                     variant="fullWidth"
                     sx={{
@@ -472,11 +605,10 @@ const ProgramTables = ({ programs, loading }) => {
                     <Tab label="Statistics" />
                 </Tabs>
             </Paper>
-
             <Paper
                 sx={{
                     overflowX: "auto",
-                    maxHeight: "550px",
+                    maxHeight: "55vh",
                     position: "relative",
                 }}
             >
@@ -485,7 +617,7 @@ const ProgramTables = ({ programs, loading }) => {
                     columns={currentConfig.columns}
                     rowHeaders={true}
                     stretchH="all"
-                    height="auto"
+                    height="450"
                     licenseKey="non-commercial-and-evaluation"
                     settings={{
                         readOnly: false,
@@ -546,13 +678,6 @@ const ProgramTables = ({ programs, loading }) => {
                             const columnData = currentConfig.columns[col].data;
                             const value = currentConfig.data[row]?.[columnData];
 
-                            if (
-                                (subTabValue === 1 || subTabValue === 2) &&
-                                columnData === "program_name"
-                            ) {
-                                cellProperties.readOnly = true;
-                            }
-
                             cellProperties.renderer = (instance, td) => {
                                 td.innerHTML =
                                     value !== undefined && value !== null
@@ -561,8 +686,7 @@ const ProgramTables = ({ programs, loading }) => {
                                 td.style.whiteSpace = "nowrap";
                                 td.style.overflow = "hidden";
                                 td.style.textOverflow = "ellipsis";
-                                td.style.maxWidth =
-                                    col === 0 ? "180px" : "120px";
+                                td.style.maxWidth = col === 0 ? "20%" : "10%";
                                 td.title = value || "-";
                                 if (
                                     columnData !== "program_name" &&
@@ -578,7 +702,6 @@ const ProgramTables = ({ programs, loading }) => {
                         },
                     }}
                 />
-                {/* Pagination Controls */}
                 <Box
                     sx={{
                         display: "flex",
@@ -588,13 +711,15 @@ const ProgramTables = ({ programs, loading }) => {
                         borderTop: 1,
                         borderColor: "divider",
                         bgcolor: "grey.50",
-                        position: "sticky", // Make pagination sticky
-                        bottom: -.5, // Stick to the bottom of the container
-                        zIndex: 99999, // Ensure it stays above other content
+                        position: "sticky",
+                        bottom: -0.5,
+                        zIndex: 5,
                     }}
                 >
                     <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
-                        <InputLabel sx={{ fontSize: "0.75rem" }}>Rows</InputLabel>
+                        <InputLabel sx={{ fontSize: "0.75rem" }}>
+                            Rows
+                        </InputLabel>
                         <Select
                             value={rowsPerPage}
                             onChange={handleChangeRowsPerPage}
@@ -628,13 +753,17 @@ const ProgramTables = ({ programs, loading }) => {
                     <Pagination
                         count={Math.ceil(programs.length / rowsPerPage) || 1}
                         page={page + 1}
-                        onChange={(_, value) => handleChangePage(null, value - 1)}
+                        onChange={(_, value) =>
+                            handleChangePage(null, value - 1)
+                        }
                         size="small"
                         color="primary"
                         showFirstButton
                         showLastButton
                         sx={{
-                            "& .MuiPaginationItem-root": { fontSize: "0.75rem" },
+                            "& .MuiPaginationItem-root": {
+                                fontSize: "0.75rem",
+                            },
                         }}
                     />
                 </Box>
@@ -643,7 +772,6 @@ const ProgramTables = ({ programs, loading }) => {
     );
 };
 
-// Define PropTypes
 ProgramTables.propTypes = {
     programs: PropTypes.arrayOf(
         PropTypes.shape({
@@ -654,7 +782,7 @@ ProgramTables.propTypes = {
             major_code: PropTypes.number,
             category: PropTypes.string,
             serial: PropTypes.string,
-            year: PropTypes.string,
+            Year: PropTypes.string,
             is_thesis_dissertation_required: PropTypes.string,
             program_status: PropTypes.string,
             calendar_use_code: PropTypes.string,
@@ -664,15 +792,39 @@ ProgramTables.propTypes = {
             total_units: PropTypes.number,
             tuition_per_unit: PropTypes.number,
             program_fee: PropTypes.number,
+            program_type: PropTypes.string,
             new_students_freshmen_male: PropTypes.number,
             new_students_freshmen_female: PropTypes.number,
+            "1st_year_male": PropTypes.number,
+            "1st_year_female": PropTypes.number,
+            "2nd_year_male": PropTypes.number,
+            "2nd_year_female": PropTypes.number,
+            "3rd_year_male": PropTypes.number,
+            "3rd_year_female": PropTypes.number,
+            "4th_year_male": PropTypes.number,
+            "4th_year_female": PropTypes.number,
+            "5th_year_male": PropTypes.number,
+            "5th_year_female": PropTypes.number,
+            "6th_year_male": PropTypes.number,
+            "6th_year_female": PropTypes.number,
+            "7th_year_male": PropTypes.number,
+            "7th_year_female": PropTypes.number,
+            subtotal_male: PropTypes.number,
+            subtotal_female: PropTypes.number,
             grand_total: PropTypes.number,
+            lecture_units_actual: PropTypes.number,
+            laboratory_units_actual: PropTypes.number,
             total_units_actual: PropTypes.number,
             graduates_males: PropTypes.number,
             graduates_females: PropTypes.number,
+            graduates_total: PropTypes.number,
+            externally_funded_merit_scholars: PropTypes.number,
+            internally_funded_grantees: PropTypes.number,
+            suc_funded_grantees: PropTypes.number,
         })
     ).isRequired,
     loading: PropTypes.bool.isRequired,
+    fetchPrograms: PropTypes.func,
 };
 
 export default ProgramTables;

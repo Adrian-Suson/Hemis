@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Box, useMediaQuery, IconButton } from "@mui/material";
+import {
+    Box,
+    useMediaQuery,
+    IconButton,
+    AppBar,
+    Toolbar,
+    Typography,
+} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { Outlet } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -18,27 +25,33 @@ const Layout = ({ userRole }) => {
             width="100%"
             height="100%"
         >
-            {/* Show burger menu on mobile */}
+            {/* Show AppBar on mobile */}
             {!isNonMobile && (
-                <Box
-                    sx={{
-                        position: "fixed",
-                        top: "10px",
-                        left: "10px",
-                        zIndex: 1100,
-                    }}
-                >
-                    <IconButton
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        sx={{
-                            color: "primary.main",
-                            backgroundColor: "background.paper",
-                            "&:hover": { backgroundColor: "background.paper" },
-                        }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                </Box>
+                <AppBar position="fixed" sx={{ top: 0, left: 0, zIndex: 1100 }}>
+                    <Toolbar>
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            sx={{ mr: 1 }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography
+                            variant="h6"
+                            noWrap
+                            component="div"
+                            sx={{
+                                flexGrow: 1,
+                                textAlign: "center",
+                                fontWeight: "bold",
+                                color: "white",
+                            }}
+                        >
+                            CHEDRO IX
+                        </Typography>
+                    </Toolbar>
+                </AppBar>
             )}
 
             {!isNonMobile && (
@@ -55,7 +68,7 @@ const Layout = ({ userRole }) => {
                 />
             )}
 
-            <Box flexGrow={1}>
+            <Box flexGrow={1} mt={!isNonMobile ? 8 : 0}>
                 {isNonMobile && (
                     <Navbar
                         isNonMobile={isNonMobile}
