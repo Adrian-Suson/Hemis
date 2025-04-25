@@ -608,7 +608,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
             <Paper
                 sx={{
                     overflowX: "auto",
-                    maxHeight: "55vh",
+                    maxHeight: "53vh",
                     position: "relative",
                 }}
             >
@@ -617,7 +617,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     columns={currentConfig.columns}
                     rowHeaders={true}
                     stretchH="all"
-                    height="450"
+                    height="290"
                     licenseKey="non-commercial-and-evaluation"
                     settings={{
                         readOnly: false,

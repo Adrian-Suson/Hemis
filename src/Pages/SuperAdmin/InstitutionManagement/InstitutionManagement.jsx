@@ -340,7 +340,7 @@ const InstitutionManagement = () => {
             {loading ? (
                 <Box>
                     {/* Breadcrumbs Skeleton */}
-                    <Box sx={{ my: 2, display: "flex", alignItems: "center" }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Skeleton variant="text" width={80} height={20} />
                         <Typography sx={{ mx: 1 }}>›</Typography>
                         <Skeleton variant="text" width={150} height={20} />
@@ -369,7 +369,7 @@ const InstitutionManagement = () => {
             ) : (
                 <Box>
                     {/* Header Section */}
-                    <Box sx={{ my: { xs: 1, sm: 2 } }}>
+                    <Box    >
                         <Breadcrumbs
                             separator="›"
                             aria-label="breadcrumb"

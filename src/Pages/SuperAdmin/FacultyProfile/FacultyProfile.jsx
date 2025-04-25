@@ -524,7 +524,7 @@ const FacultyProfileUpload = () => {
     }
 
     return (
-        <Box sx={{ p: 3, my: 2 }}>
+        <Box sx={{ p: 3}}>
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"

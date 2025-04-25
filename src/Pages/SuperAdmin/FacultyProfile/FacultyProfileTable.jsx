@@ -30,13 +30,14 @@ const ROWS_PER_PAGE_OPTIONS = [
     { label: "All", value: -1 },
 ];
 
-
 const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [tabIndex, setTabIndex] = useState(0);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(25);
     const [searchQuery, setSearchQuery] = useState("");
-    const [facultyProfiles, setFacultyProfiles] = useState([initialFacultyProfiles]);
+    const [facultyProfiles, setFacultyProfiles] = useState([
+        initialFacultyProfiles,
+    ]);
     const [filteredData, setFilteredData] = useState([initialFacultyProfiles]);
 
     // Simulate data loading
@@ -154,8 +155,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     (profile.gender === 1
                         ? "Male"
                         : profile.gender === 2
-                            ? "Female"
-                            : "-") === genderFilter
+                        ? "Female"
+                        : "-") === genderFilter
             );
         }
 
@@ -506,18 +507,18 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
 
     return (
         <Box>
-            <Paper sx={{ borderRadius: 1, mb: 1}}>
-            <Box sx={{px: 1 }}>
-                <Tabs
-                    value={tabIndex}
-                    onChange={handleTabChange}
-                    variant="fullWidth"
-                >
-                    <Tab label="Personal Info" />
-                    <Tab label="Education" />
-                    <Tab label="Teaching Load" />
-                    <Tab label="Other Loads" />
-                </Tabs>
+            <Paper sx={{ borderRadius: 1, mb: 1 }}>
+                <Box sx={{ px: 1 }}>
+                    <Tabs
+                        value={tabIndex}
+                        onChange={handleTabChange}
+                        variant="fullWidth"
+                    >
+                        <Tab label="Personal Info" />
+                        <Tab label="Education" />
+                        <Tab label="Teaching Load" />
+                        <Tab label="Other Loads" />
+                    </Tabs>
                 </Box>
                 <>
                     {/* Search and Filter Section */}
@@ -530,7 +531,9 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                     label="Search"
                                     variant="outlined"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
                                     placeholder="Search..."
                                     sx={{
                                         "& .MuiInputBase-root": {
@@ -807,16 +810,23 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         </Grid>
                     </Box>
 
-
                     <>
-                        <Paper sx={{ maxHeight:"35vh", height:"auto", overflow: "auto", px: 1, borderRadius: "none" }}>
+                        <Paper
+                            sx={{
+                                maxHeight: "50vh",
+                                height: "auto",
+                                overflow: "auto",
+                                px: 1,
+                                borderRadius: "none",
+                            }}
+                        >
                             <HotTable
                                 data={currentConfig.data}
                                 columns={currentConfig.columns}
                                 colHeaders={true}
                                 rowHeaders={true}
                                 stretchH="all"
-                                height="auto"
+                                height="240"
                                 licenseKey="non-commercial-and-evaluation"
                                 settings={{
                                     readOnly: false,
@@ -827,31 +837,31 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                     nestedHeaders:
                                         tabIndex === 2
                                             ? [
-                                                [
-                                                    { label: "", colspan: 1 },
-                                                    {
-                                                        label: "UNDERGRADUATE TEACHING LOAD",
-                                                        colspan: 9,
-                                                    },
-                                                    {
-                                                        label: "GRADUATE TEACHING LOAD",
-                                                        colspan: 6,
-                                                    },
-                                                ],
-                                                currentConfig.columns.map(
-                                                    (col) => col.title
-                                                ),
-                                            ]
+                                                  [
+                                                      { label: "", colspan: 1 },
+                                                      {
+                                                          label: "UNDERGRADUATE TEACHING LOAD",
+                                                          colspan: 9,
+                                                      },
+                                                      {
+                                                          label: "GRADUATE TEACHING LOAD",
+                                                          colspan: 6,
+                                                      },
+                                                  ],
+                                                  currentConfig.columns.map(
+                                                      (col) => col.title
+                                                  ),
+                                              ]
                                             : [
-                                                currentConfig.columns.map(
-                                                    (col) => col.title
-                                                ),
-                                            ],
+                                                  currentConfig.columns.map(
+                                                      (col) => col.title
+                                                  ),
+                                              ],
                                     cells: (row, col) => {
                                         const cellProperties = {};
                                         const value =
                                             currentConfig.data[row]?.[
-                                            currentConfig.columns[col].data
+                                                currentConfig.columns[col].data
                                             ];
                                         const columnData =
                                             currentConfig.columns[col].data;
@@ -862,7 +872,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                         ) => {
                                             td.innerHTML =
                                                 value !== undefined &&
-                                                    value !== null
+                                                value !== null
                                                     ? value
                                                     : "-";
                                             td.style.whiteSpace = "nowrap";
@@ -892,8 +902,13 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                 bgcolor: "grey.50",
                             }}
                         >
-                            <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
-                                <InputLabel sx={{ fontSize: "0.75rem" }}>Rows</InputLabel>
+                            <FormControl
+                                size="small"
+                                sx={{ minWidth: 80, mr: 1 }}
+                            >
+                                <InputLabel sx={{ fontSize: "0.75rem" }}>
+                                    Rows
+                                </InputLabel>
                                 <Select
                                     value={rowsPerPage}
                                     onChange={handleChangeRowsPerPage}
@@ -919,21 +934,29 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                 {filteredData.length === 0
                                     ? "0-0"
                                     : `${page * rowsPerPage + 1}-${Math.min(
-                                        (page + 1) * rowsPerPage,
-                                        filteredData.length
-                                    )}`}{" "}
+                                          (page + 1) * rowsPerPage,
+                                          filteredData.length
+                                      )}`}{" "}
                                 of {filteredData.length}
                             </Typography>
                             <Pagination
-                                count={Math.ceil(filteredData.length / rowsPerPage) || 1}
+                                count={
+                                    Math.ceil(
+                                        filteredData.length / rowsPerPage
+                                    ) || 1
+                                }
                                 page={page + 1}
-                                onChange={(_, value) => handleChangePage(null, value - 1)}
+                                onChange={(_, value) =>
+                                    handleChangePage(null, value - 1)
+                                }
                                 size="small"
                                 color="primary"
                                 showFirstButton
                                 showLastButton
                                 sx={{
-                                    "& .MuiPaginationItem-root": { fontSize: "0.75rem" },
+                                    "& .MuiPaginationItem-root": {
+                                        fontSize: "0.75rem",
+                                    },
                                 }}
                             />
                         </Box>
