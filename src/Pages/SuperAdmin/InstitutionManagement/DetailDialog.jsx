@@ -21,7 +21,7 @@ import {
 import PropTypes from "prop-types";
 import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
-import useActivityLog from "../../../Hook/useActivityLog";
+import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
@@ -54,7 +54,8 @@ const DetailDialog = ({
         sec_registration: institution?.sec_registration || "",
         year_granted_approved: institution?.year_granted_approved || null,
         year_converted_college: institution?.year_converted_college || null,
-        year_converted_university: institution?.year_converted_university || null,
+        year_converted_university:
+            institution?.year_converted_university || null,
         head_name: institution?.head_name || "",
         head_title: institution?.head_title || "",
         head_education: institution?.head_education || "",
@@ -321,7 +322,10 @@ const DetailDialog = ({
             setIsEditing(false);
             fetchInstitutions(); // Refresh institution list
         } catch (error) {
-            console.error("[Update Institution] Error:", error.response?.data || error.message);
+            console.error(
+                "[Update Institution] Error:",
+                error.response?.data || error.message
+            );
             let errorMessage =
                 "Failed to update institution. Please try again.";
             if (error.response?.status === 422) {

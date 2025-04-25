@@ -4,7 +4,8 @@ import ExcelJS from "exceljs";
 import axios from "axios";
 import DetailDialog from "./DetailDialog";
 import config from "../../../utils/config";
-import useActivityLog from "../../../Hook/useActivityLog";
+import useActivityLog from "../../../Hooks/useActivityLog";
+import useResponsive from "../../../Hooks/useResponsive";
 import {
     Table,
     TableBody,
@@ -55,6 +56,7 @@ const InstitutionTable = ({
     cityFilter = "",
     provinceFilter = "",
 }) => {
+    const { isExtraSmall, isSmall, isMedium, isLarge } = useResponsive(); // Use the custom hook
     const navigate = useNavigate();
     const { updateProgress } = useLoading();
     const { createLog } = useActivityLog();
@@ -296,7 +298,15 @@ const InstitutionTable = ({
                 boxShadow: 2,
                 overflow: "hidden",
                 height: "auto",
-                maxHeight: "75vh",
+                maxHeight: isExtraSmall
+                    ? "50vh"
+                    : isSmall
+                    ? "60vh"
+                    : isMedium
+                    ? "70vh"
+                    : isLarge
+                    ? "75vh"
+                    : "80vh", // Adjust max height based on screen size
             }}
         >
             {/* Table */}
@@ -304,27 +314,91 @@ const InstitutionTable = ({
                 component={Paper}
                 sx={{
                     flex: "1 1 auto",
-                    maxHeight: "50vh",
+                    maxHeight: isExtraSmall
+                        ? "25vh"
+                        : isSmall
+                        ? "35vh"
+                        : isMedium
+                        ? "45vh"
+                        : isLarge
+                        ? "55vh"
+                        : "65vh", // Adjust table height based on screen size
                     overflowY: "auto",
                     borderRadius: 0,
                 }}
             >
                 <Table
                     stickyHeader
-                    size="small"
-                    aria-label="Compact Institution Table"
+                    size={isExtraSmall || isSmall ? "medium" : "small"} // Adjust table size for smaller screens
+                    aria-label="Responsive Institution Table"
                 >
                     <TableHead>
                         <TableRow>
                             {[
-                                { label: "ID", width: "3%" },
-                                { label: "Name", width: "25%" },
-                                { label: "Region", width: "10%" },
-                                { label: "Address", width: "20%" },
-                                { label: "City", width: "15%" },
-                                { label: "Province", width: "15%" },
-                                { label: "Type", width: "10%" },
-                                { label: "Actions", width: "5%" },
+                                {
+                                    label: "ID",
+                                    width: isExtraSmall
+                                        ? "10%"
+                                        : isSmall
+                                        ? "5%"
+                                        : "3%",
+                                },
+                                {
+                                    label: "Name",
+                                    width: isExtraSmall
+                                        ? "40%"
+                                        : isSmall
+                                        ? "30%"
+                                        : "25%",
+                                },
+                                {
+                                    label: "Region",
+                                    width: isExtraSmall
+                                        ? "20%"
+                                        : isSmall
+                                        ? "15%"
+                                        : "10%",
+                                },
+                                {
+                                    label: "Address",
+                                    width: isExtraSmall
+                                        ? "30%"
+                                        : isSmall
+                                        ? "25%"
+                                        : "20%",
+                                },
+                                {
+                                    label: "City",
+                                    width: isExtraSmall
+                                        ? "20%"
+                                        : isSmall
+                                        ? "15%"
+                                        : "15%",
+                                },
+                                {
+                                    label: "Province",
+                                    width: isExtraSmall
+                                        ? "20%"
+                                        : isSmall
+                                        ? "15%"
+                                        : "15%",
+                                },
+                                {
+                                    label: "Type",
+                                    width: isExtraSmall
+                                        ? "10%"
+                                        : isSmall
+                                        ? "10%"
+                                        : "10%",
+                                },
+                                {
+                                    label: "Actions",
+                                    width: isExtraSmall
+                                        ? "10%"
+                                        : isSmall
+                                        ? "5%"
+                                        : "5%",
+                                },
                             ].map((col) => (
                                 <TableCell
                                     key={col.label}
@@ -332,10 +406,17 @@ const InstitutionTable = ({
                                         bgcolor: "grey.100",
                                         fontWeight: "medium",
                                         width: col.width,
-                                        whiteSpace: "nowrap",
+                                        whiteSpace:
+                                            isExtraSmall || isSmall
+                                                ? "normal"
+                                                : "nowrap", // Adjust text wrapping
                                         py: 0.5,
                                         px: 1,
-                                        fontSize: "0.75rem",
+                                        fontSize: isExtraSmall
+                                            ? "1rem"
+                                            : isSmall
+                                            ? "0.875rem"
+                                            : "0.75rem", // Adjust font size
                                     }}
                                 >
                                     {col.label}
@@ -732,6 +813,7 @@ const InstitutionTable = ({
             <Box
                 sx={{
                     display: "flex",
+                    flexDirection: isExtraSmall || isSmall ? "column" : "row", // Stack pagination controls on smaller screens
                     justifyContent: "flex-end",
                     alignItems: "center",
                     p: 1,

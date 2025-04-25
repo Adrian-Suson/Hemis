@@ -3,27 +3,32 @@
 import { useState, useEffect } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
-import { Box, Breadcrumbs, Link, Typography } from "@mui/material";
+import {
+    Box,
+    Breadcrumbs,
+    Link,
+    Typography,
+} from "@mui/material";
 import CampusHandsontable from "./CampusHandsontable";
-import CampusManagementSkeleton from "./CampusManagementSkeleton"; // Import the skeleton component
+import CampusManagementSkeleton from "./CampusManagementSkeleton";
 import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
 
 const CampusManagement = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
     const [campuses, setCampuses] = useState([]);
-    const {showLoading, hideLoading} = useLoading();
+    const { showLoading, hideLoading } = useLoading();
     const [institutionName, setInstitutionName] = useState("");
     const [loading, setLoading] = useState(true);
 
 
     const fetchCampuses = async () => {
         try {
-            // Decrypt the institutionId
-            const institutionId = decryptId(encryptedInstitutionId)
+            const institutionId = decryptId(encryptedInstitutionId);
             setLoading(true);
             showLoading();
             const token = localStorage.getItem("token");
+
             const response = await axios.get(
                 `http://localhost:8000/api/campuses?institution_id=${institutionId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -38,7 +43,7 @@ const CampusManagement = () => {
             console.error("Error fetching campuses:", error);
             setCampuses([]);
         } finally {
-            setLoading(false); // Set loading to false
+            setLoading(false);
             hideLoading();
         }
     };
@@ -47,15 +52,30 @@ const CampusManagement = () => {
         fetchCampuses();
     }, []);
 
-    // Show skeleton while loading
     if (loading) {
         return <CampusManagementSkeleton />;
     }
 
     return (
-        <Box sx={{ p: 2 }}>
+        <Box
+            sx={{
+                px: { xs: 1, sm: 2, md: 4 },
+                py: { xs: 2, sm: 3 },
+                width: "100%",
+                maxWidth: "100%",
+                overflowX: "hidden",
+            }}
+        >
             {/* Breadcrumbs */}
-            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ my: 2 }}>
+            <Breadcrumbs
+                separator="›"
+                aria-label="breadcrumb"
+                sx={{
+                    mb: { xs: 1, sm: 2 },
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                    flexWrap: "wrap",
+                }}
+            >
                 <Link
                     underline="hover"
                     color="inherit"
@@ -72,7 +92,10 @@ const CampusManagement = () => {
                 >
                     Institution Management
                 </Link>
-                <Typography color="text.primary">
+                <Typography
+                    color="text.primary"
+                    fontSize={{ xs: "0.9rem", sm: "1rem" }}
+                >
                     {institutionName
                         ? `${institutionName} Campuses`
                         : "Campuses"}
@@ -80,7 +103,15 @@ const CampusManagement = () => {
             </Breadcrumbs>
 
             {/* Handsontable Component */}
-            <CampusHandsontable campuses={campuses} />
+            <Box
+                sx={{
+                    mt: 2,
+                    overflowX: "auto",
+                    maxWidth: "100%",
+                }}
+            >
+                <CampusHandsontable campuses={campuses} />
+            </Box>
         </Box>
     );
 };

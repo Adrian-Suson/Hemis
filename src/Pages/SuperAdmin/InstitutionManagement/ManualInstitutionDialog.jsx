@@ -21,7 +21,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import axios from "axios";
 import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
-import useActivityLog from "../../../Hook/useActivityLog";
+import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
