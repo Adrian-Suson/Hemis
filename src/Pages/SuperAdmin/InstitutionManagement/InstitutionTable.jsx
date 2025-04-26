@@ -299,14 +299,14 @@ const InstitutionTable = ({
                 overflow: "hidden",
                 height: "auto",
                 maxHeight: isExtraSmall
-                    ? "50vh"
+                    ? "40vh"
                     : isSmall
-                    ? "60vh"
+                    ? "40vh"
                     : isMedium
-                    ? "70vh"
+                    ? "45vh"
                     : isLarge
-                    ? "75vh"
-                    : "80vh", // Adjust max height based on screen size
+                    ? "60vh"
+                    : "70vh", // Adjust max height based on screen size
             }}
         >
             {/* Table */}
