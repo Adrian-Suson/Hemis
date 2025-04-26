@@ -23,7 +23,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 
 const DetailDialog = ({
     open,
@@ -385,7 +385,7 @@ const DetailDialog = ({
                             )}
                         </FormControl>
                     ) : field.includes("year") ? (
-                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <LocalizationProvider dateAdapter={AdapterMoment}>
                             <DatePicker
                                 views={["year"]}
                                 label={label}

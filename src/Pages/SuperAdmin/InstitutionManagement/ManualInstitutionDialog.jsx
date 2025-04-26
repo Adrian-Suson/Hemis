@@ -23,7 +23,7 @@ import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 
 function ManualInstitutionDialog({
     open,
@@ -512,7 +512,7 @@ function ManualInstitutionDialog({
                     >
                         Historical Dates
                     </Typography>
-                    <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <LocalizationProvider dateAdapter={AdapterMoment}>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6} md={3}>
                                 <DatePicker
