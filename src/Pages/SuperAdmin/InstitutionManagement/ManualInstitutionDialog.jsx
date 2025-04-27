@@ -24,6 +24,7 @@ import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import config from "../../../utils/config";
 
 function ManualInstitutionDialog({
     open,
@@ -141,7 +142,7 @@ function ManualInstitutionDialog({
             };
 
             const response = await axios.post(
-                "http://localhost:8000/api/institutions",
+                `${config.API_URL}/institutions`,
                 payload,
                 {
                     headers: {

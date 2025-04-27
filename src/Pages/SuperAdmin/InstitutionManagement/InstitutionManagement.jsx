@@ -194,7 +194,7 @@ const InstitutionManagement = () => {
                 updateProgress(50);
                 const token = localStorage.getItem("token");
                 const institutionResponse = await axios.post(
-                    "http://localhost:8000/api/institutions",
+                    `${config.API_URL}/institutions`,
                     extractedInstitution,
                     {
                         headers: {
@@ -302,7 +302,7 @@ const InstitutionManagement = () => {
                 console.log("processedCampuses", processedCampuses);
                 updateProgress(70);
                 await axios.post(
-                    "http://localhost:8000/api/campuses",
+                    `${config.API_URL}/campuses`,
                     processedCampuses,
                     {
                         headers: { Authorization: `Bearer ${token}` },

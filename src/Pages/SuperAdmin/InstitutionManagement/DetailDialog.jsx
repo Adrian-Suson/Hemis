@@ -24,6 +24,7 @@ import axios from "axios";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import config from "../../../utils/config";
 
 const DetailDialog = ({
     open,
@@ -292,7 +293,7 @@ const DetailDialog = ({
             console.log("[Update Institution] Sending data:", payload);
 
             const response = await axios.put(
-                `http://localhost:8000/api/institutions/${formData.id}`,
+                `${config.API_URL}/institutions/${formData.id}`,
                 payload,
                 {
                     headers: {

@@ -1,65 +1,23 @@
-import { HotTable } from "@handsontable/react";
-import "handsontable/dist/handsontable.full.min.css";
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { registerAllModules } from "handsontable/registry";
 import PropTypes from "prop-types";
 import axios from "axios";
-import {
-    CircularProgress,
-    Box,
-    Tabs,
-    Tab,
-    Paper,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Typography,
-    Pagination,
-    Alert,
-} from "@mui/material";
+import { CircularProgress, Box, Tabs, Tab, Paper, Alert } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
+import config from "../../../utils/config";
 
-// Register all Handsontable modules
-registerAllModules();
-
-const ROWS_PER_PAGE_OPTIONS = [
-    { label: "25", value: 25 },
-    { label: "50", value: 50 },
-    { label: "100", value: 100 },
-    { label: "All", value: -1 },
-];
+const ROWS_PER_PAGE_OPTIONS = [25, 50, 100, -1];
 
 const ProgramTables = ({ programs, loading, fetchPrograms }) => {
     const [subTabValue, setSubTabValue] = useState(0);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(25);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const savedTab = localStorage.getItem('selectedSubTab');
+        const savedTab = localStorage.getItem("selectedSubTab");
         if (savedTab !== null) {
             setSubTabValue(Number(savedTab));
         }
     }, []);
-
-    const handleChangePage = useCallback((event, newPage) => {
-        setPage(newPage);
-    }, []);
-
-    const handleChangeRowsPerPage = useCallback((event) => {
-        const newRowsPerPage = event.target.value;
-        setRowsPerPage(newRowsPerPage);
-        setPage(0);
-    }, []);
-
-    const paginatedData = useMemo(() => {
-        if (rowsPerPage === -1) {
-            return programs;
-        }
-        const startIndex = page * rowsPerPage;
-        const endIndex = startIndex + rowsPerPage;
-        return programs.slice(startIndex, endIndex);
-    }, [programs, page, rowsPerPage]);
 
     // Data validation function aligned with backend
     const validateProgramData = (data) => {
@@ -144,281 +102,747 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
         () => ({
             0: {
                 columns: [
-                    { data: "program_name", title: "Program Name" },
-                    { data: "program_code", title: "Program Code" },
-                    { data: "major_name", title: "Major Name" },
-                    { data: "major_code", title: "Major Code" },
-                    { data: "category", title: "Category" },
-                    { data: "serial", title: "Serial" },
-                    { data: "Year", title: "Year" },
                     {
-                        data: "is_thesis_dissertation_required",
-                        title: "Thesis/Dissertation",
-                    },
-                    { data: "program_status", title: "Status" },
-                    { data: "calendar_use_code", title: "Calendar" },
-                    {
-                        data: "program_normal_length_in_years",
-                        title: "Length",
-                        type: "numeric",
-                    },
-                    { data: "lab_units", title: "Lab Units", type: "numeric" },
-                    {
-                        data: "lecture_units",
-                        title: "Lecture Units",
-                        type: "numeric",
+                        field: "program_name",
+                        headerName: "Name",
+                        flex: 2,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "total_units",
-                        title: "Total Units",
-                        type: "numeric",
-                        readOnly: true,
+                        field: "program_code",
+                        headerName: "Code",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "tuition_per_unit",
-                        title: "Tuition/Unit",
-                        type: "numeric",
+                        field: "major_name",
+                        headerName: "Name",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "program_fee",
-                        title: "Program Fee",
-                        type: "numeric",
+                        field: "major_code",
+                        headerName: "Code",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "category",
+                        headerName: "Category",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "serial",
+                        headerName: "Serial",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "Year",
+                        headerName: "Year",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "is_thesis_dissertation_required",
+                        headerName: "Thesis/Dissertation",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "program_status",
+                        headerName: "Status",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "calendar_use_code",
+                        headerName: "Calendar",
+                        flex: 1,
+                        editable: true,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "program_normal_length_in_years",
+                        headerName: "Length",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "lab_units",
+                        headerName: "Lab Units",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "lecture_units",
+                        headerName: "Lecture Units",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "total_units",
+                        headerName: "Total Units",
+                        flex: 1,
+                        editable: false,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "tuition_per_unit",
+                        headerName: "Tuition/Unit",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
+                    },
+                    {
+                        field: "program_fee",
+                        headerName: "Program Fee",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                 ],
-                data: paginatedData.map((program) => ({
-                    id: program.id,
-                    program_name: program.program_name || "-",
-                    program_code: program.program_code || "-",
-                    major_name: program.major_name || "-",
-                    major_code: program.major_code || "-",
-                    category: program.category || "-",
-                    serial: program.serial || "-",
-                    Year: program.Year || "-",
-                    is_thesis_dissertation_required:
-                        program.is_thesis_dissertation_required || "-",
-                    program_status: program.program_status || "-",
-                    calendar_use_code: program.calendar_use_code || "-",
-                    program_normal_length_in_years:
-                        program.program_normal_length_in_years ?? 0,
-                    lab_units: program.lab_units ?? 0,
-                    lecture_units: program.lecture_units ?? 0,
-                    total_units: program.total_units ?? 0,
-                    tuition_per_unit: program.tuition_per_unit ?? 0,
-                    program_fee: program.program_fee ?? 0,
-                })),
+                columnGroupingModel: [
+                    {
+                        groupId: "CURRICULAR PROGRAM",
+                        headerName: "CURRICULAR PROGRAM",
+                        children: [
+                            { field: "program_name" },
+                            { field: "program_code" },
+                        ],
+                    },
+                    {
+                        groupId: "MAJOR",
+                        headerName: "MAJOR",
+                        children: [
+                            { field: "major_name" },
+                            { field: "major_code" },
+                        ],
+                    },
+                    {
+                        groupId: "AUTHORITY TO OFFER PROGRAM",
+                        headerName: "AUTHORITY TO OFFER PROGRAM",
+                        children: [
+                            { field: "category" },
+                            { field: "serial" },
+                            { field: "Year" },
+                        ],
+                    },
+                    {
+                        groupId: "status3",
+                        headerName: "",
+                        children: [
+                            { field: "is_thesis_dissertation_required" },
+                            { field: "program_status" },
+                            { field: "calendar_use_code" },
+                            { field: "program_normal_length_in_years" },
+                        ],
+                    },
+                    {
+                        groupId: "PROGRAM UNITS EXCLUDING THESIS",
+                        headerName: "PROGRAM UNITS EXCLUDING THESIS",
+                        children: [
+                            { field: "lab_units" },
+                            { field: "lecture_units" },
+                            { field: "total_units" },
+                        ],
+                    },
+                    {
+                        groupId: "FINANCIAL INFORMATION",
+                        headerName: "FINANCIAL INFORMATION",
+                        children: [
+                            { field: "tuition_per_unit" },
+                            { field: "program_fee" },
+                        ],
+                    },
+                ],
             },
             1: {
                 columns: [
                     {
-                        data: "program_name",
-                        title: "Program Name",
-                        readOnly: true,
+                        field: "program_name",
+                        headerName: "Program Name",
+                        flex: 2,
+                        editable: false,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "new_students_freshmen_male",
-                        title: "Freshmen M",
-                        type: "numeric",
+                        field: "new_students_freshmen_male",
+                        headerName: "Freshmen M",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "new_students_freshmen_female",
-                        title: "Freshmen F",
-                        type: "numeric",
+                        field: "new_students_freshmen_female",
+                        headerName: "Freshmen F",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "1st_year_male",
-                        title: "1st Yr M",
-                        type: "numeric",
+                        field: "1st_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "1st_year_female",
-                        title: "1st Yr F",
-                        type: "numeric",
+                        field: "1st_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "2nd_year_male",
-                        title: "2nd Yr M",
-                        type: "numeric",
+                        field: "2nd_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "2nd_year_female",
-                        title: "2nd Yr F",
-                        type: "numeric",
+                        field: "2nd_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "3rd_year_male",
-                        title: "3rd Yr M",
-                        type: "numeric",
+                        field: "3rd_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "3rd_year_female",
-                        title: "3rd Yr F",
-                        type: "numeric",
+                        field: "3rd_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "4th_year_male",
-                        title: "4th Yr M",
-                        type: "numeric",
+                        field: "4th_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "4th_year_female",
-                        title: "4th Yr F",
-                        type: "numeric",
+                        field: "4th_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "5th_year_male",
-                        title: "5th Yr M",
-                        type: "numeric",
+                        field: "5th_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "5th_year_female",
-                        title: "5th Yr F",
-                        type: "numeric",
+                        field: "5th_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "6th_year_male",
-                        title: "6th Yr M",
-                        type: "numeric",
+                        field: "6th_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "6th_year_female",
-                        title: "6th Yr F",
-                        type: "numeric",
+                        field: "6th_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "7th_year_male",
-                        title: "7th Yr M",
-                        type: "numeric",
+                        field: "7th_year_male",
+                        headerName: "Male",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "7th_year_female",
-                        title: "7th Yr F",
-                        type: "numeric",
+                        field: "7th_year_female",
+                        headerName: "Female",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "subtotal_male",
-                        title: "Subtotal M",
-                        type: "numeric",
-                        readOnly: true,
+                        field: "subtotal_male",
+                        headerName: "Subtotal M",
+                        flex: 1,
+                        editable: false,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "subtotal_female",
-                        title: "Subtotal F",
-                        type: "numeric",
-                        readOnly: true,
+                        field: "subtotal_female",
+                        headerName: "Subtotal F",
+                        flex: 1,
+                        editable: false,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "grand_total",
-                        title: "Total",
-                        type: "numeric",
-                        readOnly: true,
+                        field: "grand_total",
+                        headerName: "Total",
+                        flex: 1,
+                        editable: false,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                 ],
-                data: paginatedData.map((program) => ({
-                    id: program.id,
-                    program_name: program.program_name || "-",
-                    new_students_freshmen_male:
-                        program.new_students_freshmen_male ?? 0,
-                    new_students_freshmen_female:
-                        program.new_students_freshmen_female ?? 0,
-                    "1st_year_male": program["1st_year_male"] ?? 0,
-                    "1st_year_female": program["1st_year_female"] ?? 0,
-                    "2nd_year_male": program["2nd_year_male"] ?? 0,
-                    "2nd_year_female": program["2nd_year_female"] ?? 0,
-                    "3rd_year_male": program["3rd_year_male"] ?? 0,
-                    "3rd_year_female": program["3rd_year_female"] ?? 0,
-                    "4th_year_male": program["4th_year_male"] ?? 0,
-                    "4th_year_female": program["4th_year_female"] ?? 0,
-                    "5th_year_male": program["5th_year_male"] ?? 0,
-                    "5th_year_female": program["5th_year_female"] ?? 0,
-                    "6th_year_male": program["6th_year_male"] ?? 0,
-                    "6th_year_female": program["6th_year_female"] ?? 0,
-                    "7th_year_male": program["7th_year_male"] ?? 0,
-                    "7th_year_female": program["7th_year_female"] ?? 0,
-                    subtotal_male: program.subtotal_male ?? 0,
-                    subtotal_female: program.subtotal_female ?? 0,
-                    grand_total: program.grand_total ?? 0,
-                })),
+                columnGroupingModel: [
+                    {
+                        groupId: "Program Name",
+                        headerName: "Program Name",
+                        children: [{ field: "program_name" }],
+                    },
+                    {
+                        groupId: "First Year",
+                        headerName: "First Year",
+                        children: [
+                            { field: "new_students_freshmen_male" },
+                            { field: "new_students_freshmen_female" },
+                            { field: "1st_year_male" },
+                            { field: "1st_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Second Year",
+                        headerName: "Second Year",
+                        children: [
+                            { field: "2nd_year_male" },
+                            { field: "2nd_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Third Year",
+                        headerName: "Third Year",
+                        children: [
+                            { field: "3rd_year_male" },
+                            { field: "3rd_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Fourth Year",
+                        headerName: "Fourth Year",
+                        children: [
+                            { field: "4th_year_male" },
+                            { field: "4th_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Fifth Year",
+                        headerName: "Fifth Year",
+                        children: [
+                            { field: "5th_year_male" },
+                            { field: "5th_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Sixth Year",
+                        headerName: "Sixth Year",
+                        children: [
+                            { field: "6th_year_male" },
+                            { field: "6th_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Seventh Year",
+                        headerName: "Seventh Year",
+                        children: [
+                            { field: "7th_year_male" },
+                            { field: "7th_year_female" },
+                        ],
+                    },
+                    {
+                        groupId: "Totals",
+                        headerName: "Totals",
+                        children: [
+                            { field: "subtotal_male" },
+                            { field: "subtotal_female" },
+                            { field: "grand_total" },
+                        ],
+                    },
+                ],
             },
             2: {
                 columns: [
                     {
-                        data: "program_name",
-                        title: "Program Name",
-                        readOnly: true,
+                        field: "program_name",
+                        headerName: "Program Name",
+                        flex: 2,
+                        editable: false,
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "lecture_units_actual",
-                        title: "Lecture Units",
-                        type: "numeric",
+                        field: "lecture_units_actual",
+                        headerName: "Lecture Units",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "laboratory_units_actual",
-                        title: "Lab Units",
-                        type: "numeric",
+                        field: "laboratory_units_actual",
+                        headerName: "Lab Units",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "total_units_actual",
-                        title: "Total Units",
-                        type: "numeric",
-                        readOnly: true,
+                        field: "total_units_actual",
+                        headerName: "Total Units",
+                        flex: 1,
+                        editable: false,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "graduates_males",
-                        title: "Grads M",
-                        type: "numeric",
+                        field: "graduates_males",
+                        headerName: "Grads M",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "graduates_females",
-                        title: "Grads F",
-                        type: "numeric",
+                        field: "graduates_females",
+                        headerName: "Grads F",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "graduates_total",
-                        title: "Grads Total",
-                        type: "numeric",
-                        readOnly: true,
+                        field: "graduates_total",
+                        headerName: "Grads Total",
+                        flex: 1,
+                        editable: false,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "externally_funded_merit_scholars",
-                        title: "Ext Scholars",
-                        type: "numeric",
+                        field: "externally_funded_merit_scholars",
+                        headerName: "Ext Scholars",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "internally_funded_grantees",
-                        title: "Int Grantees",
-                        type: "numeric",
+                        field: "internally_funded_grantees",
+                        headerName: "Int Grantees",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                     {
-                        data: "suc_funded_grantees",
-                        title: "SUC Grantees",
-                        type: "numeric",
+                        field: "suc_funded_grantees",
+                        headerName: "SUC Grantees",
+                        flex: 1,
+                        editable: true,
+                        type: "number",
+                        align: "center",
+                        headerAlign: "center",
+                        renderCell: (params) =>
+                            params.value !== null && params.value !== undefined
+                                ? params.value
+                                : "-",
                     },
                 ],
-                data: paginatedData.map((program) => ({
-                    id: program.id,
-                    program_name: program.program_name || "-",
-                    lecture_units_actual: program.lecture_units_actual ?? 0,
-                    laboratory_units_actual:
-                        program.laboratory_units_actual ?? 0,
-                    total_units_actual: program.total_units_actual ?? 0,
-                    graduates_males: program.graduates_males ?? 0,
-                    graduates_females: program.graduates_females ?? 0,
-                    graduates_total: program.graduates_total ?? 0,
-                    externally_funded_merit_scholars:
-                        program.externally_funded_merit_scholars ?? 0,
-                    internally_funded_grantees:
-                        program.internally_funded_grantees ?? 0,
-                    suc_funded_grantees: program.suc_funded_grantees ?? 0,
-                })),
+                columnGroupingModel: [
+                    {
+                        groupId: "Program Name",
+                        headerName: "Program Name",
+                        children: [{ field: "program_name" }],
+                    },
+                    {
+                        groupId: "Units",
+                        headerName: "Units",
+                        children: [
+                            { field: "lecture_units_actual" },
+                            { field: "laboratory_units_actual" },
+                            { field: "total_units_actual" },
+                        ],
+                    },
+                    {
+                        groupId: "Graduates",
+                        headerName: "Graduates",
+                        children: [
+                            { field: "graduates_males" },
+                            { field: "graduates_females" },
+                            { field: "graduates_total" },
+                        ],
+                    },
+                    {
+                        groupId: "Scholars & Grantees",
+                        headerName: "Scholars & Grantees",
+                        children: [
+                            { field: "externally_funded_merit_scholars" },
+                            { field: "internally_funded_grantees" },
+                            { field: "suc_funded_grantees" },
+                        ],
+                    },
+                ],
             },
         }),
-        [paginatedData]
+        [programs]
     );
 
-    const handleChanges = useCallback(
-        async (changes, source) => {
-            if (!changes || source === "loadData") return;
-
+    const handleCellEditStop = useCallback(
+        async (params) => {
+            const { id, field, value } = params;
             const token = localStorage.getItem("token");
             if (!token) {
                 setError(
@@ -428,143 +852,108 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
             }
 
             const updatedPrograms = [...programs];
-            const currentConfig =
-                columnConfigs[subTabValue] || columnConfigs[0];
-            const updates = [];
-            const originalValues = [];
-
-            for (const [row, prop, oldValue, newValue] of changes) {
-                const programData = currentConfig.data[row];
-                const programIndex = updatedPrograms.findIndex(
-                    (p) => p.id === programData.id
-                );
-
-                if (programIndex !== -1) {
-                    // Store original value for potential reversion
-                    originalValues.push({ programIndex, prop, oldValue });
-
-                    // Update the changed field
-                    updatedPrograms[programIndex][prop] = newValue;
-
-                    // Recalculate totals
-                    if (subTabValue === 0) {
-                        updatedPrograms[programIndex].total_units =
-                            (parseFloat(
-                                updatedPrograms[programIndex].lab_units
-                            ) || 0) +
-                            (parseFloat(
-                                updatedPrograms[programIndex].lecture_units
-                            ) || 0);
-                    } else if (subTabValue === 1) {
-                        const maleFields = [
-                            "new_students_freshmen_male",
-                            "1st_year_male",
-                            "2nd_year_male",
-                            "3rd_year_male",
-                            "4th_year_male",
-                            "5th_year_male",
-                            "6th_year_male",
-                            "7th_year_male",
-                        ];
-                        const femaleFields = [
-                            "new_students_freshmen_female",
-                            "1st_year_female",
-                            "2nd_year_female",
-                            "3rd_year_female",
-                            "4th_year_female",
-                            "5th_year_female",
-                            "6th_year_female",
-                            "7th_year_female",
-                        ];
-                        updatedPrograms[programIndex].subtotal_male =
-                            maleFields.reduce(
-                                (sum, field) =>
-                                    sum +
-                                    (parseFloat(
-                                        updatedPrograms[programIndex][field]
-                                    ) || 0),
-                                0
-                            );
-                        updatedPrograms[programIndex].subtotal_female =
-                            femaleFields.reduce(
-                                (sum, field) =>
-                                    sum +
-                                    (parseFloat(
-                                        updatedPrograms[programIndex][field]
-                                    ) || 0),
-                                0
-                            );
-                        updatedPrograms[programIndex].grand_total =
-                            updatedPrograms[programIndex].subtotal_male +
-                            updatedPrograms[programIndex].subtotal_female;
-                    } else if (subTabValue === 2) {
-                        updatedPrograms[programIndex].total_units_actual =
-                            (parseFloat(
-                                updatedPrograms[programIndex]
-                                    .lecture_units_actual
-                            ) || 0) +
-                            (parseFloat(
-                                updatedPrograms[programIndex]
-                                    .laboratory_units_actual
-                            ) || 0);
-                        updatedPrograms[programIndex].graduates_total =
-                            (parseFloat(
-                                updatedPrograms[programIndex].graduates_males
-                            ) || 0) +
-                            (parseFloat(
-                                updatedPrograms[programIndex].graduates_females
-                            ) || 0);
-                    }
-
-                    // Validate data
-                    const validationErrors = validateProgramData(
-                        updatedPrograms[programIndex]
-                    );
-                    if (validationErrors) {
-                        setError(
-                            `Validation failed: ${validationErrors.join(", ")}`
-                        );
-                        continue;
-                    }
-
-                    updates.push(updatedPrograms[programIndex]);
-                }
+            const programIndex = updatedPrograms.findIndex((p) => p.id === id);
+            if (programIndex === -1) {
+                setError(`Program with id ${id} not found.`);
+                return;
             }
 
-            if (updates.length > 0) {
-                try {
-                    await Promise.all(
-                        updates.map((program) =>
-                            axios.put(
-                                `http://localhost:8000/api/programs/${program.id}`,
-                                program,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                }
-                            )
-                        )
+            const originalProgram = { ...updatedPrograms[programIndex] };
+            updatedPrograms[programIndex][field] = value;
+
+            // Recalculate totals
+            if (subTabValue === 0) {
+                updatedPrograms[programIndex].total_units =
+                    (parseFloat(updatedPrograms[programIndex].lab_units) || 0) +
+                    (parseFloat(updatedPrograms[programIndex].lecture_units) ||
+                        0);
+            } else if (subTabValue === 1) {
+                const maleFields = [
+                    "new_students_freshmen_male",
+                    "1st_year_male",
+                    "2nd_year_male",
+                    "3rd_year_male",
+                    "4th_year_male",
+                    "5th_year_male",
+                    "6th_year_male",
+                    "7th_year_male",
+                ];
+                const femaleFields = [
+                    "new_students_freshmen_female",
+                    "1st_year_female",
+                    "2nd_year_female",
+                    "3rd_year_female",
+                    "4th_year_female",
+                    "5th_year_female",
+                    "6th_year_female",
+                    "7th_year_female",
+                ];
+                updatedPrograms[programIndex].subtotal_male = maleFields.reduce(
+                    (sum, field) =>
+                        sum +
+                        (parseFloat(updatedPrograms[programIndex][field]) || 0),
+                    0
+                );
+                updatedPrograms[programIndex].subtotal_female =
+                    femaleFields.reduce(
+                        (sum, field) =>
+                            sum +
+                            (parseFloat(updatedPrograms[programIndex][field]) ||
+                                0),
+                        0
                     );
-                    setError(null);
-                    fetchPrograms();
-                } catch (error) {
-                    // Revert changes
-                    originalValues.forEach(
-                        ({ programIndex, prop, oldValue }) => {
-                            updatedPrograms[programIndex][prop] = oldValue;
-                        }
-                    );
-                    const errorMessage =
-                        error.response?.data?.error ||
-                        "Failed to update programs. Changes have been reverted.";
-                    setError(errorMessage);
-                    console.error("Error updating programs:", error);
-                }
+                updatedPrograms[programIndex].grand_total =
+                    updatedPrograms[programIndex].subtotal_male +
+                    updatedPrograms[programIndex].subtotal_female;
+            } else if (subTabValue === 2) {
+                updatedPrograms[programIndex].total_units_actual =
+                    (parseFloat(
+                        updatedPrograms[programIndex].lecture_units_actual
+                    ) || 0) +
+                    (parseFloat(
+                        updatedPrograms[programIndex].laboratory_units_actual
+                    ) || 0);
+                updatedPrograms[programIndex].graduates_total =
+                    (parseFloat(
+                        updatedPrograms[programIndex].graduates_males
+                    ) || 0) +
+                    (parseFloat(
+                        updatedPrograms[programIndex].graduates_females
+                    ) || 0);
+            }
+
+            // Validate data
+            const validationErrors = validateProgramData(
+                updatedPrograms[programIndex]
+            );
+            if (validationErrors) {
+                setError(`Validation failed: ${validationErrors.join(", ")}`);
+                updatedPrograms[programIndex] = originalProgram;
+                return;
+            }
+
+            try {
+                await axios.put(
+                    `${config.API_URL}/programs/${id}`,
+                    updatedPrograms[programIndex],
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                setError(null);
+                fetchPrograms();
+            } catch (error) {
+                updatedPrograms[programIndex] = originalProgram;
+                const errorMessage =
+                    error.response?.data?.error ||
+                    "Failed to update program. Changes have been reverted.";
+                setError(errorMessage);
+                console.error("Error updating program:", error);
             }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [programs, subTabValue, columnConfigs, setError]
+        [programs, subTabValue, fetchPrograms]
     );
 
     if (loading) return <CircularProgress />;
@@ -587,7 +976,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     value={subTabValue}
                     onChange={(e, newValue) => {
                         setSubTabValue(newValue);
-                        localStorage.setItem('selectedSubTab', newValue);
+                        localStorage.setItem("selectedSubTab", newValue);
                     }}
                     aria-label="program sub-tabs"
                     variant="fullWidth"
@@ -607,166 +996,69 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
             </Paper>
             <Paper
                 sx={{
-                    overflowX: "auto",
-                    maxHeight: "53vh",
-                    position: "relative",
+                    borderRadius: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    height: {
+                        xs: "20vh",
+                        sm: "30vh",
+                        md: "50vh",
+                    },
+                    overflow: "hidden",
                 }}
             >
-                <HotTable
-                    data={currentConfig.data}
+                <DataGrid
+                    rows={programs}
                     columns={currentConfig.columns}
-                    rowHeaders={true}
-                    stretchH="all"
-                    height="290"
-                    licenseKey="non-commercial-and-evaluation"
-                    settings={{
-                        readOnly: false,
-                        manualColumnResize: true,
-                        columnSorting: true,
-                        contextMenu: true,
-                        afterChange: handleChanges,
-                        nestedHeaders: [
-                            subTabValue === 0
-                                ? [
-                                      {
-                                          label: "CURRICULAR PROGRAM",
-                                          colspan: 2,
-                                      },
-                                      { label: "MAJOR", colspan: 2 },
-                                      {
-                                          label: "AUTHORITY TO OFFER PROGRAM",
-                                          colspan: 3,
-                                      },
-                                      { label: "", colspan: 1 },
-                                      { label: "", colspan: 1 },
-                                      { label: "", colspan: 1 },
-                                      { label: "LENGTH", colspan: 1 },
-                                      {
-                                          label: "PROGRAM UNITS EXCLUDING THESIS",
-                                          colspan: 3,
-                                      },
-                                      {
-                                          label: "FINANCIAL INFORMATION",
-                                          colspan: 2,
-                                      },
-                                  ]
-                                : subTabValue === 1
-                                ? [
-                                      { label: "Program Name", colspan: 1 },
-                                      { label: "First Year", colspan: 4 },
-                                      { label: "Second Year", colspan: 2 },
-                                      { label: "Third Year", colspan: 2 },
-                                      { label: "Fourth Year", colspan: 2 },
-                                      { label: "Fifth Year", colspan: 2 },
-                                      { label: "Sixth Year", colspan: 2 },
-                                      { label: "Seventh Year", colspan: 2 },
-                                      { label: "Totals", colspan: 3 },
-                                  ]
-                                : [
-                                      { label: "Program Name", colspan: 1 },
-                                      { label: "Units", colspan: 3 },
-                                      { label: "Graduates", colspan: 3 },
-                                      {
-                                          label: "Scholars & Grantees",
-                                          colspan: 3,
-                                      },
-                                  ],
-                            currentConfig.columns.map((col) => col.title),
-                        ],
-                        cells: (row, col) => {
-                            const cellProperties = {};
-                            const columnData = currentConfig.columns[col].data;
-                            const value = currentConfig.data[row]?.[columnData];
-
-                            cellProperties.renderer = (instance, td) => {
-                                td.innerHTML =
-                                    value !== undefined && value !== null
-                                        ? value
-                                        : "-";
-                                td.style.whiteSpace = "nowrap";
-                                td.style.overflow = "hidden";
-                                td.style.textOverflow = "ellipsis";
-                                td.style.maxWidth = col === 0 ? "20%" : "10%";
-                                td.title = value || "-";
-                                if (
-                                    columnData !== "program_name" &&
-                                    columnData !== "major_name"
-                                ) {
-                                    td.style.textAlign = "center";
-                                } else {
-                                    td.style.textAlign = "left";
-                                }
-                            };
-
-                            return cellProperties;
+                    editMode="cell"
+                    onCellEditStop={handleCellEditStop}
+                    columnGroupingModel={currentConfig.columnGroupingModel}
+                    experimentalFeatures={{ columnGrouping: true }}
+                    disableColumnFilter
+                    disableColumnMenu
+                    disableColumnSorting
+                    density="compact"
+                    sx={{
+                        border: 0,
+                        "& .MuiDataGrid-root": {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                        },
+                        "& .MuiDataGrid-main": {
+                            flex: 1,
+                            overflow: "auto",
+                        },
+                        "& .MuiDataGrid-footerContainer": {
+                            borderTop: 1,
+                            borderColor: "divider",
+                            position: "sticky",
+                            bottom: 0,
+                            backgroundColor: "background.paper",
+                            zIndex: 1,
+                        },
+                        "& .MuiDataGrid-columnSeparator": {
+                            visibility: "visible",
+                            color: "rgba(0, 0, 0, 0.2)",
+                            pointerEvents: "none", // disable manual resize
+                            display: "none",
+                        },
+                        "& .MuiDataGrid-cell": {
+                            borderRight: "1px solid",
+                            borderColor: "divider",
+                        },
+                        "& .MuiDataGrid-columnHeader": {
+                            borderRight: "1px solid",
+                            borderColor: "divider",
                         },
                     }}
-                />
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        p: 1,
-                        borderTop: 1,
-                        borderColor: "divider",
-                        bgcolor: "grey.50",
-                        position: "sticky",
-                        bottom: -0.5,
-                        zIndex: 5,
+                    disableRowSelectionOnClick
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 25 } },
                     }}
-                >
-                    <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
-                        <InputLabel sx={{ fontSize: "0.75rem" }}>
-                            Rows
-                        </InputLabel>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={handleChangeRowsPerPage}
-                            label="Rows"
-                            sx={{ height: 32, fontSize: "0.875rem" }}
-                        >
-                            {ROWS_PER_PAGE_OPTIONS.map((option) => (
-                                <MenuItem
-                                    key={option.value}
-                                    value={option.value}
-                                    sx={{ fontSize: "0.875rem" }}
-                                >
-                                    {option.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mr: 1, fontSize: "0.75rem" }}
-                    >
-                        {programs.length === 0
-                            ? "0-0"
-                            : `${page * rowsPerPage + 1}-${Math.min(
-                                  (page + 1) * rowsPerPage,
-                                  programs.length
-                              )}`}{" "}
-                        of {programs.length}
-                    </Typography>
-                    <Pagination
-                        count={Math.ceil(programs.length / rowsPerPage) || 1}
-                        page={page + 1}
-                        onChange={(_, value) =>
-                            handleChangePage(null, value - 1)
-                        }
-                        size="small"
-                        color="primary"
-                        showFirstButton
-                        showLastButton
-                        sx={{
-                            "& .MuiPaginationItem-root": {
-                                fontSize: "0.75rem",
-                            },
-                        }}
-                    />
-                </Box>
+                    pageSizeOptions={ROWS_PER_PAGE_OPTIONS}
+                    getRowId={(row) => row.id}
+                />
             </Paper>
         </Box>
     );

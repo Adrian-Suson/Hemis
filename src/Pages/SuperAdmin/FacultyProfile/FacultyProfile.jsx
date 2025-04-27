@@ -31,6 +31,7 @@ import UploadIcon from "@mui/icons-material/Upload";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
+import config from "../../../utils/config";
 
 const facultyGroups = [
     {
@@ -139,7 +140,7 @@ const FacultyProfileUpload = () => {
                 return;
             }
 
-            const url = `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId}`;
+            const url = `${config.API_URL}/faculty-profiles?institution_id=${institutionId}`;
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -348,7 +349,7 @@ const FacultyProfileUpload = () => {
 
                 if (allFacultyProfiles.length > 0) {
                     await axios.post(
-                        "http://localhost:8000/api/faculty-profiles",
+                        `${config.API_URL}/faculty-profiles`,
                         allFacultyProfiles,
                         {
                             headers: { Authorization: `Bearer ${token}` },
@@ -782,7 +783,6 @@ const FacultyProfileUpload = () => {
                 onChange={handleTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
-                sx={{ mb: 2 }}
             >
                 {facultyGroups.map((group) => (
                     <Tab

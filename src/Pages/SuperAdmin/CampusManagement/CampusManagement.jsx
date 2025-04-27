@@ -13,6 +13,7 @@ import CampusHandsontable from "./CampusHandsontable";
 import CampusManagementSkeleton from "./CampusManagementSkeleton";
 import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
+import config from "../../../utils/config";
 
 const CampusManagement = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -30,7 +31,7 @@ const CampusManagement = () => {
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
-                `http://localhost:8000/api/campuses?institution_id=${institutionId}`,
+                `${config.API_URL}/campuses?institution_id=${institutionId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 

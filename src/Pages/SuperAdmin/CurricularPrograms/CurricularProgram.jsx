@@ -180,7 +180,7 @@ const CurricularProgram = () => {
                     const sheet = workbook.Sheets[sheetName];
 
                     const sheetData = XLSX.utils.sheet_to_json(sheet, {
-                        header: 1,
+                        header: 2,
                         range: 11,
                     });
 
@@ -209,9 +209,9 @@ const CurricularProgram = () => {
                             return {
                                 institution_id: institutionId,
                                 program_name: row[1] || null,
-                                program_code: String(row[2] || " "),
+                                program_code: row[2] || null,
                                 major_name: row[3] || null,
-                                major_code: String(row[4] || " "),
+                                major_code: row[4] || null,
                                 category: row[5] || null,
                                 serial: String(row[6] || " "),
                                 year: String(row[7] || ""),
@@ -265,6 +265,10 @@ const CurricularProgram = () => {
                         `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
                     );
                     allParsedData = [...allParsedData, ...parsedData];
+                    console.log(
+                        `Sheet ${sheetName}: Parsed data:`,
+                        parsedData
+                    );
                 }
 
                 if (allParsedData.length === 0) {
@@ -313,6 +317,7 @@ const CurricularProgram = () => {
                         "Error importing data:",
                         error.response?.data
                     );
+                    hideLoading();
                     setSnackbar({
                         open: true,
                         message:
@@ -362,7 +367,7 @@ const CurricularProgram = () => {
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(arrayBuffer);
 
-            const dataStartRow = 9;
+            const dataStartRow = 11;
 
             const programsByCategory = categories.reduce((acc, category) => {
                 acc[category] = programs.filter(

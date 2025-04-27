@@ -20,6 +20,7 @@ import {
     Alert,
     Divider,
 } from "@mui/material";
+import config from "../../../utils/config";
 
 // Register Chart.js components for Pie charts
 ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -49,19 +50,19 @@ const DashboardPage = () => {
             try {
                 const [users, faculty, programs, institutions] =
                     await Promise.all([
-                        axios.get("http://localhost:8000/api/users", {
+                        axios.get(`${config.API_URL}/users`, {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
                         axios.get(
-                            "http://localhost:8000/api/faculty-profiles",
+                            `${config.API_URL}/faculty-profiles`,
                             {
                                 headers: { Authorization: `Bearer ${token}` },
                             }
                         ),
-                        axios.get("http://localhost:8000/api/programs", {
+                        axios.get(`${config.API_URL}/programs`, {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
-                        axios.get("http://localhost:8000/api/institutions", {
+                        axios.get(`${config.API_URL}/institutions`, {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
                     ]);

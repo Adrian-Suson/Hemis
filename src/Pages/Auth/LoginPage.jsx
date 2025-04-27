@@ -22,6 +22,7 @@ import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined
 import axios from "axios";
 import Logo from "../../assets/ChedLogo.png";
 import BFImage from "../../assets/cover.jpg"; // added background image import
+import config from "../../utils/config";
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -52,7 +53,7 @@ const LoginPage = () => {
 
         try {
             const response = await axios.post(
-                "http://localhost:8000/api/auth/login",
+                `${config.API_URL}/auth/login`,
                 { email, password }
             );
 
