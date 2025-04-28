@@ -393,7 +393,7 @@ const InstitutionTable = ({
                     height: {
                         xs: "40vh",
                         sm: "50vh",
-                        md: "60vh",
+                        md: "55vh",
                     },
                     maxWidth: {
                         xs: "99vw",

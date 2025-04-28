@@ -22,15 +22,14 @@ import {
     TableHead,
     TableRow,
     IconButton,
-    ButtonGroup,
     Paper,
     alpha,
     TextField,
-    Grid,
     Select,
     MenuItem,
     FormControl,
     InputLabel,
+    Grid,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -52,7 +51,6 @@ const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
     const [programs, setPrograms] = useState([]);
     const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
-    const [openFilterDialog, setOpenFilterDialog] = useState(false);
     const [mainTabValue, setMainTabValue] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -162,14 +160,6 @@ const CurricularProgram = () => {
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleClearFilters = () => {
-        setFilters({
-            data_date: "",
-            category: "",
-        });
-        setOpenFilterDialog(false);
     };
 
     const handleFileUpload = async () => {
@@ -536,11 +526,11 @@ const CurricularProgram = () => {
 
     return (
         <Container maxWidth={false} sx={{ height: "100vh", p: 0 }}>
-            <Box sx={{ p: 3, my: 2 }}>
+            <Box sx={{ p: 3 }}>
                 <Breadcrumbs
                     separator="›"
                     aria-label="breadcrumb"
-                    sx={{ mb: 2 }}
+                    sx={{ mb: 1 }}
                 >
                     <Link
                         underline="hover"
@@ -565,45 +555,48 @@ const CurricularProgram = () => {
 
                 <Box
                     sx={{
-                        mb: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        flexWrap: "wrap",
+                        p: { xs: 1, md: 2 },
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        bgcolor: "grey.50",
+                        mb: 1,
+                        borderRadius: 1,
                     }}
                 >
-                    <TextField
-                        fullWidth
-                        size="small"
-                        label="Search"
-                        variant="outlined"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search..."
-                        sx={{
-                            "& .MuiInputBase-root": {
-                                fontSize: "0.75rem",
-                                height: "32px",
-                            },
-                            "& .MuiInputLabel-root": {
-                                fontSize: "0.75rem",
-                                transform: "translate(14px, 8px) scale(1)",
-                            },
-                            "& .MuiInputLabel-shrink": {
-                                transform: "translate(14px, -6px) scale(0.75)",
-                            },
-                            maxWidth: "300px",
-                        }}
-                    />
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item size={6}>
-                            <FormControl fullWidth variant="outlined">
+                    <Grid container spacing={2}>
+                        <Grid size={{ xs: 6, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                label="Search"
+                                variant="outlined"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search..."
+                                sx={{
+                                    "& .MuiInputBase-root": {
+                                        height: 40,
+                                    },
+                                }}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 6, md: 2 }}>
+                            <FormControl
+                                variant="outlined"
+                                size="small"
+                                fullWidth
+                            >
                                 <InputLabel>Data Date</InputLabel>
                                 <Select
                                     name="data_date"
                                     value={filters.data_date}
                                     onChange={handleFilterChange}
                                     label="Data Date"
+                                    sx={{
+                                        "& .MuiInputBase-root": {
+                                            height: 40,
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="">
                                         <em>All</em>
@@ -623,14 +616,23 @@ const CurricularProgram = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item size={6}>
-                            <FormControl fullWidth variant="outlined">
+                        <Grid size={{ xs: 6, md: 2 }}>
+                            <FormControl
+                                variant="outlined"
+                                size="small"
+                                fullWidth
+                            >
                                 <InputLabel>Category</InputLabel>
                                 <Select
                                     name="category"
                                     value={filters.category}
                                     onChange={handleFilterChange}
                                     label="Category"
+                                    sx={{
+                                        "& .MuiInputBase-root": {
+                                            height: 40,
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="">
                                         <em>All</em>
@@ -653,113 +655,36 @@ const CurricularProgram = () => {
                                 </Select>
                             </FormControl>
                         </Grid>
-                    </Grid>
-
-                    <ButtonGroup sx={{ flexShrink: 0, ml: "auto" }}>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            startIcon={<UploadFileIcon />}
-                            onClick={() => setOpenUploadDialog(true)}
-                            disabled={isUploading}
-                        >
-                            {isUploading ? "Uploading..." : "Import Form B"}
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<DownloadIcon />}
-                            onClick={handleExportToExcel}
-                            disabled={isUploading}
-                        >
-                            Export to Excel
-                        </Button>
-                    </ButtonGroup>
-                </Box>
-
-                <Dialog
-                    open={openFilterDialog}
-                    onClose={() => setOpenFilterDialog(false)}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Filter Programs</DialogTitle>
-                    <DialogContent>
-                        <Grid container spacing={2} sx={{ mt: 1 }}>
-                            <Grid item xs={12}>
-                                <FormControl fullWidth variant="outlined">
-                                    <InputLabel>Data Date</InputLabel>
-                                    <Select
-                                        name="data_date"
-                                        value={filters.data_date}
-                                        onChange={handleFilterChange}
-                                        label="Data Date"
-                                    >
-                                        <MenuItem value="">
-                                            <em>All</em>
-                                        </MenuItem>
-                                        {[
-                                            ...new Set(
-                                                programs.map((p) => p.data_date)
-                                            ),
-                                        ]
-                                            .filter((date) => date)
-                                            .sort()
-                                            .map((date) => (
-                                                <MenuItem
-                                                    key={date}
-                                                    value={date}
-                                                >
-                                                    {date}
-                                                </MenuItem>
-                                            ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={12}>
-                                <FormControl fullWidth variant="outlined">
-                                    <InputLabel>Category</InputLabel>
-                                    <Select
-                                        name="category"
-                                        value={filters.category}
-                                        onChange={handleFilterChange}
-                                        label="Category"
-                                    >
-                                        <MenuItem value="">
-                                            <em>All</em>
-                                        </MenuItem>
-                                        {[
-                                            ...new Set(
-                                                programs.map((p) => p.category)
-                                            ),
-                                        ]
-                                            .filter((category) => category)
-                                            .sort()
-                                            .map((category) => (
-                                                <MenuItem
-                                                    key={category}
-                                                    value={category}
-                                                >
-                                                    {category}
-                                                </MenuItem>
-                                            ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                        <Grid size={{ xs: 6, md: 4 }}>
+                            <Box
+                                gap={2}
+                                display="flex"
+                                justifyContent="flex-end"
+                            >
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    startIcon={<UploadFileIcon />}
+                                    onClick={() => setOpenUploadDialog(true)}
+                                    disabled={isUploading}
+                                >
+                                    {isUploading
+                                        ? "Uploading..."
+                                        : "Import Form B"}
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<DownloadIcon />}
+                                    onClick={handleExportToExcel}
+                                    disabled={isUploading}
+                                >
+                                    Export to Excel
+                                </Button>
+                            </Box>
                         </Grid>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={handleClearFilters} color="secondary">
-                            Clear
-                        </Button>
-                        <Button
-                            onClick={() => setOpenFilterDialog(false)}
-                            color="primary"
-                        >
-                            Apply
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    </Grid>
+                </Box>
 
                 <Dialog
                     open={openUploadDialog}
@@ -993,7 +918,7 @@ const CurricularProgram = () => {
                     onClick={() => setOpenReferenceDialog(true)}
                     sx={{
                         position: "absolute",
-                        bottom: 60,
+                        bottom: 10,
                         right: 16,
                     }}
                 >

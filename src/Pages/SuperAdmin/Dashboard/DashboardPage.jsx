@@ -352,7 +352,7 @@ const DashboardPage = () => {
                         color: "error.main",
                     },
                 ].map((stat, index) => (
-                    <Grid item size={{ sx: 12, sm: 6, md: 4 }} key={index}>
+                    <Grid size={{ sx: 12, sm: 6, md: 4 }} key={index}>
                         <motion.div
                             variants={cardVariants}
                             initial="hidden"
@@ -410,7 +410,7 @@ const DashboardPage = () => {
                         options: chartOptions,
                     },
                 ].map((chart, index) => (
-                    <Grid item size={{ sx: 12, sm: 6, md: 3 }} key={index}>
+                    <Grid  size={{ sx: 12, sm: 6, md: 3 }} key={index}>
                         <motion.div
                             variants={cardVariants}
                             initial="hidden"

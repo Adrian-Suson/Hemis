@@ -25,6 +25,7 @@ import { saveAs } from "file-saver";
 import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
 import GraduatesSkeleton from "./GraduatesSkeleton";
+import { decryptId } from "../../../utils/encryption";
 
 const Graduates = () => {
     const [graduates, setGraduates] = useState([]);
@@ -33,12 +34,15 @@ const Graduates = () => {
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
-    const [searchTerm, setSearchTerm] = useState(""); // Moved from GraduatesTable
-    const [sexFilter, setSexFilter] = useState(""); // Moved from GraduatesTable
-    const [yearFilter, setYearFilter] = useState(""); // Moved from GraduatesTable
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sexFilter, setSexFilter] = useState("");
+    const [yearFilter, setYearFilter] = useState("");
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
-    const { institutionId } = useParams();
+    const { institutionId: encryptedInstitutionId } = useParams();
+    const deinstitutionId = decryptId(
+        decodeURIComponent(encryptedInstitutionId)
+    );
 
     useEffect(() => {
         fetchGraduates();
@@ -83,12 +87,12 @@ const Graduates = () => {
     };
 
     const handleFileUpload = (event) => {
-        console.log("File upload event:", institutionId);
+        console.log("File upload event:", deinstitutionId);
         const file = event.target.files[0];
         if (!file) return;
         showLoading();
         setLoading(true);
-        processExcelFile(file, institutionId);
+        processExcelFile(file, deinstitutionId);
     };
 
     const processExcelFile = async (file, institutionId) => {
@@ -106,7 +110,7 @@ const Graduates = () => {
         }
 
         if (!institutionId) {
-            setSnackbarMessage("Institution ID is missing from the URL.");
+            setSnackbarMessage("Institution ID is missing.");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
             hideLoading();
@@ -166,30 +170,37 @@ const Graduates = () => {
                             if (!date) return null;
                             try {
                                 const parsedDate = new Date(date);
-                                if (isNaN(parsedDate.getTime())) return date;
-                                return parsedDate.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+                                if (isNaN(parsedDate.getTime())) return null;
+                                return parsedDate.toISOString().split("T")[0];
                             } catch {
-                                return date;
+                                return null;
                             }
                         };
 
+                        const yearGranted = row[10]
+                            ? parseInt(row[10], 10)
+                            : null;
+                        const sex = row[4]
+                            ? String(row[4]).toUpperCase()
+                            : null;
+
                         return {
-                            institution_id: institutionId,
+                            institution_id: parseInt(institutionId, 10),
                             student_id: row[0] ? String(row[0]) : null,
                             last_name: row[1] ? String(row[1]) : null,
                             first_name: row[2] ? String(row[2]) : null,
                             middle_name: row[3] ? String(row[3]) : null,
-                            sex: row[4] ? String(row[4]) : null,
-                            date_of_birth: row[5] ? formatDate(row[5]) : null,
-                            date_graduated: row[6] ? formatDate(row[6]) : null,
+                            sex: sex === "M" || sex === "F" ? sex : null,
+                            date_of_birth: formatDate(row[5]),
+                            date_graduated: formatDate(row[6]),
                             program_name: row[7] ? String(row[7]) : null,
                             program_major: row[8] ? String(row[8]) : null,
                             program_authority_to_operate_graduate: row[9]
                                 ? String(row[9])
                                 : null,
-                            year_granted: row[10]
-                                ? parseInt(row[10], 10)
-                                : null,
+                            year_granted: isNaN(yearGranted)
+                                ? null
+                                : yearGranted,
                         };
                     });
 
@@ -199,15 +210,35 @@ const Graduates = () => {
                     );
 
                     processedGraduates.forEach((graduate) => {
-                        const graduateString = JSON.stringify(graduate);
-                        if (!seenGraduates.has(graduateString)) {
-                            seenGraduates.add(graduateString);
-                            allGraduates.push(graduate);
+                        if (
+                            graduate.student_id &&
+                            graduate.last_name &&
+                            graduate.first_name &&
+                            graduate.sex &&
+                            graduate.date_of_birth &&
+                            graduate.program_name
+                        ) {
+                            const graduateString = JSON.stringify(graduate);
+                            if (!seenGraduates.has(graduateString)) {
+                                seenGraduates.add(graduateString);
+                                allGraduates.push(graduate);
+                            }
                         }
                     });
                 }
 
                 console.log("Final processed graduates:", allGraduates);
+
+                if (allGraduates.length === 0) {
+                    setSnackbarMessage(
+                        "No valid graduate data found in the file."
+                    );
+                    setSnackbarSeverity("error");
+                    setSnackbarOpen(true);
+                    hideLoading();
+                    setLoading(false);
+                    return;
+                }
 
                 uploadToBackend(allGraduates);
             };
@@ -219,6 +250,7 @@ const Graduates = () => {
                 );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
+                hideLoading();
                 setLoading(false);
             };
             updateProgress(80);
@@ -229,6 +261,7 @@ const Graduates = () => {
             );
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
+            hideLoading();
             setLoading(false);
         }
     };
@@ -258,14 +291,23 @@ const Graduates = () => {
             fetchGraduates();
         } catch (error) {
             console.error("Error uploading graduates:", error);
-            setSnackbarMessage(
-                `Failed to upload graduates: ${
+            let errorMessage = "Failed to upload graduates.";
+            if (
+                error.response?.status === 422 &&
+                error.response?.data?.errors
+            ) {
+                const errors = error.response.data.errors;
+                const errorDetails = Object.values(errors).flat().join("; ");
+                errorMessage = `Validation failed: ${errorDetails}`;
+            } else {
+                errorMessage = `Failed to upload graduates: ${
                     error.response?.data?.message || error.message
-                }`
-            );
+                }`;
+            }
+            setSnackbarMessage(errorMessage);
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
-        } finally {
+            hideLoading();
             setLoading(false);
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
@@ -319,12 +361,10 @@ const Graduates = () => {
         saveAs(blob, "Graduates_List.xlsx");
     };
 
-    // Get unique years for the year filter dropdown
     const uniqueYears = [
         ...new Set(graduates.map((g) => g.year_granted).filter(Boolean)),
     ].sort();
 
-    // Filter graduates based on search term and selection filters
     const filteredGraduates = graduates.filter((graduate) => {
         const term = searchTerm.toLowerCase();
         const matchesSearch =
@@ -344,12 +384,20 @@ const Graduates = () => {
 
         return matchesSearch && matchesSex && matchesYear;
     });
+
     if (loading) {
         return <GraduatesSkeleton />;
     }
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box
+            sx={{
+                p: 3,
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+            }}
+        >
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
@@ -370,9 +418,19 @@ const Graduates = () => {
                 <Typography color="textPrimary">List of Graduates</Typography>
             </Breadcrumbs>
 
-            {/* Search, Filter, and Button Controls */}
-            <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-                <Box sx={{ display: "flex", gap: 1, flex: 1, flexWrap: "wrap" }}>
+            <Box
+                sx={{
+                    mb: 3,
+                    display: "flex",
+                    gap: 1,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    flexShrink: 0,
+                }}
+            >
+                <Box
+                    sx={{ display: "flex", gap: 1, flex: 1, flexWrap: "wrap" }}
+                >
                     <TextField
                         placeholder="Search ID, Name, Program"
                         value={searchTerm}
@@ -381,7 +439,7 @@ const Graduates = () => {
                         size="small"
                         sx={{ flex: 1, minWidth: 150 }}
                     />
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
                         <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
                             Sex
                         </InputLabel>
@@ -396,7 +454,7 @@ const Graduates = () => {
                             <MenuItem value="F">Female</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
                         <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
                             Year
                         </InputLabel>
@@ -420,7 +478,9 @@ const Graduates = () => {
                         variant="contained"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={loading}
-                        startIcon={loading ? <CircularProgress size={20} /> : null}
+                        startIcon={
+                            loading ? <CircularProgress size={20} /> : null
+                        }
                     >
                         Upload Excel File
                     </Button>
@@ -449,6 +509,7 @@ const Graduates = () => {
                 open={snackbarOpen}
                 autoHideDuration={6000}
                 onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
             >
                 <Alert
                     onClose={() => setSnackbarOpen(false)}

@@ -11,7 +11,6 @@ import {
     Link,
     Button,
     Alert,
-    ButtonGroup,
     Toolbar,
     Dialog,
     DialogTitle,
@@ -21,6 +20,7 @@ import {
     useTheme,
     Paper,
     IconButton,
+    useMediaQuery,
 } from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
@@ -105,6 +105,7 @@ const FacultyProfileUpload = () => {
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const theme = useTheme();
+    const isSm = useMediaQuery(theme.breakpoints.down("sm"));
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -525,7 +526,21 @@ const FacultyProfileUpload = () => {
     }
 
     return (
-        <Box sx={{ p: 3}}>
+        <Box
+            sx={(theme) => ({
+                p: 3,
+                borderRadius: 1,
+                display: "flex",
+                flexDirection: "column",
+                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
+                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
+                overflowX: "auto",
+                overflowY: "auto",
+                [theme.breakpoints.up("md")]: {
+                    overflowY: "hidden",
+                },
+            })}
+        >
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
@@ -577,8 +592,13 @@ const FacultyProfileUpload = () => {
                     >
                         Faculties Managment
                     </Typography>
-
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        sx={{
+                            display: { xs: "none", sm: "none", md: "block" },
+                        }}
+                    >
                         {facultyGroups.find(
                             (group) => group.sheetName === selectedGroup
                         )?.description || "No description available"}
@@ -586,7 +606,7 @@ const FacultyProfileUpload = () => {
                 </Box>
 
                 {/* File Upload and Export Buttons */}
-                <ButtonGroup>
+                <Box gap={2} sx={{ display: "flex", alignItems: "center" }}>
                     <Button
                         variant="contained"
                         color="secondary"
@@ -595,7 +615,11 @@ const FacultyProfileUpload = () => {
                         disabled={isUploading}
                         onClick={() => setOpenUploadDialog(true)}
                     >
-                        {isUploading ? "Uploading..." : "Import Form E2"}
+                        {isSm
+                            ? ""
+                            : isUploading
+                            ? "Uploading..."
+                            : "Import Form E2"}
                     </Button>
                     <Button
                         variant="contained"
@@ -604,9 +628,9 @@ const FacultyProfileUpload = () => {
                         onClick={handleExportData}
                         disabled={isUploading || loading}
                     >
-                        Export Data
+                        {isSm ? "" : "Export Data"}
                     </Button>
-                </ButtonGroup>
+                </Box>
             </Toolbar>
 
             {/* Upload Dialog */}

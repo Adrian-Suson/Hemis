@@ -71,15 +71,16 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "name",
                 headerName: "Name of Faculty",
+                minWidth: 280,
                 flex: 2,
                 editable: true,
                 sortable: false,
-                // Left-aligned by default
             },
             {
                 field: "generic_faculty_rank",
                 headerName: "Faculty Rank",
                 flex: 1,
+                minWidth: 100,
                 editable: true,
                 sortable: false,
                 align: "center",
@@ -88,6 +89,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "home_college",
                 headerName: "Home College",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -96,7 +98,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "home_department",
-                headerName: "Home Dept",
+                headerName: "Home Department",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -106,6 +109,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "is_tenured",
                 headerName: "Tenured?",
+                minWidth: 80,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -115,6 +119,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "ssl_salary_grade",
                 headerName: "SSL Grade",
+                minWidth: 80,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -124,6 +129,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "annual_basic_salary",
                 headerName: "Annual Salary",
+                minWidth: 100,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -134,6 +140,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "on_leave_without_pay",
                 headerName: "On Leave?",
+                minWidth: 80,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -143,6 +150,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "full_time_equivalent",
                 headerName: "FTE",
+                minWidth: 60,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -153,6 +161,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "gender",
                 headerName: "Gender",
+                minWidth: 80,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -161,7 +170,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "highest_degree_attained",
-                headerName: "Highest Degree",
+                headerName: "Highest Degree Attained",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -171,6 +181,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "pursuing_next_degree",
                 headerName: "Pursuing Next Degree?",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -181,6 +192,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "discipline_teaching_load_1",
                 headerName: "Discipline (1)",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -190,6 +202,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "discipline_teaching_load_2",
                 headerName: "Discipline (2)",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -199,6 +212,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "discipline_bachelors",
                 headerName: "Bachelors Discipline",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -208,6 +222,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "discipline_masters",
                 headerName: "Masters Discipline",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -217,6 +232,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "discipline_doctorate",
                 headerName: "Doctorate Discipline",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 sortable: false,
@@ -225,7 +241,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "masters_with_thesis",
-                headerName: "Masters w/ Thesis?",
+                headerName: "Masters with Thesis?",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -235,7 +252,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "doctorate_with_dissertation",
-                headerName: "Doctorate w/ Dissertation?",
+                headerName: "Doctorate with Dissertation?",
+                minWidth: 180,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -245,7 +263,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_lab_credit_units",
-                headerName: "Lab Credits",
+                headerName: "Undergrad Lab Credits",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -255,7 +274,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_lecture_credit_units",
-                headerName: "Lecture Credits",
+                headerName: "Undergrad Lecture Credits",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -265,7 +285,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_total_credit_units",
-                headerName: "Total Credits",
+                headerName: "Undergrad Total Credits",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -275,7 +296,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_lab_hours_per_week",
-                headerName: "Lab Hrs/Week",
+                headerName: "Undergrad Lab Hrs/Week",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -285,7 +307,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_lecture_hours_per_week",
-                headerName: "Lecture Hrs/Week",
+                headerName: "Undergrad Lecture Hrs/Week",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -295,7 +318,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_total_hours_per_week",
-                headerName: "Total Hrs/Week",
+                headerName: "Undergrad Total Hrs/Week",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -305,7 +329,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_lab_contact_hours",
-                headerName: "Student Contact Lab",
+                headerName: "Undergrad Student Contact Lab",
+                minWidth: 180,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -315,7 +340,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_lecture_contact_hours",
-                headerName: "Student Contact Lecture",
+                headerName: "Undergrad Student Contact Lecture",
+                minWidth: 180,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -325,7 +351,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "undergrad_total_contact_hours",
-                headerName: "Total Contact Hrs",
+                headerName: "Undergrad Total Contact Hrs",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -335,7 +362,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "graduate_lab_credit_units",
-                headerName: "Lab Credits",
+                headerName: "Graduate Lab Credits",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -345,8 +373,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "graduate_lecture_credit_units",
-                headerName: "Lecture Credits",
-                flex: 1,
+                headerName: "Graduate Lecture Credits",
+                minWidth: 150,
                 editable: true,
                 type: "number",
                 sortable: false,
@@ -355,8 +383,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "graduate_total_credit_units",
-                headerName: "Total Credits",
-                flex: 1,
+                headerName: "Graduate Total Credits",
+                minWidth: 150,
                 editable: true,
                 type: "number",
                 sortable: false,
@@ -365,7 +393,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "graduate_lab_contact_hours",
-                headerName: "Student Contact Lab",
+                headerName: "Graduate Student Contact Lab",
+                minWidth: 180,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -375,7 +404,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "graduate_lecture_contact_hours",
-                headerName: "Student Contact Lecture",
+                headerName: "Graduate Student Contact Lecture",
+                minWidth: 180,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -385,7 +415,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "graduate_total_contact_hours",
-                headerName: "Total Contact Hrs",
+                headerName: "Graduate Total Contact Hrs",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -396,6 +427,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "research_load",
                 headerName: "Research Load",
+                minWidth: 100,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -405,7 +437,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "extension_services_load",
-                headerName: "Extension Services",
+                headerName: "Extension Services Load",
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -416,6 +449,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "study_load",
                 headerName: "Study Load",
+                minWidth: 100,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -426,7 +460,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "production_load",
                 headerName: "Production Load",
-                flex: 1,
+                minWidth: 100,
                 editable: true,
                 type: "number",
                 sortable: false,
@@ -435,7 +469,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             },
             {
                 field: "administrative_load",
-                headerName: "Admin Load",
+                headerName: "Administrative Load",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -446,6 +481,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "other_load_credits",
                 headerName: "Other Load Credits",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 type: "number",
@@ -456,7 +492,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             {
                 field: "total_work_load",
                 headerName: "Total Work Load",
-                flex: 1,
+                minWidth: 120,
                 editable: true,
                 type: "number",
                 sortable: false,
@@ -683,16 +719,9 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     }, [tabValue]);
 
     return (
-        <Box
-            sx={{
-                mt: 2,
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-            }}
-        >
+        <Box sx={{ mt: 2, position: "relative" }}>
             <Grid container spacing={1} sx={{ mb: 1 }}>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
                     <TextField
                         fullWidth
                         label="Search by Name"
@@ -703,7 +732,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         sx={{ "& .MuiInputBase-root": { fontSize: "0.85rem" } }}
                     />
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
                         <InputLabel sx={{ fontSize: "0.85rem" }}>
                             Faculty Rank
@@ -726,7 +755,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
                         <InputLabel sx={{ fontSize: "0.85rem" }}>
                             Home College
@@ -749,7 +778,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
                         <InputLabel sx={{ fontSize: "0.85rem" }}>
                             Gender
@@ -779,8 +808,18 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     borderRadius: 1,
                     display: "flex",
                     flexDirection: "column",
-                    height: { xs: "20vh", sm: "30vh", md: "50vh" },
-                    overflow: "hidden",
+                    height: {
+                        xs: "60vh",
+                        sm: "50vh",
+                        md: "50vh",
+                    },
+                    maxWidth: {
+                        xs: "100vw",
+                        sm: "95vw",
+                        md: "98vw",
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
                 }}
             >
                 <Tabs
@@ -804,12 +843,23 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     <Tab label="Other Loads" />
                 </Tabs>
 
-                <Box
+                <Paper
                     sx={{
-                        flex: 1,
+                        borderRadius: 1,
                         display: "flex",
                         flexDirection: "column",
-                        overflow: "hidden",
+                        height: {
+                            xs: "60vh",
+                            sm: "50vh",
+                            md: "50vh",
+                        },
+                        maxWidth: {
+                            xs: "100vw",
+                            sm: "95vw",
+                            md: "98vw",
+                        },
+                        overflowX: "auto",
+                        overflowY: "hidden",
                     }}
                 >
                     <DataGrid
@@ -827,12 +877,20 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                             border: 0,
                             "& .MuiDataGrid-root": {
                                 height: "100%",
-                                display: "flex",
+                                p: 1,
                                 flexDirection: "column",
+                                minWidth: "fit-content",
                             },
                             "& .MuiDataGrid-main": {
-                                flex: 1,
-                                overflow: "auto",
+                                overflowX: "auto",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                    height: "8px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                    backgroundColor: "rgba(0,0,0,0.2)",
+                                    borderRadius: "4px",
+                                },
                             },
                             "& .MuiDataGrid-footerContainer": {
                                 borderTop: 1,
@@ -841,20 +899,29 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                                 bottom: 0,
                                 backgroundColor: "background.paper",
                                 zIndex: 1,
+                                minWidth: "fit-content",
                             },
                             "& .MuiDataGrid-columnSeparator": {
-                                visibility: "visible",
-                                color: "rgba(0, 0, 0, 0.2)",
-                                pointerEvents: "none", // disable manual resize
-                                display: "none",
+                                visibility: "hidden",
                             },
                             "& .MuiDataGrid-cell": {
                                 borderRight: "1px solid",
                                 borderColor: "divider",
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                padding: "4px 8px",
                             },
                             "& .MuiDataGrid-columnHeader": {
                                 borderRight: "1px solid",
                                 borderColor: "divider",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "clip",
+                                padding: "4px 8px",
+                            },
+                            "& .MuiDataGrid-columnHeaderTitle": {
+                                whiteSpace: "nowrap",
+                                overflow: "visible",
                             },
                         }}
                         disableRowSelectionOnClick
@@ -863,7 +930,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         }}
                         pageSizeOptions={[10, 25, 50]}
                     />
-                </Box>
+                </Paper>
             </Paper>
 
             <Snackbar

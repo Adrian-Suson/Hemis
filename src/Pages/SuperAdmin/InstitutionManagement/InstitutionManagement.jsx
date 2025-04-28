@@ -343,7 +343,6 @@ const InstitutionManagement = () => {
                     {/* Breadcrumbs Skeleton */}
                     <Box
                         sx={{
-                            my: 2,
                             display: "flex",
                             alignItems: "center",
                         }}
@@ -378,9 +377,9 @@ const InstitutionManagement = () => {
                     <Skeleton variant="rounded" width="100%" height={400} />
                 </Box>
             ) : (
-                <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+                <Box sx={{ p: 2 }}>
                     {/* Header Section */}
-                    <Box sx={{ my: { xs: 1, sm: 2 } }}>
+                    <Box>
                         <Breadcrumbs
                             separator="›"
                             aria-label="breadcrumb"
@@ -422,9 +421,9 @@ const InstitutionManagement = () => {
                     >
                         <Grid container spacing={2}>
                             {/* Filters */}
-                            <Grid item size={12} lg={8}>
+                            <Grid size={12}>
                                 <Grid container spacing={1}>
-                                    <Grid item size={{ xs: 6, md: 3 }}>
+                                    <Grid size={{ xs: 6, md: 3 }}>
                                         <TextField
                                             label="Search"
                                             variant="outlined"
@@ -449,7 +448,7 @@ const InstitutionManagement = () => {
                                             }}
                                         />
                                     </Grid>
-                                    <Grid item size={{ xs: 6, md: 2 }}>
+                                    <Grid size={{ xs: 6, md: 1.5 }}>
                                         <FormControl
                                             variant="outlined"
                                             size="small"
@@ -457,6 +456,7 @@ const InstitutionManagement = () => {
                                         >
                                             <InputLabel
                                                 sx={{ fontSize: "0.75rem" }}
+                                                size="small"
                                             >
                                                 Type
                                             </InputLabel>
@@ -468,6 +468,7 @@ const InstitutionManagement = () => {
                                                     )
                                                 }
                                                 label="Type"
+                                                size="small"
                                                 sx={{
                                                     height: 40,
                                                     fontSize: "0.875rem",
@@ -498,7 +499,7 @@ const InstitutionManagement = () => {
                                             </Select>
                                         </FormControl>
                                     </Grid>
-                                    <Grid item size={{ xs: 6, md: 2 }}>
+                                    <Grid size={{ xs: 6, md: 2 }}>
                                         <FormControl
                                             variant="outlined"
                                             size="small"
@@ -506,6 +507,7 @@ const InstitutionManagement = () => {
                                         >
                                             <InputLabel
                                                 sx={{ fontSize: "0.75rem" }}
+                                                size="small"
                                             >
                                                 City
                                             </InputLabel>
@@ -517,6 +519,7 @@ const InstitutionManagement = () => {
                                                     )
                                                 }
                                                 label="City"
+                                                size="small"
                                                 sx={{
                                                     height: 40,
                                                     fontSize: "0.875rem",
@@ -547,8 +550,12 @@ const InstitutionManagement = () => {
                                             </Select>
                                         </FormControl>
                                     </Grid>
-                                    <Grid item size={{ xs: 6, md: 2 }}>
-                                        <FormControl fullWidth>
+                                    <Grid size={{ xs: 6, md: 2 }}>
+                                        <FormControl
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
+                                        >
                                             <InputLabel
                                                 sx={{ fontSize: "0.75rem" }}
                                             >
@@ -594,7 +601,7 @@ const InstitutionManagement = () => {
                                     </Grid>
 
                                     {/* Actions */}
-                                    <Grid item size={{ xs: 6, md: 1.5 }}>
+                                    <Grid size={{ xs: 6, md: 1.5 }}>
                                         <Button
                                             variant="outlined"
                                             startIcon={<AddIcon />}
@@ -610,7 +617,7 @@ const InstitutionManagement = () => {
                                             Add Institution
                                         </Button>
                                     </Grid>
-                                    <Grid item size={{ xs: 6, md: 1.5 }}>
+                                    <Grid size={{ xs: 6, md: 2 }}>
                                         <Button
                                             variant="contained"
                                             startIcon={<UploadIcon />}
