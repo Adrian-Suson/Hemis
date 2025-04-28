@@ -15,6 +15,7 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
+    DialogActions,
     Table,
     TableBody,
     TableCell,
@@ -22,11 +23,14 @@ import {
     TableRow,
     IconButton,
     ButtonGroup,
-    DialogActions,
     Paper,
     alpha,
     TextField,
     Grid,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -48,6 +52,7 @@ const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
     const [programs, setPrograms] = useState([]);
     const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
+    const [openFilterDialog, setOpenFilterDialog] = useState(false);
     const [mainTabValue, setMainTabValue] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -60,6 +65,10 @@ const CurricularProgram = () => {
         severity: "success",
     });
     const [searchQuery, setSearchQuery] = useState("");
+    const [filters, setFilters] = useState({
+        data_date: "",
+        category: "",
+    });
     const navigate = useNavigate();
     const theme = useTheme();
 
@@ -93,7 +102,7 @@ const CurricularProgram = () => {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { institution_id: institutionId },
             });
-
+            console.log("Fetched programs:", response.data);
             if (Array.isArray(response.data)) {
                 setPrograms(response.data);
             } else {
@@ -124,6 +133,19 @@ const CurricularProgram = () => {
             (program) => program.program_type === categories[mainTabValue]
         );
 
+        // Apply filters
+        if (filters.data_date) {
+            filtered = filtered.filter(
+                (program) => program.data_date === filters.data_date
+            );
+        }
+        if (filters.category) {
+            filtered = filtered.filter(
+                (program) => program.category === filters.category
+            );
+        }
+
+        // Apply search query
         if (searchQuery) {
             filtered = filtered.filter((program) =>
                 Object.values(program).some((value) =>
@@ -135,7 +157,20 @@ const CurricularProgram = () => {
         }
 
         return filtered;
-    }, [programs, mainTabValue, categories, searchQuery]);
+    }, [programs, mainTabValue, categories, searchQuery, filters]);
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleClearFilters = () => {
+        setFilters({
+            data_date: "",
+            category: "",
+        });
+        setOpenFilterDialog(false);
+    };
 
     const handleFileUpload = async () => {
         if (!selectedFile) {
@@ -180,7 +215,7 @@ const CurricularProgram = () => {
                     const sheet = workbook.Sheets[sheetName];
 
                     const sheetData = XLSX.utils.sheet_to_json(sheet, {
-                        header: 2,
+                        header: 1,
                         range: 11,
                     });
 
@@ -214,7 +249,7 @@ const CurricularProgram = () => {
                                 major_code: row[4] || null,
                                 category: row[5] || null,
                                 serial: String(row[6] || " "),
-                                year: String(row[7] || ""),
+                                Year: String(row[7] || ""),
                                 is_thesis_dissertation_required: row[8] || null,
                                 program_status: row[9] || null,
                                 calendar_use_code: row[10] || null,
@@ -265,10 +300,7 @@ const CurricularProgram = () => {
                         `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
                     );
                     allParsedData = [...allParsedData, ...parsedData];
-                    console.log(
-                        `Sheet ${sheetName}: Parsed data:`,
-                        parsedData
-                    );
+                    console.log(`Sheet ${sheetName}: Parsed data:`, parsedData);
                 }
 
                 if (allParsedData.length === 0) {
@@ -398,7 +430,7 @@ const CurricularProgram = () => {
                     row.getCell(5).value = program.major_code || null;
                     row.getCell(6).value = program.category || null;
                     row.getCell(7).value = program.serial || null;
-                    row.getCell(8).value = program.year || null;
+                    row.getCell(8).value = program.Year || null;
                     row.getCell(9).value =
                         program.is_thesis_dissertation_required || null;
                     row.getCell(10).value = program.program_status || null;
@@ -481,20 +513,20 @@ const CurricularProgram = () => {
             { code: "BR", label: "Board Resolution" },
         ],
         thesisDissertation: [
-            { code: 1, label: "Required" },
-            { code: 2, label: "Optional" },
-            { code: 3, label: "Not Required" },
+            { code: "1", label: "Required" },
+            { code: "2", label: "Optional" },
+            { code: "3", label: "Not Required" },
         ],
         programStatus: [
-            { code: 1, label: "Active" },
-            { code: 2, label: "Phased Out" },
-            { code: 3, label: "Abolished" },
+            { code: "1", label: "Active" },
+            { code: "2", label: "Phased Out" },
+            { code: "3", label: "Abolished" },
         ],
         calendar: [
-            { code: 1, label: "Sem" },
-            { code: 2, label: "Tri Sem" },
-            { code: 3, label: "Quarter Sem" },
-            { code: 4, label: "Distance Mode" },
+            { code: "1", label: "Sem" },
+            { code: "2", label: "Tri Sem" },
+            { code: "3", label: "Quarter Sem" },
+            { code: "4", label: "Distance Mode" },
         ],
     };
 
@@ -537,37 +569,93 @@ const CurricularProgram = () => {
                         display: "flex",
                         alignItems: "center",
                         gap: 2,
+                        flexWrap: "wrap",
                     }}
                 >
-                    <Grid container spacing={1} alignItems="center">
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label="Search"
-                                variant="outlined"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
-                                sx={{
-                                    "& .MuiInputBase-root": {
-                                        fontSize: "0.75rem",
-                                        height: "32px",
-                                    },
-                                    "& .MuiInputLabel-root": {
-                                        fontSize: "0.75rem",
-                                        transform:
-                                            "translate(14px, 8px) scale(1)",
-                                    },
-                                    "& .MuiInputLabel-shrink": {
-                                        transform:
-                                            "translate(14px, -6px) scale(0.75)",
-                                    },
-                                }}
-                            />
+                    <TextField
+                        fullWidth
+                        size="small"
+                        label="Search"
+                        variant="outlined"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search..."
+                        sx={{
+                            "& .MuiInputBase-root": {
+                                fontSize: "0.75rem",
+                                height: "32px",
+                            },
+                            "& .MuiInputLabel-root": {
+                                fontSize: "0.75rem",
+                                transform: "translate(14px, 8px) scale(1)",
+                            },
+                            "& .MuiInputLabel-shrink": {
+                                transform: "translate(14px, -6px) scale(0.75)",
+                            },
+                            maxWidth: "300px",
+                        }}
+                    />
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item size={6}>
+                            <FormControl fullWidth variant="outlined">
+                                <InputLabel>Data Date</InputLabel>
+                                <Select
+                                    name="data_date"
+                                    value={filters.data_date}
+                                    onChange={handleFilterChange}
+                                    label="Data Date"
+                                >
+                                    <MenuItem value="">
+                                        <em>All</em>
+                                    </MenuItem>
+                                    {[
+                                        ...new Set(
+                                            programs.map((p) => p.data_date)
+                                        ),
+                                    ]
+                                        .filter((date) => date)
+                                        .sort()
+                                        .map((date) => (
+                                            <MenuItem key={date} value={date}>
+                                                {date}
+                                            </MenuItem>
+                                        ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item size={6}>
+                            <FormControl fullWidth variant="outlined">
+                                <InputLabel>Category</InputLabel>
+                                <Select
+                                    name="category"
+                                    value={filters.category}
+                                    onChange={handleFilterChange}
+                                    label="Category"
+                                >
+                                    <MenuItem value="">
+                                        <em>All</em>
+                                    </MenuItem>
+                                    {[
+                                        ...new Set(
+                                            programs.map((p) => p.category)
+                                        ),
+                                    ]
+                                        .filter((category) => category)
+                                        .sort()
+                                        .map((category) => (
+                                            <MenuItem
+                                                key={category}
+                                                value={category}
+                                            >
+                                                {category}
+                                            </MenuItem>
+                                        ))}
+                                </Select>
+                            </FormControl>
                         </Grid>
                     </Grid>
-                    <ButtonGroup sx={{ flexShrink: 0 }}>
+
+                    <ButtonGroup sx={{ flexShrink: 0, ml: "auto" }}>
                         <Button
                             variant="contained"
                             color="secondary"
@@ -588,6 +676,90 @@ const CurricularProgram = () => {
                         </Button>
                     </ButtonGroup>
                 </Box>
+
+                <Dialog
+                    open={openFilterDialog}
+                    onClose={() => setOpenFilterDialog(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Filter Programs</DialogTitle>
+                    <DialogContent>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
+                            <Grid item xs={12}>
+                                <FormControl fullWidth variant="outlined">
+                                    <InputLabel>Data Date</InputLabel>
+                                    <Select
+                                        name="data_date"
+                                        value={filters.data_date}
+                                        onChange={handleFilterChange}
+                                        label="Data Date"
+                                    >
+                                        <MenuItem value="">
+                                            <em>All</em>
+                                        </MenuItem>
+                                        {[
+                                            ...new Set(
+                                                programs.map((p) => p.data_date)
+                                            ),
+                                        ]
+                                            .filter((date) => date)
+                                            .sort()
+                                            .map((date) => (
+                                                <MenuItem
+                                                    key={date}
+                                                    value={date}
+                                                >
+                                                    {date}
+                                                </MenuItem>
+                                            ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControl fullWidth variant="outlined">
+                                    <InputLabel>Category</InputLabel>
+                                    <Select
+                                        name="category"
+                                        value={filters.category}
+                                        onChange={handleFilterChange}
+                                        label="Category"
+                                    >
+                                        <MenuItem value="">
+                                            <em>All</em>
+                                        </MenuItem>
+                                        {[
+                                            ...new Set(
+                                                programs.map((p) => p.category)
+                                            ),
+                                        ]
+                                            .filter((category) => category)
+                                            .sort()
+                                            .map((category) => (
+                                                <MenuItem
+                                                    key={category}
+                                                    value={category}
+                                                >
+                                                    {category}
+                                                </MenuItem>
+                                            ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClearFilters} color="secondary">
+                            Clear
+                        </Button>
+                        <Button
+                            onClick={() => setOpenFilterDialog(false)}
+                            color="primary"
+                        >
+                            Apply
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 <Dialog
                     open={openUploadDialog}

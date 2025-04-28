@@ -21,10 +21,9 @@ import {
     useTheme,
     alpha,
     TextField,
-    Grid,
     useMediaQuery,
-    Container,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import {
     UploadFile as UploadIcon,
     Add as AddIcon,
@@ -340,365 +339,336 @@ const InstitutionManagement = () => {
     return (
         <Box>
             {loading ? (
-                <Container maxWidth="xl">
-                    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-                        {/* Breadcrumbs Skeleton */}
-                        <Box
-                            sx={{
-                                my: 2,
-                                display: "flex",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Skeleton variant="text" width={80} height={20} />
-                            <Typography sx={{ mx: 1 }}>›</Typography>
-                            <Skeleton variant="text" width={150} height={20} />
-                        </Box>
-                        {/* Button Skeleton */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: { xs: "column", sm: "row" },
-                                justifyContent: "flex-end",
-                                gap: 1,
-                                mb: 2,
-                            }}
-                        >
-                            <Skeleton
-                                variant="rounded"
-                                width={isXsScreen ? "100%" : 150}
-                                height={36}
-                            />
-                            <Skeleton
-                                variant="rounded"
-                                width={isXsScreen ? "100%" : 150}
-                                height={36}
-                            />
-                        </Box>
-
-                        {/* Table Skeleton */}
-                        <Skeleton variant="rounded" width="100%" height={400} />
+                <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+                    {/* Breadcrumbs Skeleton */}
+                    <Box
+                        sx={{
+                            my: 2,
+                            display: "flex",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Skeleton variant="text" width={80} height={20} />
+                        <Typography sx={{ mx: 1 }}>›</Typography>
+                        <Skeleton variant="text" width={150} height={20} />
                     </Box>
-                </Container>
-            ) : (
-                <Container maxWidth="xl">
-                    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-                        {/* Header Section */}
-                        <Box sx={{ my: { xs: 1, sm: 2 } }}>
-                            <Breadcrumbs
-                                separator="›"
-                                aria-label="breadcrumb"
-                                sx={{ mb: 1 }}
-                            >
-                                <Link
-                                    underline="hover"
-                                    color="inherit"
-                                    component={RouterLink}
-                                    to={
-                                        JSON.parse(localStorage.getItem("user"))
-                                            ?.role === "Super Admin"
-                                            ? "/super-admin/dashboard"
-                                            : JSON.parse(
-                                                  localStorage.getItem("user")
-                                              )?.role === "HEI Admin"
-                                            ? "/hei-admin/dashboard"
-                                            : "/hei-staff/dashboard"
-                                    }
-                                >
-                                    Dashboard
-                                </Link>
-                                <Typography color="text.primary">
-                                    Institution Management
-                                </Typography>
-                            </Breadcrumbs>
-                        </Box>
+                    {/* Button Skeleton */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: { xs: "column", sm: "row" },
+                            justifyContent: "flex-end",
+                            gap: 1,
+                            mb: 2,
+                        }}
+                    >
+                        <Skeleton
+                            variant="rounded"
+                            width={isXsScreen ? "100%" : 150}
+                            height={36}
+                        />
+                        <Skeleton
+                            variant="rounded"
+                            width={isXsScreen ? "100%" : 150}
+                            height={36}
+                        />
+                    </Box>
 
-                        {/* Filter Controls and Actions */}
-                        <Box
-                            sx={{
-                                p: { xs: 1, md: 2 },
-                                borderBottom: 1,
-                                borderColor: "divider",
-                                bgcolor: "grey.50",
-                                mb: 2,
-                                borderRadius: 1,
-                            }}
+                    {/* Table Skeleton */}
+                    <Skeleton variant="rounded" width="100%" height={400} />
+                </Box>
+            ) : (
+                <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+                    {/* Header Section */}
+                    <Box sx={{ my: { xs: 1, sm: 2 } }}>
+                        <Breadcrumbs
+                            separator="›"
+                            aria-label="breadcrumb"
+                            sx={{ mb: 1 }}
                         >
-                            <Grid container spacing={2}>
-                                {/* Filters */}
-                                <Grid item xs={12} lg={8}>
-                                    <Grid container spacing={1}>
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <TextField
-                                                label="Search"
-                                                variant="outlined"
-                                                size="small"
-                                                fullWidth
-                                                value={searchTerm}
+                            <Link
+                                underline="hover"
+                                color="inherit"
+                                component={RouterLink}
+                                to={
+                                    JSON.parse(localStorage.getItem("user"))
+                                        ?.role === "Super Admin"
+                                        ? "/super-admin/dashboard"
+                                        : JSON.parse(
+                                              localStorage.getItem("user")
+                                          )?.role === "HEI Admin"
+                                        ? "/hei-admin/dashboard"
+                                        : "/hei-staff/dashboard"
+                                }
+                            >
+                                Dashboard
+                            </Link>
+                            <Typography color="text.primary">
+                                Institution Management
+                            </Typography>
+                        </Breadcrumbs>
+                    </Box>
+
+                    {/* Filter Controls and Actions */}
+                    <Box
+                        sx={{
+                            p: { xs: 1, md: 2 },
+                            borderBottom: 1,
+                            borderColor: "divider",
+                            bgcolor: "grey.50",
+                            mb: 2,
+                            borderRadius: 1,
+                        }}
+                    >
+                        <Grid container spacing={2}>
+                            {/* Filters */}
+                            <Grid item size={12} lg={8}>
+                                <Grid container spacing={1}>
+                                    <Grid item size={{ xs: 6, md: 3 }}>
+                                        <TextField
+                                            label="Search"
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
+                                            value={searchTerm}
+                                            onChange={(e) =>
+                                                setSearchTerm(e.target.value)
+                                            }
+                                            sx={{
+                                                "& .MuiInputBase-root": {
+                                                    height: 40,
+                                                },
+                                            }}
+                                            InputProps={{
+                                                sx: {
+                                                    fontSize: "0.875rem",
+                                                },
+                                            }}
+                                            InputLabelProps={{
+                                                sx: { fontSize: "0.75rem" },
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item size={{ xs: 6, md: 2 }}>
+                                        <FormControl
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
+                                        >
+                                            <InputLabel
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                Type
+                                            </InputLabel>
+                                            <Select
+                                                value={typeFilter}
                                                 onChange={(e) =>
-                                                    setSearchTerm(
+                                                    setTypeFilter(
                                                         e.target.value
                                                     )
                                                 }
+                                                label="Type"
                                                 sx={{
-                                                    "& .MuiInputBase-root": {
-                                                        height: 40,
-                                                    },
+                                                    height: 40,
+                                                    fontSize: "0.875rem",
                                                 }}
-                                                InputProps={{
-                                                    sx: {
-                                                        fontSize: "0.875rem",
-                                                    },
-                                                }}
-                                                InputLabelProps={{
-                                                    sx: { fontSize: "0.75rem" },
-                                                }}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <FormControl
-                                                variant="outlined"
-                                                size="small"
-                                                fullWidth
                                             >
-                                                <InputLabel
-                                                    sx={{ fontSize: "0.75rem" }}
-                                                >
-                                                    Type
-                                                </InputLabel>
-                                                <Select
-                                                    value={typeFilter}
-                                                    onChange={(e) =>
-                                                        setTypeFilter(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    label="Type"
+                                                <MenuItem
+                                                    value=""
                                                     sx={{
-                                                        height: 40,
                                                         fontSize: "0.875rem",
                                                     }}
                                                 >
-                                                    <MenuItem
-                                                        value=""
-                                                        sx={{
-                                                            fontSize:
-                                                                "0.875rem",
-                                                        }}
-                                                    >
-                                                        All Types
-                                                    </MenuItem>
-                                                    {filterOptions.types.map(
-                                                        (type) => (
-                                                            <MenuItem
-                                                                key={type}
-                                                                value={type}
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                {type}
-                                                            </MenuItem>
-                                                        )
-                                                    )}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <FormControl
-                                                variant="outlined"
-                                                size="small"
-                                                fullWidth
-                                            >
-                                                <InputLabel
-                                                    sx={{ fontSize: "0.75rem" }}
-                                                >
-                                                    City
-                                                </InputLabel>
-                                                <Select
-                                                    value={cityFilter}
-                                                    onChange={(e) =>
-                                                        setCityFilter(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    label="City"
-                                                    sx={{
-                                                        height: 40,
-                                                        fontSize: "0.875rem",
-                                                    }}
-                                                >
-                                                    <MenuItem
-                                                        value=""
-                                                        sx={{
-                                                            fontSize:
-                                                                "0.875rem",
-                                                        }}
-                                                    >
-                                                        All Cities
-                                                    </MenuItem>
-                                                    {filterOptions.cities.map(
-                                                        (city) => (
-                                                            <MenuItem
-                                                                key={city}
-                                                                value={city}
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                {city}
-                                                            </MenuItem>
-                                                        )
-                                                    )}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <FormControl
-                                                variant="outlined"
-                                                size="small"
-                                                fullWidth
-                                            >
-                                                <InputLabel
-                                                    sx={{ fontSize: "0.75rem" }}
-                                                >
-                                                    Province
-                                                </InputLabel>
-                                                <Select
-                                                    value={provinceFilter}
-                                                    onChange={(e) =>
-                                                        setProvinceFilter(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    label="Province"
-                                                    sx={{
-                                                        height: 40,
-                                                        fontSize: "0.875rem",
-                                                    }}
-                                                >
-                                                    <MenuItem
-                                                        value=""
-                                                        sx={{
-                                                            fontSize:
-                                                                "0.875rem",
-                                                        }}
-                                                    >
-                                                        All Provinces
-                                                    </MenuItem>
-                                                    {filterOptions.provinces.map(
-                                                        (province) => (
-                                                            <MenuItem
-                                                                key={province}
-                                                                value={province}
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                {province}
-                                                            </MenuItem>
-                                                        )
-                                                    )}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
+                                                    All Types
+                                                </MenuItem>
+                                                {filterOptions.types.map(
+                                                    (type) => (
+                                                        <MenuItem
+                                                            key={type}
+                                                            value={type}
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            {type}
+                                                        </MenuItem>
+                                                    )
+                                                )}
+                                            </Select>
+                                        </FormControl>
                                     </Grid>
-                                </Grid>
-
-                                {/* Actions */}
-                                <Grid item xs={12} lg={4}>
-                                    <Grid
-                                        container
-                                        spacing={1}
-                                        justifyContent={{
-                                            xs: "flex-start",
-                                            sm: "flex-end",
-                                        }}
-                                        sx={{
-                                            height: "100%",
-                                            alignItems: "center",
-                                        }}
-                                    >
-                                        <Grid item xs={12} sm={6} md={6}>
-                                            <Button
-                                                variant="outlined"
-                                                startIcon={<AddIcon />}
-                                                onClick={handleManualAdd}
-                                                fullWidth
+                                    <Grid item size={{ xs: 6, md: 2 }}>
+                                        <FormControl
+                                            variant="outlined"
+                                            size="small"
+                                            fullWidth
+                                        >
+                                            <InputLabel
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                City
+                                            </InputLabel>
+                                            <Select
+                                                value={cityFilter}
+                                                onChange={(e) =>
+                                                    setCityFilter(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                label="City"
                                                 sx={{
-                                                    borderRadius: 1.5,
-                                                    textTransform: "none",
-                                                    fontWeight: 500,
-                                                    py: 1,
+                                                    height: 40,
+                                                    fontSize: "0.875rem",
                                                 }}
                                             >
-                                                Add Institution
-                                            </Button>
-                                        </Grid>
-                                        <Grid item xs={12} sm={6} md={6}>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<UploadIcon />}
-                                                onClick={() =>
-                                                    setOpenUploadDialog(true)
+                                                <MenuItem
+                                                    value=""
+                                                    sx={{
+                                                        fontSize: "0.875rem",
+                                                    }}
+                                                >
+                                                    All Cities
+                                                </MenuItem>
+                                                {filterOptions.cities.map(
+                                                    (city) => (
+                                                        <MenuItem
+                                                            key={city}
+                                                            value={city}
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            {city}
+                                                        </MenuItem>
+                                                    )
+                                                )}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item size={{ xs: 6, md: 2 }}>
+                                        <FormControl fullWidth>
+                                            <InputLabel
+                                                sx={{ fontSize: "0.75rem" }}
+                                            >
+                                                Province
+                                            </InputLabel>
+                                            <Select
+                                                value={provinceFilter}
+                                                onChange={(e) =>
+                                                    setProvinceFilter(
+                                                        e.target.value
+                                                    )
                                                 }
-                                                fullWidth
+                                                label="Province"
                                                 sx={{
-                                                    borderRadius: 1.5,
+                                                    height: 40,
+                                                    fontSize: "0.875rem",
+                                                }}
+                                            >
+                                                <MenuItem
+                                                    value=""
+                                                    sx={{
+                                                        fontSize: "0.875rem",
+                                                    }}
+                                                >
+                                                    All Provinces
+                                                </MenuItem>
+                                                {filterOptions.provinces.map(
+                                                    (province) => (
+                                                        <MenuItem
+                                                            key={province}
+                                                            value={province}
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            {province}
+                                                        </MenuItem>
+                                                    )
+                                                )}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    {/* Actions */}
+                                    <Grid item size={{ xs: 6, md: 1.5 }}>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<AddIcon />}
+                                            onClick={handleManualAdd}
+                                            fullWidth
+                                            sx={{
+                                                borderRadius: 1.5,
+                                                textTransform: "none",
+                                                fontWeight: 500,
+                                                py: 1,
+                                            }}
+                                        >
+                                            Add Institution
+                                        </Button>
+                                    </Grid>
+                                    <Grid item size={{ xs: 6, md: 1.5 }}>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<UploadIcon />}
+                                            onClick={() =>
+                                                setOpenUploadDialog(true)
+                                            }
+                                            fullWidth
+                                            sx={{
+                                                borderRadius: 1.5,
+                                                bgcolor:
+                                                    theme.palette.primary.main,
+                                                color: "white",
+                                                "&:hover": {
                                                     bgcolor:
                                                         theme.palette.primary
-                                                            .main,
-                                                    color: "white",
-                                                    "&:hover": {
-                                                        bgcolor:
-                                                            theme.palette
-                                                                .primary.dark,
-                                                    },
-                                                    textTransform: "none",
-                                                    fontWeight: 500,
-                                                    py: 1,
-                                                }}
-                                            >
-                                                Upload Form A
-                                            </Button>
-                                        </Grid>
+                                                            .dark,
+                                                },
+                                                textTransform: "none",
+                                                fontWeight: 500,
+                                                py: 1,
+                                            }}
+                                        >
+                                            Upload Form A
+                                        </Button>
                                     </Grid>
                                 </Grid>
                             </Grid>
-                        </Box>
-
-                        {/* Table Section */}
-                        <Box>
-                            <InstitutionTable
-                                institutions={institutions}
-                                setSnackbarMessage={setSnackbarMessage}
-                                fetchInstitutions={fetchInstitutions}
-                                setSnackbarSeverity={setSnackbarSeverity}
-                                setSnackbarOpen={setSnackbarOpen}
-                                searchTerm={searchTerm}
-                                typeFilter={typeFilter}
-                                cityFilter={cityFilter}
-                                provinceFilter={provinceFilter}
-                                onEdit={(updatedInstitution) => {
-                                    // Update the institution in the local state
-                                    setInstitutions((prev) =>
-                                        prev.map((inst) =>
-                                            inst.id === updatedInstitution.id
-                                                ? {
-                                                      ...inst,
-                                                      ...updatedInstitution,
-                                                  }
-                                                : inst
-                                        )
-                                    );
-                                }}
-                            />
-                        </Box>
+                        </Grid>
                     </Box>
-                </Container>
+
+                    {/* Table Section */}
+                    <Box>
+                        <InstitutionTable
+                            institutions={institutions}
+                            setSnackbarMessage={setSnackbarMessage}
+                            fetchInstitutions={fetchInstitutions}
+                            setSnackbarSeverity={setSnackbarSeverity}
+                            setSnackbarOpen={setSnackbarOpen}
+                            searchTerm={searchTerm}
+                            typeFilter={typeFilter}
+                            cityFilter={cityFilter}
+                            provinceFilter={provinceFilter}
+                            onEdit={(updatedInstitution) => {
+                                // Update the institution in the local state
+                                setInstitutions((prev) =>
+                                    prev.map((inst) =>
+                                        inst.id === updatedInstitution.id
+                                            ? {
+                                                  ...inst,
+                                                  ...updatedInstitution,
+                                              }
+                                            : inst
+                                    )
+                                );
+                            }}
+                        />
+                    </Box>
+                </Box>
             )}
 
             {/* Upload Dialog */}

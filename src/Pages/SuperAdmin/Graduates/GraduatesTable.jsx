@@ -1,7 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import PropTypes from "prop-types";
-import { HotTable } from "@handsontable/react";
-import "handsontable/dist/handsontable.full.min.css";
 import {
     Box,
     Paper,
@@ -12,6 +10,7 @@ import {
     Typography,
     Pagination,
 } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 
 const ROWS_PER_PAGE_OPTIONS = [
     { label: "10", value: 10 },
@@ -22,135 +21,289 @@ const ROWS_PER_PAGE_OPTIONS = [
 ];
 
 const GraduatesTable = ({ graduates }) => {
-    const [page, setPage] = useState(0); // State for current page
-    const [rowsPerPage, setRowsPerPage] = useState(10); // State for rows per page
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     // Handle page change
     const handleChangePage = (event, newPage) => {
-        setPage(newPage);
+        setPage(newPage - 1);
     };
 
     // Handle rows per page change
     const handleChangeRowsPerPage = (event) => {
         const newRowsPerPage = event.target.value;
         setRowsPerPage(newRowsPerPage);
-        setPage(0); // Reset to first page when rows per page changes
+        setPage(0);
     };
 
-    // Paginate the graduates data
-    const paginatedData = useMemo(() => {
-        if (rowsPerPage === -1) {
-            return graduates; // Show all rows if "All" is selected
-        }
-        const startIndex = page * rowsPerPage;
-        const endIndex = startIndex + rowsPerPage;
-        return graduates.slice(startIndex, endIndex);
-    }, [graduates, page, rowsPerPage]);
-
-    const hotSettings = {
-        data: paginatedData,
-        columns: [
-            { data: "student_id", title: "Student ID" },
-            { data: "last_name", title: "Last Name" },
-            { data: "first_name", title: "First Name" },
-            { data: "middle_name", title: "Middle Name" },
-            { data: "sex", title: "Sex" },
-            {
-                data: "date_of_birth",
-                title: "Date of Birth",
-            },
-            {
-                data: "date_graduated",
-                title: "Date Graduated",
-            },
-            { data: "program_name", title: "Program Name" },
-            { data: "program_major", title: "Program Major" },
-            {
-                data: "program_authority_to_operate_graduate",
-                title: "Program Authority",
-            },
-            { data: "year_granted", title: "Year Granted", type: "numeric" },
-        ],
-        colHeaders: true,
-        rowHeaders: true,
-        stretchH: "all",
-        height: "450",
-        licenseKey: "non-commercial-and-evaluation",
-    };
+    // Column definitions for DataGrid
+    const columns = [
+        {
+            field: "student_id",
+            headerName: "Student ID",
+            minWidth: 120,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "last_name",
+            headerName: "Last Name",
+            minWidth: 150,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "first_name",
+            headerName: "First Name",
+            minWidth: 150,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "middle_name",
+            headerName: "Middle Name",
+            minWidth: 150,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "sex",
+            headerName: "Sex",
+            minWidth: 80,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "date_of_birth",
+            headerName: "Date of Birth",
+            minWidth: 120,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "date_graduated",
+            headerName: "Date Graduated",
+            minWidth: 120,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "program_name",
+            headerName: "Program Name",
+            minWidth: 300,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "program_major",
+            headerName: "Program Major",
+            minWidth: 230,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "program_authority_to_operate_graduate",
+            headerName: "Program Authority",
+            minWidth: 200,
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+        {
+            field: "year_granted",
+            headerName: "Year Granted",
+            minWidth: 150,
+            type: "number",
+            align: "center",
+            headerAlign: "center",
+            renderCell: (params) =>
+                params.value !== null && params.value !== undefined
+                    ? params.value
+                    : "-",
+        },
+    ];
 
     return (
         <Box sx={{ mb: 2 }}>
-            <Paper sx={{ maxHeight: "50vh", overflowX: "auto" }}>
-                <HotTable settings={hotSettings} />
-
-                {/* Pagination Controls */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        position: "sticky",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 1,
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        p: 1,
-                        borderTop: 1,
-                        borderColor: "divider",
-                        bgcolor: "grey.50",
+            <Paper
+                sx={{
+                    borderRadius: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    height: {
+                        xs: "60vh",
+                        sm: "50vh",
+                        md: "50vh",
+                    },
+                    maxWidth: {
+                        xs: "100vw",
+                        sm: "90vw",
+                        md: "95vw",
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
+                }}
+            >
+                <DataGrid
+                    rows={graduates}
+                    columns={columns}
+                    getRowId={(row) => row.student_id}
+                    pagination
+                    paginationModel={{ page, pageSize: rowsPerPage }}
+                    onPaginationModelChange={(newModel) => {
+                        setPage(newModel.page);
+                        setRowsPerPage(newModel.pageSize);
                     }}
-                >
-                    <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
-                        <InputLabel sx={{ fontSize: "0.75rem" }}>
-                            Rows
-                        </InputLabel>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={handleChangeRowsPerPage}
-                            label="Rows"
-                            sx={{ height: 32, fontSize: "0.875rem" }}
-                        >
-                            {ROWS_PER_PAGE_OPTIONS.map((option) => (
-                                <MenuItem
-                                    key={option.value}
-                                    value={option.value}
-                                    sx={{ fontSize: "0.875rem" }}
-                                >
-                                    {option.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mr: 1, fontSize: "0.75rem" }}
-                    >
-                        {graduates.length === 0
-                            ? "0-0"
-                            : `${page * rowsPerPage + 1}-${Math.min(
-                                  (page + 1) * rowsPerPage,
-                                  graduates.length
-                              )}`}{" "}
-                        of {graduates.length}
-                    </Typography>
-                    <Pagination
-                        count={Math.ceil(graduates.length / rowsPerPage) || 1}
-                        page={page + 1}
-                        onChange={(_, value) =>
-                            handleChangePage(null, value - 1)
-                        }
-                        size="small"
-                        color="primary"
-                        showFirstButton
-                        showLastButton
-                        sx={{
-                            "& .MuiPaginationItem-root": {
-                                fontSize: "0.75rem",
+                    pageSizeOptions={ROWS_PER_PAGE_OPTIONS.map(
+                        (option) => option.value
+                    )}
+                    disableRowSelectionOnClick
+                    disableColumnFilter
+                    disableColumnMenu
+                    disableColumnSorting
+                    density="compact"
+                    sx={{
+                        border: 0,
+                        "& .MuiDataGrid-root": {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            minWidth: "fit-content",
+                        },
+                        "& .MuiDataGrid-main": {
+                            flex: 1,
+                            overflowX: "auto",
+                            overflowY: "auto",
+                            "&::-webkit-scrollbar": {
+                                height: "8px",
                             },
-                        }}
-                    />
-                </Box>
+                            "&::-webkit-scrollbar-thumb": {
+                                backgroundColor: "rgba(0,0,0,0.2)",
+                                borderRadius: "4px",
+                            },
+                        },
+                        "& .MuiDataGrid-footerContainer": {
+                            borderTop: 1,
+                            borderColor: "divider",
+                            position: "sticky",
+                            bottom: 0,
+                            backgroundColor: "background.paper",
+                            zIndex: 1,
+                            minWidth: "fit-content",
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                        },
+                        "& .MuiDataGrid-columnSeparator": {
+                            visibility: "hidden",
+                        },
+                        "& .MuiDataGrid-cell": {
+                            borderRight: "1px solid",
+                            borderColor: "divider",
+                            whiteSpace: "normal",
+                            wordWrap: "break-word",
+                            padding: "4px 8px",
+                        },
+                        "& .MuiDataGrid-columnHeader": {
+                            borderRight: "1px solid",
+                            borderColor: "divider",
+                            whiteSpace: "normal",
+                            wordWrap: "break-word",
+                            padding: "4px 8px",
+                        },
+                    }}
+                    slots={{
+                        pagination: () => (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                    alignItems: "center",
+                                    p: 1,
+                                    bgcolor: "grey.50",
+                                }}
+                            >
+                                <FormControl
+                                    size="small"
+                                    sx={{ minWidth: 80, mr: 1 }}
+                                >
+                                    <InputLabel sx={{ fontSize: "0.75rem" }}>
+                                        Rows
+                                    </InputLabel>
+                                    <Select
+                                        value={rowsPerPage}
+                                        onChange={handleChangeRowsPerPage}
+                                        label="Rows"
+                                        sx={{
+                                            height: 32,
+                                            fontSize: "0.875rem",
+                                        }}
+                                    >
+                                        {ROWS_PER_PAGE_OPTIONS.map((option) => (
+                                            <MenuItem
+                                                key={option.value}
+                                                value={option.value}
+                                                sx={{ fontSize: "0.875rem" }}
+                                            >
+                                                {option.label}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mr: 1, fontSize: "0.75rem" }}
+                                >
+                                    {graduates.length === 0
+                                        ? "0-0"
+                                        : `${page * rowsPerPage + 1}-${Math.min(
+                                              (page + 1) * rowsPerPage,
+                                              graduates.length
+                                          )}`}{" "}
+                                    of {graduates.length}
+                                </Typography>
+                                <Pagination
+                                    count={
+                                        Math.ceil(
+                                            graduates.length / rowsPerPage
+                                        ) || 1
+                                    }
+                                    page={page + 1}
+                                    onChange={handleChangePage}
+                                    size="small"
+                                    color="primary"
+                                    showFirstButton
+                                    showLastButton
+                                    sx={{
+                                        "& .MuiPaginationItem-root": {
+                                            fontSize: "0.75rem",
+                                        },
+                                    }}
+                                />
+                            </Box>
+                        ),
+                    }}
+                />
             </Paper>
         </Box>
     );

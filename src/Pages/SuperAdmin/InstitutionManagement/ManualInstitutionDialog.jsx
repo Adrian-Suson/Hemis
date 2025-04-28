@@ -1,4 +1,5 @@
 import { useState } from "react";
+import moment from "moment";
 import {
     Dialog,
     DialogTitle,
@@ -23,7 +24,7 @@ import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import config from "../../../utils/config";
 
 function ManualInstitutionDialog({
@@ -61,7 +62,6 @@ function ManualInstitutionDialog({
     });
 
     const [formErrors, setFormErrors] = useState({});
-    const currentYear = new Date().getFullYear(); // Get the current year
 
     const handleChange = (e) => {
         setManualData((prev) => ({
@@ -73,7 +73,7 @@ function ManualInstitutionDialog({
     const handleYearChange = (field, value) => {
         setManualData((prev) => ({
             ...prev,
-            [field]: value ? value.getFullYear() : null,
+            [field]: value ? value.year() : null, // Extract year from Moment object
         }));
     };
 
@@ -138,7 +138,8 @@ function ManualInstitutionDialog({
             const token = localStorage.getItem("token");
             const payload = {
                 ...manualData,
-                institution_type: manualData.institution_type || getInstitutionType(),
+                institution_type:
+                    manualData.institution_type || getInstitutionType(),
             };
 
             const response = await axios.post(
@@ -220,7 +221,7 @@ function ManualInstitutionDialog({
                         Basic Information
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                        <Grid item size={{ xs: 12 }}>
                             <TextField
                                 name="name"
                                 size="small"
@@ -234,7 +235,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.name}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 name="region"
                                 size="small"
@@ -247,7 +248,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.region}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 name="sec_registration"
                                 size="small"
@@ -260,7 +261,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.sec_registration}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
                             <FormControl
                                 fullWidth
                                 variant="outlined"
@@ -310,7 +311,7 @@ function ManualInstitutionDialog({
                         Address Information
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                        <Grid item size={{ xs: 12 }}>
                             <TextField
                                 name="address_street"
                                 size="small"
@@ -323,7 +324,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.address_street}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 name="municipality_city"
                                 size="small"
@@ -336,7 +337,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.municipality_city}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 name="province"
                                 size="small"
@@ -349,7 +350,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.province}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item size={{ xs: 12, sm: 4 }}>
                             <TextField
                                 name="postal_code"
                                 size="small"
@@ -378,7 +379,7 @@ function ManualInstitutionDialog({
                         Contact Information
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="institutional_telephone"
                                 size="small"
@@ -391,7 +392,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.institutional_telephone}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="institutional_fax"
                                 size="small"
@@ -404,7 +405,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.institutional_fax}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="institutional_email"
                                 size="small"
@@ -417,7 +418,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.institutional_email}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="institutional_website"
                                 size="small"
@@ -446,7 +447,7 @@ function ManualInstitutionDialog({
                         Head of Institution
                     </Typography>
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="head_name"
                                 size="small"
@@ -459,7 +460,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.head_name}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="head_telephone"
                                 size="small"
@@ -472,7 +473,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.head_telephone}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="head_title"
                                 size="small"
@@ -485,7 +486,7 @@ function ManualInstitutionDialog({
                                 helperText={formErrors.head_title}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="head_education"
                                 size="small"
@@ -515,25 +516,24 @@ function ManualInstitutionDialog({
                     </Typography>
                     <LocalizationProvider dateAdapter={AdapterMoment}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6} md={3}>
+                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                                 <DatePicker
                                     views={["year"]}
                                     label="Year Established"
                                     value={
                                         manualData.year_established
-                                            ? new Date(
-                                                  manualData.year_established,
-                                                  0
+                                            ? moment().year(
+                                                  manualData.year_established
                                               )
                                             : null
-                                    }
+                                    } // Use Moment object
                                     onChange={(value) =>
                                         handleYearChange(
                                             "year_established",
                                             value
                                         )
                                     }
-                                    maxDate={new Date(currentYear, 11, 31)} // Restrict to current year or earlier
+                                    maxDate={moment()} // Restrict to current year or earlier
                                     slotProps={{
                                         textField: {
                                             size: "small",
@@ -545,93 +545,87 @@ function ManualInstitutionDialog({
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
+                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                                 <DatePicker
                                     views={["year"]}
                                     label="Year Approved"
                                     value={
                                         manualData.year_granted_approved
-                                            ? new Date(
-                                                  manualData.year_granted_approved,
-                                                  0
+                                            ? moment().year(
+                                                  manualData.year_granted_approved
                                               )
                                             : null
-                                    }
+                                    } // Use Moment object
                                     onChange={(value) =>
                                         handleYearChange(
                                             "year_granted_approved",
                                             value
                                         )
                                     }
-                                    maxDate={new Date(currentYear, 11, 31)} // Restrict to current year or earlier
+                                    maxDate={moment()} // Restrict to current year or earlier
                                     slotProps={{
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error:
-                                                !!formErrors.year_granted_approved,
+                                            error: !!formErrors.year_granted_approved,
                                             helperText:
                                                 formErrors.year_granted_approved,
                                         },
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
+                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                                 <DatePicker
                                     views={["year"]}
                                     label="Year → College"
                                     value={
                                         manualData.year_converted_college
-                                            ? new Date(
-                                                  manualData.year_converted_college,
-                                                  0
+                                            ? moment().year(
+                                                  manualData.year_converted_college
                                               )
                                             : null
-                                    }
+                                    } // Use Moment object
                                     onChange={(value) =>
                                         handleYearChange(
                                             "year_converted_college",
                                             value
                                         )
                                     }
-                                    maxDate={new Date(currentYear, 11, 31)} // Restrict to current year or earlier
+                                    maxDate={moment()} // Restrict to current year or earlier
                                     slotProps={{
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error:
-                                                !!formErrors.year_converted_college,
+                                            error: !!formErrors.year_converted_college,
                                             helperText:
                                                 formErrors.year_converted_college,
                                         },
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
+                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                                 <DatePicker
                                     views={["year"]}
                                     label="Year → University"
                                     value={
                                         manualData.year_converted_university
-                                            ? new Date(
-                                                  manualData.year_converted_university,
-                                                  0
+                                            ? moment().year(
+                                                  manualData.year_converted_university
                                               )
                                             : null
-                                    }
+                                    } // Use Moment object
                                     onChange={(value) =>
                                         handleYearChange(
                                             "year_converted_university",
                                             value
                                         )
                                     }
-                                    maxDate={new Date(currentYear, 11, 31)} // Restrict to current year or earlier
+                                    maxDate={moment()} // Restrict to current year or earlier
                                     slotProps={{
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error:
-                                                !!formErrors.year_converted_university,
+                                            error: !!formErrors.year_converted_university,
                                             helperText:
                                                 formErrors.year_converted_university,
                                         },

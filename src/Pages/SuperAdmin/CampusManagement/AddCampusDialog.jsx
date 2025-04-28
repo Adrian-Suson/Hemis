@@ -22,80 +22,79 @@ import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
 
 const region9Options = [
-        "Baliguian",
-        "Godod",
-        "Gutalac",
-        "Jose Dalman",
-        "Kalawit",
-        "Katipunan",
-        "La Libertad",
-        "Labason",
-        "Leon B. Postigo",
-        "Liloy",
-        "Manukan",
-        "Mutia",
-        "Piñan",
-        "Polanco",
-        "Pres. Manuel A. Roxas",
-        "Rizal",
-        "Salug",
-        "Sergio Osmeña Sr.",
-        "Siayan",
-        "Sibuco",
-        "Sibutad",
-        "Sindangan",
-        "Siocon",
-        "Sirawai",
-        "Tampilisan",
-        "Dapitan City",
-        "Dipolog City",
-        "Aurora",
-        "Bayog",
-        "Dimataling",
-        "Dinas",
-        "Dumalinao",
-        "Dumingag",
-        "Guipos",
-        "Josefina",
-        "Kumalarang",
-        "Labangan",
-        "Lakewood",
-        "Lapuyan",
-        "Mahayag",
-        "Margosatubig",
-        "Midsalip",
-        "Molave",
-        "Pitogo",
-        "Ramon Magsaysay",
-        "San Miguel",
-        "San Pablo",
-        "Sominot",
-        "Tabina",
-        "Tambulig",
-        "Tigbao",
-        "Tukuran",
-        "Vincenzo A. Sagun",
-        "Pagadian City",
-        "Alicia",
-        "Buug",
-        "Diplahan",
-        "Imelda",
-        "Ipil",
-        "Kabasalan",
-        "Mabuhay",
-        "Malangas",
-        "Naga",
-        "Olutanga",
-        "Payao",
-        "Roseller T. Lim",
-        "Siay",
-        "Talusan",
-        "Titay",
-        "Tungawan",
-        "Zamboanga City",
-        "Isabela City",
-    ];
-
+    "Baliguian",
+    "Godod",
+    "Gutalac",
+    "Jose Dalman",
+    "Kalawit",
+    "Katipunan",
+    "La Libertad",
+    "Labason",
+    "Leon B. Postigo",
+    "Liloy",
+    "Manukan",
+    "Mutia",
+    "Piñan",
+    "Polanco",
+    "Pres. Manuel A. Roxas",
+    "Rizal",
+    "Salug",
+    "Sergio Osmeña Sr.",
+    "Siayan",
+    "Sibuco",
+    "Sibutad",
+    "Sindangan",
+    "Siocon",
+    "Sirawai",
+    "Tampilisan",
+    "Dapitan City",
+    "Dipolog City",
+    "Aurora",
+    "Bayog",
+    "Dimataling",
+    "Dinas",
+    "Dumalinao",
+    "Dumingag",
+    "Guipos",
+    "Josefina",
+    "Kumalarang",
+    "Labangan",
+    "Lakewood",
+    "Lapuyan",
+    "Mahayag",
+    "Margosatubig",
+    "Midsalip",
+    "Molave",
+    "Pitogo",
+    "Ramon Magsaysay",
+    "San Miguel",
+    "San Pablo",
+    "Sominot",
+    "Tabina",
+    "Tambulig",
+    "Tigbao",
+    "Tukuran",
+    "Vincenzo A. Sagun",
+    "Pagadian City",
+    "Alicia",
+    "Buug",
+    "Diplahan",
+    "Imelda",
+    "Ipil",
+    "Kabasalan",
+    "Mabuhay",
+    "Malangas",
+    "Naga",
+    "Olutanga",
+    "Payao",
+    "Roseller T. Lim",
+    "Siay",
+    "Talusan",
+    "Titay",
+    "Tungawan",
+    "Zamboanga City",
+    "Isabela City",
+];
 
 const AddCampusDialog = ({
     open,
@@ -129,10 +128,6 @@ const AddCampusDialog = ({
     const [errors, setErrors] = useState({});
 
     const currentYear = 2025;
-    const years = Array.from(
-        new Array(100),
-        (val, index) => currentYear - index
-    );
 
     const validateForm = () => {
         const newErrors = {};
@@ -365,11 +360,12 @@ const AddCampusDialog = ({
             <DialogTitle>Add New Campus</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={12}>
                         <TextField
                             margin="dense"
                             name="suc_name"
                             label="Campus Name"
+                            type="text"
                             fullWidth
                             required
                             value={newCampus.suc_name}
@@ -378,7 +374,36 @@ const AddCampusDialog = ({
                             helperText={errors.suc_name}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
+                        <TextField
+                            margin="dense"
+                            name="institutional_code"
+                            label="Code"
+                            type="text"
+                            fullWidth
+                            required
+                            value={newCampus.institutional_code}
+                            onChange={handleInputChange}
+                            error={!!errors.institutional_code}
+                            helperText={errors.institutional_code}
+                        />
+                    </Grid>
+                    <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
+                        <TextField
+                            margin="dense"
+                            name="region"
+                            label="Region"
+                            type="text"
+                            fullWidth
+                            required
+                            value={newCampus.region}
+                            onChange={handleInputChange}
+                            error={!!errors.region}
+                            helperText={errors.region}
+                        />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
                         <FormControl
                             fullWidth
                             margin="dense"
@@ -406,33 +431,20 @@ const AddCampusDialog = ({
                             )}
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={12}>
                         <TextField
                             margin="dense"
-                            name="institutional_code"
-                            label="Code"
+                            name="former_name"
+                            label="Former Name"
+                            type="text"
                             fullWidth
-                            required
-                            value={newCampus.institutional_code}
+                            value={newCampus.former_name}
                             onChange={handleInputChange}
-                            error={!!errors.institutional_code}
-                            helperText={errors.institutional_code}
+                            error={!!errors.former_name}
+                            helperText={errors.former_name}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            margin="dense"
-                            name="region"
-                            label="Region"
-                            fullWidth
-                            required
-                            value={newCampus.region}
-                            onChange={handleInputChange}
-                            error={!!errors.region}
-                            helperText={errors.region}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
                         <Autocomplete
                             options={region9Options}
                             value={newCampus.municipality_city_province || ""}
@@ -459,64 +471,57 @@ const AddCampusDialog = ({
                             )}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
                         <TextField
                             margin="dense"
-                            name="former_name"
-                            label="Former Name"
-                            fullWidth
-                            value={newCampus.former_name}
-                            onChange={handleInputChange}
-                            error={!!errors.former_name}
-                            helperText={errors.former_name}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <FormControl
-                            fullWidth
-                            margin="dense"
-                            error={!!errors.year_first_operation}
-                        >
-                            <InputLabel id="year-first-operation-label">
-                                Established
-                            </InputLabel>
-                            <Select
-                                labelId="year-first-operation-label"
-                                name="year_first_operation"
-                                value={newCampus.year_first_operation}
-                                onChange={handleInputChange}
-                                label="Established"
-                            >
-                                <MenuItem value="">
-                                    <em>Select Year</em>
-                                </MenuItem>
-                                {years.map((year) => (
-                                    <MenuItem key={year} value={year}>
-                                        {year}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                            {errors.year_first_operation && (
-                                <FormHelperText>
-                                    {errors.year_first_operation}
-                                </FormHelperText>
-                            )}
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            margin="dense"
-                            name="land_area_hectares"
-                            label="Land Area (ha)"
+                            name="year_first_operation"
+                            label="Established"
                             type="number"
                             fullWidth
-                            value={newCampus.land_area_hectares}
+                            value={newCampus.year_first_operation}
                             onChange={handleInputChange}
-                            error={!!errors.land_area_hectares}
-                            helperText={errors.land_area_hectares}
+                            error={!!errors.year_first_operation}
+                            helperText={errors.year_first_operation}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                        <TextField
+                            margin="dense"
+                            name="autonomous_code"
+                            label="Auto Code"
+                            fullWidth
+                            value={newCampus.autonomous_code}
+                            onChange={handleInputChange}
+                            error={!!errors.autonomous_code}
+                            helperText={errors.autonomous_code}
+                        />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, sm: 6, md: 6 }}>
+                        <TextField
+                            margin="dense"
+                            name="position_title"
+                            label="Position"
+                            fullWidth
+                            value={newCampus.position_title}
+                            onChange={handleInputChange}
+                            error={!!errors.position_title}
+                            helperText={errors.position_title}
+                        />
+                    </Grid>
+                    <Grid item size={{ xs: 12, sm: 6, md: 6 }}>
+                        <TextField
+                            margin="dense"
+                            name="head_full_name"
+                            label="Head"
+                            fullWidth
+                            value={newCampus.head_full_name}
+                            onChange={handleInputChange}
+                            error={!!errors.head_full_name}
+                            helperText={errors.head_full_name}
+                        />
+                    </Grid>
+                    <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                         <TextField
                             margin="dense"
                             name="distance_from_main"
@@ -529,43 +534,21 @@ const AddCampusDialog = ({
                             helperText={errors.distance_from_main}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                         <TextField
                             margin="dense"
-                            name="autonomous_code"
-                            label="Auto Code"
+                            name="land_area_hectares"
+                            label="Land Area (ha)"
+                            type="number"
                             fullWidth
-                            value={newCampus.autonomous_code}
+                            value={newCampus.land_area_hectares}
                             onChange={handleInputChange}
-                            error={!!errors.autonomous_code}
-                            helperText={errors.autonomous_code}
+                            error={!!errors.land_area_hectares}
+                            helperText={errors.land_area_hectares}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            margin="dense"
-                            name="position_title"
-                            label="Position"
-                            fullWidth
-                            value={newCampus.position_title}
-                            onChange={handleInputChange}
-                            error={!!errors.position_title}
-                            helperText={errors.position_title}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            margin="dense"
-                            name="head_full_name"
-                            label="Head"
-                            fullWidth
-                            value={newCampus.head_full_name}
-                            onChange={handleInputChange}
-                            error={!!errors.head_full_name}
-                            helperText={errors.head_full_name}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+
+                    <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                         <TextField
                             margin="dense"
                             name="latitude_coordinates"
@@ -578,7 +561,7 @@ const AddCampusDialog = ({
                             helperText={errors.latitude_coordinates}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                         <TextField
                             margin="dense"
                             name="longitude_coordinates"
@@ -594,7 +577,13 @@ const AddCampusDialog = ({
                 </Grid>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => { resetForm(); onClose(); }} color="secondary">
+                <Button
+                    onClick={() => {
+                        resetForm();
+                        onClose();
+                    }}
+                    color="secondary"
+                >
                     Cancel
                 </Button>
                 <Button onClick={handleAddCampus} color="primary">

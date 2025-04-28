@@ -692,7 +692,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             }}
         >
             <Grid container spacing={1} sx={{ mb: 1 }}>
-                <Grid item xs={12} sm={6} md={2.5}>
+                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <TextField
                         fullWidth
                         label="Search by Name"
@@ -703,7 +703,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         sx={{ "& .MuiInputBase-root": { fontSize: "0.85rem" } }}
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={2.5}>
+                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
                         <InputLabel sx={{ fontSize: "0.85rem" }}>
                             Faculty Rank
@@ -726,7 +726,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={2.5}>
+                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
                         <InputLabel sx={{ fontSize: "0.85rem" }}>
                             Home College
@@ -749,7 +749,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={2.5}>
+                <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
                         <InputLabel sx={{ fontSize: "0.85rem" }}>
                             Gender

@@ -5,45 +5,33 @@ import axios from "axios";
 import DetailDialog from "./DetailDialog";
 import config from "../../../utils/config";
 import useActivityLog from "../../../Hooks/useActivityLog";
-import useResponsive from "../../../Hooks/useResponsive";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Paper,
     Menu,
     CircularProgress,
-    Pagination,
     Typography,
     Tooltip,
     IconButton,
     Divider,
     Box,
     MenuItem,
-    FormControl,
-    InputLabel,
-    Select,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
 } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 import { CiSquareMore } from "react-icons/ci";
 import { FaEye } from "react-icons/fa";
 import { BiSolidBusiness } from "react-icons/bi";
 import { HiMiniUserGroup } from "react-icons/hi2";
 import { RiBookShelfFill } from "react-icons/ri";
 import { FaUserGraduate } from "react-icons/fa6";
-import { MdOutlineDownload } from "react-icons/md";
+import { MdOutlineDownload, MdDelete } from "react-icons/md";
 import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 import { encryptId } from "../../../utils/encryption";
-
-const ROWS_PER_PAGE_OPTIONS = [
-    { label: "25", value: 25 },
-    { label: "50", value: 50 },
-    { label: "100", value: 100 },
-    { label: "All", value: -1 },
-];
 
 const InstitutionTable = ({
     institutions = [],
@@ -56,21 +44,20 @@ const InstitutionTable = ({
     cityFilter = "",
     provinceFilter = "",
 }) => {
-    const { isExtraSmall, isSmall, isMedium, isLarge } = useResponsive(); // Use the custom hook
     const navigate = useNavigate();
     const { updateProgress } = useLoading();
     const { createLog } = useActivityLog();
     const [selectedInstitution, setSelectedInstitution] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
     const [loading, setLoading] = useState({
         viewCampuses: false,
         faculties: false,
-        academicPrograms: false,
+        curricularPrograms: false,
         exportFormA: false,
+        deleteInstitution: false,
     });
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(25);
     const menuButtonRef = useRef(null);
 
     const handleOpenDialog = (institution) => {
@@ -94,6 +81,15 @@ const InstitutionTable = ({
     const handleMenuClose = () => {
         setMenuAnchorEl(null);
         menuButtonRef.current?.focus();
+    };
+
+    const handleOpenConfirmDialog = () => {
+        setOpenConfirmDialog(true);
+        handleMenuClose();
+    };
+
+    const handleCloseConfirmDialog = () => {
+        setOpenConfirmDialog(false);
     };
 
     const handleExportToFormA = useCallback(
@@ -192,6 +188,7 @@ const InstitutionTable = ({
                 setSnackbarMessage(
                     `Form A exported successfully for ${institution.name}!`
                 );
+
                 setSnackbarSeverity("success");
                 updateProgress(100);
                 setSnackbarOpen(true);
@@ -213,6 +210,48 @@ const InstitutionTable = ({
         ]
     );
 
+    const handleDeleteInstitution = async () => {
+        setOpenConfirmDialog(false);
+        setLoading((prev) => ({ ...prev, deleteInstitution: true }));
+        try {
+            const token = localStorage.getItem("token");
+            await axios.delete(
+                `${config.API_URL}/institutions/${selectedInstitution.id}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            await createLog({
+                action: "deleted_institution",
+                description: `Deleted institution: ${selectedInstitution.name}`,
+                properties: {
+                    name: selectedInstitution.name,
+                    institution_type: selectedInstitution.institution_type,
+                },
+                modelType: "App\\Models\\Institution",
+                modelId: selectedInstitution.id,
+            });
+
+            fetchInstitutions();
+
+            setSnackbarMessage(
+                `Institution ${selectedInstitution.name} deleted successfully!`
+            );
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+        } catch (error) {
+            console.error("Error deleting institution:", error);
+            setSnackbarMessage(
+                `Failed to delete institution: ${error.message}`
+            );
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+        } finally {
+            setLoading((prev) => ({ ...prev, deleteInstitution: false }));
+        }
+    };
+
     const filteredInstitutions = useMemo(() => {
         return institutions.filter((institution) => {
             const matchesSearch = institution.name
@@ -233,28 +272,6 @@ const InstitutionTable = ({
         });
     }, [institutions, searchTerm, typeFilter, cityFilter, provinceFilter]);
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage - 1); // MUI Pagination is 1-based
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        const value =
-            event.target.value === "-1"
-                ? filteredInstitutions.length
-                : parseInt(event.target.value, 10);
-        setRowsPerPage(value);
-        setPage(0);
-    };
-
-    const paginatedInstitutions = useMemo(() => {
-        const start = page * rowsPerPage;
-        const end =
-            rowsPerPage === filteredInstitutions.length
-                ? filteredInstitutions.length
-                : start + rowsPerPage;
-        return filteredInstitutions.slice(start, end);
-    }, [filteredInstitutions, page, rowsPerPage]);
-
     const handleNavigation = (path, action) => {
         if (!selectedInstitution) return;
         setLoading((prev) => ({ ...prev, [action]: true }));
@@ -265,13 +282,11 @@ const InstitutionTable = ({
     };
 
     const handleEditInstitution = async (updatedInstitution) => {
-        // Update the institution in the local state
         setSelectedInstitution((prev) => ({
             ...prev,
             ...updatedInstitution,
         }));
 
-        // Log the edit action
         await createLog({
             action: "edited_institution",
             description: `Edited institution: ${updatedInstitution.name}`,
@@ -280,596 +295,412 @@ const InstitutionTable = ({
             properties: updatedInstitution,
         });
 
-        // Optionally refresh the institution list
         if (fetchInstitutions) {
             fetchInstitutions();
         }
     };
 
-    return (
-        <Box
-            sx={{
-                mt: 1,
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                bgcolor: "background.paper",
-                borderRadius: 1,
-                boxShadow: 2,
-                overflow: "hidden",
-                height: "auto",
-                maxHeight: isExtraSmall
-                    ? "40vh"
-                    : isSmall
-                    ? "40vh"
-                    : isMedium
-                    ? "45vh"
-                    : isLarge
-                    ? "60vh"
-                    : "70vh", // Adjust max height based on screen size
-            }}
-        >
-            {/* Table */}
-            <TableContainer
-                component={Paper}
-                sx={{
-                    flex: "1 1 auto",
-                    maxHeight: isExtraSmall
-                        ? "25vh"
-                        : isSmall
-                        ? "35vh"
-                        : isMedium
-                        ? "45vh"
-                        : isLarge
-                        ? "55vh"
-                        : "65vh", // Adjust table height based on screen size
-                    overflowY: "auto",
-                    borderRadius: 0,
-                }}
-            >
-                <Table
-                    stickyHeader
-                    size={isExtraSmall || isSmall ? "medium" : "small"} // Adjust table size for smaller screens
-                    aria-label="Responsive Institution Table"
-                >
-                    <TableHead>
-                        <TableRow>
-                            {[
-                                {
-                                    label: "ID",
-                                    width: isExtraSmall
-                                        ? "10%"
-                                        : isSmall
-                                        ? "5%"
-                                        : "3%",
-                                },
-                                {
-                                    label: "Name",
-                                    width: isExtraSmall
-                                        ? "40%"
-                                        : isSmall
-                                        ? "30%"
-                                        : "25%",
-                                },
-                                {
-                                    label: "Region",
-                                    width: isExtraSmall
-                                        ? "20%"
-                                        : isSmall
-                                        ? "15%"
-                                        : "10%",
-                                },
-                                {
-                                    label: "Address",
-                                    width: isExtraSmall
-                                        ? "30%"
-                                        : isSmall
-                                        ? "25%"
-                                        : "20%",
-                                },
-                                {
-                                    label: "City",
-                                    width: isExtraSmall
-                                        ? "20%"
-                                        : isSmall
-                                        ? "15%"
-                                        : "15%",
-                                },
-                                {
-                                    label: "Province",
-                                    width: isExtraSmall
-                                        ? "20%"
-                                        : isSmall
-                                        ? "15%"
-                                        : "15%",
-                                },
-                                {
-                                    label: "Type",
-                                    width: isExtraSmall
-                                        ? "10%"
-                                        : isSmall
-                                        ? "10%"
-                                        : "10%",
-                                },
-                                {
-                                    label: "Actions",
-                                    width: isExtraSmall
-                                        ? "10%"
-                                        : isSmall
-                                        ? "5%"
-                                        : "5%",
-                                },
-                            ].map((col) => (
-                                <TableCell
-                                    key={col.label}
-                                    sx={{
-                                        bgcolor: "grey.100",
-                                        fontWeight: "medium",
-                                        width: col.width,
-                                        whiteSpace:
-                                            isExtraSmall || isSmall
-                                                ? "normal"
-                                                : "nowrap", // Adjust text wrapping
-                                        py: 0.5,
-                                        px: 1,
-                                        fontSize: isExtraSmall
-                                            ? "1rem"
-                                            : isSmall
-                                            ? "0.875rem"
-                                            : "0.75rem", // Adjust font size
-                                    }}
-                                >
-                                    {col.label}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {paginatedInstitutions.length > 0 ? (
-                            paginatedInstitutions.map((institution, index) => (
-                                <TableRow
-                                    key={institution.id}
-                                    hover
-                                    sx={{
-                                        "&:hover": { bgcolor: "grey.50" },
-                                        bgcolor:
-                                            index % 2 === 0
-                                                ? "white"
-                                                : "grey.25",
-                                    }}
-                                >
-                                    <TableCell
-                                        sx={{
-                                            width: "3%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.id}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            width: "25%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.name}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            width: "10%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.region}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            width: "20%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.address_street || ""}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            width: "15%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.municipality_city || ""}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            width: "15%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.province || ""}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{
-                                            width: "10%",
-                                            py: 0.5,
-                                            px: 1,
-                                            fontSize: "0.75rem",
-                                        }}
-                                    >
-                                        {institution.institution_type}
-                                    </TableCell>
-                                    <TableCell
-                                        sx={{ width: "5%", py: 0.5, px: 1 }}
-                                    >
-                                        <Tooltip
-                                            title="More Options"
-                                            arrow
-                                            placement="top"
-                                        >
-                                            <IconButton
-                                                onClick={(e) =>
-                                                    handleMenuOpen(
-                                                        e,
-                                                        institution
-                                                    )
-                                                }
-                                                disabled={Boolean(menuAnchorEl)}
-                                                aria-label={`More options for ${institution.name}`}
-                                                size="small"
-                                                sx={{
-                                                    color: "primary.main",
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.04)",
-                                                    },
-                                                }}
-                                            >
-                                                <CiSquareMore
-                                                    style={{ fontSize: "20px" }}
-                                                />
-                                            </IconButton>
-                                        </Tooltip>
-
-                                        <Menu
-                                            anchorEl={menuAnchorEl}
-                                            open={Boolean(menuAnchorEl)}
-                                            onClose={handleMenuClose}
-                                            anchorOrigin={{
-                                                vertical: "bottom",
-                                                horizontal: "right",
-                                            }}
-                                            transformOrigin={{
-                                                vertical: "top",
-                                                horizontal: "right",
-                                            }}
-                                            PaperProps={{
-                                                elevation: 3,
-                                                sx: {
-                                                    mt: 0.5,
-                                                    minWidth: 180,
-                                                    borderRadius: 1,
-                                                    boxShadow:
-                                                        "0 4px 20px rgba(0,0,0,0.15)",
-                                                    "& .MuiList-root": {
-                                                        padding: "4px 0",
-                                                    },
-                                                },
-                                            }}
-                                        >
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleOpenDialog(
-                                                        selectedInstitution
-                                                    )
-                                                }
-                                                sx={{
-                                                    py: 1,
-                                                    mx: 1,
-                                                    borderRadius: 1,
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.08)",
-                                                    },
-                                                }}
-                                            >
-                                                <FaEye
-                                                    style={{
-                                                        fontSize: "20px",
-                                                        marginRight: "5px",
-                                                        color: "#438FFF",
-                                                    }}
-                                                />
-                                                <Typography variant="body2">
-                                                    View Details
-                                                </Typography>
-                                            </MenuItem>
-
-                                            <Divider sx={{ my: 0.5 }} />
-
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleNavigation(
-                                                        "/super-admin/institutions/campuses",
-                                                        "viewCampuses"
-                                                    )
-                                                }
-                                                disabled={loading.viewCampuses}
-                                                sx={{
-                                                    py: 1,
-                                                    mx: 1,
-                                                    borderRadius: 1,
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.08)",
-                                                    },
-                                                }}
-                                            >
-                                                {loading.viewCampuses ? (
-                                                    <CircularProgress
-                                                        size={18}
-                                                        sx={{ mr: 1.5 }}
-                                                    />
-                                                ) : (
-                                                    <BiSolidBusiness
-                                                        style={{
-                                                            fontSize: "20px",
-                                                            marginRight: "5px",
-                                                            color: "#438FFF",
-                                                        }}
-                                                    />
-                                                )}
-                                                <Typography variant="body2">
-                                                    Manage Campuses
-                                                </Typography>
-                                            </MenuItem>
-
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleNavigation(
-                                                        "/super-admin/institutions/faculties",
-                                                        "faculties"
-                                                    )
-                                                }
-                                                disabled={loading.faculties}
-                                                sx={{
-                                                    py: 1,
-                                                    mx: 1,
-                                                    borderRadius: 1,
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.08)",
-                                                    },
-                                                }}
-                                            >
-                                                {loading.faculties ? (
-                                                    <CircularProgress
-                                                        size={18}
-                                                        sx={{ mr: 1.5 }}
-                                                    />
-                                                ) : (
-                                                    <HiMiniUserGroup
-                                                        style={{
-                                                            fontSize: "20px",
-                                                            marginRight: "5px",
-                                                            color: "#438FFF",
-                                                        }}
-                                                    />
-                                                )}
-                                                <Typography variant="body2">
-                                                    Manage Faculties
-                                                </Typography>
-                                            </MenuItem>
-
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleNavigation(
-                                                        "/super-admin/institutions/curricular-programs",
-                                                        "academicPrograms"
-                                                    )
-                                                }
-                                                disabled={
-                                                    loading.academicPrograms
-                                                }
-                                                sx={{
-                                                    py: 1,
-                                                    mx: 1,
-                                                    borderRadius: 1,
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.08)",
-                                                    },
-                                                }}
-                                            >
-                                                {loading.academicPrograms ? (
-                                                    <CircularProgress
-                                                        size={18}
-                                                        sx={{ mr: 1.5 }}
-                                                    />
-                                                ) : (
-                                                    <RiBookShelfFill
-                                                        style={{
-                                                            fontSize: "20px",
-                                                            marginRight: "5px",
-                                                            color: "#438FFF",
-                                                        }}
-                                                    />
-                                                )}
-                                                <Typography variant="body2">
-                                                    Academic Programs
-                                                </Typography>
-                                            </MenuItem>
-
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleNavigation(
-                                                        "/super-admin/institutions/graduates-list",
-                                                        "academicPrograms"
-                                                    )
-                                                }
-                                                disabled={
-                                                    loading.academicPrograms
-                                                }
-                                                sx={{
-                                                    py: 1,
-                                                    mx: 1,
-                                                    borderRadius: 1,
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.08)",
-                                                    },
-                                                }}
-                                            >
-                                                {loading.academicPrograms ? (
-                                                    <CircularProgress
-                                                        size={18}
-                                                        sx={{ mr: 1.5 }}
-                                                    />
-                                                ) : (
-                                                    <FaUserGraduate
-                                                        style={{
-                                                            fontSize: "20px",
-                                                            marginRight: "5px",
-                                                            color: "#438FFF",
-                                                        }}
-                                                    />
-                                                )}
-                                                <Typography variant="body2">
-                                                    List of Graduates
-                                                </Typography>
-                                            </MenuItem>
-
-                                            <Divider sx={{ my: 0.5 }} />
-
-                                            <MenuItem
-                                                onClick={() =>
-                                                    handleExportToFormA(
-                                                        selectedInstitution
-                                                    )
-                                                }
-                                                disabled={loading.exportFormA}
-                                                sx={{
-                                                    py: 1,
-                                                    mx: 1,
-                                                    borderRadius: 1,
-                                                    "&:hover": {
-                                                        backgroundColor:
-                                                            "rgba(25, 118, 210, 0.08)",
-                                                    },
-                                                }}
-                                            >
-                                                {loading.exportFormA ? (
-                                                    <CircularProgress
-                                                        size={18}
-                                                        sx={{ mr: 1.5 }}
-                                                    />
-                                                ) : (
-                                                    <MdOutlineDownload
-                                                        style={{
-                                                            fontSize: "20px",
-                                                            marginRight: "5px",
-                                                            color: "#438FFF",
-                                                        }}
-                                                    />
-                                                )}
-                                                <Typography variant="body2">
-                                                    Export to Excel
-                                                </Typography>
-                                            </MenuItem>
-                                        </Menu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={8}
-                                    align="center"
-                                    sx={{ py: 2, fontSize: "0.75rem" }}
-                                >
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        No institutions found
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
-            {/* Pagination */}
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: isExtraSmall || isSmall ? "column" : "row", // Stack pagination controls on smaller screens
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    p: 1,
-                    borderTop: 1,
-                    borderColor: "divider",
-                    bgcolor: "grey.50",
-                }}
-            >
-                <FormControl size="small" sx={{ minWidth: 80, mr: 1 }}>
-                    <InputLabel sx={{ fontSize: "0.75rem" }}>Rows</InputLabel>
-                    <Select
-                        value={
-                            rowsPerPage === filteredInstitutions.length
-                                ? -1
-                                : rowsPerPage
-                        }
-                        onChange={handleChangeRowsPerPage}
-                        label="Rows"
-                        sx={{ height: 32, fontSize: "0.875rem" }}
-                    >
-                        {ROWS_PER_PAGE_OPTIONS.map((option) => (
-                            <MenuItem
-                                key={option.value}
-                                value={option.value}
-                                sx={{ fontSize: "0.875rem" }}
-                            >
-                                {option.label}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mr: 1, fontSize: "0.75rem" }}
-                >
-                    {page * rowsPerPage + 1}-
-                    {Math.min(
-                        (page + 1) * rowsPerPage,
-                        filteredInstitutions.length
-                    )}{" "}
-                    of {filteredInstitutions.length}
-                </Typography>
-                <Pagination
-                    count={Math.ceil(filteredInstitutions.length / rowsPerPage)}
-                    page={page + 1}
-                    onChange={handleChangePage}
+    const renderActionsCell = (params) => {
+        return (
+            <Tooltip title="More Options" arrow placement="top">
+                <IconButton
+                    onClick={(e) => handleMenuOpen(e, params.row)}
+                    disabled={Boolean(menuAnchorEl)}
+                    aria-label={`More options for ${params.row.name}`}
                     size="small"
-                    color="primary"
-                    showFirstButton
-                    showLastButton
                     sx={{
-                        "& .MuiPaginationItem-root": { fontSize: "0.75rem" },
+                        color: "primary.main",
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.04)",
+                        },
+                    }}
+                >
+                    <CiSquareMore style={{ fontSize: "20px" }} />
+                </IconButton>
+            </Tooltip>
+        );
+    };
+
+    const columns = [
+        {
+            field: "id",
+            headerName: "ID",
+            minwidth: 70,
+            align: "center",
+            headerAlign: "center",
+        },
+        {
+            field: "name",
+            headerName: "Name",
+            flex: 1,
+            minwidth: 200,
+        },
+        {
+            field: "region",
+            headerName: "Region",
+            width: 200,
+            align: "center",
+            headerAlign: "center",
+        },
+        {
+            field: "address_street",
+            headerName: "Address",
+            width: 235,
+            align: "center",
+            headerAlign: "center",
+        },
+        {
+            field: "municipality_city",
+            headerName: "City",
+            width: 220,
+            align: "center",
+            headerAlign: "center",
+        },
+        {
+            field: "province",
+            headerName: "Province",
+            width: 220,
+            align: "center",
+            headerAlign: "center",
+        },
+        {
+            field: "institution_type",
+            headerName: "Type",
+            width: 130,
+            align: "center",
+            headerAlign: "center",
+        },
+        {
+            field: "actions",
+            headerName: "Actions",
+            width: 150,
+            sortable: false,
+            filterable: false,
+            renderCell: renderActionsCell,
+            align: "center",
+            headerAlign: "center",
+        },
+    ];
+
+    return (
+        <Box sx={{ mb: 2 }}>
+            {/* DataGrid */}
+            <Paper
+                sx={{
+                    borderRadius: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    height: {
+                        xs: "40vh",
+                        sm: "50vh",
+                        md: "60vh",
+                    },
+                    maxWidth: {
+                        xs: "99vw",
+                        sm: "95vw",
+                        md: "99vw",
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
+                }}
+            >
+                <DataGrid
+                    rows={filteredInstitutions}
+                    columns={columns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { pageSize: 25, page: 0 },
+                        },
+                    }}
+                    pageSizeOptions={[25, 50, 100]}
+                    experimentalFeatures={{ columnGrouping: true }}
+                    disableRowSelectionOnClick
+                    disableColumnFilter
+                    disableColumnMenu
+                    disableColumnSorting
+                    density="compact"
+                    sx={{
+                        border: 0,
+                        "& .MuiDataGrid-root": {
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            minWidth: "fit-content",
+                        },
+                        "& .MuiDataGrid-main": {
+                            flex: 1,
+                            overflowX: "auto",
+                            overflowY: "auto",
+                            "&::-webkit-scrollbar": {
+                                height: "8px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                                backgroundColor: "rgba(0,0,0,0.2)",
+                                borderRadius: "4px",
+                            },
+                        },
+                        "& .MuiDataGrid-footerContainer": {
+                            borderTop: 1,
+                            borderColor: "divider",
+                            position: "sticky",
+                            bottom: 0,
+                            backgroundColor: "background.paper",
+                            zIndex: 1,
+                            minWidth: "fit-content",
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                        },
+                        "& .MuiDataGrid-columnSeparator": {
+                            visibility: "hidden",
+                        },
+                        "& .MuiDataGrid-cell": {
+                            borderRight: "1px solid",
+                            borderColor: "divider",
+                            whiteSpace: "normal",
+                            wordWrap: "break-word",
+                            padding: "4px 8px",
+                        },
+                        "& .MuiDataGrid-columnHeader": {
+                            borderRight: "1px solid",
+                            borderColor: "divider",
+                            whiteSpace: "normal",
+                            wordWrap: "break-word",
+                            padding: "4px 8px",
+                        },
                     }}
                 />
-            </Box>
+            </Paper>
+
+            {/* Action Menu */}
+            <Menu
+                anchorEl={menuAnchorEl}
+                open={Boolean(menuAnchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                }}
+                transformOrigin={{
+                    vertical: "top",
+                    horizontal: "right",
+                }}
+                PaperProps={{
+                    elevation: 3,
+                    sx: {
+                        mt: 0.5,
+                        minWidth: 180,
+                        borderRadius: 1,
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                        "& .MuiList-root": {
+                            padding: "4px 0",
+                        },
+                    },
+                }}
+            >
+                <MenuItem
+                    onClick={() => handleOpenDialog(selectedInstitution)}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        },
+                    }}
+                >
+                    <FaEye
+                        style={{
+                            fontSize: "20px",
+                            marginRight: "5px",
+                            color: "#438FFF",
+                        }}
+                    />
+                    <Typography variant="body2">View Details</Typography>
+                </MenuItem>
+
+                <Divider sx={{ my: 0.5 }} />
+
+                <MenuItem
+                    onClick={() =>
+                        handleNavigation(
+                            "/super-admin/institutions/campuses",
+                            "viewCampuses"
+                        )
+                    }
+                    disabled={loading.viewCampuses}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        },
+                    }}
+                >
+                    {loading.viewCampuses ? (
+                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
+                    ) : (
+                        <BiSolidBusiness
+                            style={{
+                                fontSize: "20px",
+                                marginRight: "5px",
+                                color: "#438FFF",
+                            }}
+                        />
+                    )}
+                    <Typography variant="body2">Manage Campuses</Typography>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={() =>
+                        handleNavigation(
+                            "/super-admin/institutions/faculties",
+                            "faculties"
+                        )
+                    }
+                    disabled={loading.faculties}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        },
+                    }}
+                >
+                    {loading.faculties ? (
+                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
+                    ) : (
+                        <HiMiniUserGroup
+                            style={{
+                                fontSize: "20px",
+                                marginRight: "5px",
+                                color: "#438FFF",
+                            }}
+                        />
+                    )}
+                    <Typography variant="body2">Manage Faculties</Typography>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={() =>
+                        handleNavigation(
+                            "/super-admin/institutions/curricular-programs",
+                            "curricularPrograms"
+                        )
+                    }
+                    disabled={loading.academicPrograms}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        },
+                    }}
+                >
+                    {loading.curricularPrograms ? (
+                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
+                    ) : (
+                        <RiBookShelfFill
+                            style={{
+                                fontSize: "20px",
+                                marginRight: "5px",
+                                color: "#438FFF",
+                            }}
+                        />
+                    )}
+                    <Typography variant="body2">Curricular Programs</Typography>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={() =>
+                        handleNavigation(
+                            "/super-admin/institutions/graduates-list",
+                            "curricularPrograms"
+                        )
+                    }
+                    disabled={loading.curricularPrograms}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        },
+                    }}
+                >
+                    {loading.curricularPrograms ? (
+                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
+                    ) : (
+                        <FaUserGraduate
+                            style={{
+                                fontSize: "20px",
+                                marginRight: "5px",
+                                color: "#438FFF",
+                            }}
+                        />
+                    )}
+                    <Typography variant="body2">List of Graduates</Typography>
+                </MenuItem>
+
+                <Divider sx={{ my: 0.5 }} />
+
+                <MenuItem
+                    onClick={() => handleExportToFormA(selectedInstitution)}
+                    disabled={loading.exportFormA}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(25, 118, 210, 0.08)",
+                        },
+                    }}
+                >
+                    {loading.exportFormA ? (
+                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
+                    ) : (
+                        <MdOutlineDownload
+                            style={{
+                                fontSize: "20px",
+                                marginRight: "5px",
+                                color: "#438FFF",
+                            }}
+                        />
+                    )}
+                    <Typography variant="body2">Export to Excel</Typography>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={handleOpenConfirmDialog}
+                    disabled={loading.deleteInstitution}
+                    sx={{
+                        py: 1,
+                        mx: 1,
+                        borderRadius: 1,
+                        "&:hover": {
+                            backgroundColor: "rgba(255, 99, 71, 0.08)",
+                        },
+                    }}
+                >
+                    {loading.deleteInstitution ? (
+                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
+                    ) : (
+                        <MdDelete
+                            style={{
+                                fontSize: "20px",
+                                marginRight: "5px",
+                                color: "#FF6347",
+                            }}
+                        />
+                    )}
+                    <Typography variant="body2" color="error">
+                        Delete Institution
+                    </Typography>
+                </MenuItem>
+            </Menu>
 
             {/* Detail Dialog */}
             {selectedInstitution && (
@@ -884,6 +715,36 @@ const InstitutionTable = ({
                     setSnackbarSeverity={setSnackbarSeverity}
                 />
             )}
+
+            {/* Confirmation Dialog for Delete */}
+            <Dialog
+                open={openConfirmDialog}
+                onClose={handleCloseConfirmDialog}
+                aria-labelledby="confirm-delete-dialog"
+            >
+                <DialogTitle id="confirm-delete-dialog">
+                    Confirm Deletion
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete{" "}
+                        {selectedInstitution?.name}? This action cannot be
+                        undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseConfirmDialog} color="primary">
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDeleteInstitution}
+                        color="error"
+                        disabled={loading.deleteInstitution}
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

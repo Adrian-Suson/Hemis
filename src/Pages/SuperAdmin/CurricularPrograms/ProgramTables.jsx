@@ -33,7 +33,6 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
         if (!data.program_type) {
             errors.push("Program type is required.");
         }
-        // Validate string fields
         [
             "is_thesis_dissertation_required",
             "program_status",
@@ -51,7 +50,6 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                 );
             }
         });
-        // Validate numeric fields
         [
             "lab_units",
             "lecture_units",
@@ -105,7 +103,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "program_name",
                         headerName: "Name",
-                        flex: 2,
+                        minWidth: 300,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -115,7 +113,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "program_code",
                         headerName: "Code",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -125,7 +123,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "major_name",
                         headerName: "Name",
-                        flex: 1,
+                        minWidth: 300,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -135,7 +133,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "major_code",
                         headerName: "Code",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -145,7 +143,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "category",
                         headerName: "Category",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -155,7 +153,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "serial",
                         headerName: "Serial",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -165,7 +163,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "Year",
                         headerName: "Year",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -175,7 +173,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "is_thesis_dissertation_required",
                         headerName: "Thesis/Dissertation",
-                        flex: 1,
+                        minWidth: 150,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -185,7 +183,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "program_status",
                         headerName: "Status",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -195,7 +193,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "calendar_use_code",
                         headerName: "Calendar",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -205,7 +203,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "program_normal_length_in_years",
                         headerName: "Length",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -218,7 +216,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "lab_units",
                         headerName: "Lab Units",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -231,7 +229,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "lecture_units",
                         headerName: "Lecture Units",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -244,7 +242,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "total_units",
                         headerName: "Total Units",
-                        flex: 1,
+                        minWidth: 120,
                         editable: false,
                         type: "number",
                         align: "center",
@@ -257,7 +255,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "tuition_per_unit",
                         headerName: "Tuition/Unit",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -270,7 +268,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "program_fee",
                         headerName: "Program Fee",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -340,8 +338,8 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                 columns: [
                     {
                         field: "program_name",
-                        headerName: "Program Name",
-                        flex: 2,
+                        headerName: "Name",
+                        minWidth: 300,
                         editable: false,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -351,7 +349,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "new_students_freshmen_male",
                         headerName: "Freshmen M",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -364,7 +362,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "new_students_freshmen_female",
                         headerName: "Freshmen F",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -377,7 +375,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "1st_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -390,7 +388,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "1st_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -403,7 +401,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "2nd_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -416,7 +414,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "2nd_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -429,7 +427,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "3rd_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -442,7 +440,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "3rd_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -455,7 +453,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "4th_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -468,7 +466,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "4th_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -481,7 +479,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "5th_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -494,7 +492,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "5th_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -507,7 +505,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "6th_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -520,7 +518,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "6th_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -533,7 +531,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "7th_year_male",
                         headerName: "Male",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -546,7 +544,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "7th_year_female",
                         headerName: "Female",
-                        flex: 1,
+                        minWidth: 100,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -559,7 +557,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "subtotal_male",
                         headerName: "Subtotal M",
-                        flex: 1,
+                        minWidth: 120,
                         editable: false,
                         type: "number",
                         align: "center",
@@ -572,7 +570,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "subtotal_female",
                         headerName: "Subtotal F",
-                        flex: 1,
+                        minWidth: 120,
                         editable: false,
                         type: "number",
                         align: "center",
@@ -585,7 +583,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "grand_total",
                         headerName: "Total",
-                        flex: 1,
+                        minWidth: 120,
                         editable: false,
                         type: "number",
                         align: "center",
@@ -675,8 +673,8 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                 columns: [
                     {
                         field: "program_name",
-                        headerName: "Program Name",
-                        flex: 2,
+                        headerName: "Name",
+                        minWidth: 300,
                         editable: false,
                         renderCell: (params) =>
                             params.value !== null && params.value !== undefined
@@ -686,7 +684,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "lecture_units_actual",
                         headerName: "Lecture Units",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -699,7 +697,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "laboratory_units_actual",
                         headerName: "Lab Units",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -712,7 +710,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "total_units_actual",
                         headerName: "Total Units",
-                        flex: 1,
+                        minWidth: 120,
                         editable: false,
                         type: "number",
                         align: "center",
@@ -725,7 +723,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "graduates_males",
                         headerName: "Grads M",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -738,7 +736,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "graduates_females",
                         headerName: "Grads F",
-                        flex: 1,
+                        minWidth: 120,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -751,7 +749,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "graduates_total",
                         headerName: "Grads Total",
-                        flex: 1,
+                        minWidth: 120,
                         editable: false,
                         type: "number",
                         align: "center",
@@ -764,7 +762,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "externally_funded_merit_scholars",
                         headerName: "Ext Scholars",
-                        flex: 1,
+                        minWidth: 150,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -777,7 +775,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "internally_funded_grantees",
                         headerName: "Int Grantees",
-                        flex: 1,
+                        minWidth: 150,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -790,7 +788,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     {
                         field: "suc_funded_grantees",
                         headerName: "SUC Grantees",
-                        flex: 1,
+                        minWidth: 150,
                         editable: true,
                         type: "number",
                         align: "center",
@@ -1000,11 +998,17 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                     display: "flex",
                     flexDirection: "column",
                     height: {
-                        xs: "20vh",
-                        sm: "30vh",
+                        xs: "60vh",
+                        sm: "50vh",
                         md: "50vh",
                     },
-                    overflow: "hidden",
+                    maxWidth: {
+                        xs: "100vw", // Full viewport width on mobile
+                        sm: "90vw", // 90% of viewport width on small screens
+                        md: "95vw", // Fixed max width on larger screens
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
                 }}
             >
                 <DataGrid
@@ -1024,10 +1028,19 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                             height: "100%",
                             display: "flex",
                             flexDirection: "column",
+                            minWidth: "fit-content",
                         },
                         "& .MuiDataGrid-main": {
                             flex: 1,
-                            overflow: "auto",
+                            overflowX: "auto",
+                            overflowY: "auto",
+                            "&::-webkit-scrollbar": {
+                                height: "8px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                                backgroundColor: "rgba(0,0,0,0.2)",
+                                borderRadius: "4px",
+                            },
                         },
                         "& .MuiDataGrid-footerContainer": {
                             borderTop: 1,
@@ -1036,20 +1049,24 @@ const ProgramTables = ({ programs, loading, fetchPrograms }) => {
                             bottom: 0,
                             backgroundColor: "background.paper",
                             zIndex: 1,
+                            minWidth: "fit-content",
                         },
                         "& .MuiDataGrid-columnSeparator": {
-                            visibility: "visible",
-                            color: "rgba(0, 0, 0, 0.2)",
-                            pointerEvents: "none", // disable manual resize
-                            display: "none",
+                            visibility: "hidden",
                         },
                         "& .MuiDataGrid-cell": {
                             borderRight: "1px solid",
                             borderColor: "divider",
+                            whiteSpace: "normal",
+                            wordWrap: "break-word",
+                            padding: "4px 8px",
                         },
                         "& .MuiDataGrid-columnHeader": {
                             borderRight: "1px solid",
                             borderColor: "divider",
+                            whiteSpace: "normal",
+                            wordWrap: "break-word",
+                            padding: "4px 8px",
                         },
                     }}
                     disableRowSelectionOnClick

@@ -12,7 +12,6 @@ import { Pie } from "react-chartjs-2";
 import { motion } from "framer-motion";
 import {
     Box,
-    Grid,
     Card,
     CardContent,
     Typography,
@@ -20,6 +19,7 @@ import {
     Alert,
     Divider,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import config from "../../../utils/config";
 
 // Register Chart.js components for Pie charts
@@ -53,12 +53,9 @@ const DashboardPage = () => {
                         axios.get(`${config.API_URL}/users`, {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
-                        axios.get(
-                            `${config.API_URL}/faculty-profiles`,
-                            {
-                                headers: { Authorization: `Bearer ${token}` },
-                            }
-                        ),
+                        axios.get(`${config.API_URL}/faculty-profiles`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }),
                         axios.get(`${config.API_URL}/programs`, {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
@@ -355,7 +352,7 @@ const DashboardPage = () => {
                         color: "error.main",
                     },
                 ].map((stat, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Grid item size={{ sx: 12, sm: 6, md: 4 }} key={index}>
                         <motion.div
                             variants={cardVariants}
                             initial="hidden"
@@ -413,7 +410,7 @@ const DashboardPage = () => {
                         options: chartOptions,
                     },
                 ].map((chart, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid item size={{ sx: 12, sm: 6, md: 3 }} key={index}>
                         <motion.div
                             variants={cardVariants}
                             initial="hidden"

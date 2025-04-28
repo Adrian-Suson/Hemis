@@ -38,103 +38,171 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             {
                 field: "suc_name",
                 headerName: "Campus Name",
+                minWidth: 200,
                 flex: 2,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "campus_type",
                 headerName: "Type",
+                minWidth: 120,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "institutional_code",
                 headerName: "Code",
-                width: 120,
+                minWidth: 120,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "region",
                 headerName: "Region",
-                width: 150,
+                minWidth: 150,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "municipality_city_province",
                 headerName: "City/Province",
-                width: 200,
+                minWidth: 200,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "former_name",
                 headerName: "Former Name",
-                width: 200,
+                minWidth: 200,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "year_first_operation",
                 headerName: "Established",
-                width: 120,
+                minWidth: 120,
                 flex: 1,
                 editable: true,
                 type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "land_area_hectares",
                 headerName: "Land Area (ha)",
-                width: 150,
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "distance_from_main",
                 headerName: "Distance (km)",
-                width: 150,
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "autonomous_code",
                 headerName: "Auto Code",
-                width: 120,
+                minWidth: 120,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "position_title",
                 headerName: "Position",
-                width: 150,
+                minWidth: 150,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "head_full_name",
                 headerName: "Head",
-                width: 200,
+                minWidth: 200,
                 flex: 1,
                 editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "latitude_coordinates",
                 headerName: "Latitude",
-                width: 150,
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
                 field: "longitude_coordinates",
                 headerName: "Longitude",
-                width: 150,
+                minWidth: 150,
                 flex: 1,
                 editable: true,
                 type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
         ],
         []
@@ -297,11 +365,17 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                     display: "flex",
                     flexDirection: "column",
                     height: {
-                        xs: "20vh",
-                        sm: "30vh",
+                        xs: "70vh",
+                        sm: "65vh",
                         md: "60vh",
                     },
-                    overflow: "hidden",
+                    maxWidth: {
+                        xs: "99 vw",
+                        sm: "95vw",
+                        md: "95vw",
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
                 }}
             >
                 <Tabs
@@ -328,7 +402,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 <Box
                     sx={{
                         flex: 1,
-                        overflow: "auto",
                         position: "relative",
                     }}
                 >
@@ -343,28 +416,50 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                             border: 0,
                             "& .MuiDataGrid-root": {
                                 height: "100%",
+                                display: "flex",
+                                flexDirection: "column",
+                                minWidth: "fit-content",
                             },
                             "& .MuiDataGrid-main": {
-                                maxHeight: "100%",
+                                flex: 1,
+                                overflowX: "auto",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                    height: "8px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                    backgroundColor: "rgba(0,0,0,0.2)",
+                                    borderRadius: "4px",
+                                },
                             },
                             "& .MuiDataGrid-footerContainer": {
-                                position: "sticky",
-                                bottom: 0,
-                                backgroundColor: "grey.50",
                                 borderTop: 1,
                                 borderColor: "divider",
-                                zIndex: 5,
+                                position: "sticky",
+                                bottom: 0,
+                                backgroundColor: "background.paper",
+                                zIndex: 1,
+                                minWidth: "fit-content",
                                 display: "flex",
                                 justifyContent: "flex-end",
                                 alignItems: "center",
-                                minHeight: "52px",
-                                "& .MuiTablePagination-root": {
-                                    fontSize: "0.75rem",
-                                },
-                                "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
-                                    {
-                                        fontSize: "0.75rem",
-                                    },
+                            },
+                            "& .MuiDataGrid-columnSeparator": {
+                                visibility: "hidden",
+                            },
+                            "& .MuiDataGrid-cell": {
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                whiteSpace: "normal",
+                                wordWrap: "break-word",
+                                padding: "4px 8px",
+                            },
+                            "& .MuiDataGrid-columnHeader": {
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                whiteSpace: "normal",
+                                wordWrap: "break-word",
+                                padding: "4px 8px",
                             },
                         }}
                         disableRowSelectionOnClick
@@ -376,21 +471,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                         }}
                         pageSizeOptions={ROWS_PER_PAGE_OPTIONS}
                     />
-                    {data.length === 0 && (
-                        <Box
-                            sx={{
-                                textAlign: "center",
-                                p: 3,
-                                color: "text.secondary",
-                                position: "absolute",
-                                top: "50%",
-                                left: "50%",
-                                transform: "translate(-50%, -50%)",
-                            }}
-                        >
-                            No campuses found. Click &#34;Add Campus&#34; to start.
-                        </Box>
-                    )}
                 </Box>
             </Paper>
 

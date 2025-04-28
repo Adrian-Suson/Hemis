@@ -31,6 +31,7 @@ return new class extends Migration
             $table->string('head_education', 255)->nullable();
             $table->string('institution_type', 255)->nullable();
             $table->timestamps();
+            $table->softDeletes(); // Adds deleted_at column for soft deletes
         });
     }
 

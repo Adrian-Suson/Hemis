@@ -1,5 +1,6 @@
 // src/components/DetailDialog.jsx
 import { useState } from "react";
+import moment from "moment";
 import {
     Dialog,
     DialogTitle,
@@ -23,7 +24,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import config from "../../../utils/config";
 
 const DetailDialog = ({
@@ -63,7 +64,6 @@ const DetailDialog = ({
         institution_type: institution?.institution_type || "",
     });
     const [errors, setErrors] = useState({});
-    const currentYear = new Date().getFullYear(); // Get the current year
 
     if (!institution) return null;
 
@@ -209,7 +209,7 @@ const DetailDialog = ({
     const handleYearChange = (field, value) => {
         setFormData((prev) => ({
             ...prev,
-            [field]: value ? value.getFullYear() : null,
+            [field]: value ? value.year() : null, // Extract year from Moment object
         }));
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -392,13 +392,13 @@ const DetailDialog = ({
                                 label={label}
                                 value={
                                     formData[field]
-                                        ? new Date(formData[field], 0)
+                                        ? moment().year(formData[field])
                                         : null
-                                }
+                                } // Use Moment object
                                 onChange={(value) =>
                                     handleYearChange(field, value)
                                 }
-                                maxDate={new Date(currentYear, 11, 31)} // Restrict to current year or earlier
+                                maxDate={moment()} // Restrict to current year or earlier
                                 sx={{ mt: 1 }}
                                 slotProps={{
                                     textField: {
