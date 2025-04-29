@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useMemo } from "react";
 import {
-    Container,
     Typography,
     Button,
     Tabs,
@@ -46,6 +45,7 @@ import { useLoading } from "../../../Context/LoadingContext";
 import ExcelJS from "exceljs";
 import { decryptId } from "../../../utils/encryption";
 import CurricularProgramSkeleton from "./CurricularProgramSkeleton";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -69,6 +69,7 @@ const CurricularProgram = () => {
     });
     const navigate = useNavigate();
     const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
     const categories = useMemo(
         () => [
@@ -264,7 +265,7 @@ const CurricularProgram = () => {
                                 "5th_year_male": row[27] || null,
                                 "5th_year_female": row[28] || null,
                                 "6th_year_male": row[29] || null,
-                                "6th_year_female": row[30] || null,
+                                "6th_year_f-8th_year_female": row[30] || null,
                                 "7th_year_male": row[31] || null,
                                 "7th_year_female": row[32] || null,
                                 subtotal_male: maleTotal,
@@ -525,498 +526,475 @@ const CurricularProgram = () => {
     }
 
     return (
-        <Container maxWidth={false} sx={{ height: "100vh", p: 0 }}>
-            <Box sx={{ p: 3 }}>
-                <Breadcrumbs
-                    separator="›"
-                    aria-label="breadcrumb"
-                    sx={{ mb: 1 }}
+        <Box
+            sx={(theme) => ({
+                p: 3,
+                borderRadius: 1,
+                display: "flex",
+                flexDirection: "column",
+                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
+                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
+                overflowX: "auto",
+                overflowY: "auto",
+                [theme.breakpoints.up("md")]: {
+                    overflowY: "hidden",
+                },
+            })}
+        >
+            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 1 }}>
+                <Link
+                    underline="hover"
+                    color="inherit"
+                    sx={{ cursor: "pointer" }}
+                    onClick={() => navigate("/super-admin/dashboard")}
                 >
-                    <Link
-                        underline="hover"
-                        color="inherit"
-                        sx={{ cursor: "pointer" }}
-                        onClick={() => navigate("/super-admin/dashboard")}
-                    >
-                        Dashboard
-                    </Link>
-                    <Link
-                        underline="hover"
-                        color="inherit"
-                        sx={{ cursor: "pointer" }}
-                        onClick={() => navigate("/super-admin/institutions")}
-                    >
-                        Institution Management
-                    </Link>
-                    <Typography color="textPrimary">
-                        Curricular Program
-                    </Typography>
-                </Breadcrumbs>
+                    Dashboard
+                </Link>
+                <Link
+                    underline="hover"
+                    color="inherit"
+                    sx={{ cursor: "pointer" }}
+                    onClick={() => navigate("/super-admin/institutions")}
+                >
+                    Institution Management
+                </Link>
+                <Typography color="textPrimary">Curricular Program</Typography>
+            </Breadcrumbs>
 
-                <Box
-                    sx={{
-                        p: { xs: 1, md: 2 },
-                        borderBottom: 1,
-                        borderColor: "divider",
-                        bgcolor: "grey.50",
-                        mb: 1,
-                        borderRadius: 1,
-                    }}
-                >
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 6, md: 4 }}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                label="Search"
-                                variant="outlined"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
+            <Box
+                sx={{
+                    p: { xs: 1, md: 2 },
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    bgcolor: "grey.50",
+                    mb: 1,
+                    borderRadius: 1,
+                }}
+            >
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 6, md: 4 }}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="Search"
+                            variant="outlined"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search..."
+                            sx={{
+                                "& .MuiInputBase-root": {
+                                    height: 40,
+                                },
+                            }}
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 2 }}>
+                        <FormControl variant="outlined" size="small" fullWidth>
+                            <InputLabel>Year</InputLabel>
+                            <Select
+                                name="data_date"
+                                value={filters.data_date}
+                                onChange={handleFilterChange}
+                                label="Year"
                                 sx={{
                                     "& .MuiInputBase-root": {
                                         height: 40,
                                     },
                                 }}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 6, md: 2 }}>
-                            <FormControl
-                                variant="outlined"
-                                size="small"
-                                fullWidth
                             >
-                                <InputLabel>Year</InputLabel>
-                                <Select
-                                    name="data_date"
-                                    value={filters.data_date}
-                                    onChange={handleFilterChange}
-                                    label="Year"
-                                    sx={{
-                                        "& .MuiInputBase-root": {
-                                            height: 40,
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="">
-                                        <em>All</em>
-                                    </MenuItem>
-                                    {[
-                                        ...new Set(
-                                            programs.map((p) => p.data_date)
-                                        ),
-                                    ]
-                                        .filter((date) => date)
-                                        .sort()
-                                        .map((date) => (
-                                            <MenuItem key={date} value={date}>
-                                                {date}
-                                            </MenuItem>
-                                        ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 6, md: 2 }}>
-                            <FormControl
-                                variant="outlined"
-                                size="small"
-                                fullWidth
-                            >
-                                <InputLabel>Category</InputLabel>
-                                <Select
-                                    name="category"
-                                    value={filters.category}
-                                    onChange={handleFilterChange}
-                                    label="Category"
-                                    sx={{
-                                        "& .MuiInputBase-root": {
-                                            height: 40,
-                                        },
-                                    }}
-                                >
-                                    <MenuItem value="">
-                                        <em>All</em>
-                                    </MenuItem>
-                                    {[
-                                        ...new Set(
-                                            programs.map((p) => p.category)
-                                        ),
-                                    ]
-                                        .filter((category) => category)
-                                        .sort()
-                                        .map((category) => (
-                                            <MenuItem
-                                                key={category}
-                                                value={category}
-                                            >
-                                                {category}
-                                            </MenuItem>
-                                        ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 6, md: 4 }}>
-                            <Box
-                                gap={2}
-                                display="flex"
-                                justifyContent="flex-end"
-                            >
-                                <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    startIcon={<UploadFileIcon />}
-                                    onClick={() => setOpenUploadDialog(true)}
-                                    disabled={isUploading}
-                                >
-                                    {isUploading
-                                        ? "Uploading..."
-                                        : "Import Form B"}
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<DownloadIcon />}
-                                    onClick={handleExportToExcel}
-                                    disabled={isUploading}
-                                >
-                                    Export to Excel
-                                </Button>
-                            </Box>
-                        </Grid>
+                                <MenuItem value="">
+                                    <em>All</em>
+                                </MenuItem>
+                                {[...new Set(programs.map((p) => p.data_date))]
+                                    .filter((date) => date)
+                                    .sort()
+                                    .map((date) => (
+                                        <MenuItem key={date} value={date}>
+                                            {date}
+                                        </MenuItem>
+                                    ))}
+                            </Select>
+                        </FormControl>
                     </Grid>
-                </Box>
-
-                <Dialog
-                    open={openUploadDialog}
-                    onClose={() => setOpenUploadDialog(false)}
-                    PaperProps={{
-                        sx: {
-                            borderRadius: 2,
-                            maxWidth: 500,
-                        },
-                    }}
-                >
-                    <DialogTitle
-                        sx={{
-                            bgcolor: alpha(theme.palette.primary.main, 0.05),
-                            borderBottom: `1px solid ${theme.palette.divider}`,
-                            px: 3,
-                            py: 2,
-                        }}
-                    >
-                        <Typography fontWeight={600}>
-                            Upload Institution Form B
-                        </Typography>
-                    </DialogTitle>
-                    <DialogContent sx={{ p: 3 }}>
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mb: 3 }}
-                        >
-                            Please upload the Form B Excel document.
-                        </Typography>
-
-                        <Box
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                if (
-                                    e.dataTransfer.files &&
-                                    e.dataTransfer.files[0]
-                                ) {
-                                    setSelectedFile(e.dataTransfer.files[0]);
-                                }
-                            }}
-                            onDragOver={(e) => e.preventDefault()}
-                            sx={{
-                                p: 1.5,
-                                border: `1px dashed ${theme.palette.primary.main}`,
-                                borderRadius: 1.5,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 1,
-                                cursor: "pointer",
-                                bgcolor: "background.paper",
-                            }}
-                            onClick={() =>
-                                document.getElementById("upload-input").click()
-                            }
-                        >
-                            <UploadIcon color="primary" sx={{ fontSize: 28 }} />
-                            <Typography>
-                                Drag & drop file or click to browse
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                            >
-                                Supported formats: .xlsx, .xls
-                            </Typography>
-                            <input
-                                id="upload-input"
-                                type="file"
-                                hidden
-                                accept=".xlsx, .xls"
-                                onChange={(e) =>
-                                    setSelectedFile(e.target.files[0])
-                                }
-                            />
-                        </Box>
-
-                        {selectedFile && (
-                            <Paper
-                                variant="outlined"
+                    <Grid size={{ xs: 6, md: 2 }}>
+                        <FormControl variant="outlined" size="small" fullWidth>
+                            <InputLabel>Category</InputLabel>
+                            <Select
+                                name="category"
+                                value={filters.category}
+                                onChange={handleFilterChange}
+                                label="Category"
                                 sx={{
-                                    mt: 2,
-                                    p: 1.5,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    borderRadius: 1.5,
+                                    "& .MuiInputBase-root": {
+                                        height: 40,
+                                    },
                                 }}
                             >
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <DownloadIcon
-                                        color="primary"
-                                        sx={{ mr: 1 }}
-                                    />
-                                    <Box>
-                                        <Typography
-                                            variant="body2"
-                                            noWrap
-                                            sx={{ maxWidth: 200 }}
+                                <MenuItem value="">
+                                    <em>All</em>
+                                </MenuItem>
+                                {[...new Set(programs.map((p) => p.category))]
+                                    .filter((category) => category)
+                                    .sort()
+                                    .map((category) => (
+                                        <MenuItem
+                                            key={category}
+                                            value={category}
                                         >
-                                            {selectedFile.name}
-                                        </Typography>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                        >
-                                            {(selectedFile.size / 1024).toFixed(
-                                                2
-                                            )}{" "}
-                                            KB
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setSelectedFile(null)}
-                                    sx={{
-                                        color: theme.palette.error.main,
-                                        "&:hover": {
-                                            bgcolor: alpha(
-                                                theme.palette.error.main,
-                                                0.1
-                                            ),
-                                        },
-                                    }}
-                                >
-                                    ×
-                                </IconButton>
-                            </Paper>
-                        )}
-                    </DialogContent>
-                    <DialogActions
-                        sx={{
-                            px: 3,
-                            py: 2,
-                            borderTop: `1px solid ${theme.palette.divider}`,
-                        }}
-                    >
-                        <Button
-                            onClick={() => {
-                                setOpenUploadDialog(false);
-                                setSelectedFile(null);
-                            }}
-                            sx={{
-                                textTransform: "none",
-                                fontWeight: 500,
-                                color: theme.palette.text.primary,
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleFileUpload}
-                            variant="contained"
-                            disabled={!selectedFile || isUploading}
-                            sx={{
-                                textTransform: "none",
-                                fontWeight: 500,
-                                borderRadius: 1.5,
-                                px: 3,
-                            }}
-                        >
-                            Upload
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                                            {category}
+                                        </MenuItem>
+                                    ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid size={{ xs: 6, md: 4 }}>
+                        <Box gap={2} display="flex" justifyContent="flex-end">
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                startIcon={<UploadFileIcon />}
+                                onClick={() => setOpenUploadDialog(true)}
+                                disabled={isUploading}
+                            >
+                                {isSmallScreen
+                                    ? null
+                                    : isUploading
+                                    ? "Uploading..."
+                                    : "Import Form B"}
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<DownloadIcon />}
+                                onClick={handleExportToExcel}
+                                disabled={isUploading}
+                            >
+                                {isSmallScreen ? null : "Export to Excel"}
+                            </Button>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>
 
-                <ProgramTables
-                    programs={filteredPrograms}
-                    loading={loading}
-                    fetchPrograms={fetchPrograms}
-                />
-                <Tabs
-                    value={mainTabValue}
-                    onChange={(event, newValue) => setMainTabValue(newValue)}
-                    variant="scrollable"
-                    scrollButtons="auto"
+            <Dialog
+                open={openUploadDialog}
+                onClose={() => setOpenUploadDialog(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: 500,
+                    },
+                }}
+            >
+                <DialogTitle
                     sx={{
-                        "& .MuiTab-root": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        px: 3,
+                        py: 2,
+                    }}
+                >
+                    <Typography fontWeight={600}>
+                        Upload Institution Form B
+                    </Typography>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 3 }}
+                    >
+                        Please upload the Form B Excel document.
+                    </Typography>
+
+                    <Box
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            if (
+                                e.dataTransfer.files &&
+                                e.dataTransfer.files[0]
+                            ) {
+                                setSelectedFile(e.dataTransfer.files[0]);
+                            }
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        sx={{
+                            p: 1.5,
+                            border: `1px dashed ${theme.palette.primary.main}`,
+                            borderRadius: 1.5,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 1,
+                            cursor: "pointer",
+                            bgcolor: "background.paper",
+                        }}
+                        onClick={() =>
+                            document.getElementById("upload-input").click()
+                        }
+                    >
+                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
+                        <Typography>
+                            Drag & drop file or click to browse
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Supported formats: .xlsx, .xls
+                        </Typography>
+                        <input
+                            id="upload-input"
+                            type="file"
+                            hidden
+                            accept=".xlsx, .xls"
+                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                        />
+                    </Box>
+
+                    {selectedFile && (
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                mt: 2,
+                                p: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                borderRadius: 1.5,
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
+                                <Box>
+                                    <Typography
+                                        variant="body2"
+                                        noWrap
+                                        sx={{ maxWidth: 200 }}
+                                    >
+                                        {selectedFile.name}
+                                    </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
+                                        KB
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => setSelectedFile(null)}
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    "&:hover": {
+                                        bgcolor: alpha(
+                                            theme.palette.error.main,
+                                            0.1
+                                        ),
+                                    },
+                                }}
+                            >
+                                ×
+                            </IconButton>
+                        </Paper>
+                    )}
+                </DialogContent>
+                <DialogActions
+                    sx={{
+                        px: 3,
+                        py: 2,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                    }}
+                >
+                    <Button
+                        onClick={() => {
+                            setOpenUploadDialog(false);
+                            setSelectedFile(null);
+                        }}
+                        sx={{
                             textTransform: "none",
                             fontWeight: 500,
-                            fontSize: "0.85rem",
-                            padding: "8px 12px",
-                            minWidth: "auto",
-                            color: theme.palette.text.secondary,
-                            transition: "all 0.2s ease",
-                            "&:hover": {
-                                color: theme.palette.primary.main,
-                                backgroundColor: "rgba(0, 0, 0, 0.04)",
-                            },
-                        },
-                        "& .Mui-selected": {
-                            color: `${theme.palette.primary.main} !important`,
-                            fontWeight: 600,
-                        },
-                        "& .MuiTabs-indicator": {
-                            backgroundColor: theme.palette.primary.main,
-                            height: 3,
-                        },
-                        "& .MuiTabs-scrollButtons": {
-                            color: theme.palette.text.secondary,
-                            "&.Mui-disabled": {
-                                opacity: 0.3,
-                            },
-                        },
-                    }}
-                >
-                    {categories.map((category) => (
-                        <Tooltip
-                            key={category}
-                            title={`View programs for ${category}`}
-                            arrow
-                        >
-                            <Tab label={category} />
-                        </Tooltip>
-                    ))}
-                </Tabs>
+                            color: theme.palette.text.primary,
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleFileUpload}
+                        variant="contained"
+                        disabled={!selectedFile || isUploading}
+                        sx={{
+                            textTransform: "none",
+                            fontWeight: 500,
+                            borderRadius: 1.5,
+                            px: 3,
+                        }}
+                    >
+                        Upload
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-                <Fab
-                    color="primary"
-                    aria-label="show reference"
-                    size="small"
-                    onClick={() => setOpenReferenceDialog(true)}
-                    sx={{
-                        position: "absolute",
-                        bottom: 10,
-                        right: 16,
-                    }}
-                >
-                    <InfoIcon />
-                </Fab>
+            <ProgramTables
+                programs={filteredPrograms}
+                loading={loading}
+                fetchPrograms={fetchPrograms}
+            />
+            <Tabs
+                value={mainTabValue}
+                onChange={(event, newValue) => setMainTabValue(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{
+                    "& .MuiTab-root": {
+                        textTransform: "none",
+                        fontWeight: 500,
+                        fontSize: "0.85rem",
+                        padding: "8px 12px",
+                        minWidth: "auto",
+                        color: theme.palette.text.secondary,
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                            color: theme.palette.primary.main,
+                            backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        },
+                    },
+                    "& .Mui-selected": {
+                        color: `${theme.palette.primary.main} !important`,
+                        fontWeight: 600,
+                    },
+                    "& .MuiTabs-indicator": {
+                        backgroundColor: theme.palette.primary.main,
+                        height: 3,
+                    },
+                    "& .MuiTabs-scrollButtons": {
+                        color: theme.palette.text.secondary,
+                        "&.Mui-disabled": {
+                            opacity: 0.3,
+                        },
+                    },
+                }}
+            >
+                {categories.map((category) => (
+                    <Tooltip
+                        key={category}
+                        title={`View programs for ${category}`}
+                        arrow
+                    >
+                        <Tab label={category} />
+                    </Tooltip>
+                ))}
+            </Tabs>
 
-                <Dialog
-                    open={openReferenceDialog}
-                    onClose={() => setOpenReferenceDialog(false)}
-                    maxWidth="md"
-                    fullWidth
-                >
-                    <DialogTitle>
-                        Reference Table
-                        <IconButton
-                            aria-label="close"
-                            onClick={() => setOpenReferenceDialog(false)}
-                            sx={{
-                                position: "absolute",
-                                right: 8,
-                                top: 8,
-                                color: (theme) => theme.palette.grey[500],
-                            }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                    </DialogTitle>
-                    <DialogContent>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>
-                                        Authority to Offer Program
-                                    </TableCell>
-                                    <TableCell>
-                                        Is Thesis/Dissertation Required?
-                                    </TableCell>
-                                    <TableCell>Program Status</TableCell>
-                                    <TableCell>Program Calendar</TableCell>
+            <Fab
+                color="primary"
+                aria-label="show reference"
+                size="small"
+                onClick={() => setOpenReferenceDialog(true)}
+                sx={{
+                    position: "fixed", // Use fixed to keep Fab in viewport
+                    bottom: 16,
+                    right: 16,
+                    zIndex: 1000, // Ensure Fab is above other content
+                }}
+            >
+                <InfoIcon />
+            </Fab>
+
+            <Dialog
+                open={openReferenceDialog}
+                onClose={() => setOpenReferenceDialog(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Reference Table
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOpenReferenceDialog(false)}
+                        sx={{
+                            position: "absolute",
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>
+                                    Authority to Offer Program
+                                </TableCell>
+                                <TableCell>
+                                    Is Thesis/Dissertation Required?
+                                </TableCell>
+                                <TableCell>Program Status</TableCell>
+                                <TableCell>Program Calendar</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {referenceData.authority.map((item, index) => (
+                                <TableRow key={`authority-${index}`}>
+                                    <TableCell>{`${item.code} - ${item.label}`}</TableCell>
+                                    {index <
+                                    referenceData.thesisDissertation.length ? (
+                                        <TableCell>
+                                            {`${referenceData.thesisDissertation[index].code} - ${referenceData.thesisDissertation[index].label}`}
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell>-</TableCell>
+                                    )}
+                                    {index <
+                                    referenceData.programStatus.length ? (
+                                        <TableCell>
+                                            {`${referenceData.programStatus[index].code} - ${referenceData.programStatus[index].label}`}
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell>-</TableCell>
+                                    )}
+                                    {index < referenceData.calendar.length ? (
+                                        <TableCell>
+                                            {`${referenceData.calendar[index].code} - ${referenceData.calendar[index].label}`}
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell>-</TableCell>
+                                    )}
                                 </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {referenceData.authority.map((item, index) => (
-                                    <TableRow key={`authority-${index}`}>
-                                        <TableCell>{`${item.code} - ${item.label}`}</TableCell>
-                                        {index <
-                                        referenceData.thesisDissertation
-                                            .length ? (
-                                            <TableCell>
-                                                {`${referenceData.thesisDissertation[index].code} - ${referenceData.thesisDissertation[index].label}`}
-                                            </TableCell>
-                                        ) : (
+                            ))}
+                            {referenceData.calendar.length >
+                                referenceData.authority.length &&
+                                referenceData.calendar
+                                    .slice(referenceData.authority.length)
+                                    .map((item, index) => (
+                                        <TableRow
+                                            key={`calendar-extra-${index}`}
+                                        >
                                             <TableCell>-</TableCell>
-                                        )}
-                                        {index <
-                                        referenceData.programStatus.length ? (
-                                            <TableCell>
-                                                {`${referenceData.programStatus[index].code} - ${referenceData.programStatus[index].label}`}
-                                            </TableCell>
-                                        ) : (
                                             <TableCell>-</TableCell>
-                                        )}
-                                        {index <
-                                        referenceData.calendar.length ? (
-                                            <TableCell>
-                                                {`${referenceData.calendar[index].code} - ${referenceData.calendar[index].label}`}
-                                            </TableCell>
-                                        ) : (
                                             <TableCell>-</TableCell>
-                                        )}
-                                    </TableRow>
-                                ))}
-                                {referenceData.calendar.length >
-                                    referenceData.authority.length &&
-                                    referenceData.calendar
-                                        .slice(referenceData.authority.length)
-                                        .map((item, index) => (
-                                            <TableRow
-                                                key={`calendar-extra-${index}`}
-                                            >
-                                                <TableCell>-</TableCell>
-                                                <TableCell>-</TableCell>
-                                                <TableCell>-</TableCell>
-                                                <TableCell>{`${item.code} - ${item.label}`}</TableCell>
-                                            </TableRow>
-                                        ))}
-                            </TableBody>
-                        </Table>
-                    </DialogContent>
-                </Dialog>
-                <CustomSnackbar
-                    open={snackbar.open}
-                    message={snackbar.message}
-                    severity={snackbar.severity}
-                    onClose={handleSnackbarClose}
-                />
-            </Box>
-        </Container>
+                                            <TableCell>{`${item.code} - ${item.label}`}</TableCell>
+                                        </TableRow>
+                                    ))}
+                        </TableBody>
+                    </Table>
+                </DialogContent>
+            </Dialog>
+            <CustomSnackbar
+                open={snackbar.open}
+                message={snackbar.message}
+                severity={snackbar.severity}
+                onClose={handleSnackbarClose}
+            />
+        </Box>
     );
 };
 

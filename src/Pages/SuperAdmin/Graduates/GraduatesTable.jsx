@@ -150,7 +150,7 @@ const GraduatesTable = ({ graduates }) => {
                     display: "flex",
                     flexDirection: "column",
                     height: {
-                        xs: "60vh",
+                        xs: "50vh",
                         sm: "50vh",
                         md: "50vh",
                     },

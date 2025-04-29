@@ -11,7 +11,6 @@ import {
     Alert,
     Breadcrumbs,
     Link,
-    ButtonGroup,
     TextField,
     FormControl,
     InputLabel,
@@ -26,6 +25,10 @@ import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
 import GraduatesSkeleton from "./GraduatesSkeleton";
 import { decryptId } from "../../../utils/encryption";
+import { useTheme } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import UploadIcon from "@mui/icons-material/Upload";
+import DownloadIcon from "@mui/icons-material/Download";
 
 const Graduates = () => {
     const [graduates, setGraduates] = useState([]);
@@ -43,6 +46,8 @@ const Graduates = () => {
     const deinstitutionId = decryptId(
         decodeURIComponent(encryptedInstitutionId)
     );
+    const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
     useEffect(() => {
         fetchGraduates();
@@ -391,19 +396,26 @@ const Graduates = () => {
 
     return (
         <Box
-            sx={{
+            sx={(theme) => ({
                 p: 3,
-                height: "100%",
+                borderRadius: 1,
                 display: "flex",
                 flexDirection: "column",
-            }}
+                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
+                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
+                overflowX: "auto",
+                overflowY: "auto",
+                [theme.breakpoints.up("md")]: {
+                    overflowY: "hidden",
+                },
+            })}
         >
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/Super-admin/dashboard")}
+                    onClick={() => navigate("/super-admin/dashboard")}
                 >
                     Dashboard
                 </Link>
@@ -411,7 +423,7 @@ const Graduates = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/Super-admin/institutions")}
+                    onClick={() => navigate("/super-admin/institutions")}
                 >
                     Institution Management
                 </Link>
@@ -420,7 +432,7 @@ const Graduates = () => {
 
             <Box
                 sx={{
-                    mb: 3,
+                    mb: 2,
                     display: "flex",
                     gap: 1,
                     flexWrap: "wrap",
@@ -473,34 +485,37 @@ const Graduates = () => {
                         </Select>
                     </FormControl>
                 </Box>
-                <ButtonGroup>
-                    <Button
-                        variant="contained"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={loading}
-                        startIcon={
-                            loading ? <CircularProgress size={20} /> : null
-                        }
-                    >
-                        Upload Excel File
-                    </Button>
-                    <input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={handleFileUpload}
-                        ref={fileInputRef}
-                        style={{ display: "none" }}
-                        id="upload-excel"
-                    />
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={exportToExcel}
-                        disabled={loading || graduates.length === 0}
-                    >
-                        Export to Excel
-                    </Button>
-                </ButtonGroup>
+                <Button
+                    variant="contained"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    startIcon={
+                        loading ? (
+                            <CircularProgress size={20} />
+                        ) : (
+                            <UploadIcon />
+                        )
+                    }
+                >
+                    {isSmallScreen ? null : "Upload Excel File"}
+                </Button>
+                <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={handleFileUpload}
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    id="upload-excel"
+                />
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={exportToExcel}
+                    disabled={loading || graduates.length === 0}
+                    startIcon={<DownloadIcon />}
+                >
+                    {isSmallScreen ? null : "Export to Excel"}
+                </Button>
             </Box>
 
             <GraduatesTable graduates={filteredGraduates} />
@@ -510,6 +525,7 @@ const Graduates = () => {
                 autoHideDuration={6000}
                 onClose={() => setSnackbarOpen(false)}
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                sx={{ zIndex: 1500 }} // Ensure Snackbar is above content
             >
                 <Alert
                     onClose={() => setSnackbarOpen(false)}

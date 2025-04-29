@@ -332,48 +332,51 @@ const InstitutionTable = ({
         {
             field: "name",
             headerName: "Name",
-            minwidth: 300,
-            flex: 1,
+            width: 400,
         },
         {
             field: "region",
             headerName: "Region",
-            minwidth: 100,
+            width: 250,
             align: "center",
             headerAlign: "center",
         },
         {
             field: "address_street",
             headerName: "Address",
-            minwidth: 200,
+            width: 250,
             align: "center",
+
             headerAlign: "center",
         },
         {
             field: "municipality_city",
             headerName: "City",
-            minwidth: 200,
+            width: 250,
             align: "center",
+
             headerAlign: "center",
         },
         {
             field: "province",
             headerName: "Province",
-            minwidth: 200,
+            width: 250,
             align: "center",
+
             headerAlign: "center",
         },
         {
             field: "institution_type",
             headerName: "Type",
-            minwidth: 130,
+            width: 193,
             align: "center",
+
             headerAlign: "center",
         },
         {
             field: "actions",
             headerName: "Actions",
-            minwidth: 150,
+            width: 150,
             sortable: false,
             filterable: false,
             renderCell: renderActionsCell,

@@ -20,12 +20,9 @@ import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import HomeIcon from "@mui/icons-material/Home";
 import StorageIcon from "@mui/icons-material/Storage";
-import HistoryIcon from "@mui/icons-material/History";
-import AssignmentIcon from "@mui/icons-material/Assignment";
 import GroupIcon from "@mui/icons-material/Group";
 import PropTypes from "prop-types";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import { GrSystem } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
 import Logo from "../assets/ChedLogo.png";
 import DP from "../assets/Profile.png";
@@ -33,17 +30,70 @@ import axios from "axios";
 import config from "../utils/config";
 import { MdAdminPanelSettings } from "react-icons/md";
 
-const adminNavItems = [
-    { text: "Dashboard", icon: <HomeIcon /> },
-    { text: "Institutions", icon: <StorageIcon /> },
-    { text: "Program", icon: <AssignmentIcon /> },
-    { text: "Reports and Analytics", icon: <HistoryIcon /> },
-];
+// Define navigation items based on user role
+const getNavItems = (role) => {
+    const items = {
+        "Super Admin": [
+            {
+                text: "Dashboard",
+                icon: <HomeIcon />,
+                path: "/super-admin/dashboard",
+            },
+            {
+                text: "Institutions",
+                icon: <StorageIcon />,
+                path: "/super-admin/institutions",
+            },
+        ],
+        "HEI Admin": [
+            {
+                text: "Dashboard",
+                icon: <HomeIcon />,
+                path: "/hei-admin/dashboard",
+            },
+            {
+                text: "Institutions",
+                icon: <StorageIcon />,
+                path: "/hei-admin/institutions",
+            },
+        ],
+        "HEI Staff": [
+            {
+                text: "Dashboard",
+                icon: <HomeIcon />,
+                path: "/hei-staff/dashboard",
+            },
+            {
+                text: "Institutions",
+                icon: <StorageIcon />,
+                path: "/hei-admin/institutions",
+            },
+        ],
+    };
+    return items[role] || [];
+};
 
-const managementItems = [
-    { text: "System Configuration", icon: <GrSystem /> },
-    { text: "User Management", icon: <GroupIcon /> },
-];
+// Define admin menu items based on user role
+const getAdminMenuItems = (role) => {
+    const items = {
+        "Super Admin": [
+            {
+                text: "User Management",
+                icon: <GroupIcon />,
+                path: "/super-admin/user-management",
+            },
+        ],
+        "HEI Admin": [
+            {
+                text: "Staff Management",
+                icon: <GroupIcon />,
+                path: "/hei-admin/staff-management",
+            },
+        ],
+        "HEI Staff": [], // No admin menu for HEI Staff
+    };
+    return items[role] || [];
+};
 
 const Sidebar = ({
     drawerWidth = "240px",
@@ -57,6 +107,9 @@ const Sidebar = ({
     const navigate = useNavigate();
     const theme = useTheme();
     const [user, setUser] = useState(null);
+
+    const navItems = getNavItems(user?.role);
+    const adminMenuItems = getAdminMenuItems(user?.role);
 
     const handleNavigation = (path) => {
         navigate(path);
@@ -107,10 +160,7 @@ const Sidebar = ({
         }
     };
 
-    const renderNavItem = ({ text, icon }) => {
-        const lcText = text.toLowerCase().replace(/\s+/g, "-");
-        const path = `/admin/${lcText}`;
-
+    const renderNavItem = ({ text, icon, path }) => {
         return (
             <ListItem key={text} disablePadding>
                 <ListItemButton
@@ -215,43 +265,57 @@ const Sidebar = ({
                     }}
                 >
                     <Divider sx={{ my: 2 }} />
-                    <List>{adminNavItems.map(renderNavItem)}</List>
+                    <List>{navItems.map(renderNavItem)}</List>
 
-                    <Divider sx={{ my: 2 }} />
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            onClick={() => setOpenManagement(!openManagement)}
-                            sx={{
-                                justifyContent: isMinimized
-                                    ? "center"
-                                    : "flex-start",
-                            }}
-                        >
-                            <ListItemIcon
-                                sx={{
-                                    minWidth: isMinimized ? "auto" : "56px",
-                                    justifyContent: "center",
-                                }}
+                    {adminMenuItems.length > 0 && (
+                        <>
+                            <Divider sx={{ my: 2 }} />
+                            <ListItem disablePadding>
+                                <ListItemButton
+                                    onClick={() =>
+                                        setOpenManagement(!openManagement)
+                                    }
+                                    sx={{
+                                        justifyContent: isMinimized
+                                            ? "center"
+                                            : "flex-start",
+                                    }}
+                                >
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: isMinimized
+                                                ? "auto"
+                                                : "56px",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <MdAdminPanelSettings
+                                            fontSize={25}
+                                            color="black"
+                                        />
+                                    </ListItemIcon>
+                                    {!isMinimized && (
+                                        <ListItemText primary="Admin" />
+                                    )}
+                                    {!isMinimized &&
+                                        (openManagement ? (
+                                            <ExpandLess />
+                                        ) : (
+                                            <ExpandMore />
+                                        ))}
+                                </ListItemButton>
+                            </ListItem>
+                            <Collapse
+                                in={openManagement}
+                                timeout="auto"
+                                unmountOnExit
                             >
-                                <MdAdminPanelSettings
-                                    fontSize={25}
-                                    color="black"
-                                />
-                            </ListItemIcon>
-                            {!isMinimized && <ListItemText primary="Admin" />}
-                            {!isMinimized &&
-                                (openManagement ? (
-                                    <ExpandLess />
-                                ) : (
-                                    <ExpandMore />
-                                ))}
-                        </ListItemButton>
-                    </ListItem>
-                    <Collapse in={openManagement} timeout="auto" unmountOnExit>
-                        <List sx={{ ml: isMinimized ? 0 : 4 }}>
-                            {managementItems.map(renderNavItem)}
-                        </List>
-                    </Collapse>
+                                <List sx={{ ml: isMinimized ? 0 : 4 }}>
+                                    {adminMenuItems.map(renderNavItem)}
+                                </List>
+                            </Collapse>
+                        </>
+                    )}
                 </Box>
             </Box>
 
@@ -325,13 +389,13 @@ Sidebar.propTypes = {
     setIsSidebarOpen: PropTypes.func.isRequired,
     isNonMobile: PropTypes.bool,
     isMinimized: PropTypes.bool.isRequired,
-    userRole: PropTypes.oneOf(["admin", "user"]),
+    userRole: PropTypes.oneOf(["Super Admin", "HEI Admin", "HEI Staff"]),
 };
 
 Sidebar.defaultProps = {
     drawerWidth: "240px",
     isNonMobile: true,
-    userRole: "user",
+    userRole: "HEI Staff",
 };
 
 export default Sidebar;
