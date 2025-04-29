@@ -586,12 +586,12 @@ const CurricularProgram = () => {
                                 size="small"
                                 fullWidth
                             >
-                                <InputLabel>Data Date</InputLabel>
+                                <InputLabel>Year</InputLabel>
                                 <Select
                                     name="data_date"
                                     value={filters.data_date}
                                     onChange={handleFilterChange}
-                                    label="Data Date"
+                                    label="Year"
                                     sx={{
                                         "& .MuiInputBase-root": {
                                             height: 40,

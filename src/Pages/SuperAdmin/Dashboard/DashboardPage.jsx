@@ -17,9 +17,9 @@ import {
     Typography,
     CircularProgress,
     Alert,
+    Grid,
     Divider,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
 import config from "../../../utils/config";
 
 // Register Chart.js components for Pie charts
