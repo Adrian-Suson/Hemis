@@ -23,7 +23,6 @@ import {
 import CampusHandsontable from "./CampusHandsontable";
 import { TfiHelpAlt } from "react-icons/tfi";
 
-
 const CampusManagement = () => {
     const { institutionId } = useParams();
     const [campuses, setCampuses] = useState([]);
@@ -90,11 +89,13 @@ const CampusManagement = () => {
         { code: "99", name: "Not Known or Not Indicated" },
     ];
 
+    /*
     const autonomousCodes = [
         { code: "1", name: "The SUC is Autonomous from the Main Campus" },
         { code: "2", name: "The SUC is Not Autonomous from the Main Campus" },
         { code: "3", name: "No Information on the Matter" },
     ];
+    */
 
     // Handlers for dialog
     const handleOpenReferenceDialog = () => setOpenReferenceDialog(true);
@@ -220,7 +221,7 @@ const CampusManagement = () => {
                             </TableContainer>
                         </Grid>
 
-                        {/* Autonomous Codes Table */}
+                        {/* Autonomous Codes Table
                         <Grid item xs={12} md={4}>
                             <Typography variant="h6" gutterBottom>
                                 Autonomous Codes
@@ -251,6 +252,7 @@ const CampusManagement = () => {
                                 </Table>
                             </TableContainer>
                         </Grid>
+                        */}
                     </Grid>
                 </DialogContent>
             </Dialog>

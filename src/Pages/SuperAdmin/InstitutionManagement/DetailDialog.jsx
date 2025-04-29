@@ -352,7 +352,7 @@ const DetailDialog = ({
     const formatField = (label, field, value) => {
         const displayValue = value || "N/A";
         return (
-            <Grid  xs={12} sm={6} key={label}>
+            <Grid size={{ sx: 12, sm: 6 }} key={label}>
                 {isEditing ? (
                     field === "institution_type" ? (
                         <FormControl

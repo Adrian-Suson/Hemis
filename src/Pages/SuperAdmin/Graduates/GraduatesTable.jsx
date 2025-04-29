@@ -104,7 +104,7 @@ const GraduatesTable = ({ graduates }) => {
         {
             field: "program_name",
             headerName: "Program Name",
-            minWidth: 300,
+            minWidth: 290,
             renderCell: (params) =>
                 params.value !== null && params.value !== undefined
                     ? params.value

@@ -7,38 +7,53 @@ import {
     Typography,
     Breadcrumbs,
     Link,
-    ButtonGroup,
     Grid,
     Paper,
     Divider,
-    Tooltip,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    alpha,
 } from "@mui/material";
 import {
     Download as DownloadIcon,
-    Visibility as VisibilityIcon,
+    Business as BusinessIcon,
     LibraryBooks as LibraryBooksIcon,
+    Delete as DeleteIcon,
+    School as SchoolIcon,
+    People as PeopleIcon,
+    MenuBook as MenuBookIcon,
+    Info as InfoIcon,
 } from "@mui/icons-material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
-import { useProgress } from "../../../Context/ProgressContext";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import ExcelJS from "exceljs";
+import { encryptId } from "../../../utils/encryption";
+import { useLoading } from "../../../Context/LoadingContext";
 
 const InstitutionManagement = () => {
-    const [institution, setInstitution] = useState(null); // Single institution
-    const { showProgress, hideProgress } = useProgress();
+    const [institution, setInstitution] = useState(null);
+    const { showLoading, hideLoading, updateProgress } = useLoading();
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
         severity: "info",
     });
     const [openManualDialog, setOpenManualDialog] = useState(false);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [loading, setLoading] = useState({
         viewCampuses: false,
         faculties: false,
         academicPrograms: false,
+        curricularPrograms: false,
+        graduates: false,
+        exportFormA: false,
+        deleteInstitution: false,
     });
     const navigate = useNavigate();
 
@@ -48,17 +63,12 @@ const InstitutionManagement = () => {
 
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user"));
-        return user?.institution_type || "SUC"; // Default to "HEI"
-    };
-
-    const getUserRole = () => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        return user?.role || "HEI Staff"; // Default role
+        return user?.institution_type || "SUC";
     };
 
     const fetchInstitution = async () => {
         try {
-            showProgress(10);
+            showLoading();
             const token = localStorage.getItem("token");
             const user = JSON.parse(localStorage.getItem("user"));
 
@@ -89,7 +99,7 @@ const InstitutionManagement = () => {
             } else {
                 setInstitution(response.data);
             }
-            showProgress(100);
+            showLoading();
         } catch (error) {
             console.error("Error fetching institution:", error);
             setSnackbar({
@@ -98,7 +108,7 @@ const InstitutionManagement = () => {
                 severity: "error",
             });
         } finally {
-            hideProgress();
+            hideLoading();
         }
     };
 
@@ -106,7 +116,7 @@ const InstitutionManagement = () => {
         fetchInstitution();
     }, []);
 
-    const handleExportData = async () => {
+    const handleExportToFormA = async () => {
         if (!institution) {
             setSnackbar({
                 open: true,
@@ -116,6 +126,7 @@ const InstitutionManagement = () => {
             return;
         }
 
+        setLoading((prev) => ({ ...prev, exportFormA: true }));
         try {
             const response = await fetch("/templates/Form-A-Themeplate.xlsx");
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -210,51 +221,64 @@ const InstitutionManagement = () => {
                 message: "Error exporting data.",
                 severity: "error",
             });
+        } finally {
+            setLoading((prev) => ({ ...prev, exportFormA: false }));
         }
     };
 
-    const handleNavigation = async (pathKey, key) => {
+    const handleNavigation = async (path, key) => {
         setLoading((prev) => ({ ...prev, [key]: true }));
         try {
-            const role = getUserRole();
-            const basePath =
-                role === "Super Admin"
-                    ? "/super-admin"
-                    : role === "HEI Admin"
-                    ? "/hei-admin"
-                    : "/hei-staff";
-
-            let path;
-            switch (pathKey) {
-                case "viewCampuses":
-                    path = `${basePath}/institutions/campuses/${institution.id}`;
-                    break;
-                case "faculties":
-                    path = `${basePath}/institutions/faculties/${institution.id}`;
-                    break;
-                case "academicPrograms":
-                    path = `${basePath}/institutions/curricular-programs/${institution.id}`;
-                    break;
-                default:
-                    return;
-            }
             navigate(path);
         } finally {
             setLoading((prev) => ({ ...prev, [key]: false }));
         }
     };
 
+    const handleDeleteInstitution = () => {
+        setConfirmDialogOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        setLoading((prev) => ({ ...prev, deleteInstitution: true }));
+        try {
+            const token = localStorage.getItem("token");
+            await axios.delete(
+                `${config.API_URL}/institutions/${institution.id}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            setSnackbar({
+                open: true,
+                message: "Institution deleted successfully.",
+                severity: "success",
+            });
+            navigate("/hei-admin/dashboard");
+        } catch (error) {
+            console.error("Error deleting institution:", error);
+            setSnackbar({
+                open: true,
+                message: "Failed to delete institution.",
+                severity: "error",
+            });
+        } finally {
+            setLoading((prev) => ({ ...prev, deleteInstitution: false }));
+            setConfirmDialogOpen(false);
+        }
+    };
+
     const formatField = (label, value) => (
         <Grid item xs={12} sm={6}>
             <Typography
-                variant="body1"
+                variant="body2"
                 sx={{
-                    fontSize: "1rem",
+                    fontSize: "0.95rem",
                     color: value === "N/A" ? "text.secondary" : "text.primary",
-                    lineHeight: 1.6,
+                    lineHeight: 1.8,
                 }}
             >
-                <strong>{label}:</strong>{" "}
+                <strong style={{ color: "#424242" }}>{label}:</strong>{" "}
                 {value === "N/A" ? (
                     <span style={{ fontStyle: "italic", color: "#757575" }}>
                         Not Available
@@ -267,255 +291,522 @@ const InstitutionManagement = () => {
     );
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: "1200px", mx: "auto" }}>
+            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 3 }}>
                 <Link
                     underline="hover"
                     color="inherit"
                     component={RouterLink}
-                    to={
-                        getUserRole() === "Super Admin"
-                            ? "/super-admin/dashboard"
-                            : getUserRole() === "HEI Admin"
-                            ? "/hei-admin/dashboard"
-                            : "/hei-staff/dashboard"
-                    }
+                    to="/hei-admin/dashboard"
                 >
                     Dashboard
                 </Link>
                 <Typography color="text.primary">My Institution</Typography>
             </Breadcrumbs>
 
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                {institution ? institution.name : "Loading Institution..."}
-            </Typography>
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: { xs: "flex-start", sm: "center" },
+                    flexDirection: { xs: "column", sm: "row" },
+                    mb: 3,
+                }}
+            >
+                <Typography
+                    variant="h4"
+                    sx={{
+                        fontWeight: "medium",
+                        color: "#1976d2",
+                        mb: { xs: 2, sm: 0 },
+                    }}
+                >
+                    {institution ? institution.name : "Institution Details"}
+                </Typography>
 
-            <ButtonGroup sx={{ mb: 3 }}>
                 <Button
                     variant="contained"
                     startIcon={<DownloadIcon />}
-                    onClick={handleExportData}
-                    disabled={!institution}
+                    onClick={handleExportToFormA}
+                    disabled={!institution || loading.exportFormA}
                     sx={{
-                        bgcolor: institution ? "secondary.main" : "grey.400",
+                        bgcolor: institution ? "primary.main" : "grey.400",
                         "&:hover": {
-                            bgcolor: institution
-                                ? "secondary.dark"
-                                : "grey.500",
+                            bgcolor: institution ? "primary.dark" : "grey.500",
                         },
+                        textTransform: "none",
+                        px: 3,
+                        py: 1,
                     }}
+                    aria-label="Export to Excel"
                 >
-                    {institution ? "Export Form A" : "No Data to Export"}
+                    {loading.exportFormA ? (
+                        <>
+                            <CircularProgress size={18} sx={{ mr: 1 }} />
+                            Exporting...
+                        </>
+                    ) : (
+                        "Export to Excel"
+                    )}
                 </Button>
-            </ButtonGroup>
+            </Box>
 
             {institution ? (
-                <Paper
-                    elevation={2}
-                    sx={{ p: 3, borderRadius: 2, bgcolor: "#f9f9f9" }}
-                >
-                    <Box sx={{ mb: 3 }}>
-                        <Typography
-                            variant="h6"
-                            sx={{ mb: 1, color: "#424242" }}
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                    {/* Details Section */}
+                    <Grid item xs={12} md={6}>
+                        <Paper
+                            elevation={3}
+                            sx={{
+                                p: { xs: 2, sm: 3 },
+                                borderRadius: 2,
+                                bgcolor: "background.paper",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                                width: "100%",
+                            }}
                         >
-                            Contact Information
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Grid container spacing={2}>
-                            {formatField(
-                                "Postal Code",
-                                institution.postal_code || "N/A"
-                            )}
-                            {formatField(
-                                "Institutional Telephone",
-                                institution.institutional_telephone || "N/A"
-                            )}
-                            {formatField(
-                                "Institutional Fax",
-                                institution.institutional_fax || "N/A"
-                            )}
-                            {formatField(
-                                "Head Telephone",
-                                institution.head_telephone || "N/A"
-                            )}
-                            {formatField(
-                                "Email",
-                                institution.institutional_email || "N/A"
-                            )}
-                            {formatField(
-                                "Website",
-                                institution.institutional_website || "N/A"
-                            )}
-                        </Grid>
-                    </Box>
+                            <Box sx={{ mb: 3 }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        mb: 1,
+                                        fontWeight: "medium",
+                                        color: "#1976d2",
+                                        display: "flex",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <InfoIcon sx={{ mr: 1, fontSize: 20 }} />
+                                    Contact Information
+                                </Typography>
+                                <Divider
+                                    sx={{ mb: 2, borderColor: "#e0e0e0" }}
+                                />
+                                <Grid container spacing={2}>
+                                    {formatField(
+                                        "Postal Code",
+                                        institution.postal_code || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Institutional Telephone",
+                                        institution.institutional_telephone ||
+                                            "N/A"
+                                    )}
+                                    {formatField(
+                                        "Institutional Fax",
+                                        institution.institutional_fax || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Head Telephone",
+                                        institution.head_telephone || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Email",
+                                        institution.institutional_email || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Website",
+                                        institution.institutional_website ||
+                                            "N/A"
+                                    )}
+                                </Grid>
+                            </Box>
 
-                    <Box sx={{ mb: 3 }}>
-                        <Typography
-                            variant="h6"
-                            sx={{ mb: 1, color: "#424242" }}
+                            <Box sx={{ mb: 3 }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        mb: 1,
+                                        fontWeight: "medium",
+                                        color: "#1976d2",
+                                        display: "flex",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <SchoolIcon sx={{ mr: 1, fontSize: 20 }} />
+                                    Institutional Details
+                                </Typography>
+                                <Divider
+                                    sx={{ mb: 2, borderColor: "#e0e0e0" }}
+                                />
+                                <Grid container spacing={2}>
+                                    {formatField(
+                                        "Year Established",
+                                        institution.year_established || "N/A"
+                                    )}
+                                    {formatField(
+                                        "SEC Registration",
+                                        institution.sec_registration || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Year Granted/Approved",
+                                        institution.year_granted_approved ||
+                                            "N/A"
+                                    )}
+                                    {formatField(
+                                        "Year Converted to College",
+                                        institution.year_converted_college ||
+                                            "N/A"
+                                    )}
+                                    {formatField(
+                                        "Year Converted to University",
+                                        institution.year_converted_university ||
+                                            "N/A"
+                                    )}
+                                </Grid>
+                            </Box>
+
+                            <Box>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        mb: 1,
+                                        fontWeight: "medium",
+                                        color: "#1976d2",
+                                        display: "flex",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <PeopleIcon sx={{ mr: 1, fontSize: 20 }} />
+                                    Leadership
+                                </Typography>
+                                <Divider
+                                    sx={{ mb: 2, borderColor: "#e0e0e0" }}
+                                />
+                                <Grid container spacing={2}>
+                                    {formatField(
+                                        "Head Name",
+                                        institution.head_name || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Head Title",
+                                        institution.head_title || "N/A"
+                                    )}
+                                    {formatField(
+                                        "Head Education",
+                                        institution.head_education || "N/A"
+                                    )}
+                                </Grid>
+                            </Box>
+                        </Paper>
+                    </Grid>
+
+                    {/* Management Options Section */}
+                    <Grid item xs={12} md={6}>
+                        <Paper
+                            elevation={3}
+                            sx={{
+                                p: { xs: 2, sm: 3 },
+                                borderRadius: 2,
+                                bgcolor: "background.paper",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                                width: "100%",
+                            }}
                         >
-                            Institutional Details
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Grid container spacing={2}>
-                            {formatField(
-                                "Year Established",
-                                institution.year_established || "N/A"
-                            )}
-                            {formatField(
-                                "SEC Registration",
-                                institution.sec_registration || "N/A"
-                            )}
-                            {formatField(
-                                "Year Granted/Approved",
-                                institution.year_granted_approved || "N/A"
-                            )}
-                            {formatField(
-                                "Year Converted to College",
-                                institution.year_converted_college || "N/A"
-                            )}
-                            {formatField(
-                                "Year Converted to University",
-                                institution.year_converted_university || "N/A"
-                            )}
-                        </Grid>
-                    </Box>
-
-                    <Box sx={{ mb: 3 }}>
-                        <Typography
-                            variant="h6"
-                            sx={{ mb: 1, color: "#424242" }}
-                        >
-                            Leadership
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Grid container spacing={2}>
-                            {formatField(
-                                "Head Name",
-                                institution.head_name || "N/A"
-                            )}
-                            {formatField(
-                                "Head Title",
-                                institution.head_title || "N/A"
-                            )}
-                            {formatField(
-                                "Head Education",
-                                institution.head_education || "N/A"
-                            )}
-                        </Grid>
-                    </Box>
-
-                    <ButtonGroup variant="outlined" size="small" sx={{ mt: 2 }}>
-                        <Tooltip title="View Campuses">
-                            <Button
-                                onClick={() =>
-                                    handleNavigation(
-                                        "viewCampuses",
-                                        "viewCampuses"
-                                    )
-                                }
-                                disabled={loading.viewCampuses}
-                                startIcon={
-                                    loading.viewCampuses ? (
-                                        <CircularProgress
-                                            size={18}
-                                            color="inherit"
-                                        />
-                                    ) : (
-                                        <VisibilityIcon />
-                                    )
-                                }
+                            <Typography
+                                variant="h6"
                                 sx={{
+                                    mb: 1,
+                                    fontWeight: "medium",
                                     color: "#1976d2",
-                                    borderColor: "#1976d2",
-                                    "&:hover": {
-                                        borderColor: "#115293",
-                                        color: "#115293",
-                                    },
-                                    textTransform: "none",
+                                    display: "flex",
+                                    alignItems: "center",
                                 }}
                             >
-                                View Campuses
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title="View Faculties">
-                            <Button
-                                onClick={() =>
-                                    handleNavigation("faculties", "faculties")
-                                }
-                                disabled={loading.faculties}
-                                startIcon={
-                                    loading.faculties ? (
-                                        <CircularProgress
-                                            size={18}
-                                            color="inherit"
-                                        />
-                                    ) : (
-                                        <LibraryBooksIcon />
-                                    )
-                                }
-                                sx={{
-                                    color: "#1976d2",
-                                    borderColor: "#1976d2",
-                                    "&:hover": {
-                                        borderColor: "#115293",
-                                        color: "#115293",
-                                    },
-                                    textTransform: "none",
-                                }}
-                            >
-                                Faculties
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title="View Academic Programs">
-                            <Button
-                                onClick={() =>
-                                    handleNavigation(
-                                        "academicPrograms",
-                                        "academicPrograms"
-                                    )
-                                }
-                                disabled={loading.academicPrograms}
-                                startIcon={
-                                    loading.academicPrograms ? (
-                                        <CircularProgress
-                                            size={18}
-                                            color="inherit"
-                                        />
-                                    ) : (
-                                        <LibraryBooksIcon />
-                                    )
-                                }
-                                sx={{
-                                    color: "#1976d2",
-                                    borderColor: "#1976d2",
-                                    "&:hover": {
-                                        borderColor: "#115293",
-                                        color: "#115293",
-                                    },
-                                    textTransform: "none",
-                                }}
-                            >
-                                Curricular Programs
-                            </Button>
-                        </Tooltip>
-                    </ButtonGroup>
-                </Paper>
-            ) : (
-                <Typography color="text.secondary">
-                    No institution data available. Please upload Form A to get
-                    started.
-                </Typography>
-            )}
+                                <MenuBookIcon sx={{ mr: 1, fontSize: 20 }} />
+                                Management Options
+                            </Typography>
+                            <Divider sx={{ mb: 2, borderColor: "#e0e0e0" }} />
+                            <Grid container spacing={2}>
+                                <Grid item xs={12}>
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        startIcon={
+                                            loading.viewCampuses ? (
+                                                <CircularProgress size={16} />
+                                            ) : (
+                                                <BusinessIcon
+                                                    sx={{ color: "#438FFF" }}
+                                                />
+                                            )
+                                        }
+                                        onClick={() =>
+                                            handleNavigation(
+                                                `/hei-admin/institutions/campuses/${
+                                                    institution?.id
+                                                        ? encryptId(
+                                                              institution.id
+                                                          )
+                                                        : ""
+                                                }`,
+                                                "viewCampuses"
+                                            )
+                                        }
+                                        disabled={
+                                            loading.viewCampuses ||
+                                            !institution?.id
+                                        }
+                                        sx={{
+                                            py: 1,
+                                            justifyContent: "flex-start",
+                                            borderColor: alpha("#438FFF", 0.5),
+                                            color: "text.primary",
+                                            textTransform: "none",
+                                            "&:hover": {
+                                                backgroundColor: alpha(
+                                                    "#438FFF",
+                                                    0.08
+                                                ),
+                                                borderColor: "#438FFF",
+                                            },
+                                        }}
+                                        aria-label="Manage Campuses"
+                                    >
+                                        Manage Campuses
+                                    </Button>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        startIcon={
+                                            loading.faculties ? (
+                                                <CircularProgress size={16} />
+                                            ) : (
+                                                <PeopleIcon
+                                                    sx={{ color: "#438FFF" }}
+                                                />
+                                            )
+                                        }
+                                        onClick={() =>
+                                            handleNavigation(
+                                                `/hei-admin/institutions/faculties/${
+                                                    institution?.id
+                                                        ? encryptId(
+                                                              institution.id
+                                                          )
+                                                        : ""
+                                                }`,
+                                                "faculties"
+                                            )
+                                        }
+                                        disabled={
+                                            loading.faculties ||
+                                            !institution?.id
+                                        }
+                                        sx={{
+                                            py: 1,
+                                            justifyContent: "flex-start",
+                                            borderColor: alpha("#438FFF", 0.5),
+                                            color: "text.primary",
+                                            textTransform: "none",
+                                            "&:hover": {
+                                                backgroundColor: alpha(
+                                                    "#438FFF",
+                                                    0.08
+                                                ),
+                                                borderColor: "#438FFF",
+                                            },
+                                        }}
+                                        aria-label="Manage Faculties"
+                                    >
+                                        Manage Faculties
+                                    </Button>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        startIcon={
+                                            loading.curricularPrograms ? (
+                                                <CircularProgress size={16} />
+                                            ) : (
+                                                <LibraryBooksIcon
+                                                    sx={{ color: "#438FFF" }}
+                                                />
+                                            )
+                                        }
+                                        onClick={() =>
+                                            handleNavigation(
+                                                `/hei-admin/institutions/curricular-programs/${
+                                                    institution?.id
+                                                        ? encryptId(
+                                                              institution.id
+                                                          )
+                                                        : ""
+                                                }`,
+                                                "curricularPrograms"
+                                            )
+                                        }
+                                        disabled={
+                                            loading.curricularPrograms ||
+                                            !institution?.id
+                                        }
+                                        sx={{
+                                            py: 1,
+                                            justifyContent: "flex-start",
+                                            borderColor: alpha("#438FFF", 0.5),
+                                            color: "text.primary",
+                                            textTransform: "none",
+                                            "&:hover": {
+                                                backgroundColor: alpha(
+                                                    "#438FFF",
+                                                    0.08
+                                                ),
+                                                borderColor: "#438FFF",
+                                            },
+                                        }}
+                                        aria-label="Curricular Programs"
+                                    >
+                                        Curricular Programs
+                                    </Button>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        startIcon={
+                                            loading.graduates ? (
+                                                <CircularProgress size={16} />
+                                            ) : (
+                                                <SchoolIcon
+                                                    sx={{ color: "#438FFF" }}
+                                                />
+                                            )
+                                        }
+                                        onClick={() =>
+                                            handleNavigation(
+                                                `/hei-admin/institutions/graduates-list/${
+                                                    institution?.id
+                                                        ? encryptId(
+                                                              institution.id
+                                                          )
+                                                        : ""
+                                                }`,
+                                                "graduates"
+                                            )
+                                        }
+                                        disabled={
+                                            loading.graduates ||
+                                            !institution?.id
+                                        }
+                                        sx={{
+                                            py: 1,
+                                            justifyContent: "flex-start",
+                                            borderColor: alpha("#438FFF", 0.5),
+                                            color: "text.primary",
+                                            textTransform: "none",
+                                            "&:hover": {
+                                                backgroundColor: alpha(
+                                                    "#438FFF",
+                                                    0.08
+                                                ),
+                                                borderColor: "#438FFF",
+                                            },
+                                        }}
+                                        aria-label="List of Graduates"
+                                    >
+                                        List of Graduates
+                                    </Button>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Divider
+                                        sx={{ my: 2, borderColor: "#e0e0e0" }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        color="error"
+                                        startIcon={
+                                            loading.deleteInstitution ? (
+                                                <CircularProgress size={16} />
+                                            ) : (
+                                                <DeleteIcon />
+                                            )
+                                        }
+                                        onClick={handleDeleteInstitution}
+                                        disabled={
+                                            loading.deleteInstitution ||
+                                            !institution?.id
+                                        }
+                                        sx={{
+                                            py: 1,
+                                            justifyContent: "flex-start",
+                                            borderColor: alpha("#FF6347", 0.5),
+                                            color: "error.main",
+                                            textTransform: "none",
+                                            "&:hover": {
+                                                backgroundColor: alpha(
+                                                    "#FF6347",
+                                                    0.08
+                                                ),
+                                                borderColor: "#FF6347",
+                                            },
+                                        }}
+                                        aria-label="Delete Institution"
+                                    >
+                                        Delete Institution
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            ) : null}
+
+            <Dialog
+                open={confirmDialogOpen}
+                onClose={() => setConfirmDialogOpen(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    {"Confirm Deletion"}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to delete this institution? This
+                        action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setConfirmDialogOpen(false)}
+                        color="primary"
+                        disabled={loading.deleteInstitution}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        color="error"
+                        variant="contained"
+                        disabled={loading.deleteInstitution}
+                        autoFocus
+                    >
+                        {loading.deleteInstitution ? (
+                            <>
+                                <CircularProgress
+                                    size={18}
+                                    sx={{ mr: 1, color: "white" }}
+                                />
+                                Deleting...
+                            </>
+                        ) : (
+                            "Delete"
+                        )}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <ManualInstitutionDialog
                 open={openManualDialog}
                 onClose={() => setOpenManualDialog(false)}
                 getInstitutionType={getInstitutionType}
                 fetchInstitutions={fetchInstitution}
-                showProgress={showProgress}
-                hideProgress={hideProgress}
                 setSnackbarOpen={(open) =>
                     setSnackbar((prev) => ({ ...prev, open }))
                 }

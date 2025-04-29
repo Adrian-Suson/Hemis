@@ -1,106 +1,226 @@
-import { HotTable } from "@handsontable/react";
-import "handsontable/dist/handsontable.full.min.css";
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { registerAllModules } from "handsontable/registry";
 import PropTypes from "prop-types";
 import axios from "axios";
 import {
     Button,
     Tabs,
     Tab,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Grid,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Paper,
+    Box,
+    Toolbar,
+    Typography,
+    Snackbar,
+    Alert,
 } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
+import { useLoading } from "../../../Context/LoadingContext";
+import config from "../../../utils/config";
+import AddCampusDialog from "./AddCampusDialog";
 
-// Register all Handsontable modules
-registerAllModules();
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
-const CampusHandsontable = ({ campuses: initialCampuses }) => {
+const CampusDataGrid = ({ campuses: initialCampuses }) => {
     const [campuses, setCampuses] = useState(initialCampuses);
-    const [tabValue, setTabValue] = useState(0); // State for active tab
-    const [openDialog, setOpenDialog] = useState(false); // State for dialog
-    const [newCampus, setNewCampus] = useState({
-        suc_name: "",
-        campus_type: "",
-        institutional_code: "",
-        region: "",
-        municipality_city_province: "",
-        former_name: "",
-        year_first_operation: "",
-        land_area_hectares: 0.0,
-        distance_from_main: 0.0,
-        autonomous_code: "",
-        position_title: "",
-        head_full_name: "",
-        latitude_coordinates: 0.0,
-        longitude_coordinates: 0.0,
-    });
+    const { showLoading, hideLoading } = useLoading();
+    const [tabValue, setTabValue] = useState(0);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    // Sync local state with prop changes
     useEffect(() => {
         setCampuses(initialCampuses);
     }, [initialCampuses]);
 
-    // Define all columns
     const allColumns = useMemo(
         () => [
-            { data: "suc_name", title: "Campus Name" },
-            { data: "campus_type", title: "Type" },
-            { data: "institutional_code", title: "Code" },
-            { data: "region", title: "Region" },
-            { data: "municipality_city_province", title: "City/Province" },
-            { data: "former_name", title: "Former Name" },
-            { data: "year_first_operation", title: "Established" },
             {
-                data: "land_area_hectares",
-                title: "Land Area (ha)",
-                type: "numeric",
+                field: "suc_name",
+                headerName: "Campus Name",
+                minWidth: 200,
+                flex: 2,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
-                data: "distance_from_main",
-                title: "Distance (km)",
-                type: "numeric",
-            },
-            { data: "autonomous_code", title: "Auto Code" },
-            { data: "position_title", title: "Position" },
-            { data: "head_full_name", title: "Head" },
-            {
-                data: "latitude_coordinates",
-                title: "Latitude",
-                type: "numeric",
+                field: "campus_type",
+                headerName: "Type",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
             {
-                data: "longitude_coordinates",
-                title: "Longitude",
-                type: "numeric",
+                field: "institutional_code",
+                headerName: "Code",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "region",
+                headerName: "Region",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "municipality_city_province",
+                headerName: "City/Province",
+                minWidth: 200,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "former_name",
+                headerName: "Former Name",
+                minWidth: 200,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "year_first_operation",
+                headerName: "Established",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "land_area_hectares",
+                headerName: "Land Area (ha)",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "distance_from_main",
+                headerName: "Distance (km)",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "autonomous_code",
+                headerName: "Auto Code",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "position_title",
+                headerName: "Position",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "head_full_name",
+                headerName: "Head",
+                minWidth: 200,
+                flex: 1,
+                editable: true,
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "latitude_coordinates",
+                headerName: "Latitude",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
+            },
+            {
+                field: "longitude_coordinates",
+                headerName: "Longitude",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) =>
+                    params.value !== null && params.value !== undefined
+                        ? params.value
+                        : "-",
             },
         ],
         []
     );
 
-    // Group columns into tabs
     const tabbedColumns = useMemo(
         () => ({
-            basic: allColumns.slice(0, 7),
-            metrics: allColumns.slice(7, 10),
-            leadership: allColumns.slice(10, 12),
-            coordinates: allColumns.slice(12, 14),
+            basic: [allColumns[0], ...allColumns.slice(1, 7)],
+            metrics: [allColumns[0], ...allColumns.slice(7, 10)],
+            leadership: [allColumns[0], ...allColumns.slice(10, 12)],
+            coordinates: [allColumns[0], ...allColumns.slice(12, 14)],
         }),
         [allColumns]
     );
 
-    // Prepare data for Handsontable
     const data = useMemo(() => {
-        const mappedData = campuses.map((campus) => ({
+        return campuses.map((campus, index) => ({
+            id: campus.id || `temp-${index}`,
             suc_name: campus.suc_name || "",
             campus_type: campus.campus_type || "",
             institutional_code: campus.institutional_code || "",
@@ -115,40 +235,52 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
             head_full_name: campus.head_full_name || "",
             latitude_coordinates: campus.latitude_coordinates || 0.0,
             longitude_coordinates: campus.longitude_coordinates || 0.0,
+            institution_id: campus.institution_id || "",
         }));
-        return mappedData;
     }, [campuses]);
 
-    // Handle changes in the table
-    const handleChanges = useCallback(
-        async (changes, source) => {
-            if (!changes || source === "loadData") return;
-
+    const handleCellEditStop = useCallback(
+        async (params) => {
+            const { id, field, value } = params;
+            showLoading();
             const updatedCampuses = [...campuses];
+            const campusIndex = updatedCampuses.findIndex(
+                (c) =>
+                    c.id === id || `temp-${updatedCampuses.indexOf(c)}` === id
+            );
+            if (campusIndex === -1) return;
+
+            const campus = { ...updatedCampuses[campusIndex], [field]: value };
+            updatedCampuses[campusIndex] = campus;
             const token = localStorage.getItem("token");
 
-            for (const [row, prop, , newValue] of changes) {
-                const campus = updatedCampuses[row];
-                campus[prop] = newValue;
-
-                try {
-                    if (campus.id) {
-                        await axios.put(
-                            `http://localhost:8000/api/campuses/${campus.id}`,
-                            campus,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                    } else {
-                        const response = await axios.post(
-                            "http://localhost:8000/api/campuses",
-                            campus,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        campus.id = response.data.id;
-                    }
-                } catch (error) {
-                    console.error("Error saving campus:", error);
+            try {
+                if (campus.id && campus.id !== `temp-${campusIndex}`) {
+                    await axios.put(
+                        `${config.API_URL}/campuses/${campus.id}`,
+                        campus,
+                        {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }
+                    );
+                } else {
+                    const response = await axios.post(
+                        `${config.API_URL}/campuses`,
+                        [campus],
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    campus.id = response.data.data[0].id;
                 }
+                setSnackbarMessage("Campus updated successfully!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
+            } catch (error) {
+                console.error("Error saving campus:", error);
+                setSnackbarMessage("Failed to save campus changes.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+            } finally {
+                hideLoading();
             }
 
             setCampuses(updatedCampuses);
@@ -156,69 +288,19 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
         [campuses]
     );
 
-    // Handle dialog open/close
     const handleOpenDialog = () => setOpenDialog(true);
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-        setNewCampus({
-            suc_name: "",
-            campus_type: "",
-            institutional_code: "",
-            region: "",
-            municipality_city_province: "",
-            former_name: "",
-            year_first_operation: "",
-            land_area_hectares: 0.0,
-            distance_from_main: 0.0,
-            autonomous_code: "",
-            position_title: "",
-            head_full_name: "",
-            latitude_coordinates: 0.0,
-            longitude_coordinates: 0.0,
-        });
+
+    const handleCloseDialog = () => setOpenDialog(false);
+
+    const handleAddCampus = (newCampusData) => {
+        setCampuses((prev) => [...prev, newCampusData]);
+        handleCloseDialog();
     };
 
-    // Handle input change in dialog
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setNewCampus((prev) => ({
-            ...prev,
-            [name]: [
-                "land_area_hectares",
-                "distance_from_main",
-                "latitude_coordinates",
-                "longitude_coordinates",
-            ].includes(name)
-                ? parseFloat(value) || 0.0
-                : value,
-        }));
-    };
-
-    // Add new campus from dialog
-    const handleAddCampus = async () => {
-        const token = localStorage.getItem("token");
-        try {
-            const response = await axios.post(
-                "http://localhost:8000/api/campuses",
-                newCampus,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setCampuses((prev) => [
-                ...prev,
-                { ...newCampus, id: response.data.id },
-            ]);
-            handleCloseDialog();
-        } catch (error) {
-            console.error("Error adding campus:", error);
-        }
-    };
-
-    // Handle tab change
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
     };
 
-    // Get columns for the current tab
     const currentColumns = useMemo(() => {
         switch (tabValue) {
             case 0:
@@ -235,16 +317,67 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
     }, [tabValue, tabbedColumns]);
 
     return (
-        <div style={{ marginTop: "16px" }}>
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={handleOpenDialog}
-                sx={{ mb: 2 }}
+        <Box
+            sx={{
+                my: 2,
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+            }}
+        >
+            <Toolbar
+                sx={{
+                    pl: { sm: 2 },
+                    pr: { xs: 1, sm: 1 },
+                    mb: 2,
+                    backgroundColor: "background.paper",
+                    borderBottom: 1,
+                    borderColor: "divider",
+                }}
             >
-                Add Campus
-            </Button>
-            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+                <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{ flexGrow: 1, fontWeight: "medium" }}
+                >
+                    Campus Management
+                </Typography>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenDialog}
+                    sx={{
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        fontWeight: "medium",
+                        px: 3,
+                        py: 1,
+                    }}
+                >
+                    Add Campus
+                </Button>
+            </Toolbar>
+
+            <Paper
+                sx={{
+                    borderRadius: 1,
+                    mb: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    height: {
+                        xs: "70vh",
+                        sm: "65vh",
+                        md: "60vh",
+                    },
+                    maxWidth: {
+                        xs: "99 vw",
+                        sm: "99vw",
+                        md: "99vw",
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
+                }}
+            >
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
@@ -257,6 +390,7 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                             fontSize: "0.875rem",
                             fontWeight: "medium",
                         },
+                        flexShrink: 0,
                     }}
                 >
                     <Tab label="Basic Info" />
@@ -264,213 +398,111 @@ const CampusHandsontable = ({ campuses: initialCampuses }) => {
                     <Tab label="Leadership" />
                     <Tab label="Coordinates" />
                 </Tabs>
-            </Paper>
-            <HotTable
-                data={data}
-                columns={currentColumns}
-                colHeaders={true}
-                rowHeaders={true}
-                stretchH="all"
-                height="65vh"
-                licenseKey="non-commercial-and-evaluation"
-                settings={{
-                    manualColumnResize: true,
-                    columnSorting: true,
-                    contextMenu: true,
-                    afterChange: handleChanges,
-                }}
-            />
-            {data.length === 0 && (
-                <div
-                    style={{
-                        textAlign: "center",
-                        padding: "20px",
-                        color: "#666",
+
+                <Box
+                    sx={{
+                        flex: 1,
+                        position: "relative",
                     }}
                 >
-                    No campuses found. Click &#34;Add Campus&#34; to start.
-                </div>
-            )}
+                    <DataGrid
+                        rows={data}
+                        columns={currentColumns}
+                        editMode="cell"
+                        onCellEditStop={handleCellEditStop}
+                        density="compact"
+                        disableVirtualization
+                        sx={{
+                            border: 0,
+                            "& .MuiDataGrid-root": {
+                                height: "100%",
+                                display: "flex",
+                                flexDirection: "column",
+                                minWidth: "fit-content",
+                            },
+                            "& .MuiDataGrid-main": {
+                                flex: 1,
+                                overflowX: "auto",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                    height: "8px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                    backgroundColor: "rgba(0,0,0,0.2)",
+                                    borderRadius: "4px",
+                                },
+                            },
+                            "& .MuiDataGrid-footerContainer": {
+                                borderTop: 1,
+                                borderColor: "divider",
+                                position: "sticky",
+                                bottom: 0,
+                                backgroundColor: "background.paper",
+                                zIndex: 1,
+                                minWidth: "fit-content",
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                alignItems: "center",
+                            },
+                            "& .MuiDataGrid-columnSeparator": {
+                                visibility: "hidden",
+                            },
+                            "& .MuiDataGrid-cell": {
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                whiteSpace: "normal",
+                                wordWrap: "break-word",
+                                padding: "4px 8px",
+                            },
+                            "& .MuiDataGrid-columnHeader": {
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                whiteSpace: "normal",
+                                wordWrap: "break-word",
+                                padding: "4px 8px",
+                            },
+                        }}
+                        disableRowSelectionOnClick
+                        disableColumnFilter
+                        disableColumnMenu
+                        disableColumnSorting
+                        initialState={{
+                            pagination: { paginationModel: { pageSize: 10 } },
+                        }}
+                        pageSizeOptions={ROWS_PER_PAGE_OPTIONS}
+                    />
+                </Box>
+            </Paper>
 
-            {/* Dialog for adding a new campus with Grid layout */}
-            <Dialog
+            <AddCampusDialog
                 open={openDialog}
                 onClose={handleCloseDialog}
-                maxWidth="md" // Increased width to accommodate two columns
-                fullWidth
+                onAddCampus={handleAddCampus}
+                initialRegion={campuses[0]?.region || ""}
+                setSnackbarOpen={setSnackbarOpen}
+                setSnackbarMessage={setSnackbarMessage}
+                setSnackbarSeverity={setSnackbarSeverity}
+            />
+
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
             >
-                <DialogTitle>Add New Campus</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="suc_name"
-                                label="Campus Name"
-                                fullWidth
-                                value={newCampus.suc_name}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel id="campus-type-label">
-                                    Type
-                                </InputLabel>
-                                <Select
-                                    labelId="campus-type-label"
-                                    name="campus_type"
-                                    value={newCampus.campus_type}
-                                    label="Type"
-                                    onChange={handleInputChange}
-                                >
-                                    <MenuItem value="MAIN">MAIN</MenuItem>
-                                    <MenuItem value="Satellite">
-                                        Satellite
-                                    </MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="institutional_code"
-                                label="Code"
-                                fullWidth
-                                value={newCampus.institutional_code}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="region"
-                                label="Region"
-                                fullWidth
-                                value={newCampus.region}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="municipality_city_province"
-                                label="City/Province"
-                                fullWidth
-                                value={newCampus.municipality_city_province}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="former_name"
-                                label="Former Name"
-                                fullWidth
-                                value={newCampus.former_name}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="year_first_operation"
-                                label="Established"
-                                fullWidth
-                                value={newCampus.year_first_operation}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="land_area_hectares"
-                                label="Land Area (ha)"
-                                type="number"
-                                fullWidth
-                                value={newCampus.land_area_hectares}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="distance_from_main"
-                                label="Distance (km)"
-                                type="number"
-                                fullWidth
-                                value={newCampus.distance_from_main}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="autonomous_code"
-                                label="Auto Code"
-                                fullWidth
-                                value={newCampus.autonomous_code}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="position_title"
-                                label="Position"
-                                fullWidth
-                                value={newCampus.position_title}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="head_full_name"
-                                label="Head"
-                                fullWidth
-                                value={newCampus.head_full_name}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="latitude_coordinates"
-                                label="Latitude"
-                                type="number"
-                                fullWidth
-                                value={newCampus.latitude_coordinates}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                margin="dense"
-                                name="longitude_coordinates"
-                                label="Longitude"
-                                type="number"
-                                fullWidth
-                                value={newCampus.longitude_coordinates}
-                                onChange={handleInputChange}
-                            />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog} color="secondary">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleAddCampus} color="primary">
-                        Add
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </div>
+                <Alert
+                    onClose={() => setSnackbarOpen(false)}
+                    severity={snackbarSeverity}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
+        </Box>
     );
 };
 
-CampusHandsontable.propTypes = {
+CampusDataGrid.propTypes = {
     campuses: PropTypes.arrayOf(
         PropTypes.shape({
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -491,8 +523,12 @@ CampusHandsontable.propTypes = {
             head_full_name: PropTypes.string,
             latitude_coordinates: PropTypes.number,
             longitude_coordinates: PropTypes.number,
+            institution_id: PropTypes.oneOfType([
+                PropTypes.string,
+                PropTypes.number,
+            ]),
         })
     ).isRequired,
 };
 
-export default CampusHandsontable;
+export default CampusDataGrid;
