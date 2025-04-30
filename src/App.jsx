@@ -16,6 +16,7 @@ import InstitutionManagement from "./Pages/SuperAdmin/InstitutionManagement/Inst
 import CampusManagement from "./Pages/SuperAdmin/CampusManagement/CampusManagement";
 import CurricularProgram from "./Pages/SuperAdmin/CurricularPrograms/CurricularProgram";
 import FacultyProfile from "./Pages/SuperAdmin/FacultyProfile/FacultyProfile";
+import Graduates from "./Pages/SuperAdmin/Graduates/Graduates";
 
 //HEI Admin
 import HEIDashboardPage from "./Pages/HEI/Dashboard/DashboardPage";
@@ -24,6 +25,7 @@ import HEIInstitutionManagement from "./Pages/HEI/InstitutionManagement/Institut
 import HEICampusManagement from "./Pages/HEI/CampusManagement/CampusManagement";
 import HEICurricularProgram from "./Pages/HEI/CurricularPrograms/CurricularProgram";
 import HEIFacultyProfile from "./Pages/HEI/FacultyProfile/FacultyProfile";
+import HEiGraduates from "./Pages/HEI/Graduates/Graduates";
 
 //HEI Staff
 
@@ -32,7 +34,6 @@ import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
 import Statistics from "./Pages/SuperAdmin/Statistics/Statistics";
-import Graduates from "./Pages/SuperAdmin/Graduates/Graduates";
 
 function ExternalRedirect({ to }) {
     window.location.href = to;
@@ -51,7 +52,9 @@ function App() {
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route
                     path="/egg"
-                    element={<ExternalRedirect to="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />}
+                    element={
+                        <ExternalRedirect to="https://www.youtube.com/watch?v=dQw4w9WgXcQ" />
+                    }
                 />
 
                 {/* Public Route: Login */}
@@ -90,14 +93,14 @@ function App() {
                             element={<FacultyProfile />}
                         />
                         <Route
-                        path="/super-admin/institutions/graduates-list/:institutionId"
-                        element={<Graduates />}/>
+                            path="/super-admin/institutions/graduates-list/:institutionId"
+                            element={<Graduates />}
+                        />
 
                         <Route
                             path="/super-admin/statistics"
                             element={<Statistics />}
                         />
-
                     </Route>
 
                     {/* HEI Admin Routes under /hei-admin/* */}
@@ -125,6 +128,10 @@ function App() {
                         <Route
                             path="/hei-admin/institutions/faculties/:institutionId"
                             element={<HEIFacultyProfile />}
+                        />
+                        <Route
+                            path="/hei-admin/institutions/graduates-list/:institutionId"
+                            element={<HEiGraduates />}
                         />
                         <Route
                             path="/hei-admin/staff-management"

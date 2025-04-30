@@ -22,13 +22,18 @@ import {
     alpha,
     TextField,
     useMediaQuery,
+    Collapse,
+    InputAdornment,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import {
     UploadFile as UploadIcon,
     Add as AddIcon,
     FileDownload as DownloadIcon,
+    FilterList as FilterListIcon,
+    Clear as ClearIcon, // Added ClearIcon
 } from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
 import InstitutionTable from "./InstitutionTable";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
@@ -52,8 +57,9 @@ const InstitutionManagement = () => {
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedInstitutionType, setSelectedInstitutionType] = useState("");
     const [selectedFile, setSelectedFile] = useState(null);
+    const [showFilters, setShowFilters] = useState(false); // State for filter visibility
 
-    // Add filter states here
+    // Filter states
     const [searchTerm, setSearchTerm] = useState(
         localStorage.getItem("searchTerm") || ""
     );
@@ -83,6 +89,18 @@ const InstitutionManagement = () => {
         localStorage.setItem("cityFilter", cityFilter);
         localStorage.setItem("provinceFilter", provinceFilter);
     }, [searchTerm, typeFilter, cityFilter, provinceFilter]);
+
+    // Clear all filters
+    const clearFilters = () => {
+        setSearchTerm("");
+        setTypeFilter("");
+        setCityFilter("");
+        setProvinceFilter("");
+        localStorage.setItem("searchTerm", "");
+        localStorage.setItem("typeFilter", "");
+        localStorage.setItem("cityFilter", "");
+        localStorage.setItem("provinceFilter", "");
+    };
 
     const handleCloseSnackbar = () => {
         setSnackbarOpen(false);
@@ -203,7 +221,6 @@ const InstitutionManagement = () => {
                     }
                 );
 
-                // Log the upload action
                 await createLog({
                     action: "uploaded_institution",
                     description: `Uploaded institution: ${extractedInstitution.name}`,
@@ -336,17 +353,16 @@ const InstitutionManagement = () => {
         setOpenManualDialog(true);
     };
 
+    const toggleFilters = () => {
+        setShowFilters((prev) => !prev);
+    };
+
     return (
         <Box>
             {loading ? (
                 <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
                     {/* Breadcrumbs Skeleton */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                        }}
-                    >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Skeleton variant="text" width={80} height={20} />
                         <Typography sx={{ mx: 1 }}>›</Typography>
                         <Skeleton variant="text" width={150} height={20} />
@@ -372,7 +388,6 @@ const InstitutionManagement = () => {
                             height={36}
                         />
                     </Box>
-
                     {/* Table Skeleton */}
                     <Skeleton variant="rounded" width="100%" height={400} />
                 </Box>
@@ -420,211 +435,359 @@ const InstitutionManagement = () => {
                         }}
                     >
                         <Grid container spacing={2}>
-                            {/* Filters */}
-                            <Grid size={12}>
-                                <Grid container spacing={1}>
-                                    <Grid size={{ xs: 6, md: 3 }}>
-                                        <TextField
-                                            label="Search"
-                                            variant="outlined"
-                                            size="small"
-                                            fullWidth
-                                            value={searchTerm}
-                                            onChange={(e) =>
-                                                setSearchTerm(e.target.value)
-                                            }
+                            {/* Filter Toggle and Actions */}
+                            <Grid size={{ xs: 6, md: 3 }}>
+                                <TextField
+                                    label="Search"
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                        sx: {
+                                            fontSize: "0.875rem",
+                                            height: 40,
+                                        },
+                                    }}
+                                    InputLabelProps={{
+                                        sx: {
+                                            fontSize: "0.75rem",
+                                        },
+                                    }}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 6, md: 9 }}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    {/* Filter Controls with Side Slide */}
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 2,
+                                        }}
+                                    >
+                                        <IconButton
+                                            onClick={toggleFilters}
                                             sx={{
-                                                "& .MuiInputBase-root": {
-                                                    height: 40,
+                                                color: theme.palette.primary
+                                                    .main,
+                                                "&:hover": {
+                                                    bgcolor: alpha(
+                                                        theme.palette.primary
+                                                            .main,
+                                                        0.1
+                                                    ),
                                                 },
                                             }}
-                                            InputProps={{
-                                                sx: {
-                                                    fontSize: "0.875rem",
-                                                },
-                                            }}
-                                            InputLabelProps={{
-                                                sx: { fontSize: "0.75rem" },
-                                            }}
-                                        />
-                                    </Grid>
-                                    <Grid size={{ xs: 6, md: 1.5 }}>
-                                        <FormControl
-                                            variant="outlined"
-                                            size="small"
-                                            fullWidth
+                                            aria-label={
+                                                showFilters
+                                                    ? "Hide filters"
+                                                    : "Show filters"
+                                            }
                                         >
-                                            <InputLabel
-                                                sx={{ fontSize: "0.75rem" }}
-                                                size="small"
-                                            >
-                                                Type
-                                            </InputLabel>
-                                            <Select
-                                                value={typeFilter}
-                                                onChange={(e) =>
-                                                    setTypeFilter(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                label="Type"
-                                                size="small"
+                                            <FilterListIcon />
+                                        </IconButton>
+                                        <Collapse in={showFilters}>
+                                            <Box
                                                 sx={{
-                                                    height: 40,
-                                                    fontSize: "0.875rem",
+                                                    display: "flex",
+                                                    gap: 2,
+                                                    width: "100%",
+                                                    alignItems: "center",
                                                 }}
                                             >
-                                                <MenuItem
-                                                    value=""
+                                                <Box
                                                     sx={{
-                                                        fontSize: "0.875rem",
+                                                        flex: {
+                                                            xs: "0 0 100%",
+                                                            md: "0 0 30%",
+                                                        },
                                                     }}
                                                 >
-                                                    All Types
-                                                </MenuItem>
-                                                {filterOptions.types.map(
-                                                    (type) => (
-                                                        <MenuItem
-                                                            key={type}
-                                                            value={type}
+                                                    <FormControl
+                                                        variant="outlined"
+                                                        size="small"
+                                                        fullWidth
+                                                    >
+                                                        <InputLabel
                                                             sx={{
+                                                                fontSize:
+                                                                    "0.75rem",
+                                                            }}
+                                                            size="small"
+                                                        >
+                                                            Type
+                                                        </InputLabel>
+                                                        <Select
+                                                            value={typeFilter}
+                                                            onChange={(e) =>
+                                                                setTypeFilter(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            }
+                                                            label="Type"
+                                                            size="small"
+                                                            sx={{
+                                                                height: 40,
                                                                 fontSize:
                                                                     "0.875rem",
                                                             }}
                                                         >
-                                                            {type}
-                                                        </MenuItem>
-                                                    )
-                                                )}
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-                                    <Grid size={{ xs: 6, md: 2 }}>
-                                        <FormControl
-                                            variant="outlined"
-                                            size="small"
-                                            fullWidth
-                                        >
-                                            <InputLabel
-                                                sx={{ fontSize: "0.75rem" }}
-                                                size="small"
-                                            >
-                                                City
-                                            </InputLabel>
-                                            <Select
-                                                value={cityFilter}
-                                                onChange={(e) =>
-                                                    setCityFilter(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                label="City"
-                                                size="small"
-                                                sx={{
-                                                    height: 40,
-                                                    fontSize: "0.875rem",
-                                                }}
-                                            >
-                                                <MenuItem
-                                                    value=""
+                                                            <MenuItem
+                                                                value=""
+                                                                sx={{
+                                                                    fontSize:
+                                                                        "0.875rem",
+                                                                }}
+                                                            >
+                                                                All Types
+                                                            </MenuItem>
+                                                            {filterOptions.types.map(
+                                                                (type) => (
+                                                                    <MenuItem
+                                                                        key={
+                                                                            type
+                                                                        }
+                                                                        value={
+                                                                            type
+                                                                        }
+                                                                        sx={{
+                                                                            fontSize:
+                                                                                "0.875rem",
+                                                                        }}
+                                                                    >
+                                                                        {type}
+                                                                    </MenuItem>
+                                                                )
+                                                            )}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                                <Box
                                                     sx={{
-                                                        fontSize: "0.875rem",
+                                                        flex: {
+                                                            xs: "0 0 100%",
+                                                            md: "0 0 30%",
+                                                        },
                                                     }}
                                                 >
-                                                    All Cities
-                                                </MenuItem>
-                                                {filterOptions.cities.map(
-                                                    (city) => (
-                                                        <MenuItem
-                                                            key={city}
-                                                            value={city}
+                                                    <FormControl
+                                                        variant="outlined"
+                                                        size="small"
+                                                        fullWidth
+                                                    >
+                                                        <InputLabel
                                                             sx={{
+                                                                fontSize:
+                                                                    "0.75rem",
+                                                            }}
+                                                            size="small"
+                                                        >
+                                                            City
+                                                        </InputLabel>
+                                                        <Select
+                                                            value={cityFilter}
+                                                            onChange={(e) =>
+                                                                setCityFilter(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            }
+                                                            label="City"
+                                                            size="small"
+                                                            sx={{
+                                                                height: 40,
                                                                 fontSize:
                                                                     "0.875rem",
                                                             }}
                                                         >
-                                                            {city}
-                                                        </MenuItem>
-                                                    )
-                                                )}
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-                                    <Grid size={{ xs: 6, md: 2 }}>
-                                        <FormControl
-                                            variant="outlined"
-                                            size="small"
-                                            fullWidth
-                                        >
-                                            <InputLabel
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                Province
-                                            </InputLabel>
-                                            <Select
-                                                value={provinceFilter}
-                                                onChange={(e) =>
-                                                    setProvinceFilter(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                label="Province"
-                                                sx={{
-                                                    height: 40,
-                                                    fontSize: "0.875rem",
-                                                }}
-                                            >
-                                                <MenuItem
-                                                    value=""
+                                                            <MenuItem
+                                                                value=""
+                                                                sx={{
+                                                                    fontSize:
+                                                                        "0.875rem",
+                                                                }}
+                                                            >
+                                                                All Cities
+                                                            </MenuItem>
+                                                            {filterOptions.cities.map(
+                                                                (city) => (
+                                                                    <MenuItem
+                                                                        key={
+                                                                            city
+                                                                        }
+                                                                        value={
+                                                                            city
+                                                                        }
+                                                                        sx={{
+                                                                            fontSize:
+                                                                                "0.875rem",
+                                                                        }}
+                                                                    >
+                                                                        {city}
+                                                                    </MenuItem>
+                                                                )
+                                                            )}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                                <Box
                                                     sx={{
-                                                        fontSize: "0.875rem",
+                                                        flex: {
+                                                            xs: "0 0 100%",
+                                                            md: "0 0 30%",
+                                                        },
                                                     }}
                                                 >
-                                                    All Provinces
-                                                </MenuItem>
-                                                {filterOptions.provinces.map(
-                                                    (province) => (
-                                                        <MenuItem
-                                                            key={province}
-                                                            value={province}
+                                                    <FormControl
+                                                        variant="outlined"
+                                                        size="small"
+                                                        fullWidth
+                                                    >
+                                                        <InputLabel
                                                             sx={{
+                                                                fontSize:
+                                                                    "0.75rem",
+                                                            }}
+                                                        >
+                                                            Province
+                                                        </InputLabel>
+                                                        <Select
+                                                            value={
+                                                                provinceFilter
+                                                            }
+                                                            onChange={(e) =>
+                                                                setProvinceFilter(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            }
+                                                            label="Province"
+                                                            sx={{
+                                                                height: 40,
                                                                 fontSize:
                                                                     "0.875rem",
                                                             }}
                                                         >
-                                                            {province}
-                                                        </MenuItem>
-                                                    )
-                                                )}
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-
-                                    {/* Actions */}
-                                    <Grid size={{ xs: 6, md: 1.5 }}>
+                                                            <MenuItem
+                                                                value=""
+                                                                sx={{
+                                                                    fontSize:
+                                                                        "0.875rem",
+                                                                }}
+                                                            >
+                                                                All Provinces
+                                                            </MenuItem>
+                                                            {filterOptions.provinces.map(
+                                                                (province) => (
+                                                                    <MenuItem
+                                                                        key={
+                                                                            province
+                                                                        }
+                                                                        value={
+                                                                            province
+                                                                        }
+                                                                        sx={{
+                                                                            fontSize:
+                                                                                "0.875rem",
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            province
+                                                                        }
+                                                                    </MenuItem>
+                                                                )
+                                                            )}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                                <Box
+                                                    sx={{
+                                                        flex: {
+                                                            xs: "0 0 100%",
+                                                            md: "0 0 auto",
+                                                        },
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    <Button
+                                                        variant="text"
+                                                        startIcon={
+                                                            <ClearIcon />
+                                                        }
+                                                        onClick={clearFilters}
+                                                        sx={{
+                                                            textTransform:
+                                                                "none",
+                                                            fontWeight: 500,
+                                                            color: theme.palette
+                                                                .error.main,
+                                                            "&:hover": {
+                                                                bgcolor: alpha(
+                                                                    theme
+                                                                        .palette
+                                                                        .error
+                                                                        .main,
+                                                                    0.1
+                                                                ),
+                                                            },
+                                                        }}
+                                                    >
+                                                        Clear Filters
+                                                    </Button>
+                                                </Box>
+                                            </Box>
+                                        </Collapse>
+                                    </Box>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            flexDirection: {
+                                                xs: "column",
+                                                sm: "row",
+                                            },
+                                            gap: 1,
+                                        }}
+                                    >
                                         <Button
                                             variant="outlined"
                                             startIcon={<AddIcon />}
                                             onClick={handleManualAdd}
-                                            fullWidth
                                             sx={{
                                                 borderRadius: 1.5,
                                                 textTransform: "none",
                                                 fontWeight: 500,
                                                 py: 1,
+                                                width: {
+                                                    xs: "100%",
+                                                    sm: "auto",
+                                                },
                                             }}
                                         >
                                             Add Institution
                                         </Button>
-                                    </Grid>
-                                    <Grid size={{ xs: 6, md: 2 }}>
                                         <Button
                                             variant="contained"
                                             startIcon={<UploadIcon />}
                                             onClick={() =>
                                                 setOpenUploadDialog(true)
                                             }
-                                            fullWidth
                                             sx={{
                                                 borderRadius: 1.5,
                                                 bgcolor:
@@ -638,12 +801,16 @@ const InstitutionManagement = () => {
                                                 textTransform: "none",
                                                 fontWeight: 500,
                                                 py: 1,
+                                                width: {
+                                                    xs: "100%",
+                                                    sm: "auto",
+                                                },
                                             }}
                                         >
                                             Upload Form A
                                         </Button>
-                                    </Grid>
-                                </Grid>
+                                    </Box>
+                                </Box>
                             </Grid>
                         </Grid>
                     </Box>
@@ -820,7 +987,7 @@ const InstitutionManagement = () => {
                                     },
                                 }}
                             >
-                                &times;
+                                ×
                             </IconButton>
                         </Paper>
                     )}

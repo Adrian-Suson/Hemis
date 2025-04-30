@@ -1,441 +1,831 @@
-import { HotTable } from "@handsontable/react";
-import "handsontable/dist/handsontable.full.min.css"; // Import Handsontable styles
-import { useState, useMemo, useEffect } from "react";
-import { registerAllModules } from "handsontable/registry"; // Register all modules
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useMemo, useState, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
+import axios from "axios";
 import {
-    Box,
-    Paper,
     Tabs,
     Tab,
+    Paper,
+    Box,
+    Snackbar,
     Alert,
-    TablePagination,
     TextField,
-    FormControl,
-    InputLabel,
     Select,
     MenuItem,
+    FormControl,
+    InputLabel,
     Grid,
 } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
+import { useLoading } from "../../../Context/LoadingContext";
+import config from "../../../utils/config";
 
-// Register all Handsontable modules
-registerAllModules();
+const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
+    const [facultyProfiles, setFacultyProfiles] = useState(
+        initialFacultyProfiles
+    );
+    const { showLoading, hideLoading } = useLoading();
+    const [tabValue, setTabValue] = useState(0);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterRank, setFilterRank] = useState("");
+    const [filterCollege, setFilterCollege] = useState("");
+    const [filterGender, setFilterGender] = useState("");
 
-const FacultyProfileTable = ({ facultyProfiles }) => {
-    const [tabIndex, setTabIndex] = useState(0);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(20);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filteredData, setFilteredData] = useState(facultyProfiles);
+    useEffect(() => {
+        const validProfiles = Array.isArray(initialFacultyProfiles)
+            ? initialFacultyProfiles.filter(
+                  (profile) =>
+                      profile && typeof profile === "object" && profile.id
+              )
+            : [];
+        setFacultyProfiles(validProfiles);
+    }, [initialFacultyProfiles]);
 
-    // Filter states for each column
-    const [facultyRankFilter, setFacultyRankFilter] = useState("");
-    const [homeCollegeFilter, setHomeCollegeFilter] = useState("");
-    const [isTenuredFilter, setIsTenuredFilter] = useState("");
-    const [genderFilter, setGenderFilter] = useState("");
+    const filterOptions = useMemo(() => {
+        const ranks = new Set();
+        const colleges = new Set();
+        const genders = new Set();
+
+        facultyProfiles.forEach((profile) => {
+            ranks.add(profile.generic_faculty_rank || "Null");
+            colleges.add(profile.home_college || "Null");
+            genders.add(
+                profile.gender !== undefined && profile.gender !== null
+                    ? String(profile.gender)
+                    : "Null"
+            );
+        });
+
+        return {
+            ranks: ["", ...Array.from(ranks).sort()],
+            colleges: ["", ...Array.from(colleges).sort()],
+            genders: ["", ...Array.from(genders).sort()],
+        };
+    }, [facultyProfiles]);
+
+    const allColumns = useMemo(
+        () => [
+            {
+                field: "name",
+                headerName: "Name of Faculty",
+                minWidth: 280,
+                flex: 2,
+                editable: true,
+                sortable: false,
+            },
+            {
+                field: "generic_faculty_rank",
+                headerName: "Faculty Rank",
+                flex: 1,
+                minWidth: 100,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "home_college",
+                headerName: "Home College",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "home_department",
+                headerName: "Home Department",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "is_tenured",
+                headerName: "Tenured?",
+                minWidth: 80,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "ssl_salary_grade",
+                headerName: "SSL Grade",
+                minWidth: 80,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "annual_basic_salary",
+                headerName: "Annual Salary",
+                minWidth: 100,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "on_leave_without_pay",
+                headerName: "On Leave?",
+                minWidth: 80,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "full_time_equivalent",
+                headerName: "FTE",
+                minWidth: 60,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "gender",
+                headerName: "Gender",
+                minWidth: 80,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "highest_degree_attained",
+                headerName: "Highest Degree Attained",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "pursuing_next_degree",
+                headerName: "Pursuing Next Degree?",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "discipline_teaching_load_1",
+                headerName: "Discipline (1)",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "discipline_teaching_load_2",
+                headerName: "Discipline (2)",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "discipline_bachelors",
+                headerName: "Bachelors Discipline",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "discipline_masters",
+                headerName: "Masters Discipline",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "discipline_doctorate",
+                headerName: "Doctorate Discipline",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "masters_with_thesis",
+                headerName: "Masters with Thesis?",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "doctorate_with_dissertation",
+                headerName: "Doctorate with Dissertation?",
+                minWidth: 180,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_lab_credit_units",
+                headerName: "Undergrad Lab Credits",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_lecture_credit_units",
+                headerName: "Undergrad Lecture Credits",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_total_credit_units",
+                headerName: "Undergrad Total Credits",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_lab_hours_per_week",
+                headerName: "Undergrad Lab Hrs/Week",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_lecture_hours_per_week",
+                headerName: "Undergrad Lecture Hrs/Week",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_total_hours_per_week",
+                headerName: "Undergrad Total Hrs/Week",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_lab_contact_hours",
+                headerName: "Undergrad Student Contact Lab",
+                minWidth: 180,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_lecture_contact_hours",
+                headerName: "Undergrad Student Contact Lecture",
+                minWidth: 180,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "undergrad_total_contact_hours",
+                headerName: "Undergrad Total Contact Hrs",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "graduate_lab_credit_units",
+                headerName: "Graduate Lab Credits",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "graduate_lecture_credit_units",
+                headerName: "Graduate Lecture Credits",
+                minWidth: 150,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "graduate_total_credit_units",
+                headerName: "Graduate Total Credits",
+                minWidth: 150,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "graduate_lab_contact_hours",
+                headerName: "Graduate Student Contact Lab",
+                minWidth: 180,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "graduate_lecture_contact_hours",
+                headerName: "Graduate Student Contact Lecture",
+                minWidth: 180,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "graduate_total_contact_hours",
+                headerName: "Graduate Total Contact Hrs",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "research_load",
+                headerName: "Research Load",
+                minWidth: 100,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "extension_services_load",
+                headerName: "Extension Services Load",
+                minWidth: 150,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "study_load",
+                headerName: "Study Load",
+                minWidth: 100,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "production_load",
+                headerName: "Production Load",
+                minWidth: 100,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "administrative_load",
+                headerName: "Administrative Load",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "other_load_credits",
+                headerName: "Other Load Credits",
+                minWidth: 120,
+                flex: 1,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+            {
+                field: "total_work_load",
+                headerName: "Total Work Load",
+                minWidth: 120,
+                editable: true,
+                type: "number",
+                sortable: false,
+                align: "center",
+                headerAlign: "center",
+            },
+        ],
+        []
+    );
+
+    const tabbedColumns = useMemo(
+        () => ({
+            personal: [
+                allColumns[0], // name
+                allColumns[1], // generic_faculty_rank
+                allColumns[2], // home_college
+                allColumns[3], // home_department
+                allColumns[4], // is_tenured
+                allColumns[5], // ssl_salary_grade
+                allColumns[6], // annual_basic_salary
+                allColumns[7], // on_leave_without_pay
+                allColumns[8], // full_time_equivalent
+                allColumns[9], // gender
+            ],
+            education: [
+                allColumns[0], // name
+                allColumns[10], // highest_degree_attained
+                allColumns[11], // pursuing_next_degree
+                allColumns[12], // discipline_teaching_load_1
+                allColumns[13], // discipline_teaching_load_2
+                allColumns[14], // discipline_bachelors
+                allColumns[15], // discipline_masters
+                allColumns[16], // discipline_doctorate
+                allColumns[17], // masters_with_thesis
+                allColumns[18], // doctorate_with_dissertation
+            ],
+            teaching: [
+                {
+                    headerName: "Undergraduate Teaching Load",
+                    children: [
+                        allColumns[0], // name
+                        allColumns[19], // undergrad_lab_credit_units
+                        allColumns[20], // undergrad_lecture_credit_units
+                        allColumns[21], // undergrad_total_credit_units
+                        allColumns[22], // undergrad_lab_hours_per_week
+                        allColumns[23], // undergrad_lecture_hours_per_week
+                        allColumns[24], // undergrad_total_hours_per_week
+                        allColumns[25], // undergrad_lab_contact_hours
+                        allColumns[26], // undergrad_lecture_contact_hours
+                        allColumns[27], // undergrad_total_contact_hours
+                    ],
+                },
+                {
+                    headerName: "Graduate Teaching Load",
+                    children: [
+                        allColumns[28], // graduate_lab_credit_units
+                        allColumns[29], // graduate_lecture_credit_units
+                        allColumns[30], // graduate_total_credit_units
+                        allColumns[31], // graduate_lab_contact_hours
+                        allColumns[32], // graduate_lecture_contact_hours
+                        allColumns[33], // graduate_total_contact_hours
+                    ],
+                },
+            ],
+            other: [
+                allColumns[0], // name
+                allColumns[34], // research_load
+                allColumns[35], // extension_services_load
+                allColumns[36], // study_load
+                allColumns[37], // production_load
+                allColumns[38], // administrative_load
+                allColumns[39], // other_load_credits
+                allColumns[40], // total_work_load
+            ],
+        }),
+        [allColumns]
+    );
+
+    const data = useMemo(() => {
+        return facultyProfiles
+            .filter(
+                (profile) =>
+                    profile &&
+                    typeof profile === "object" &&
+                    profile.id &&
+                    (!searchTerm ||
+                        (profile.name &&
+                            profile.name
+                                .toLowerCase()
+                                .includes(searchTerm.toLowerCase()))) &&
+                    (!filterRank ||
+                        profile.generic_faculty_rank === filterRank ||
+                        (filterRank === "Null" &&
+                            !profile.generic_faculty_rank)) &&
+                    (!filterCollege ||
+                        profile.home_college === filterCollege ||
+                        (filterCollege === "Null" && !profile.home_college)) &&
+                    (!filterGender ||
+                        String(profile.gender) === filterGender ||
+                        (filterGender === "Null" && profile.gender === null))
+            )
+            .map((profile) => ({
+                id: profile.id,
+                ...profile,
+            }));
+    }, [facultyProfiles, searchTerm, filterRank, filterCollege, filterGender]);
+
+    const handleCellEditStop = useCallback(
+        async (params) => {
+            const { id, field, value } = params;
+            showLoading();
+            const updatedFacultyProfiles = [...facultyProfiles];
+            const profileIndex = updatedFacultyProfiles.findIndex(
+                (profile) => profile.id === id
+            );
+            if (profileIndex === -1) {
+                console.error(`Profile with id ${id} not found`);
+                hideLoading();
+                return;
+            }
+
+            const profile = {
+                ...updatedFacultyProfiles[profileIndex],
+                [field]: value,
+            };
+            updatedFacultyProfiles[profileIndex] = profile;
+            const token = localStorage.getItem("token");
+
+            try {
+                await axios.put(
+                    `${config.API_URL}/faculty-profiles/${profile.id}`,
+                    { [field]: value },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setFacultyProfiles(updatedFacultyProfiles);
+                setSnackbarMessage("Faculty profile updated successfully!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
+            } catch (error) {
+                console.error("Error saving changes:", error);
+                setSnackbarMessage("Failed to save faculty profile changes.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+            } finally {
+                hideLoading();
+            }
+        },
+        [facultyProfiles]
+    );
 
     const handleTabChange = (event, newValue) => {
-        setTabIndex(newValue);
-        setPage(0); // Reset to first page when changing tabs
+        setTabValue(newValue);
     };
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0); // Reset to first page
-    };
-
-    // Extract unique values for filters
-    const uniqueFacultyRanks = useMemo(
-        () => [
-            ...new Set(
-                facultyProfiles.map(
-                    (profile) => profile.generic_faculty_rank || "-"
-                )
-            ),
-        ],
-        [facultyProfiles]
-    );
-    const uniqueHomeColleges = useMemo(
-        () => [
-            ...new Set(
-                facultyProfiles.map((profile) => profile.home_college || "-")
-            ),
-        ],
-        [facultyProfiles]
-    );
-    const uniqueTenuredOptions = ["Yes", "No"];
-    const uniqueGenderOptions = ["Male", "Female", "-"];
-
-    // Apply search and filters
-    useEffect(() => {
-        let filtered = [...facultyProfiles];
-
-        // Apply search
-        if (searchQuery) {
-            filtered = filtered.filter((profile) =>
-                Object.values(profile).some((value) =>
-                    String(value)
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                )
-            );
+    const currentColumns = useMemo(() => {
+        switch (tabValue) {
+            case 0:
+                return tabbedColumns.personal;
+            case 1:
+                return tabbedColumns.education;
+            case 2:
+                return [
+                    allColumns[0], // name
+                    allColumns[19], // undergrad_lab_credit_units
+                    allColumns[20], // undergrad_lecture_credit_units
+                    allColumns[21], // undergrad_total_credit_units
+                    allColumns[22], // undergrad_lab_hours_per_week
+                    allColumns[23], // undergrad_lecture_hours_per_week
+                    allColumns[24], // undergrad_total_hours_per_week
+                    allColumns[25], // undergrad_lab_contact_hours
+                    allColumns[26], // undergrad_lecture_contact_hours
+                    allColumns[27], // undergrad_total_contact_hours
+                    allColumns[28], // graduate_lab_credit_units
+                    allColumns[29], // graduate_lecture_credit_units
+                    allColumns[30], // graduate_total_credit_units
+                    allColumns[31], // graduate_lab_contact_hours
+                    allColumns[32], // graduate_lecture_contact_hours
+                    allColumns[33], // graduate_total_contact_hours
+                ];
+            case 3:
+                return tabbedColumns.other;
+            default:
+                return tabbedColumns.personal;
         }
+    }, [tabValue, tabbedColumns]);
 
-        // Apply filters
-        if (facultyRankFilter) {
-            filtered = filtered.filter(
-                (profile) =>
-                    (profile.generic_faculty_rank || "-") === facultyRankFilter
-            );
+    const columnGroupingModel = useMemo(() => {
+        if (tabValue === 2) {
+            return [
+                {
+                    groupId: " ",
+                    children: [{ field: "name" }],
+                },
+                {
+                    groupId: "Undergraduate Teaching Load",
+                    headerName: "Undergraduate Teaching Load",
+                    children: [
+                        { field: "undergrad_lab_credit_units" },
+                        { field: "undergrad_lecture_credit_units" },
+                        { field: "undergrad_total_credit_units" },
+                        { field: "undergrad_lab_hours_per_week" },
+                        { field: "undergrad_lecture_hours_per_week" },
+                        { field: "undergrad_total_hours_per_week" },
+                        { field: "undergrad_lab_contact_hours" },
+                        { field: "undergrad_lecture_contact_hours" },
+                        { field: "undergrad_total_contact_hours" },
+                    ],
+                },
+                {
+                    groupId: "Graduate Teaching Load",
+                    headerName: "Graduate Teaching Load",
+                    children: [
+                        { field: "graduate_lab_credit_units" },
+                        { field: "graduate_lecture_credit_units" },
+                        { field: "graduate_total_credit_units" },
+                        { field: "graduate_lab_contact_hours" },
+                        { field: "graduate_lecture_contact_hours" },
+                        { field: "graduate_total_contact_hours" },
+                    ],
+                },
+            ];
         }
-        if (homeCollegeFilter) {
-            filtered = filtered.filter(
-                (profile) => (profile.home_college || "-") === homeCollegeFilter
-            );
-        }
-        if (isTenuredFilter) {
-            filtered = filtered.filter(
-                (profile) =>
-                    (profile.is_tenured ? "Yes" : "No") === isTenuredFilter
-            );
-        }
-        if (genderFilter) {
-            filtered = filtered.filter(
-                (profile) =>
-                    (profile.gender === 1
-                        ? "Male"
-                        : profile.gender === 2
-                        ? "Female"
-                        : "-") === genderFilter
-            );
-        }
-
-        setFilteredData(filtered);
-        setPage(0); // Reset to first page when filters or search change
-    }, [
-        searchQuery,
-        facultyRankFilter,
-        homeCollegeFilter,
-        isTenuredFilter,
-        genderFilter,
-        facultyProfiles,
-    ]);
-
-    // Slice data for pagination
-    const paginatedProfiles = useMemo(
-        () =>
-            filteredData.slice(
-                page * rowsPerPage,
-                page * rowsPerPage + rowsPerPage
-            ),
-        [filteredData, page, rowsPerPage]
-    );
-
-    // Define column configurations for each tab
-    const columnConfigs = useMemo(
-        () => ({
-            0: {
-                // Personal Info
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    { data: "generic_faculty_rank", title: "FACULTY RANK" },
-                    { data: "home_college", title: "HOME COLLEGE" },
-                    { data: "home_department", title: "HOME DEPT" },
-                    {
-                        data: "is_tenured",
-                        title: "TENURED?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#2e7d32" : "#616161"; // Green for Yes, gray for No
-                        },
-                    },
-                    { data: "ssl_salary_grade", title: "SSL GRADE" },
-                    {
-                        data: "annual_basic_salary",
-                        title: "ANNUAL SALARY",
-                        type: "numeric",
-                    },
-                    { data: "on_leave_without_pay", title: "ON LEAVE?" },
-                    {
-                        data: "full_time_equivalent",
-                        title: "FTE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "gender",
-                        title: "GENDER",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML =
-                                value === 1
-                                    ? "Male"
-                                    : value === 2
-                                    ? "Female"
-                                    : "-";
-                        },
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    generic_faculty_rank: profile.generic_faculty_rank || "-",
-                    home_college: profile.home_college || "-",
-                    home_department: profile.home_department || "-",
-                    is_tenured: profile.is_tenured || false,
-                    ssl_salary_grade: profile.ssl_salary_grade || "-",
-                    annual_basic_salary: profile.annual_basic_salary || 0,
-                    on_leave_without_pay: profile.on_leave_without_pay || "-",
-                    full_time_equivalent: profile.full_time_equivalent || 0,
-                    gender: profile.gender || "-",
-                })),
-            },
-            1: {
-                // Education
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "highest_degree_attained",
-                        title: "HIGHEST DEGREE",
-                    },
-                    {
-                        data: "pursuing_next_degree",
-                        title: "PURSUING NEXT DEGREE?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161"; // Blue for Yes, gray for No
-                        },
-                    },
-                    {
-                        data: "discipline_teaching_load_1",
-                        title: "DISCIPLINE (1)",
-                    },
-                    {
-                        data: "discipline_teaching_load_2",
-                        title: "DISCIPLINE (2)",
-                    },
-                    {
-                        data: "discipline_bachelors",
-                        title: "BACHELORS DISCIPLINE",
-                    },
-                    { data: "discipline_masters", title: "MASTERS DISCIPLINE" },
-                    {
-                        data: "discipline_doctorate",
-                        title: "DOCTORATE DISCIPLINE",
-                    },
-                    {
-                        data: "masters_with_thesis",
-                        title: "MASTERS W/ THESIS?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161";
-                        },
-                    },
-                    {
-                        data: "doctorate_with_dissertation",
-                        title: "DOCTORATE W/ DISSERTATION?",
-                        renderer: (instance, td, row, col, prop, value) => {
-                            td.innerHTML = value ? "Yes" : "No";
-                            td.style.color = value ? "#0288d1" : "#616161";
-                        },
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    highest_degree_attained:
-                        profile.highest_degree_attained || "-",
-                    pursuing_next_degree: profile.pursuing_next_degree || false,
-                    discipline_teaching_load_1:
-                        profile.discipline_teaching_load_1 || "-",
-                    discipline_teaching_load_2:
-                        profile.discipline_teaching_load_2 || "-",
-                    discipline_bachelors: profile.discipline_bachelors || "-",
-                    discipline_masters: profile.discipline_masters || "-",
-                    discipline_doctorate: profile.discipline_doctorate || "-",
-                    masters_with_thesis: profile.masters_with_thesis || false,
-                    doctorate_with_dissertation:
-                        profile.doctorate_with_dissertation || false,
-                })),
-            },
-            2: {
-                // Teaching Load
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "undergrad_lab_credit_units",
-                        title: "LAB CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_credit_units",
-                        title: "LECTURE CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_credit_units",
-                        title: "TOTAL CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lab_hours_per_week",
-                        title: "LAB HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_hours_per_week",
-                        title: "LECTURE HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_hours_per_week",
-                        title: "TOTAL HRS/WEEK",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lab_contact_hours",
-                        title: "STUDENT CONTACT LAB",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_lecture_contact_hours",
-                        title: "STUDENT CONTACT LECTURE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "undergrad_total_contact_hours",
-                        title: "TOTAL CONTACT HRS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lab_credit_units",
-                        title: "LAB CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lecture_credit_units",
-                        title: "LECTURE CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_total_credit_units",
-                        title: "TOTAL CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lab_contact_hours",
-                        title: "STUDENT CONTACT LAB",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_lecture_contact_hours",
-                        title: "STUDENT CONTACT LECTURE",
-                        type: "numeric",
-                    },
-                    {
-                        data: "graduate_total_contact_hours",
-                        title: "TOTAL CONTACT HRS",
-                        type: "numeric",
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    undergrad_lab_credit_units:
-                        profile.undergrad_lab_credit_units || 0,
-                    undergrad_lecture_credit_units:
-                        profile.undergrad_lecture_credit_units || 0,
-                    undergrad_total_credit_units:
-                        profile.undergrad_total_credit_units || 0,
-                    undergrad_lab_hours_per_week:
-                        profile.undergrad_lab_hours_per_week || 0,
-                    undergrad_lecture_hours_per_week:
-                        profile.undergrad_lecture_hours_per_week || 0,
-                    undergrad_total_hours_per_week:
-                        profile.undergrad_total_hours_per_week || 0,
-                    undergrad_lab_contact_hours:
-                        profile.undergrad_lab_contact_hours || 0,
-                    undergrad_lecture_contact_hours:
-                        profile.undergrad_lecture_contact_hours || 0,
-                    undergrad_total_contact_hours:
-                        profile.undergrad_total_contact_hours || 0,
-                    graduate_lab_credit_units:
-                        profile.graduate_lab_credit_units || 0,
-                    graduate_lecture_credit_units:
-                        profile.graduate_lecture_credit_units || 0,
-                    graduate_total_credit_units:
-                        profile.graduate_total_credit_units || 0,
-                    graduate_lab_contact_hours:
-                        profile.graduate_lab_contact_hours || 0,
-                    graduate_lecture_contact_hours:
-                        profile.graduate_lecture_contact_hours || 0,
-                    graduate_total_contact_hours:
-                        profile.graduate_total_contact_hours || 0,
-                })),
-            },
-            3: {
-                // Other Loads
-                columns: [
-                    { data: "name", title: "NAME OF FACULTY" },
-                    {
-                        data: "research_load",
-                        title: "RESEARCH LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "extension_services_load",
-                        title: "EXTENSION SERVICES",
-                        type: "numeric",
-                    },
-                    {
-                        data: "study_load",
-                        title: "STUDY LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "production_load",
-                        title: "PRODUCTION LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "administrative_load",
-                        title: "ADMIN LOAD",
-                        type: "numeric",
-                    },
-                    {
-                        data: "other_load_credits",
-                        title: "OTHER LOAD CREDITS",
-                        type: "numeric",
-                    },
-                    {
-                        data: "total_work_load",
-                        title: "TOTAL WORK LOAD",
-                        type: "numeric",
-                    },
-                ],
-                data: paginatedProfiles.map((profile) => ({
-                    name: profile.name || "-",
-                    research_load: profile.research_load || 0,
-                    extension_services_load:
-                        profile.extension_services_load || 0,
-                    study_load: profile.study_load || 0,
-                    production_load: profile.production_load || 0,
-                    administrative_load: profile.administrative_load || 0,
-                    other_load_credits: profile.other_load_credits || 0,
-                    total_work_load: profile.total_work_load || 0,
-                })),
-            },
-        }),
-        [paginatedProfiles]
-    );
-
-    const currentConfig = columnConfigs[tabIndex];
+        return [];
+    }, [tabValue]);
 
     return (
-        <Box sx={{ mt: 3 }}>
-            <Paper sx={{ borderRadius: 1, mb: 2 }}>
+        <Box sx={{ mt: 2, position: "relative" }}>
+            <Grid container spacing={1} sx={{ mb: 1 }}>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
+                    <TextField
+                        fullWidth
+                        label="Search by Name"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        sx={{ "& .MuiInputBase-root": { fontSize: "0.85rem" } }}
+                    />
+                </Grid>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ fontSize: "0.85rem" }}>
+                            Faculty Rank
+                        </InputLabel>
+                        <Select
+                            value={filterRank}
+                            onChange={(e) => setFilterRank(e.target.value)}
+                            label="Faculty Rank"
+                            sx={{ fontSize: "0.85rem" }}
+                        >
+                            {filterOptions.ranks.map((rank) => (
+                                <MenuItem
+                                    key={rank || "all"}
+                                    value={rank}
+                                    sx={{ fontSize: "0.85rem" }}
+                                >
+                                    {rank || "All"}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ fontSize: "0.85rem" }}>
+                            Home College
+                        </InputLabel>
+                        <Select
+                            value={filterCollege}
+                            onChange={(e) => setFilterCollege(e.target.value)}
+                            label="Home College"
+                            sx={{ fontSize: "0.85rem" }}
+                        >
+                            {filterOptions.colleges.map((college) => (
+                                <MenuItem
+                                    key={college || "all"}
+                                    value={college}
+                                    sx={{ fontSize: "0.85rem" }}
+                                >
+                                    {college || "All"}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel sx={{ fontSize: "0.85rem" }}>
+                            Gender
+                        </InputLabel>
+                        <Select
+                            value={filterGender}
+                            onChange={(e) => setFilterGender(e.target.value)}
+                            label="Gender"
+                            sx={{ fontSize: "0.85rem" }}
+                        >
+                            {filterOptions.genders.map((gender) => (
+                                <MenuItem
+                                    key={gender || "all"}
+                                    value={gender}
+                                    sx={{ fontSize: "0.85rem" }}
+                                >
+                                    {gender || "All"}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Grid>
+            </Grid>
+
+            <Paper
+                sx={{
+                    borderRadius: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    height: {
+                        xs: "60vh",
+                        sm: "50vh",
+                        md: "50vh",
+                    },
+                    maxWidth: {
+                        xs: "100vw",
+                        sm: "95vw",
+                        md: "98vw",
+                    },
+                    overflowX: "auto",
+                    overflowY: "hidden",
+                }}
+            >
                 <Tabs
-                    value={tabIndex}
+                    value={tabValue}
                     onChange={handleTabChange}
+                    aria-label="faculty data tabs"
                     variant="fullWidth"
                     sx={{
                         borderBottom: 1,
@@ -444,6 +834,7 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                             fontSize: "0.875rem",
                             fontWeight: "medium",
                         },
+                        flexShrink: 0,
                     }}
                 >
                     <Tab label="Personal Info" />
@@ -451,342 +842,166 @@ const FacultyProfileTable = ({ facultyProfiles }) => {
                     <Tab label="Teaching Load" />
                     <Tab label="Other Loads" />
                 </Tabs>
+
+                <Paper
+                    sx={{
+                        borderRadius: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        height: {
+                            xs: "60vh",
+                            sm: "50vh",
+                            md: "50vh",
+                        },
+                        maxWidth: {
+                            xs: "100vw",
+                            sm: "95vw",
+                            md: "98vw",
+                        },
+                        overflowX: "auto",
+                        overflowY: "hidden",
+                    }}
+                >
+                    <DataGrid
+                        rows={data}
+                        columns={currentColumns}
+                        editMode="cell"
+                        disableColumnFilter
+                        disableColumnMenu
+                        disableColumnSorting
+                        onCellEditStop={handleCellEditStop}
+                        density="compact"
+                        columnGroupingModel={columnGroupingModel}
+                        experimentalFeatures={{ columnGrouping: true }}
+                        sx={{
+                            border: 0,
+                            "& .MuiDataGrid-root": {
+                                height: "100%",
+                                p: 1,
+                                flexDirection: "column",
+                                minWidth: "fit-content",
+                            },
+                            "& .MuiDataGrid-main": {
+                                overflowX: "auto",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                    height: "8px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                    backgroundColor: "rgba(0,0,0,0.2)",
+                                    borderRadius: "4px",
+                                },
+                            },
+                            "& .MuiDataGrid-footerContainer": {
+                                borderTop: 1,
+                                borderColor: "divider",
+                                position: "sticky",
+                                bottom: 0,
+                                backgroundColor: "background.paper",
+                                zIndex: 1,
+                                minWidth: "fit-content",
+                            },
+                            "& .MuiDataGrid-columnSeparator": {
+                                visibility: "hidden",
+                            },
+                            "& .MuiDataGrid-cell": {
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                padding: "4px 8px",
+                            },
+                            "& .MuiDataGrid-columnHeader": {
+                                borderRight: "1px solid",
+                                borderColor: "divider",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "clip",
+                                padding: "4px 8px",
+                            },
+                            "& .MuiDataGrid-columnHeaderTitle": {
+                                whiteSpace: "nowrap",
+                                overflow: "visible",
+                            },
+                        }}
+                        disableRowSelectionOnClick
+                        initialState={{
+                            pagination: { paginationModel: { pageSize: 10 } },
+                        }}
+                        pageSizeOptions={[10, 25, 50]}
+                    />
+                </Paper>
             </Paper>
 
-            {facultyProfiles.length === 0 ? (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                    No faculty profiles available.
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+                <Alert
+                    onClose={() => setSnackbarOpen(false)}
+                    severity={snackbarSeverity}
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage}
                 </Alert>
-            ) : (
-                <>
-                    {/* Search and Filter Section */}
-                    <Box sx={{ mb: 1 }}>
-                        <Grid container spacing={1} alignItems="center">
-                            <Grid item xs={12} sm={4}>
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    label="Search"
-                                    variant="outlined"
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    placeholder="Search..."
-                                    sx={{
-                                        "& .MuiInputBase-root": {
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                        },
-                                        "& .MuiInputLabel-root": {
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                        },
-                                        "& .MuiInputLabel-shrink": {
-                                            transform:
-                                                "translate(14px, -6px) scale(0.75)",
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Faculty Rank
-                                    </InputLabel>
-                                    <Select
-                                        value={facultyRankFilter}
-                                        onChange={(e) =>
-                                            setFacultyRankFilter(e.target.value)
-                                        }
-                                        label="Faculty Rank"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueFacultyRanks.map((rank) => (
-                                            <MenuItem
-                                                key={rank}
-                                                value={rank}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {rank}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Home College
-                                    </InputLabel>
-                                    <Select
-                                        value={homeCollegeFilter}
-                                        onChange={(e) =>
-                                            setHomeCollegeFilter(e.target.value)
-                                        }
-                                        label="Home College"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueHomeColleges.map((college) => (
-                                            <MenuItem
-                                                key={college}
-                                                value={college}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {college}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Tenured
-                                    </InputLabel>
-                                    <Select
-                                        value={isTenuredFilter}
-                                        onChange={(e) =>
-                                            setIsTenuredFilter(e.target.value)
-                                        }
-                                        label="Tenured"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueTenuredOptions.map((option) => (
-                                            <MenuItem
-                                                key={option}
-                                                value={option}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {option}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6} sm={2}>
-                                <FormControl
-                                    fullWidth
-                                    variant="outlined"
-                                    size="small"
-                                >
-                                    <InputLabel
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            transform:
-                                                "translate(14px, 8px) scale(1)",
-                                            "&.MuiInputLabel-shrink": {
-                                                transform:
-                                                    "translate(14px, -6px) scale(0.75)",
-                                            },
-                                        }}
-                                    >
-                                        Gender
-                                    </InputLabel>
-                                    <Select
-                                        value={genderFilter}
-                                        onChange={(e) =>
-                                            setGenderFilter(e.target.value)
-                                        }
-                                        label="Gender"
-                                        sx={{
-                                            fontSize: "0.75rem",
-                                            height: "32px",
-                                            "& .MuiSelect-select": {
-                                                padding: "6px 32px 6px 12px",
-                                            },
-                                        }}
-                                    >
-                                        <MenuItem
-                                            value=""
-                                            sx={{ fontSize: "0.75rem" }}
-                                        >
-                                            All
-                                        </MenuItem>
-                                        {uniqueGenderOptions.map((option) => (
-                                            <MenuItem
-                                                key={option}
-                                                value={option}
-                                                sx={{ fontSize: "0.75rem" }}
-                                            >
-                                                {option}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                        </Grid>
-                    </Box>
-
-                    <Box sx={{ height: 460, overflow: "auto" }}>
-                        <HotTable
-                            data={currentConfig.data}
-                            columns={currentConfig.columns}
-                            colHeaders={true}
-                            rowHeaders={true}
-                            stretchH="all"
-                            height="100%" // Fill the container height
-                            licenseKey="non-commercial-and-evaluation"
-                            settings={{
-                                readOnly: true,
-                                manualColumnResize: true,
-                                columnSorting: true,
-                                contextMenu: false,
-                                nestedHeaders:
-                                    tabIndex === 2
-                                        ? [
-                                              [
-                                                  { label: "", colspan: 1 },
-                                                  {
-                                                      label: "UNDERGRADUATE TEACHING LOAD",
-                                                      colspan: 9,
-                                                  },
-                                                  {
-                                                      label: "GRADUATE TEACHING LOAD",
-                                                      colspan: 6,
-                                                  },
-                                              ],
-                                              currentConfig.columns.map(
-                                                  (col) => col.title
-                                              ),
-                                          ]
-                                        : [
-                                              currentConfig.columns.map(
-                                                  (col) => col.title
-                                              ),
-                                          ],
-                                cells: (row, col) => {
-                                    const cellProperties = {};
-                                    const value =
-                                        currentConfig.data[row]?.[
-                                            currentConfig.columns[col].data
-                                        ];
-                                    const columnData =
-                                        currentConfig.columns[col].data;
-
-                                    cellProperties.renderer = (
-                                        instance,
-                                        td
-                                    ) => {
-                                        td.innerHTML =
-                                            value !== undefined &&
-                                            value !== null
-                                                ? value
-                                                : "-";
-                                        td.style.whiteSpace = "nowrap";
-                                        td.style.overflow = "hidden";
-                                        td.style.textOverflow = "ellipsis";
-                                        td.style.maxWidth =
-                                            col === 0 ? "180px" : "120px";
-                                        td.title = value || "-"; // Tooltip
-
-                                        // Center-align all columns except the "name" column
-                                        if (columnData !== "name") {
-                                            td.style.textAlign = "center";
-                                        }
-                                    };
-                                    return cellProperties;
-                                },
-                            }}
-                        />
-                    </Box>
-                    <TablePagination
-                        rowsPerPageOptions={[20, 50, 100]}
-                        component="div"
-                        count={filteredData.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        sx={{ mt: 1 }}
-                    />
-                </>
-            )}
+            </Snackbar>
         </Box>
     );
 };
 
 FacultyProfileTable.propTypes = {
-    facultyProfiles: PropTypes.array.isRequired,
+    facultyProfiles: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            name: PropTypes.string,
+            generic_faculty_rank: PropTypes.string,
+            home_college: PropTypes.string,
+            home_department: PropTypes.string,
+            is_tenured: PropTypes.oneOfType([
+                PropTypes.string,
+                PropTypes.number,
+            ]),
+            ssl_salary_grade: PropTypes.string,
+            annual_basic_salary: PropTypes.number,
+            on_leave_without_pay: PropTypes.string,
+            full_time_equivalent: PropTypes.number,
+            gender: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            highest_degree_attained: PropTypes.string,
+            pursuing_next_degree: PropTypes.number,
+            discipline_teaching_load_1: PropTypes.string,
+            discipline_teaching_load_2: PropTypes.string,
+            discipline_bachelors: PropTypes.string,
+            discipline_masters: PropTypes.string,
+            discipline_doctorate: PropTypes.string,
+            masters_with_thesis: PropTypes.number,
+            doctorate_with_dissertation: PropTypes.number,
+            undergrad_lab_credit_units: PropTypes.number,
+            undergrad_lecture_credit_units: PropTypes.number,
+            undergrad_total_credit_units: PropTypes.number,
+            undergrad_lab_hours_per_week: PropTypes.number,
+            undergrad_lecture_hours_per_week: PropTypes.number,
+            undergrad_total_hours_per_week: PropTypes.number,
+            undergrad_lab_contact_hours: PropTypes.number,
+            undergrad_lecture_contact_hours: PropTypes.number,
+            undergrad_total_contact_hours: PropTypes.number,
+            graduate_lab_credit_units: PropTypes.number,
+            graduate_lecture_credit_units: PropTypes.number,
+            graduate_total_credit_units: PropTypes.number,
+            graduate_lab_contact_hours: PropTypes.number,
+            graduate_lecture_contact_hours: PropTypes.number,
+            graduate_total_contact_hours: PropTypes.number,
+            research_load: PropTypes.number,
+            extension_services_load: PropTypes.number,
+            study_load: PropTypes.number,
+            production_load: PropTypes.number,
+            administrative_load: PropTypes.number,
+            other_load_credits: PropTypes.number,
+            total_work_load: PropTypes.number,
+            data_date: PropTypes.string,
+        })
+    ).isRequired,
 };
 
 export default FacultyProfileTable;

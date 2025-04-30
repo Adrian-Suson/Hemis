@@ -9,7 +9,7 @@ class Program extends Model
 {
     use HasFactory;
 
-    protected $table = 'curricular_programs'; // Ensure this matches the table name in the migration
+    protected $table = 'curricular_programs';
 
     protected $fillable = [
         'institution_id',

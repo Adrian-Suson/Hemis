@@ -1,84 +1,89 @@
-import { useState, useEffect } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import {
     Box,
     Typography,
-    LinearProgress,
     Tabs,
     Tab,
     Breadcrumbs,
     Link,
     Button,
-    CircularProgress,
     Alert,
-    ButtonGroup,
+    Toolbar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    alpha,
+    useTheme,
+    Paper,
+    IconButton,
+    useMediaQuery,
 } from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
+import FacultyProfileSkeleton from "./FacultyProfileSkeleton";
 import ExcelJS from "exceljs";
-import { FaUpload, FaDownload } from "react-icons/fa"
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import UploadIcon from "@mui/icons-material/Upload";
+import DownloadIcon from "@mui/icons-material/Download";
+import { useLoading } from "../../../Context/LoadingContext";
+import { decryptId } from "../../../utils/encryption";
+import config from "../../../utils/config";
 
 const facultyGroups = [
     {
         label: "Group A1",
-        value: "A1",
         sheetName: "GROUP A1",
         description:
             "FULL-TIME FACULTY MEMBERS WITH THEIR OWN FACULTY PLANTILLA ITEMS TEACHING AT ELEM, SECONDARY AND TECH/VOC",
     },
     {
         label: "Group A2",
-        value: "A2",
         sheetName: "GROUP A2",
         description:
             "HALF-TIME FACULTY MEMBERS WITH THEIR OWN FACULTY PLANTILLA ITEMS",
     },
     {
         label: "Group A3",
-        value: "A3",
         sheetName: "GROUP A3",
         description:
             "PERSONS OCCUPYING RESEARCH PLANTILLA ITEMS BUT CLASSIFIED AS REGULAR FACULTY",
     },
     {
         label: "Group B",
-        value: "B",
         sheetName: "GROUP B",
         description:
             "FULL-TIME FACULTY MEMBERS WITHOUT ITEMS BUT DRAWING SALARIES FROM THE PS ITEMS OF FACULTY ON LEAVE WITHOUT PAY",
     },
     {
         label: "Group C1",
-        value: "C1",
         sheetName: "GROUP C1",
         description:
             "FULL-TIME FACULTY MEMBERS WITHOUT ITEMS DRAWING SALARIES FROM GAA PS LUMP SUMS",
     },
     {
         label: "Group C2",
-        value: "C2",
         sheetName: "GROUP C2",
         description:
             "FULL-TIME FACULTY MEMBERS WITHOUT ITEMS PAID DRAWING SALARIES FROM SUC INCOME",
     },
     {
         label: "Group C3",
-        value: "C3",
         sheetName: "GROUP C3",
         description:
             "FULL-TIME FACULTY MEMBERS WITH NO PS ITEMS DRAWING SALARIES FROM LGU FUNDS",
     },
     {
         label: "Group D",
-        value: "D",
         sheetName: "GROUP D",
         description:
             "TEACHING FELLOWS AND TEACHING ASSOCIATES (but not Graduate Assistants)",
     },
     {
         label: "Group E",
-        value: "E",
         sheetName: "GROUP E",
         description:
             "LECTURERS AND ALL OTHER PART-TIME FACULTY WITH NO ITEMS (e.g. PROFS EMERITI, ADJUNCT/AFFILIATE FACULTY, VISITING PROFS, etc.)",
@@ -86,61 +91,98 @@ const facultyGroups = [
 ];
 
 const FacultyProfileUpload = () => {
-    const [selectedGroup, setSelectedGroup] = useState(facultyGroups[0].value);
+    const [selectedGroup, setSelectedGroup] = useState(
+        facultyGroups[0].sheetName
+    );
     const [facultyProfiles, setFacultyProfiles] = useState([]);
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { showLoading, hideLoading, updateProgress } = useLoading();
     const [error, setError] = useState(null);
-    const institutionId = useParams();
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: "",
-        severity: "info",
-    });
+    const { institutionId: encryptedInstitutionId } = useParams();
     const navigate = useNavigate();
+    const [institutionName, setInstitutionName] = useState("");
+    const [openUploadDialog, setOpenUploadDialog] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const theme = useTheme();
+    const isSm = useMediaQuery(theme.breakpoints.down("sm"));
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        fetchFacultyProfiles();
+        console.log("selectedGroup:", selectedGroup);
+    }, []);
 
-        if (!token) {
-            setError("Authentication token is missing.");
+    const fetchFacultyProfiles = async () => {
+        setLoading(true);
+        showLoading();
+        setError(null);
+
+        // Decrypt the institutionId
+        const institutionId = decryptId(
+            decodeURIComponent(encryptedInstitutionId)
+        );
+
+        // Validate decrypted ID
+        if (!institutionId || isNaN(institutionId)) {
+            setError("Invalid institution ID.");
+            setLoading(false);
+            hideLoading();
+            setFacultyProfiles([]);
             return;
         }
 
-        const fetchFacultyProfiles = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await axios.get(
-                    `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId.institutionId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
-                console.log("API Response:", response.data); // Debug log
-                setFacultyProfiles(response.data);
-            } catch (error) {
-                console.error("Error fetching faculty profiles:", error);
-                setError("Failed to load faculty profiles. Please try again.");
-            } finally {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setError("Authentication token is missing.");
                 setLoading(false);
+                hideLoading();
+                return;
             }
-        };
 
-        fetchFacultyProfiles();
-    }, [institutionId]);
+            const url = `${config.API_URL}/faculty-profiles?institution_id=${institutionId}`;
+            const response = await axios.get(url, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            console.log("Institution ID:", institutionId);
+            console.log("API Response:", response.data);
+
+            setFacultyProfiles(
+                Array.isArray(response.data) ? response.data : []
+            );
+            setInstitutionName(
+                response.data[0]?.institution.name || "Unknown Institution"
+            );
+        } catch (error) {
+            console.error("Error fetching faculty profiles:", error);
+            setError("Failed to load faculty profiles. Please try again.");
+            setFacultyProfiles([]);
+        } finally {
+            setLoading(false);
+            hideLoading();
+        }
+    };
 
     const handleTabChange = (_, newValue) => {
         setSelectedGroup(newValue);
+        console.log("Selected Group:", newValue);
+        // No need to fetch again; filtering happens in frontend
     };
+
+    // Filter faculty profiles by selected group in the frontend
+    const filteredFacultyProfiles = useMemo(() => {
+        return facultyProfiles.filter(
+            (profile) => profile.faculty_group === selectedGroup
+        );
+    }, [facultyProfiles, selectedGroup]);
 
     const processExcelFile = async (file) => {
         if (!file) return;
 
         setIsUploading(true);
-        setUploadProgress(5);
+        updateProgress(5);
 
         const token = localStorage.getItem("token");
         if (!token) {
@@ -158,17 +200,17 @@ const FacultyProfileUpload = () => {
                 const workbook = XLSX.read(data, { type: "binary" });
 
                 let allFacultyProfiles = [];
-                const seenProfiles = new Set(); // To track unique profiles
+                const seenProfiles = new Set();
 
                 for (let sheetIndex = 0; sheetIndex < 9; sheetIndex++) {
                     const sheetName = workbook.SheetNames[sheetIndex];
                     const sheet = workbook.Sheets[sheetName];
 
-                    setUploadProgress(10 + sheetIndex * 10);
+                    updateProgress(10 + sheetIndex * 10);
 
                     const jsonData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 9,
+                        range: 6,
                     });
 
                     const validRows = jsonData.filter(
@@ -182,54 +224,115 @@ const FacultyProfileUpload = () => {
                         console.log(`Skipping empty sheet: ${sheetName}`);
                         continue;
                     }
-
+                    const institutionId = decryptId(
+                        decodeURIComponent(encryptedInstitutionId)
+                    );
+                    updateProgress(20 + sheetIndex * 10);
                     const processedFacultyProfiles = validRows.map((row) => ({
-                        institution_id: institutionId.institutionId,
+                        institution_id: institutionId,
                         faculty_group: sheetName,
                         name: row[1] ? String(row[1]) : null,
-                        generic_faculty_rank: row[2] ? parseInt(row[2], 10) : null,
+                        generic_faculty_rank: row[2]
+                            ? parseInt(row[2], 10)
+                            : null,
                         home_college: row[3] ? String(row[3]) : null,
                         home_department: row[4] ? String(row[4]) : null,
-                        is_tenured: row[5] ? Boolean(parseInt(row[5])) : false,
+                        is_tenured: row[5] ? parseInt(row[5]) : null,
                         ssl_salary_grade: row[6] ? parseInt(row[6], 10) : null,
-                        annual_basic_salary: row[7] ? parseInt(row[7], 10) : null,
-                        on_leave_without_pay: row[8] ? parseInt(row[8], 10) : null,
-                        full_time_equivalent: row[9] ? parseFloat(row[9]) : null,
+                        annual_basic_salary: row[7]
+                            ? parseInt(row[7], 10)
+                            : null,
+                        on_leave_without_pay: row[8]
+                            ? parseInt(row[8], 10)
+                            : null,
+                        full_time_equivalent: row[9]
+                            ? parseFloat(row[9])
+                            : null,
                         gender: row[10] ? parseInt(row[10], 10) : null,
-                        highest_degree_attained: row[11] ? parseInt(row[11], 10) : null,
-                        pursuing_next_degree: row[12] ? parseInt(row[12], 10) : null,
-                        discipline_teaching_load_1: row[13] ? String(row[13]) : null,
-                        discipline_teaching_load_2: row[14] ? String(row[14]) : null,
+                        highest_degree_attained: row[11]
+                            ? parseInt(row[11], 10)
+                            : null,
+                        pursuing_next_degree: row[12]
+                            ? parseInt(row[12], 10)
+                            : null,
+                        discipline_teaching_load_1: row[13]
+                            ? String(row[13])
+                            : null,
+                        discipline_teaching_load_2: row[14]
+                            ? String(row[14])
+                            : null,
                         discipline_bachelors: row[15] ? String(row[15]) : null,
                         discipline_masters: row[16] ? String(row[16]) : null,
                         discipline_doctorate: row[17] ? String(row[17]) : null,
-                        masters_with_thesis: row[18] ? parseInt(row[18], 10) : null,
-                        doctorate_with_dissertation: row[19] ? parseInt(row[19], 10) : null,
-                        undergrad_lab_credit_units: row[20] ? parseFloat(row[20]) : null,
-                        undergrad_lecture_credit_units: row[21] ? parseFloat(row[21]) : null,
-                        undergrad_total_credit_units: row[22] ? parseFloat(row[22]) : null,
-                        undergrad_lab_hours_per_week: row[23] ? parseFloat(row[23]) : null,
-                        undergrad_lecture_hours_per_week: row[24] ? parseFloat(row[24]) : null,
-                        undergrad_total_hours_per_week: row[25] ? parseFloat(row[25]) : null,
-                        undergrad_lab_contact_hours: row[26] ? parseFloat(row[26]) : null,
-                        undergrad_lecture_contact_hours: row[27] ? parseFloat(row[27]) : null,
-                        undergrad_total_contact_hours: row[28] ? parseFloat(row[28]) : null,
-                        graduate_lab_credit_units: row[29] ? parseFloat(row[29]) : null,
-                        graduate_lecture_credit_units: row[30] ? parseFloat(row[30]) : null,
-                        graduate_total_credit_units: row[31] ? parseFloat(row[31]) : null,
-                        graduate_lab_contact_hours: row[32] ? parseFloat(row[32]) : null,
-                        graduate_lecture_contact_hours: row[33] ? parseFloat(row[33]) : null,
-                        graduate_total_contact_hours: row[34] ? parseFloat(row[34]) : null,
+                        masters_with_thesis: row[18]
+                            ? parseInt(row[18], 10)
+                            : null,
+                        doctorate_with_dissertation: row[19]
+                            ? parseInt(row[19], 10)
+                            : null,
+                        undergrad_lab_credit_units: row[20]
+                            ? parseFloat(row[20])
+                            : null,
+                        undergrad_lecture_credit_units: row[21]
+                            ? parseFloat(row[21])
+                            : null,
+                        undergrad_total_credit_units: row[22]
+                            ? parseFloat(row[22])
+                            : null,
+                        undergrad_lab_hours_per_week: row[23]
+                            ? parseFloat(row[23])
+                            : null,
+                        undergrad_lecture_hours_per_week: row[24]
+                            ? parseFloat(row[24])
+                            : null,
+                        undergrad_total_hours_per_week: row[25]
+                            ? parseFloat(row[25])
+                            : null,
+                        undergrad_lab_contact_hours: row[26]
+                            ? parseFloat(row[26])
+                            : null,
+                        undergrad_lecture_contact_hours: row[27]
+                            ? parseFloat(row[27])
+                            : null,
+                        undergrad_total_contact_hours: row[28]
+                            ? parseFloat(row[28])
+                            : null,
+                        graduate_lab_credit_units: row[29]
+                            ? parseFloat(row[29])
+                            : null,
+                        graduate_lecture_credit_units: row[30]
+                            ? parseFloat(row[30])
+                            : null,
+                        graduate_total_credit_units: row[31]
+                            ? parseFloat(row[31])
+                            : null,
+                        graduate_lab_contact_hours: row[32]
+                            ? parseFloat(row[32])
+                            : null,
+                        graduate_lecture_contact_hours: row[33]
+                            ? parseFloat(row[33])
+                            : null,
+                        graduate_total_contact_hours: row[34]
+                            ? parseFloat(row[34])
+                            : null,
                         research_load: row[35] ? parseFloat(row[35]) : null,
-                        extension_services_load: row[36] ? parseFloat(row[36]) : null,
+                        extension_services_load: row[36]
+                            ? parseFloat(row[36])
+                            : null,
                         study_load: row[37] ? parseFloat(row[37]) : null,
                         production_load: row[38] ? parseFloat(row[38]) : null,
-                        administrative_load: row[39] ? parseFloat(row[39]) : null,
-                        other_load_credits: row[40] ? parseFloat(row[40]) : null,
+                        administrative_load: row[39]
+                            ? parseFloat(row[39])
+                            : null,
+                        other_load_credits: row[40]
+                            ? parseFloat(row[40])
+                            : null,
                         total_work_load: row[41] ? parseFloat(row[41]) : null,
+                        data_date: new Date().toLocaleDateString("en-CA", {
+                            timeZone: "Asia/Manila",
+                        }),
                     }));
 
-                    // Filter out duplicates
                     processedFacultyProfiles.forEach((profile) => {
                         const profileString = JSON.stringify(profile);
                         if (!seenProfiles.has(profileString)) {
@@ -239,90 +342,62 @@ const FacultyProfileUpload = () => {
                     });
                 }
 
-                console.log("Final Processed Faculty Data:", allFacultyProfiles);
-                setUploadProgress(80);
+                console.log(
+                    "Final Processed Faculty Data:",
+                    allFacultyProfiles
+                );
+                updateProgress(80);
 
                 if (allFacultyProfiles.length > 0) {
                     await axios.post(
-                        "http://localhost:8000/api/faculty-profiles",
+                        `${config.API_URL}/faculty-profiles`,
                         allFacultyProfiles,
                         {
                             headers: { Authorization: `Bearer ${token}` },
                         }
                     );
-
                     console.log("Faculty profiles uploaded successfully!");
-                    setFacultyProfiles((prevProfiles) => [
-                        ...prevProfiles,
-                        ...allFacultyProfiles,
-                    ]);
+                    // Refresh all profiles after upload
+                    await fetchFacultyProfiles();
                 } else {
                     alert("No valid faculty data found in the uploaded file.");
                 }
 
-                setUploadProgress(100);
-                setTimeout(() => setUploadProgress(0), 2000);
+                updateProgress(100);
             };
         } catch (error) {
             console.error("Error processing the file:", error);
-            setUploadProgress(0);
+            alert("Error uploading file. Please try again.");
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            processExcelFile(file);
+    const handleFileUpload = () => {
+        if (selectedFile) {
+            setOpenUploadDialog(false);
+            processExcelFile(selectedFile);
+            setSelectedFile(null);
         }
     };
 
-    // Filter faculty profiles based on selected group
-    const filteredFacultyProfiles = facultyProfiles.filter(
-        (profile) =>
-            profile.faculty_group ===
-            facultyGroups.find((group) => group.value === selectedGroup)
-                .sheetName
-    );
-
-    console.log("Filtered Faculty Profiles:", filteredFacultyProfiles); // Debug log
-
+    // Export functionality remains the same
     const handleExportData = async () => {
-        if (!facultyProfiles.length) {
-            setSnackbar({
-                open: true,
-                message: "No data available to export.",
-                severity: "warning",
-            });
-            return;
-        }
-
-        // Debug: Log the facultyProfiles to check if 'name' exists
         console.log("Faculty Profiles before export:", facultyProfiles);
-        console.log(
-            "Sample profile names:",
-            facultyProfiles.map((profile) => profile.name)
-        );
-
         try {
-            // Load the Excel template file from your public folder
             const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
             if (!response.ok) {
                 throw new Error(
-                    `Failed to load template file: HTTP ${response.status} - ${response.statusText}`
+                    `Failed to load template file: HTTP ${response.status}`
                 );
             }
             const arrayBuffer = await response.arrayBuffer();
 
-            // Load the workbook using ExcelJS
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(arrayBuffer);
 
-            // Define the starting row for data insertion (adjust based on template)
-            const dataStartRow = 10; // Assuming data starts at row 10 (adjust if different)
+            const dataStartRow = 7;
 
-            // Group faculty profiles by faculty_group
             const profilesByGroup = facultyGroups.reduce((acc, group) => {
                 acc[group.sheetName] = facultyProfiles.filter(
                     (profile) => profile.faculty_group === group.sheetName
@@ -335,7 +410,6 @@ const FacultyProfileUpload = () => {
                 return acc;
             }, {});
 
-            // Iterate over sheets in the workbook (up to 9 sheets based on facultyGroups)
             for (
                 let sheetIndex = 0;
                 sheetIndex < Math.min(9, workbook.worksheets.length);
@@ -344,7 +418,7 @@ const FacultyProfileUpload = () => {
                 const sheetName =
                     facultyGroups[sheetIndex]?.sheetName ||
                     `Sheet${sheetIndex + 1}`;
-                const worksheet = workbook.getWorksheet(sheetIndex + 1); // ExcelJS uses 1-based indexing
+                const worksheet = workbook.getWorksheet(sheetIndex + 1);
                 if (!worksheet) {
                     console.log(
                         `Worksheet ${sheetName} not found, skipping...`
@@ -357,89 +431,79 @@ const FacultyProfileUpload = () => {
                     `Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`
                 );
 
-                // Debug: Log the names for this sheet
-                console.log(
-                    `Names in sheet ${sheetName}:`,
-                    profilesForSheet.map((profile) => profile.name)
-                );
-
-                // Insert data row-by-row for this sheet
                 profilesForSheet.forEach((profile, i) => {
                     const row = worksheet.getRow(dataStartRow + i);
-                    row.getCell(2).value = profile.name || null; // Column B
-                    row.getCell(3).value = profile.generic_faculty_rank || 0; // Column C
-                    row.getCell(4).value = profile.home_college || null; // Column D
-                    row.getCell(5).value = profile.home_department || null; // Column E
-                    row.getCell(6).value = profile.is_tenured; // Column F
-                    row.getCell(7).value = profile.ssl_salary_grade || 0; // Column G
-                    row.getCell(8).value = profile.annual_basic_salary || 0; // Column H
-                    row.getCell(9).value = profile.on_leave_without_pay || 0; // Column I
-                    row.getCell(10).value = profile.full_time_equivalent || 0; // Column J
-                    row.getCell(11).value = profile.gender || null; // Column K
+                    row.getCell(2).value = profile.name || null;
+                    row.getCell(3).value = profile.generic_faculty_rank || 0;
+                    row.getCell(4).value = profile.home_college || null;
+                    row.getCell(5).value = profile.home_department || null;
+                    row.getCell(6).value = profile.is_tenured || null;
+                    row.getCell(7).value = profile.ssl_salary_grade || 0;
+                    row.getCell(8).value = profile.annual_basic_salary || 0;
+                    row.getCell(9).value = profile.on_leave_without_pay || 0;
+                    row.getCell(10).value = profile.full_time_equivalent || 0;
+                    row.getCell(11).value = profile.gender || null;
                     row.getCell(12).value =
-                        profile.highest_degree_attained || 0; // Column L
-                    row.getCell(13).value = profile.pursuing_next_degree; // Column M
+                        profile.highest_degree_attained || 0;
+                    row.getCell(13).value =
+                        profile.pursuing_next_degree || null;
                     row.getCell(14).value =
-                        profile.discipline_teaching_load_1 || null; // Column N
+                        profile.discipline_teaching_load_1 || null;
                     row.getCell(15).value =
-                        profile.discipline_teaching_load_2 || null; // Column O
+                        profile.discipline_teaching_load_2 || null;
                     row.getCell(16).value =
-                        profile.discipline_bachelors || null; // Column P
-                    row.getCell(17).value = profile.discipline_masters || null; // Column Q
+                        profile.discipline_bachelors || null;
+                    row.getCell(17).value = profile.discipline_masters || null;
                     row.getCell(18).value =
-                        profile.discipline_doctorate || null; // Column R
-                    row.getCell(19).value = profile.masters_with_thesis || null; // Column S
+                        profile.discipline_doctorate || null;
+                    row.getCell(19).value = profile.masters_with_thesis || null;
                     row.getCell(20).value =
-                        profile.doctorate_with_dissertation || null; // Column T
+                        profile.doctorate_with_dissertation || null;
                     row.getCell(21).value =
-                        profile.undergrad_lab_credit_units || 0; // Column U
+                        profile.undergrad_lab_credit_units || 0;
                     row.getCell(22).value =
-                        profile.undergrad_lecture_credit_units || 0; // Column V
+                        profile.undergrad_lecture_credit_units || 0;
                     row.getCell(23).value =
-                        profile.undergrad_total_credit_units || 0; // Column W
+                        profile.undergrad_total_credit_units || 0;
                     row.getCell(24).value =
-                        profile.undergrad_lab_hours_per_week || 0; // Column X
+                        profile.undergrad_lab_hours_per_week || 0;
                     row.getCell(25).value =
-                        profile.undergrad_lecture_hours_per_week || 0; // Column Y
+                        profile.undergrad_lecture_hours_per_week || 0;
                     row.getCell(26).value =
-                        profile.undergrad_total_hours_per_week || 0; // Column Z
+                        profile.undergrad_total_hours_per_week || 0;
                     row.getCell(27).value =
-                        profile.undergrad_lab_contact_hours || 0; // Column AA
+                        profile.undergrad_lab_contact_hours || 0;
                     row.getCell(28).value =
-                        profile.undergrad_lecture_contact_hours || 0; // Column AB
+                        profile.undergrad_lecture_contact_hours || 0;
                     row.getCell(29).value =
-                        profile.undergrad_total_contact_hours || 0; // Column AC
+                        profile.undergrad_total_contact_hours || 0;
                     row.getCell(30).value =
-                        profile.graduate_lab_credit_units || 0; // Column AD
+                        profile.graduate_lab_credit_units || 0;
                     row.getCell(31).value =
-                        profile.graduate_lecture_credit_units || 0; // Column AE
+                        profile.graduate_lecture_credit_units || 0;
                     row.getCell(32).value =
-                        profile.graduate_total_credit_units || 0; // Column AF
+                        profile.graduate_total_credit_units || 0;
                     row.getCell(33).value =
-                        profile.graduate_lab_contact_hours || 0; // Column AG
+                        profile.graduate_lab_contact_hours || 0;
                     row.getCell(34).value =
-                        profile.graduate_lecture_contact_hours || 0; // Column AH
+                        profile.graduate_lecture_contact_hours || 0;
                     row.getCell(35).value =
-                        profile.graduate_total_contact_hours || 0; // Column AI
-                    row.getCell(36).value = profile.research_load || 0; // Column AJ
+                        profile.graduate_total_contact_hours || 0;
+                    row.getCell(36).value = profile.research_load || 0;
                     row.getCell(37).value =
-                        profile.extension_services_load || 0; // Column AK
-                    row.getCell(38).value = profile.study_load || 0; // Column AL
-                    row.getCell(39).value = profile.production_load || 0; // Column AM
-                    row.getCell(40).value = profile.administrative_load || 0; // Column AN
-                    row.getCell(41).value = profile.other_load_credits || 0; // Column AO
-                    row.getCell(42).value = profile.total_work_load || 0; // Column AP
-
+                        profile.extension_services_load || 0;
+                    row.getCell(38).value = profile.study_load || 0;
+                    row.getCell(39).value = profile.production_load || 0;
+                    row.getCell(40).value = profile.administrative_load || 0;
+                    row.getCell(41).value = profile.other_load_credits || 0;
+                    row.getCell(42).value = profile.total_work_load || 0;
                     row.commit();
                 });
             }
 
-            // Generate a filename for the new file
             const fileName = `Form_E2_Faculty_Profiles_${
                 new Date().toISOString().split("T")[0]
             }.xlsx`;
-
-            // Write the workbook to a buffer and trigger the download
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -450,30 +514,33 @@ const FacultyProfileUpload = () => {
             a.download = fileName;
             a.click();
             window.URL.revokeObjectURL(url);
-
-            setSnackbar({
-                open: true,
-                message: "Data exported successfully across all sheets!",
-                severity: "success",
-            });
         } catch (error) {
             console.error("Error exporting data:", error);
-            setSnackbar({
-                open: true,
-                message: `Error exporting data: ${error.message}. Check the console for details.`,
-                severity: "error",
-            });
+            alert("Error exporting data. Please try again.");
         }
     };
 
-    const handleSnackbarClose = () => {
-        setSnackbar((prev) => ({ ...prev, open: false }));
-    };
-
-    console.log("Filtered Faculty Profiles:", filteredFacultyProfiles); // Debug log
+    // Show skeleton while loading
+    if (loading) {
+        return <FacultyProfileSkeleton />;
+    }
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box
+            sx={(theme) => ({
+                p: 3,
+                borderRadius: 1,
+                display: "flex",
+                flexDirection: "column",
+                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
+                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
+                overflowX: "auto",
+                overflowY: "auto",
+                [theme.breakpoints.up("md")]: {
+                    overflowY: "hidden",
+                },
+            })}
+        >
             <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
                 <Link
                     underline="hover"
@@ -491,40 +558,248 @@ const FacultyProfileUpload = () => {
                 >
                     Institution Management
                 </Link>
-                <Typography color="textPrimary">Faculties</Typography>
+                <Typography color="text.primary">
+                    {institutionName
+                        ? `${institutionName} Campuses`
+                        : "Campuses"}
+                </Typography>
             </Breadcrumbs>
 
-            {/* File Upload and Export Buttons */}
-            <ButtonGroup sx={{ mb: 2, display: "flex" }}>
-                <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    style={{ display: "none" }}
-                    id="file-upload"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                />
-                <label htmlFor="file-upload">
+            <Toolbar
+                sx={{
+                    pl: { sm: 2 },
+                    pr: { xs: 1, sm: 1 },
+                    mb: 0.5,
+                    backgroundColor: "background.paper",
+                    justifyContent: "space-between",
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    minHeight: 56,
+                }}
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                    }}
+                >
+                    <Typography
+                        variant="h5"
+                        component="div"
+                        sx={{ flexGrow: 1, fontWeight: "medium" }}
+                    >
+                        Faculties Managment
+                    </Typography>
+                    <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        sx={{
+                            display: { xs: "none", sm: "none", md: "block" },
+                        }}
+                    >
+                        {facultyGroups.find(
+                            (group) => group.sheetName === selectedGroup
+                        )?.description || "No description available"}
+                    </Typography>
+                </Box>
+
+                {/* File Upload and Export Buttons */}
+                <Box gap={2} sx={{ display: "flex", alignItems: "center" }}>
                     <Button
                         variant="contained"
                         color="secondary"
                         component="span"
-                        startIcon={<FaUpload />}
+                        startIcon={<UploadFileIcon />}
                         disabled={isUploading}
+                        onClick={() => setOpenUploadDialog(true)}
                     >
-                        {isUploading ? "Uploading..." : "Import Form E2"}
+                        {isSm
+                            ? ""
+                            : isUploading
+                            ? "Uploading..."
+                            : "Import Form E2"}
                     </Button>
-                </label>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<FaDownload/>  }
-                    onClick={handleExportData}
-                    disabled={isUploading || loading}
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleExportData}
+                        disabled={isUploading || loading}
+                    >
+                        {isSm ? "" : "Export Data"}
+                    </Button>
+                </Box>
+            </Toolbar>
+
+            {/* Upload Dialog */}
+            <Dialog
+                open={openUploadDialog}
+                onClose={() => setOpenUploadDialog(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxWidth: 500,
+                    },
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        px: 3,
+                        py: 2,
+                    }}
                 >
-                    Export Data
-                </Button>
-            </ButtonGroup>
+                    <Typography fontWeight={600}>
+                        Upload Institution Form E2
+                    </Typography>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 3 }}
+                    >
+                        Please upload the Form E2 Excel document.
+                    </Typography>
+
+                    <Box
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            if (
+                                e.dataTransfer.files &&
+                                e.dataTransfer.files[0]
+                            ) {
+                                setSelectedFile(e.dataTransfer.files[0]);
+                            }
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        sx={{
+                            p: 1.5,
+                            border: `1px dashed ${theme.palette.primary.main}`,
+                            borderRadius: 1.5,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 1,
+                            cursor: "pointer",
+                            bgcolor: "background.paper",
+                        }}
+                        onClick={() =>
+                            document.getElementById("upload-input").click()
+                        }
+                    >
+                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
+                        <Typography>
+                            Drag & drop file or click to browse
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Supported formats: .xlsx, .xls
+                        </Typography>
+                        <input
+                            id="upload-input"
+                            type="file"
+                            hidden
+                            accept=".xlsx, .xls"
+                            onChange={(e) => setSelectedFile(e.target.files[0])}
+                        />
+                    </Box>
+
+                    {selectedFile && (
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                mt: 2,
+                                p: 1.5,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                borderRadius: 1.5,
+                            }}
+                        >
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
+                                <Box>
+                                    <Typography
+                                        variant="body2"
+                                        noWrap
+                                        sx={{ maxWidth: 200 }}
+                                    >
+                                        {selectedFile.name}
+                                    </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
+                                        KB
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => setSelectedFile(null)}
+                                sx={{
+                                    color: theme.palette.error.main,
+                                    "&:hover": {
+                                        bgcolor: alpha(
+                                            theme.palette.error.main,
+                                            0.1
+                                        ),
+                                    },
+                                }}
+                            >
+                                &times;
+                            </IconButton>
+                        </Paper>
+                    )}
+                </DialogContent>
+                <DialogActions
+                    sx={{
+                        px: 3,
+                        py: 2,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                    }}
+                >
+                    <Button
+                        onClick={() => setOpenUploadDialog(false)}
+                        sx={{
+                            textTransform: "none",
+                            fontWeight: 500,
+                            color: theme.palette.text.primary,
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleFileUpload}
+                        variant="contained"
+                        disabled={!selectedFile || isUploading}
+                        sx={{
+                            textTransform: "none",
+                            fontWeight: 500,
+                            borderRadius: 1.5,
+                            px: 3,
+                        }}
+                    >
+                        Upload
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {error && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                    {error}
+                </Alert>
+            )}
+
+            <FacultyProfileTable
+                selectedGroup={selectedGroup}
+                facultyProfiles={filteredFacultyProfiles}
+            />
 
             {/* Tabs for faculty groups */}
             <Tabs
@@ -532,66 +807,15 @@ const FacultyProfileUpload = () => {
                 onChange={handleTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
-                sx={{ mb: 2 }}
             >
                 {facultyGroups.map((group) => (
                     <Tab
-                        key={group.value}
+                        key={group.sheetName}
                         label={group.label}
-                        value={group.value}
+                        value={group.sheetName}
                     />
                 ))}
             </Tabs>
-
-            {/* Group description */}
-            <Typography variant="body2" sx={{ mb: 2, fontStyle: "italic" }}>
-                {
-                    facultyGroups.find((group) => group.value === selectedGroup)
-                        ?.description
-                }
-            </Typography>
-
-            {/* Progress Bar */}
-            {uploadProgress > 0 && (
-                <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                        Uploading... {uploadProgress}%
-                    </Typography>
-                    <LinearProgress
-                        variant="determinate"
-                        value={uploadProgress}
-                    />
-                </Box>
-            )}
-
-            {/* Loading and Error States */}
-            {loading && (
-                <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
-                    <CircularProgress size={40} />
-                </Box>
-            )}
-            {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                    {error}
-                </Alert>
-            )}
-
-            {!loading && !error && (
-                <FacultyProfileTable
-                    selectedGroup={selectedGroup}
-                    facultyProfiles={filteredFacultyProfiles}
-                />
-            )}
-
-            {/* Snackbar for feedback */}
-            <Alert
-                open={snackbar.open}
-                onClose={handleSnackbarClose}
-                severity={snackbar.severity}
-                sx={{ position: "fixed", bottom: 16, right: 16 }}
-            >
-                {snackbar.message}
-            </Alert>
         </Box>
     );
 };

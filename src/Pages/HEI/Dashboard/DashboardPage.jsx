@@ -1,551 +1,508 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import {
+    Chart as ChartJS,
+    ArcElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Legend,
+} from "chart.js";
+import { Pie } from "react-chartjs-2";
+import { motion } from "framer-motion";
 import {
     Box,
+    Card,
+    CardContent,
     Typography,
+    CircularProgress,
+    Alert,
     Grid,
-    Button,
-    Avatar,
-    Chip,
-    Paper,
     Divider,
-    Container,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import PersonIcon from "@mui/icons-material/Person";
-import PeopleIcon from "@mui/icons-material/People";
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
-import SchoolIcon from "@mui/icons-material/School";
-import BusinessIcon from "@mui/icons-material/Business";
-// Import Chart.js and react-chartjs-2 components
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Pie } from "react-chartjs-2";
+import config from "../../../utils/config";
 
 // Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
 
-const Dashboard = () => {
-    const [dashboardData, setDashboardData] = useState({
+// Chart colors
+const CHART_COLORS = {
+    primary: "#3B82F6",
+    secondary: "#EC4899",
+    teal: "#14B8A6",
+    purple: "#8B5CF6",
+    orange: "#F59E0B",
+    grey: "#6B7280",
+    emerald: "#10B981",
+    red: "#EF4444",
+};
+
+// Chart options
+const CHART_OPTIONS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: true,
+            position: "top",
+            labels: { font: { size: 12 } },
+        },
+        tooltip: { enabled: true, bodyFont: { size: 12 } },
+    },
+};
+
+// Card animation variants
+const CARD_VARIANTS = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    hover: { scale: 1.03, boxShadow: "0 12px 24px rgba(0,0,0,0.15)" },
+};
+
+const DashboardPage = () => {
+    const [stats, setStats] = useState({
         users: [],
         facultyProfiles: [],
         programs: [],
         institutions: [],
-        campuses: [],
         loading: true,
         error: null,
     });
-    const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const institutionId = localStorage.getItem("institutionId");
+        const fetchStats = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setStats((prev) => ({
+                    ...prev,
+                    error: "No authentication token",
+                    loading: false,
+                }));
+                return;
+            }
 
-        if (!token) {
-            setDashboardData((prev) => ({
-                ...prev,
-                error: "Authentication token is missing.",
-                loading: false,
-            }));
-            return;
-        }
+            // Get institution ID from localStorage
+            let institutionId = null;
+            const userData = localStorage.getItem("user");
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    institutionId = user.institution_id || null;
+                } catch (error) {
+                    console.error(
+                        "Failed to parse user data from localStorage:",
+                        error
+                    );
+                }
+            }
 
-        const fetchDashboardData = async () => {
-            try {
-                const [
-                    usersResponse,
-                    facultyProfilesResponse,
-                    programsResponse,
-                    institutionsResponse,
-                    campusesResponse,
-                ] = await Promise.all([
-                    axios.get("http://localhost:8000/api/users", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get(
-                        `http://localhost:8000/api/faculty-profiles?institution_id=${institutionId}`,
+            // If no institutionId, fetch it from the /user endpoint
+            if (!institutionId) {
+                try {
+                    const userResponse = await axios.get(
+                        `${config.API_URL}/user`,
                         {
                             headers: { Authorization: `Bearer ${token}` },
                         }
-                    ),
-                    axios.get("http://localhost:8000/api/programs", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get("http://localhost:8000/api/institutions", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    axios.get("http://localhost:8000/api/campuses", {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                ]);
+                    );
+                    institutionId = userResponse.data.institution_id || null;
+                } catch (error) {
+                    console.error("Failed to fetch user data from API:", error);
+                }
+            }
 
-                setDashboardData({
-                    users: usersResponse.data,
-                    facultyProfiles: facultyProfilesResponse.data,
-                    programs: programsResponse.data,
-                    institutions: institutionsResponse.data,
-                    campuses: campusesResponse.data,
+            // If still no institutionId, set error
+            if (!institutionId) {
+                setStats((prev) => ({
+                    ...prev,
+                    error: "No institution ID found",
+                    loading: false,
+                }));
+                return;
+            }
+
+            try {
+                const [users, faculty, programs, institutions] =
+                    await Promise.all([
+                        axios.get(
+                            `${config.API_URL}/users?institution_id=${institutionId}`,
+                            {
+                                headers: { Authorization: `Bearer ${token}` },
+                            }
+                        ),
+                        axios.get(
+                            `${config.API_URL}/faculty-profiles?institution_id=${institutionId}`,
+                            {
+                                headers: { Authorization: `Bearer ${token}` },
+                            }
+                        ),
+                        axios.get(
+                            `${config.API_URL}/programs?institution_id=${institutionId}`,
+                            {
+                                headers: { Authorization: `Bearer ${token}` },
+                            }
+                        ),
+                        axios.get(
+                            `${config.API_URL}/institutions?institution_id=${institutionId}`,
+                            {
+                                headers: { Authorization: `Bearer ${token}` },
+                            }
+                        ),
+                    ]);
+
+                setStats({
+                    users: users.data,
+                    facultyProfiles: faculty.data,
+                    programs: programs.data,
+                    institutions: institutions.data,
+                    institutionId,
                     loading: false,
                     error: null,
                 });
             } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-                setDashboardData((prev) => ({
+                setStats((prev) => ({
                     ...prev,
-                    error: "Failed to load dashboard data. Please try again.",
+                    error: `Failed to load statistics: ${error.message}`,
                     loading: false,
                 }));
             }
         };
 
-        fetchDashboardData();
+        fetchStats();
     }, []);
 
-    if (dashboardData.loading) {
-        return (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                <Typography variant="h6">Loading dashboard data...</Typography>
-            </Box>
-        );
-    }
-
-    if (dashboardData.error) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Typography color="error">{dashboardData.error}</Typography>
-            </Box>
-        );
-    }
-
-    // Calculate overview metrics
-    const totalUsers = dashboardData.users.length;
-    const totalFaculty = dashboardData.facultyProfiles.length;
-    const totalPrograms = dashboardData.programs.length;
-    const totalEnrollments = dashboardData.programs.reduce((sum, program) => {
-        return (
-            sum +
-            (program.enrollments?.reduce(
-                (subSum, enrollment) => subSum + (enrollment.grand_total || 0),
+    // Memoized aggregations
+    const aggregations = useMemo(() => {
+        const totals = {
+            users: stats.users.length,
+            faculty: stats.facultyProfiles.length,
+            programs: stats.programs.length,
+            institutions: stats.institutions.length,
+            enrollments: stats.programs.reduce(
+                (sum, program) => sum + (program.grand_total || 0),
                 0
-            ) || 0)
+            ),
+            graduates: stats.programs.reduce(
+                (sum, program) => sum + (program.graduates_total || 0),
+                0
+            ),
+        };
+
+        const genderBreakdown = stats.programs.reduce(
+            (acc, program) => ({
+                male: acc.male + (program.subtotal_male || 0),
+                female: acc.female + (program.subtotal_female || 0),
+            }),
+            { male: 0, female: 0 }
         );
-    }, 0);
-    const totalInstitutions = dashboardData.institutions.length;
 
-    // Aggregate institution types for the pie chart
-    const institutionTypeCounts = dashboardData.institutions.reduce(
-        (acc, institution) => {
-            const type = institution.institution_type || "Unknown"; // Fallback to "Unknown" if institution_type is missing
-            acc[type] = (acc[type] || 0) + 1;
+        const enrollmentByYearLevel = stats.programs.reduce((acc, program) => {
+            const levels = [
+                "Freshmen",
+                "1st Year",
+                "2nd Year",
+                "3rd Year",
+                "4th Year",
+                "5th Year",
+                "6th Year",
+                "7th Year",
+            ];
+            levels.forEach((level) => {
+                const key = level.toLowerCase().replace(" ", "_");
+                acc[level] =
+                    (acc[level] || 0) +
+                    (program[`${key}_male`] || 0) +
+                    (program[`${key}_female`] || 0);
+            });
             return acc;
-        },
-        {}
-    );
+        }, {});
 
-    // Prepare data for the pie chart
-    const pieChartData = {
-        labels: Object.keys(institutionTypeCounts),
-        datasets: [
+        return { totals, genderBreakdown, enrollmentByYearLevel };
+    }, [stats]);
+
+    // Memoized chart data
+    const chartData = useMemo(() => {
+        const yearLevelKeys = Object.keys(aggregations.enrollmentByYearLevel);
+        return [
             {
-                label: "Institutions by Type",
-                data: Object.values(institutionTypeCounts),
-                backgroundColor: [
-                    "#FF6384", // Red
-                    "#36A2EB", // Blue
-                    "#FFCE56", // Yellow
-                    "#4BC0C0", // Teal
-                    "#9966FF", // Purple
-                    "#FF9F40", // Orange
-                    "#C9CBDF", // Gray
-                ],
-                borderColor: [
-                    "#FF6384",
-                    "#36A2EB",
-                    "#FFCE56",
-                    "#4BC0C0",
-                    "#9966FF",
-                    "#FF9F40",
-                    "#C9CBDF",
-                ],
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    // Pie chart options
-    const pieChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: "top",
-            },
-            tooltip: {
-                callbacks: {
-                    label: (context) => {
-                        const label = context.label || "";
-                        const value = context.raw || 0;
-                        const total = context.dataset.data.reduce(
-                            (sum, val) => sum + val,
-                            0
-                        );
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return `${label}: ${value} (${percentage}%)`;
-                    },
+                title: "Gender Breakdown",
+                data: {
+                    labels: ["Male Students", "Female Students"],
+                    datasets: [
+                        {
+                            data: [
+                                aggregations.genderBreakdown.male,
+                                aggregations.genderBreakdown.female,
+                            ],
+                            backgroundColor: [
+                                CHART_COLORS.primary,
+                                CHART_COLORS.secondary,
+                            ],
+                            borderColor: ["#fff", "#fff"],
+                            borderWidth: 2,
+                        },
+                    ],
                 },
             },
+            {
+                title: "Totals by Category",
+                data: {
+                    labels: ["Users", "Faculty", "Programs", "Institutions"],
+                    datasets: [
+                        {
+                            data: [
+                                aggregations.totals.users,
+                                aggregations.totals.faculty,
+                                aggregations.totals.programs,
+                                aggregations.totals.institutions,
+                            ],
+                            backgroundColor: [
+                                CHART_COLORS.teal,
+                                CHART_COLORS.orange,
+                                CHART_COLORS.purple,
+                                CHART_COLORS.grey,
+                            ],
+                            borderColor: ["#fff", "#fff", "#fff", "#fff"],
+                            borderWidth: 2,
+                        },
+                    ],
+                },
+            },
+            {
+                title: "Enrollments vs Graduates",
+                data: {
+                    labels: ["Enrollments", "Graduates"],
+                    datasets: [
+                        {
+                            data: [
+                                aggregations.totals.enrollments,
+                                aggregations.totals.graduates,
+                            ],
+                            backgroundColor: [
+                                CHART_COLORS.purple,
+                                CHART_COLORS.grey,
+                            ],
+                            borderColor: ["#fff", "#fff"],
+                            borderWidth: 2,
+                        },
+                    ],
+                },
+            },
+            {
+                title: "Enrollments by Year",
+                data: {
+                    labels: yearLevelKeys,
+                    datasets: [
+                        {
+                            data: Object.values(
+                                aggregations.enrollmentByYearLevel
+                            ),
+                            backgroundColor: [
+                                CHART_COLORS.primary,
+                                CHART_COLORS.secondary,
+                                CHART_COLORS.teal,
+                                CHART_COLORS.purple,
+                                CHART_COLORS.orange,
+                                CHART_COLORS.grey,
+                                CHART_COLORS.emerald,
+                                CHART_COLORS.red,
+                            ].slice(0, yearLevelKeys.length),
+                            borderColor: Array(yearLevelKeys.length).fill(
+                                "#fff"
+                            ),
+                            borderWidth: 2,
+                        },
+                    ],
+                },
+            },
+        ];
+    }, [aggregations]);
+
+    // Loading state
+    if (stats.loading) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "90vh",
+                    bgcolor: "grey.100",
+                    p: { xs: 2, sm: 4 },
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    // Error state
+    if (stats.error) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "90vh",
+                    bgcolor: "grey.100",
+                    p: { xs: 2, sm: 4 },
+                }}
+            >
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <Alert severity="error">{stats.error}</Alert>
+                </motion.div>
+            </Box>
+        );
+    }
+
+    // Stat cards configuration
+    const statCards = [
+        {
+            label: "Total Users",
+            value: aggregations.totals.users,
+            color: "warning.main",
         },
-    };
+        {
+            label: "Total Faculty",
+            value: aggregations.totals.faculty,
+            color: "success.main",
+        },
+        {
+            label: "Total Programs",
+            value: aggregations.totals.programs,
+            color: "secondary.main",
+        },
+        {
+            label: "Total Institutions",
+            value: aggregations.totals.institutions,
+            color: "text.secondary",
+        },
+        {
+            label: "Total Enrollments",
+            value: aggregations.totals.enrollments.toLocaleString(),
+            color: "primary.main",
+        },
+        {
+            label: "Total Graduates",
+            value: aggregations.totals.graduates.toLocaleString(),
+            color: "error.main",
+        },
+        {
+            label: "Institution ID",
+            value: stats.institutionId || "N/A",
+            color: "info.main",
+        },
+    ];
 
     return (
-        <Container maxWidth="xl">
-            <Box sx={{ py: 4 }}>
-                {/* Header with refresh action */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 4,
-                    }}
-                >
-                    <Box>
-                        <Typography
-                            variant="h4"
-                            fontWeight="bold"
-                            color="primary"
-                        >
-                            Administration Dashboard
-                        </Typography>
-                        <Typography variant="subtitle1" color="text.secondary">
-                            Overview of all system data and statistics
-                        </Typography>
-                    </Box>
-                </Box>
-                {/* Overview Metrics Cards */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "primary.light",
-                                color: "primary.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "primary.main", mr: 1 }}>
-                                    <PersonIcon />
-                                </Avatar>
-                                <Typography variant="h6">Users</Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalUsers}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Registered system users
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "success.light",
-                                color: "success.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "success.main", mr: 1 }}>
-                                    <PeopleIcon />
-                                </Avatar>
-                                <Typography variant="h6">Faculty</Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalFaculty}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Registered faculty members
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "warning.light",
-                                color: "warning.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "warning.main", mr: 1 }}>
-                                    <LibraryBooksIcon />
-                                </Avatar>
-                                <Typography variant="h6">Programs</Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalPrograms}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Total academic programs
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "info.light",
-                                color: "info.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar sx={{ bgcolor: "info.main", mr: 1 }}>
-                                    <SchoolIcon />
-                                </Avatar>
-                                <Typography variant="h6">
-                                    Enrollments
-                                </Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalEnrollments.toLocaleString()}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Total student enrollments
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4} lg={2.4}>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                borderRadius: 2,
-                                bgcolor: "secondary.light",
-                                color: "secondary.contrastText",
-                                height: "100%",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 2,
-                                }}
-                            >
-                                <Avatar
-                                    sx={{ bgcolor: "secondary.main", mr: 1 }}
-                                >
-                                    <BusinessIcon />
-                                </Avatar>
-                                <Typography variant="h6">
-                                    Institutions
-                                </Typography>
-                            </Box>
-                            <Typography variant="h3" fontWeight="bold">
-                                {totalInstitutions}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ mt: 1, opacity: 0.8 }}
-                            >
-                                Educational institutions
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                </Grid>
+        <Box
+            sx={{
+                bgcolor: "grey.100",
+                overflowY: "auto",
+                height: "90vh",
+                width: "100%",
+                p: { xs: 2, sm: 4 },
+                boxSizing: "border-box",
+            }}
+        >
+            {/* Header */}
+            <Box
+                sx={{
+                    p: { xs: 2, sm: 4 },
+                    bgcolor: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                    color: "white",
+                    textAlign: "center",
+                    boxShadow: 3,
+                    mb: 4,
+                    display: { xs: "block", sm: "none" },
+                }}
+            >
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Statistics Dashboard
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Insights into Users, Faculty, Programs, and More
+                </Typography>
+            </Box>
 
-                {/* Pie Chart Section for Institution Types */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 3,
-                        borderRadius: 2,
-                        border: 1,
-                        borderColor: "divider",
-                        mb: 4,
-                    }}
-                >
-                    <Typography variant="h5" fontWeight="medium" mb={2}>
-                        Institution Types Distribution
-                    </Typography>
-                    <Divider sx={{ mb: 3 }} />
-                    {Object.keys(institutionTypeCounts).length > 0 ? (
-                        <Box sx={{ maxWidth: 400, mx: "auto" }}>
-                            <Pie
-                                data={pieChartData}
-                                options={pieChartOptions}
-                            />
-                        </Box>
-                    ) : (
-                        <Typography color="text.secondary" textAlign="center">
-                            No institution type data available.
-                        </Typography>
-                    )}
-                </Paper>
-
-                {/* Institutions Section */}
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 3,
-                        borderRadius: 2,
-                        border: 1,
-                        borderColor: "divider",
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            mb: 2,
-                        }}
-                    >
-                        <Typography variant="h5" fontWeight="medium">
-                            Institutions
-                        </Typography>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            size="small"
-                            onClick={() => navigate("/admin/institutions")}
+            {/* Stats Cards */}
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                {statCards.map((stat, index) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                        <motion.div
+                            variants={CARD_VARIANTS}
+                            initial="hidden"
+                            animate="visible"
+                            whileHover="hover"
                         >
-                            Manage Institutions
-                        </Button>
-                    </Box>
-                    <Divider sx={{ mb: 3 }} />
-                    <Grid container spacing={3}>
-                        {dashboardData.institutions.map((institution) => (
-                            <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={4}
-                                key={institution.id}
-                            >
-                                <Paper
-                                    elevation={0}
-                                    sx={{
-                                        p: 2,
-                                        height: "100%",
-                                        borderRadius: 2,
-                                        border: 1,
-                                        borderColor: "divider",
-                                        transition: "all 0.3s",
-                                        "&:hover": {
-                                            boxShadow: 3,
-                                            borderColor: "primary.main",
-                                        },
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "flex-start",
-                                            justifyContent: "space-between",
-                                        }}
+                            <Card sx={{ border: 1, borderColor: "grey.200" }}>
+                                <CardContent sx={{ p: 2 }}>
+                                    <Typography
+                                        variant="h5"
+                                        color={stat.color}
+                                        fontWeight="bold"
+                                        gutterBottom
                                     >
-                                        <Box>
-                                            <Typography
-                                                variant="h6"
-                                                fontWeight="medium"
-                                                gutterBottom
-                                            >
-                                                {institution.name}
-                                            </Typography>
-                                            <Chip
-                                                label={institution.region}
-                                                size="small"
-                                                sx={{ mb: 1 }}
-                                                color="primary"
-                                                variant="outlined"
-                                            />
-                                        </Box>
-                                        <Avatar
-                                            sx={{
-                                                bgcolor: "primary.light",
-                                                color: "primary.main",
-                                            }}
-                                        >
-                                            {institution.name.charAt(0)}
-                                        </Avatar>
-                                    </Box>
+                                        {stat.value}
+                                    </Typography>
                                     <Typography
                                         variant="body2"
                                         color="text.secondary"
-                                        sx={{ mb: 2 }}
                                     >
-                                        {institution.address_street},{" "}
-                                        {institution.municipality_city},{" "}
-                                        {institution.province}
+                                        {stat.label}
                                     </Typography>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        color="primary"
-                                        size="small"
-                                        onClick={() =>
-                                            navigate(
-                                                `/admin/institutions/${institution.id}`
-                                            )
-                                        }
-                                    >
-                                        View Details
-                                    </Button>
-                                </Paper>
-                            </Grid>
-                        ))}
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     </Grid>
-                </Paper>
-            </Box>
-        </Container>
+                ))}
+            </Grid>
+
+            {/* Charts */}
+            <Grid container spacing={2}>
+                {chartData.map((chart, index) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+                        <motion.div
+                            variants={CARD_VARIANTS}
+                            initial="hidden"
+                            animate="visible"
+                            whileHover="hover"
+                        >
+                            <Card sx={{ border: 1, borderColor: "grey.200" }}>
+                                <CardContent sx={{ p: 2 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="medium"
+                                        color="text.primary"
+                                        gutterBottom
+                                    >
+                                        {chart.title}
+                                    </Typography>
+                                    <Divider sx={{ mb: 2 }} />
+                                    <Box
+                                        sx={{
+                                            position: "relative",
+                                            height: 200,
+                                            width: "100%",
+                                        }}
+                                    >
+                                        <Pie
+                                            data={chart.data}
+                                            options={CHART_OPTIONS}
+                                        />
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
     );
 };
 
-export default Dashboard;
+export default DashboardPage;

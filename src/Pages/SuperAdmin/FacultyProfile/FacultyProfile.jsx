@@ -546,7 +546,7 @@ const FacultyProfileUpload = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/Super-admin/dashboard")}
+                    onClick={() => navigate("/hei-admin/dashboard")}
                 >
                     Dashboard
                 </Link>
@@ -554,7 +554,7 @@ const FacultyProfileUpload = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/Super-admin/institutions")}
+                    onClick={() => navigate("/hei-admin/institutions")}
                 >
                     Institution Management
                 </Link>

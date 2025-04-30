@@ -22,7 +22,6 @@ import {
     Download as DownloadIcon,
     Business as BusinessIcon,
     LibraryBooks as LibraryBooksIcon,
-    Delete as DeleteIcon,
     School as SchoolIcon,
     People as PeopleIcon,
     MenuBook as MenuBookIcon,
@@ -125,7 +124,7 @@ const InstitutionManagement = () => {
             });
             return;
         }
-
+        updateProgress(10);
         setLoading((prev) => ({ ...prev, exportFormA: true }));
         try {
             const response = await fetch("/templates/Form-A-Themeplate.xlsx");
@@ -164,7 +163,7 @@ const InstitutionManagement = () => {
             a1Data.forEach((value, index) => {
                 sheetA1.getRow(5 + index).getCell(3).value = value;
             });
-
+            updateProgress(50);
             const token = localStorage.getItem("token");
             const campusResponse = await axios.get(
                 `${config.API_URL}/campuses?institution_id=${institution.id}`,
@@ -214,6 +213,7 @@ const InstitutionManagement = () => {
                 message: "Data exported successfully!",
                 severity: "success",
             });
+            updateProgress(100);
         } catch (error) {
             console.error("Error exporting data:", error);
             setSnackbar({
@@ -233,10 +233,6 @@ const InstitutionManagement = () => {
         } finally {
             setLoading((prev) => ({ ...prev, [key]: false }));
         }
-    };
-
-    const handleDeleteInstitution = () => {
-        setConfirmDialogOpen(true);
     };
 
     const handleConfirmDelete = async () => {
@@ -714,42 +710,6 @@ const InstitutionManagement = () => {
                                     <Divider
                                         sx={{ my: 2, borderColor: "#e0e0e0" }}
                                     />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        color="error"
-                                        startIcon={
-                                            loading.deleteInstitution ? (
-                                                <CircularProgress size={16} />
-                                            ) : (
-                                                <DeleteIcon />
-                                            )
-                                        }
-                                        onClick={handleDeleteInstitution}
-                                        disabled={
-                                            loading.deleteInstitution ||
-                                            !institution?.id
-                                        }
-                                        sx={{
-                                            py: 1,
-                                            justifyContent: "flex-start",
-                                            borderColor: alpha("#FF6347", 0.5),
-                                            color: "error.main",
-                                            textTransform: "none",
-                                            "&:hover": {
-                                                backgroundColor: alpha(
-                                                    "#FF6347",
-                                                    0.08
-                                                ),
-                                                borderColor: "#FF6347",
-                                            },
-                                        }}
-                                        aria-label="Delete Institution"
-                                    >
-                                        Delete Institution
-                                    </Button>
                                 </Grid>
                             </Grid>
                         </Paper>
