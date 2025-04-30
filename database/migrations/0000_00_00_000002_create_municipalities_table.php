@@ -5,19 +5,20 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    public function up(): void
+    public function up()
     {
         Schema::create('municipalities', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('region_id');
-            $table->string('name', 255);
+            $table->string('name'); // Municipality name (e.g., "Como")
+            $table->foreignId('province_id')->constrained()->onDelete('cascade'); // Foreign key to provinces
             $table->timestamps();
 
-            $table->foreign('region_id')->references('id')->on('regions')->onDelete('cascade');
+            // Ensure unique municipality names within a province
+            $table->unique(['name', 'province_id']);
         });
     }
 
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('municipalities');
     }

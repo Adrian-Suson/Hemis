@@ -8,9 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('regions', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 255)->unique();
-            $table->timestamps();
+            $table->id(); // Auto-incrementing primary key
+            $table->string('name')->unique(); // Region name (e.g., "Lombardy")
+            $table->timestamps(); // Created_at and updated_at
         });
     }
 
