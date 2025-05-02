@@ -11,25 +11,32 @@ class InstitutionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-
-        // Check if type is provided
+        // Use eager loading to fetch related region, province, and municipality
         if ($request->has('type')) {
-            $institutions = Institution::where('institution_type', $request->type)->get();
+            $institutions = Institution::with(['region', 'province', 'municipality'])
+                ->where('institution_type', $request->type)
+                ->get();
         } else {
-            $institutions = Institution::all();
+            $institutions = Institution::with(['region', 'province', 'municipality'])->get();
         }
 
-        return response()->json($institutions);
+        // Retrieve front name from request or use default
+        $frontName = $request->input('name', 'Institution List');
+
+        return response()->json([
+            'name' => $frontName,
+            'institutions' => $institutions,
+        ]);
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
+            'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
-            'municipality_city' => 'nullable|string|max:255',
-            'province' => 'nullable|string|max:255',
+            'municipality_id' => 'nullable|integer|exists:municipalities,id',
+            'province_id' => 'nullable|integer|exists:provinces,id',
             'postal_code' => 'nullable|string|max:10',
             'institutional_telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
@@ -60,10 +67,10 @@ class InstitutionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
+            'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
-            'municipality_city' => 'nullable|string|max:255',
-            'province' => 'nullable|string|max:255',
+            'municipality_id' => 'nullable|integer|exists:municipalities,id',
+            'province_id' => 'nullable|integer|exists:provinces,id',
             'postal_code' => 'nullable|string|max:10',
             'institutional_telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
@@ -84,8 +91,6 @@ class InstitutionController extends Controller
         $institution->update($validated);
         return response()->json($institution);
     }
-
-
 
     public function destroy(Institution $institution): JsonResponse
     {

@@ -55,4 +55,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //Activity Log Routes
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::post('/activity-logs', [ActivityLogController::class, 'store']);
+
+    // Region, Province, Municipality API Resource Routes
+    Route::apiResource('regions', \App\Http\Controllers\Api\RegionController::class);
+    Route::apiResource('provinces', \App\Http\Controllers\Api\ProvinceController::class);
+    Route::apiResource('municipalities', \App\Http\Controllers\Api\MunicipalityController::class);
 });

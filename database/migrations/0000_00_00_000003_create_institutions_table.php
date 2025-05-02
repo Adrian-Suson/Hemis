@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('institutions', function (Blueprint $table) {
             $table->id();
+            // Foreign keys for region, province, municipality
+            $table->foreignId('region_id')->constrained('regions')->onDelete('restrict');
+            $table->foreignId('province_id')->nullable()->constrained('provinces')->onDelete('set null');
+            $table->foreignId('municipality_id')->nullable()->constrained('municipalities')->onDelete('set null');
             $table->string('name', 255)->notNullable();
-            $table->string('region', 255)->notNullable();
             $table->string('address_street', 255)->nullable();
-            $table->string('municipality_city', 255)->nullable();
-            $table->string('province', 255)->nullable();
             $table->string('postal_code', 10)->nullable();
             $table->string('institutional_telephone', 20)->nullable();
             $table->string('institutional_fax', 20)->nullable();

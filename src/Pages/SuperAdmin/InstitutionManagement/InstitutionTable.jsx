@@ -340,13 +340,13 @@ const InstitutionTable = ({
             width: 250,
             align: "center",
             headerAlign: "center",
+            valueGetter: (params) => params.row.region?.name || "",
         },
         {
             field: "address_street",
-            headerName: "Address",
+            headerName: "Street",
             width: 250,
             align: "center",
-
             headerAlign: "center",
         },
         {
@@ -354,23 +354,22 @@ const InstitutionTable = ({
             headerName: "City",
             width: 250,
             align: "center",
-
             headerAlign: "center",
+            valueGetter: (params) => params.row.municipality?.name || "",
         },
         {
             field: "province",
             headerName: "Province",
             width: 250,
             align: "center",
-
             headerAlign: "center",
+            valueGetter: (params) => params.row.province?.name || "",
         },
         {
             field: "institution_type",
             headerName: "Type",
             width: 193,
             align: "center",
-
             headerAlign: "center",
         },
         {
