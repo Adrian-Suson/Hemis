@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import moment from "moment";
 import {
@@ -17,54 +18,60 @@ import {
     FormControl,
     InputLabel,
 } from "@mui/material";
+import PropTypes from "prop-types";
 import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 import axios from "axios";
-import PropTypes from "prop-types";
-import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import config from "../../../utils/config";
+import useLocationData from "../../../utils/useLocationData";
 
-function ManualInstitutionDialog({
+const EditDialog = ({
     open,
     onClose,
-    getInstitutionType,
-    fetchInstitutions,
+    institution,
+    onEdit,
     setSnackbarOpen,
     setSnackbarMessage,
     setSnackbarSeverity,
-}) {
-    const { updateProgress } = useLoading();
+    fetchInstitutions,
+}) => {
     const { createLog } = useActivityLog();
-    const [manualData, setManualData] = useState({
-        name: "",
-        region: "",
-        address_street: "",
-        municipality_city: "",
-        province: "",
-        postal_code: "",
-        institutional_telephone: "",
-        institutional_fax: "",
-        head_telephone: "",
-        institutional_email: "",
-        institutional_website: "",
-        year_established: null,
-        sec_registration: "",
-        year_granted_approved: null,
-        year_converted_college: null,
-        year_converted_university: null,
-        head_name: "",
-        head_title: "",
-        institution_type: "",
-        head_education: "",
+    const [formData, setFormData] = useState({
+        id: institution?.id || null,
+        name: institution?.name || "",
+        region: institution?.region || "",
+        address_street: institution?.address_street || "",
+        municipality_city: institution?.municipality_city || "",
+        province: institution?.province || "",
+        postal_code: institution?.postal_code || "",
+        institutional_telephone: institution?.institutional_telephone || "",
+        institutional_fax: institution?.institutional_fax || "",
+        head_telephone: institution?.head_telephone || "",
+        institutional_email: institution?.institutional_email || "",
+        institutional_website: institution?.institutional_website || "",
+        year_established: institution?.year_established || null,
+        sec_registration: institution?.sec_registration || "",
+        year_granted_approved: institution?.year_granted_approved || null,
+        year_converted_college: institution?.year_converted_college || null,
+        year_converted_university:
+            institution?.year_converted_university || null,
+        head_name: institution?.head_name || "",
+        head_title: institution?.head_title || "",
+        head_education: institution?.head_education || "",
+        institution_type: institution?.institution_type || "",
     });
-
-    const [formErrors, setFormErrors] = useState({});
-    const [regions, setRegions] = useState([]);
-    const [provinces, setProvinces] = useState([]);
-    const [municipalities, setMunicipalities] = useState([]);
+    const [errors, setErrors] = useState({});
+    const {
+        regions,
+        provinces,
+        municipalities,
+        fetchRegions,
+        fetchProvinces,
+        fetchMunicipalities,
+    } = useLocationData();
 
     useEffect(() => {
         if (open) {
@@ -73,191 +80,294 @@ function ManualInstitutionDialog({
     }, [open]);
 
     useEffect(() => {
-        if (manualData.region) {
-            fetchProvinces(manualData.region);
+        if (formData.region) {
+            const regionObj = regions.find((r) => r.name === formData.region);
+            if (regionObj) {
+                fetchProvinces(regionObj.id);
+            } else {
+                setFormData((prev) => ({
+                    ...prev,
+                    province: "",
+                    municipality_city: "",
+                }));
+            }
         } else {
-            setProvinces([]);
-            setMunicipalities([]);
-            setManualData((prev) => ({
+            setFormData((prev) => ({
                 ...prev,
                 province: "",
                 municipality_city: "",
             }));
         }
-    }, [manualData.region]);
+    }, [formData.region, regions]);
 
     useEffect(() => {
-        if (manualData.province) {
-            fetchMunicipalities(manualData.province);
+        if (formData.province) {
+            const provinceObj = provinces.find((p) => p.name === formData.province);
+            if (provinceObj) {
+                fetchMunicipalities(provinceObj.id);
+            } else {
+                setFormData((prev) => ({ ...prev, municipality_city: "" }));
+            }
         } else {
-            setMunicipalities([]);
-            setManualData((prev) => ({ ...prev, municipality_city: "" }));
+            setFormData((prev) => ({ ...prev, municipality_city: "" }));
         }
-    }, [manualData.province]);
+    }, [formData.province, provinces]);
 
-    const fetchRegions = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(`${config.API_URL}/regions`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setRegions(res.data);
-        } catch {
-            setRegions([]);
+    const showSnackbar = (message, severity) => {
+        if (setSnackbarMessage && setSnackbarOpen && setSnackbarSeverity) {
+            setSnackbarMessage(message);
+            setSnackbarSeverity(severity);
+            setSnackbarOpen(true);
+        } else {
+            console.log(`[Snackbar] ${severity}: ${message}`);
         }
     };
 
-    const fetchProvinces = async (regionId) => {
-        try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(
-                `${config.API_URL}/provinces?region_id=${regionId}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.name?.trim()) {
+            newErrors.name = "Institution name is required.";
+        } else if (formData.name.length > 255) {
+            newErrors.name = "Must be 255 characters or less.";
+        }
+
+        if (!formData.region?.trim()) {
+            newErrors.region = "Region is required.";
+        }
+
+        if (!formData.province?.trim()) {
+            newErrors.province = "Province is required.";
+        }
+
+        if (!formData.municipality_city?.trim()) {
+            newErrors.municipality_city = "Municipality/City is required.";
+        }
+
+        if (!formData.id || isNaN(parseInt(formData.id, 10))) {
+            newErrors.id = "Valid institution ID is required.";
+        }
+
+        if (formData.address_street && formData.address_street.length > 255) {
+            newErrors.address_street = "Must be 255 characters or less.";
+        }
+
+        if (formData.postal_code && formData.postal_code.length > 10) {
+            newErrors.postal_code = "Must be 10 characters or less.";
+        }
+
+        if (
+            formData.institutional_email &&
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.institutional_email)
+        ) {
+            newErrors.institutional_email = "Must be a valid email address.";
+        }
+
+        if (
+            formData.institutional_website &&
+            !/^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/.test(
+                formData.institutional_website
+            )
+        ) {
+            newErrors.institutional_website = "Must be a valid URL.";
+        }
+
+        const yearFields = [
+            "year_established",
+            "year_granted_approved",
+            "year_converted_college",
+            "year_converted_university",
+        ];
+        yearFields.forEach((field) => {
+            if (formData[field]) {
+                const year = parseInt(formData[field], 10);
+                if (isNaN(year)) {
+                    newErrors[field] = "Must be a valid year.";
+                } else if (year < 1800 || year > new Date().getFullYear()) {
+                    newErrors[
+                        field
+                    ] = `Must be between 1800 and ${new Date().getFullYear()}.`;
                 }
-            );
-            setProvinces(res.data);
-        } catch {
-            setProvinces([]);
+            }
+        });
+
+        if (
+            formData.institutional_telephone &&
+            formData.institutional_telephone.length > 20
+        ) {
+            newErrors.institutional_telephone =
+                "Must be 20 characters or less.";
         }
+
+        if (
+            formData.institutional_fax &&
+            formData.institutional_fax.length > 20
+        ) {
+            newErrors.institutional_fax = "Must be 20 characters or less.";
+        }
+
+        if (formData.head_telephone && formData.head_telephone.length > 20) {
+            newErrors.head_telephone = "Must be 20 characters or less.";
+        }
+
+        if (
+            formData.sec_registration &&
+            formData.sec_registration.length > 255
+        ) {
+            newErrors.sec_registration = "Must be 255 characters or less.";
+        }
+
+        if (formData.head_name && formData.head_name.length > 255) {
+            newErrors.head_name = "Must be 255 characters or less.";
+        }
+
+        if (formData.head_title && formData.head_title.length > 255) {
+            newErrors.head_title = "Must be 255 characters or less.";
+        }
+
+        if (formData.head_education && formData.head_education.length > 255) {
+            newErrors.head_education = "Must be 255 characters or less.";
+        }
+
+        if (
+            formData.institution_type &&
+            !["SUC", "LUC", "Private"].includes(formData.institution_type)
+        ) {
+            newErrors.institution_type = "Must be SUC, LUC, or Private.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
-    const fetchMunicipalities = async (provinceId) => {
-        try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(
-                `${config.API_URL}/municipalities?province_id=${provinceId}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            setMunicipalities(res.data);
-        } catch {
-            setMunicipalities([]);
-        }
-    };
-
-    const handleChange = (e) => {
+    const handleInputChange = (e) => {
         const { name, value } = e.target;
-        // For region, province, municipality_city, store the name, not the id
         if (name === "region") {
             const regionObj = regions.find((r) => r.id === value);
-            setManualData((prev) => ({
+            setFormData((prev) => ({
                 ...prev,
                 region: regionObj ? regionObj.name : "",
                 province: "",
                 municipality_city: "",
             }));
-            // Also update provinces for the selected region
             if (regionObj) fetchProvinces(regionObj.id);
             else {
-                setProvinces([]);
-                setMunicipalities([]);
+                setFormData((prev) => ({
+                    ...prev,
+                    province: "",
+                    municipality_city: "",
+                }));
             }
         } else if (name === "province") {
             const provinceObj = provinces.find((p) => p.id === value);
-            setManualData((prev) => ({
+            setFormData((prev) => ({
                 ...prev,
                 province: provinceObj ? provinceObj.name : "",
                 municipality_city: "",
             }));
-            // Also update municipalities for the selected province
             if (provinceObj) fetchMunicipalities(provinceObj.id);
-            else setMunicipalities([]);
+            else {
+                setFormData((prev) => ({ ...prev, municipality_city: "" }));
+            }
         } else if (name === "municipality_city") {
             const muniObj = municipalities.find((m) => m.id === value);
-            setManualData((prev) => ({
+            setFormData((prev) => ({
                 ...prev,
                 municipality_city: muniObj ? muniObj.name : "",
             }));
         } else {
-            setManualData((prev) => ({
+            setFormData((prev) => ({
                 ...prev,
                 [name]: value,
             }));
         }
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: undefined }));
+        }
     };
 
     const handleYearChange = (field, value) => {
-        setManualData((prev) => ({
+        setFormData((prev) => ({
             ...prev,
             [field]: value ? value.year() : null,
         }));
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
     };
 
-    const resetForm = () => {
-        setManualData({
-            name: "",
-            region: "",
-            address_street: "",
-            municipality_city: "",
-            province: "",
-            postal_code: "",
-            institutional_telephone: "",
-            institutional_fax: "",
-            head_telephone: "",
-            institutional_email: "",
-            institutional_website: "",
-            year_established: null,
-            sec_registration: "",
-            year_granted_approved: null,
-            year_converted_college: null,
-            year_converted_university: null,
-            head_name: "",
-            head_title: "",
-            institution_type: "",
-            head_education: "",
+    const handleCancel = () => {
+        setFormData({
+            id: institution.id,
+            name: institution.name || "",
+            region: institution.region || "",
+            address_street: institution.address_street || "",
+            municipality_city: institution.municipality_city || "",
+            province: institution.province || "",
+            postal_code: institution.postal_code || "",
+            institutional_telephone: institution.institutional_telephone || "",
+            institutional_fax: institution.institutional_fax || "",
+            head_telephone: institution.head_telephone || "",
+            institutional_email: institution.institutional_email || "",
+            institutional_website: institution.institutional_website || "",
+            year_established: institution.year_established || null,
+            sec_registration: institution.sec_registration || "",
+            year_granted_approved: institution.year_granted_approved || null,
+            year_converted_college: institution.year_converted_college || null,
+            year_converted_university:
+                institution.year_converted_university || null,
+            head_name: institution.head_name || "",
+            head_title: institution.head_title || "",
+            head_education: institution.head_education || "",
+            institution_type: institution.institution_type || "",
         });
-        setFormErrors({});
-        setProvinces([]);
-        setMunicipalities([]);
-    };
-
-    const handleClose = () => {
+        setErrors({});
         onClose();
-        resetForm();
     };
 
-    const validateForm = () => {
-        const errors = {};
-        if (!manualData.name.trim()) {
-            errors.name = "Name is required.";
-        } else if (manualData.name.length > 255) {
-            errors.name = "Name must not exceed 255 characters.";
-        }
-        if (!manualData.region) {
-            errors.region = "Region is required.";
-        }
-        if (!manualData.province) {
-            errors.province = "Province is required.";
-        }
-        if (!manualData.municipality_city) {
-            errors.municipality_city = "Municipality/City is required.";
-        }
-        if (!manualData.institution_type) {
-            errors.institution_type = "Institution type is required.";
-        }
-        return errors;
-    };
-
-    const handleSave = async () => {
-        const errors = validateForm();
-        if (Object.keys(errors).length > 0) {
-            setFormErrors(errors);
+    const handleUpdate = async () => {
+        if (!validateForm()) {
+            showSnackbar("Validation failed. Please check the form.", "error");
             return;
         }
 
-        updateProgress(10);
+        const token = localStorage.getItem("token");
         try {
-            const token = localStorage.getItem("token");
             const payload = {
-                ...manualData,
-                institution_type:
-                    manualData.institution_type || getInstitutionType(),
+                name: formData.name || null,
+                region: formData.region || null,
+                address_street: formData.address_street || null,
+                municipality_city: formData.municipality_city || null,
+                province: formData.province || null,
+                postal_code: formData.postal_code || null,
+                institutional_telephone:
+                    formData.institutional_telephone || null,
+                institutional_fax: formData.institutional_fax || null,
+                head_telephone: formData.head_telephone || null,
+                institutional_email: formData.institutional_email || null,
+                institutional_website: formData.institutional_website || null,
+                year_established: formData.year_established
+                    ? parseInt(formData.year_established, 10) || null
+                    : null,
+                sec_registration: formData.sec_registration || null,
+                year_granted_approved: formData.year_granted_approved
+                    ? parseInt(formData.year_granted_approved, 10) || null
+                    : null,
+                year_converted_college: formData.year_converted_college
+                    ? parseInt(formData.year_converted_college, 10) || null
+                    : null,
+                year_converted_university: formData.year_converted_university
+                    ? parseInt(formData.year_converted_university, 10) || null
+                    : null,
+                head_name: formData.head_name || null,
+                head_title: formData.head_title || null,
+                head_education: formData.head_education || null,
+                institution_type: formData.institution_type || null,
             };
 
-            const response = await axios.post(
-                `${config.API_URL}/institutions`,
+            console.log("[Update Institution] Sending data:", payload);
+
+            const response = await axios.put(
+                `${config.API_URL}/institutions/${formData.id}`,
                 payload,
                 {
                     headers: {
@@ -267,33 +377,54 @@ function ManualInstitutionDialog({
                 }
             );
 
+            console.log("[Update Institution] Server response:", response.data);
+
             await createLog({
-                action: "added_institution",
-                description: `Manually added institution: ${payload.name}`,
+                action: "updated_institution",
+                description: `Updated institution: ${formData.name}`,
                 modelType: "App\\Models\\Institution",
-                modelId: response.data.id,
-                properties: payload,
+                modelId: formData.id,
+                properties: {
+                    name: formData.name,
+                    institution_type: formData.institution_type,
+                },
             });
 
+            onEdit(response.data || payload);
+            showSnackbar("Institution updated successfully!", "success");
             fetchInstitutions();
-            setSnackbarMessage("Institution data successfully added!");
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
-            handleClose();
+            onClose();
         } catch (error) {
-            console.error("Error sending manual data to backend:", error);
-            setSnackbarMessage("Error adding institution data");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-        } finally {
-            updateProgress(100);
+            console.error(
+                "[Update Institution] Error:",
+                error.response?.data || error.message
+            );
+            let errorMessage =
+                "Failed to update institution. Please try again.";
+            if (error.response?.status === 422) {
+                const validationErrors = error.response.data.errors;
+                console.log(
+                    "[Update Institution] Validation Errors:",
+                    validationErrors
+                );
+                errorMessage =
+                    "Validation failed: " +
+                    Object.values(validationErrors).flat().join(", ");
+                const mappedErrors = {};
+                Object.keys(validationErrors).forEach((key) => {
+                    const field = key.split(".").pop();
+                    mappedErrors[field] = validationErrors[key][0];
+                });
+                setErrors(mappedErrors);
+            }
+            showSnackbar(errorMessage, "error");
         }
     };
 
     return (
         <Dialog
             open={open}
-            onClose={handleClose}
+            onClose={handleCancel}
             fullWidth
             maxWidth="md"
             PaperProps={{
@@ -311,12 +442,12 @@ function ManualInstitutionDialog({
                 }}
             >
                 <Typography variant="h6" component="div">
-                    Add Institution Manually
+                    Edit Institution
                 </Typography>
                 <IconButton
                     edge="end"
                     color="inherit"
-                    onClick={handleClose}
+                    onClick={handleCancel}
                     aria-label="close"
                 >
                     <CloseIcon />
@@ -340,27 +471,26 @@ function ManualInstitutionDialog({
                                 name="name"
                                 size="small"
                                 label="Institution Name"
-                                value={manualData.name}
-                                onChange={handleChange}
+                                value={formData.name}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
                                 required
-                                error={!!formErrors.name}
-                                helperText={formErrors.name}
+                                error={!!errors.name}
+                                helperText={errors.name}
                             />
                         </Grid>
-
                         <Grid item size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 name="sec_registration"
                                 size="small"
                                 label="SEC Registration"
-                                value={manualData.sec_registration}
-                                onChange={handleChange}
+                                value={formData.sec_registration}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.sec_registration}
-                                helperText={formErrors.sec_registration}
+                                error={!!errors.sec_registration}
+                                helperText={errors.sec_registration}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -369,7 +499,7 @@ function ManualInstitutionDialog({
                                 variant="outlined"
                                 size="small"
                                 required
-                                error={!!formErrors.institution_type}
+                                error={!!errors.institution_type}
                             >
                                 <InputLabel id="institution-type-label">
                                     Institution Type
@@ -377,11 +507,11 @@ function ManualInstitutionDialog({
                                 <Select
                                     labelId="institution-type-label"
                                     name="institution_type"
-                                    value={manualData.institution_type}
-                                    onChange={handleChange}
+                                    value={formData.institution_type}
+                                    onChange={handleInputChange}
                                     label="Institution Type"
                                     required
-                                    error={!!formErrors.institution_type}
+                                    error={!!errors.institution_type}
                                 >
                                     <MenuItem value="">
                                         <em>Select Type</em>
@@ -390,9 +520,9 @@ function ManualInstitutionDialog({
                                     <MenuItem value="LUC">LUC</MenuItem>
                                     <MenuItem value="Private">Private</MenuItem>
                                 </Select>
-                                {formErrors.institution_type && (
+                                {errors.institution_type && (
                                     <Typography variant="caption" color="error">
-                                        {formErrors.institution_type}
+                                        {errors.institution_type}
                                     </Typography>
                                 )}
                             </FormControl>
@@ -418,19 +548,19 @@ function ManualInstitutionDialog({
                                 name="address_street"
                                 size="small"
                                 label="Street Address"
-                                value={manualData.address_street}
-                                onChange={handleChange}
+                                value={formData.address_street}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.address_street}
-                                helperText={formErrors.address_street}
+                                error={!!errors.address_street}
+                                helperText={errors.address_street}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 3 }}>
                             <FormControl
                                 fullWidth
                                 size="small"
-                                error={!!formErrors.region}
+                                error={!!errors.region}
                             >
                                 <InputLabel id="region-label">
                                     Region
@@ -439,12 +569,11 @@ function ManualInstitutionDialog({
                                     labelId="region-label"
                                     name="region"
                                     value={
-                                        // Find the id of the selected region name for Select value
                                         regions.find(
-                                            (r) => r.name === manualData.region
+                                            (r) => r.name === formData.region
                                         )?.id || ""
                                     }
-                                    onChange={handleChange}
+                                    onChange={handleInputChange}
                                     label="Region"
                                 >
                                     <MenuItem value="">
@@ -459,9 +588,9 @@ function ManualInstitutionDialog({
                                         </MenuItem>
                                     ))}
                                 </Select>
-                                {formErrors.region && (
+                                {errors.region && (
                                     <Typography variant="caption" color="error">
-                                        {formErrors.region}
+                                        {errors.region}
                                     </Typography>
                                 )}
                             </FormControl>
@@ -470,7 +599,7 @@ function ManualInstitutionDialog({
                             <FormControl
                                 fullWidth
                                 size="small"
-                                error={!!formErrors.province}
+                                error={!!errors.province}
                             >
                                 <InputLabel id="province-label">
                                     Province
@@ -480,13 +609,12 @@ function ManualInstitutionDialog({
                                     name="province"
                                     value={
                                         provinces.find(
-                                            (p) =>
-                                                p.name === manualData.province
+                                            (p) => p.name === formData.province
                                         )?.id || ""
                                     }
-                                    onChange={handleChange}
+                                    onChange={handleInputChange}
                                     label="Province"
-                                    disabled={!manualData.region}
+                                    disabled={!formData.region}
                                 >
                                     <MenuItem value="">
                                         <em>Select Province</em>
@@ -500,9 +628,9 @@ function ManualInstitutionDialog({
                                         </MenuItem>
                                     ))}
                                 </Select>
-                                {formErrors.province && (
+                                {errors.province && (
                                     <Typography variant="caption" color="error">
-                                        {formErrors.province}
+                                        {errors.province}
                                     </Typography>
                                 )}
                             </FormControl>
@@ -511,7 +639,7 @@ function ManualInstitutionDialog({
                             <FormControl
                                 fullWidth
                                 size="small"
-                                error={!!formErrors.municipality_city}
+                                error={!!errors.municipality_city}
                             >
                                 <InputLabel id="municipality-label">
                                     Municipality/City
@@ -523,12 +651,12 @@ function ManualInstitutionDialog({
                                         municipalities.find(
                                             (m) =>
                                                 m.name ===
-                                                manualData.municipality_city
+                                                formData.municipality_city
                                         )?.id || ""
                                     }
-                                    onChange={handleChange}
+                                    onChange={handleInputChange}
                                     label="Municipality/City"
-                                    disabled={!manualData.province}
+                                    disabled={!formData.province}
                                 >
                                     <MenuItem value="">
                                         <em>Select Municipality/City</em>
@@ -539,25 +667,24 @@ function ManualInstitutionDialog({
                                         </MenuItem>
                                     ))}
                                 </Select>
-                                {formErrors.municipality_city && (
+                                {errors.municipality_city && (
                                     <Typography variant="caption" color="error">
-                                        {formErrors.municipality_city}
+                                        {errors.municipality_city}
                                     </Typography>
                                 )}
                             </FormControl>
                         </Grid>
-
                         <Grid item size={{ xs: 12, sm: 3 }}>
                             <TextField
                                 name="postal_code"
                                 size="small"
                                 label="Postal Code"
-                                value={manualData.postal_code}
-                                onChange={handleChange}
+                                value={formData.postal_code}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.postal_code}
-                                helperText={formErrors.postal_code}
+                                error={!!errors.postal_code}
+                                helperText={errors.postal_code}
                             />
                         </Grid>
                     </Grid>
@@ -581,12 +708,12 @@ function ManualInstitutionDialog({
                                 name="institutional_telephone"
                                 size="small"
                                 label="Institutional Telephone"
-                                value={manualData.institutional_telephone}
-                                onChange={handleChange}
+                                value={formData.institutional_telephone}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.institutional_telephone}
-                                helperText={formErrors.institutional_telephone}
+                                error={!!errors.institutional_telephone}
+                                helperText={errors.institutional_telephone}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -594,12 +721,12 @@ function ManualInstitutionDialog({
                                 name="institutional_fax"
                                 size="small"
                                 label="Institutional Fax"
-                                value={manualData.institutional_fax}
-                                onChange={handleChange}
+                                value={formData.institutional_fax}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.institutional_fax}
-                                helperText={formErrors.institutional_fax}
+                                error={!!errors.institutional_fax}
+                                helperText={errors.institutional_fax}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -607,12 +734,12 @@ function ManualInstitutionDialog({
                                 name="institutional_email"
                                 size="small"
                                 label="Institutional Email"
-                                value={manualData.institutional_email}
-                                onChange={handleChange}
+                                value={formData.institutional_email}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.institutional_email}
-                                helperText={formErrors.institutional_email}
+                                error={!!errors.institutional_email}
+                                helperText={errors.institutional_email}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -620,12 +747,12 @@ function ManualInstitutionDialog({
                                 name="institutional_website"
                                 size="small"
                                 label="Institutional Website"
-                                value={manualData.institutional_website}
-                                onChange={handleChange}
+                                value={formData.institutional_website}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.institutional_website}
-                                helperText={formErrors.institutional_website}
+                                error={!!errors.institutional_website}
+                                helperText={errors.institutional_website}
                             />
                         </Grid>
                     </Grid>
@@ -649,12 +776,12 @@ function ManualInstitutionDialog({
                                 name="head_name"
                                 size="small"
                                 label="Head Name"
-                                value={manualData.head_name}
-                                onChange={handleChange}
+                                value={formData.head_name}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.head_name}
-                                helperText={formErrors.head_name}
+                                error={!!errors.head_name}
+                                helperText={errors.head_name}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -662,12 +789,12 @@ function ManualInstitutionDialog({
                                 name="head_telephone"
                                 size="small"
                                 label="Head Telephone"
-                                value={manualData.head_telephone}
-                                onChange={handleChange}
+                                value={formData.head_telephone}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.head_telephone}
-                                helperText={formErrors.head_telephone}
+                                error={!!errors.head_telephone}
+                                helperText={errors.head_telephone}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -675,12 +802,12 @@ function ManualInstitutionDialog({
                                 name="head_title"
                                 size="small"
                                 label="Head Title"
-                                value={manualData.head_title}
-                                onChange={handleChange}
+                                value={formData.head_title}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.head_title}
-                                helperText={formErrors.head_title}
+                                error={!!errors.head_title}
+                                helperText={errors.head_title}
                             />
                         </Grid>
                         <Grid item size={{ xs: 12, sm: 6 }}>
@@ -688,12 +815,12 @@ function ManualInstitutionDialog({
                                 name="head_education"
                                 size="small"
                                 label="Head Education"
-                                value={manualData.head_education}
-                                onChange={handleChange}
+                                value={formData.head_education}
+                                onChange={handleInputChange}
                                 fullWidth
                                 variant="outlined"
-                                error={!!formErrors.head_education}
-                                helperText={formErrors.head_education}
+                                error={!!errors.head_education}
+                                helperText={errors.head_education}
                             />
                         </Grid>
                     </Grid>
@@ -718,9 +845,9 @@ function ManualInstitutionDialog({
                                     views={["year"]}
                                     label="Year Established"
                                     value={
-                                        manualData.year_established
+                                        formData.year_established
                                             ? moment().year(
-                                                  manualData.year_established
+                                                  formData.year_established
                                               )
                                             : null
                                     }
@@ -735,9 +862,8 @@ function ManualInstitutionDialog({
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error: !!formErrors.year_established,
-                                            helperText:
-                                                formErrors.year_established,
+                                            error: !!errors.year_established,
+                                            helperText: errors.year_established,
                                         },
                                     }}
                                 />
@@ -747,9 +873,9 @@ function ManualInstitutionDialog({
                                     views={["year"]}
                                     label="Year Approved"
                                     value={
-                                        manualData.year_granted_approved
+                                        formData.year_granted_approved
                                             ? moment().year(
-                                                  manualData.year_granted_approved
+                                                  formData.year_granted_approved
                                               )
                                             : null
                                     }
@@ -764,9 +890,9 @@ function ManualInstitutionDialog({
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error: !!formErrors.year_granted_approved,
+                                            error: !!errors.year_granted_approved,
                                             helperText:
-                                                formErrors.year_granted_approved,
+                                                errors.year_granted_approved,
                                         },
                                     }}
                                 />
@@ -776,9 +902,9 @@ function ManualInstitutionDialog({
                                     views={["year"]}
                                     label="Year → College"
                                     value={
-                                        manualData.year_converted_college
+                                        formData.year_converted_college
                                             ? moment().year(
-                                                  manualData.year_converted_college
+                                                  formData.year_converted_college
                                               )
                                             : null
                                     }
@@ -793,9 +919,9 @@ function ManualInstitutionDialog({
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error: !!formErrors.year_converted_college,
+                                            error: !!errors.year_converted_college,
                                             helperText:
-                                                formErrors.year_converted_college,
+                                                errors.year_converted_college,
                                         },
                                     }}
                                 />
@@ -805,9 +931,9 @@ function ManualInstitutionDialog({
                                     views={["year"]}
                                     label="Year → University"
                                     value={
-                                        manualData.year_converted_university
+                                        formData.year_converted_university
                                             ? moment().year(
-                                                  manualData.year_converted_university
+                                                  formData.year_converted_university
                                               )
                                             : null
                                     }
@@ -822,9 +948,9 @@ function ManualInstitutionDialog({
                                         textField: {
                                             size: "small",
                                             fullWidth: true,
-                                            error: !!formErrors.year_converted_university,
+                                            error: !!errors.year_converted_university,
                                             helperText:
-                                                formErrors.year_converted_university,
+                                                errors.year_converted_university,
                                         },
                                     }}
                                 />
@@ -836,7 +962,7 @@ function ManualInstitutionDialog({
 
             <DialogActions sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
                 <Button
-                    onClick={handleClose}
+                    onClick={handleCancel}
                     variant="outlined"
                     color="inherit"
                     startIcon={<CloseIcon />}
@@ -844,26 +970,67 @@ function ManualInstitutionDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={handleSave}
+                    onClick={handleUpdate}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveIcon />}
+                    disabled={!formData.name || !formData.region}
                 >
                     Save Institution
                 </Button>
             </DialogActions>
         </Dialog>
     );
-}
-
-ManualInstitutionDialog.propTypes = {
-    open: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    getInstitutionType: PropTypes.func.isRequired,
-    fetchInstitutions: PropTypes.func.isRequired,
-    setSnackbarOpen: PropTypes.func.isRequired,
-    setSnackbarMessage: PropTypes.func.isRequired,
-    setSnackbarSeverity: PropTypes.func.isRequired,
 };
 
-export default ManualInstitutionDialog;
+EditDialog.propTypes = {
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    institution: PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        name: PropTypes.string,
+        region: PropTypes.string,
+        address_street: PropTypes.string,
+        municipality_city: PropTypes.string,
+        province: PropTypes.string,
+        postal_code: PropTypes.string,
+        institutional_telephone: PropTypes.string,
+        institutional_fax: PropTypes.string,
+        head_telephone: PropTypes.string,
+        institutional_email: PropTypes.string,
+        institutional_website: PropTypes.string,
+        year_established: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        sec_registration: PropTypes.string,
+        year_granted_approved: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        year_converted_college: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        year_converted_university: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        head_name: PropTypes.string,
+        head_title: PropTypes.string,
+        head_education: PropTypes.string,
+        institution_type: PropTypes.string,
+    }),
+    onEdit: PropTypes.func.isRequired,
+    setSnackbarOpen: PropTypes.func,
+    setSnackbarMessage: PropTypes.func,
+    setSnackbarSeverity: PropTypes.func,
+    fetchInstitutions: PropTypes.func,
+};
+
+EditDialog.defaultProps = {
+    institution: null,
+    fetchInstitutions: () => {},
+};
+
+export default EditDialog;

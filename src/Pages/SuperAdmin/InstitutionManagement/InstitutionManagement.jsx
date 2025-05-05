@@ -1,3 +1,6 @@
+"use client";
+
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -7,16 +10,11 @@ import {
     Typography,
     Breadcrumbs,
     Link,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     FormControl,
     InputLabel,
     Select,
     MenuItem,
     Skeleton,
-    Paper,
     IconButton,
     useTheme,
     alpha,
@@ -29,9 +27,8 @@ import Grid from "@mui/material/Grid";
 import {
     UploadFile as UploadIcon,
     Add as AddIcon,
-    FileDownload as DownloadIcon,
     FilterList as FilterListIcon,
-    Clear as ClearIcon, // Added ClearIcon
+    Clear as ClearIcon,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
 import InstitutionTable from "./InstitutionTable";
@@ -41,6 +38,7 @@ import CustomSnackbar from "../../../Components/CustomSnackbar";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
+import UploadDialog from "./UploadDialog";
 
 const InstitutionManagement = () => {
     const theme = useTheme();
@@ -57,9 +55,11 @@ const InstitutionManagement = () => {
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedInstitutionType, setSelectedInstitutionType] = useState("");
     const [selectedFile, setSelectedFile] = useState(null);
-    const [showFilters, setShowFilters] = useState(false); // State for filter visibility
+    const [selectedRegion, setSelectedRegion] = useState("");
+    const [selectedProvince, setSelectedProvince] = useState("");
+    const [selectedMunicipality, setSelectedMunicipality] = useState("");
+    const [showFilters, setShowFilters] = useState(false);
 
-    // Filter states
     const [searchTerm, setSearchTerm] = useState(
         localStorage.getItem("searchTerm") || ""
     );
@@ -73,16 +73,21 @@ const InstitutionManagement = () => {
         localStorage.getItem("provinceFilter") || ""
     );
 
-    // Compute filter options
-    const getUniqueValues = (arr, key) =>
-        [...new Set(arr.map((item) => item[key]).filter(Boolean))].sort();
+    const getUniqueValues = (arr, key) => {
+        // Check if arr is an array and not empty before attempting to map
+        if (!Array.isArray(arr) || arr.length === 0) {
+            return [];
+        }
+        return [
+            ...new Set(arr.map((item) => item?.[key]).filter(Boolean)),
+        ].sort();
+    };
     const filterOptions = {
         types: getUniqueValues(institutions, "institution_type"),
         cities: getUniqueValues(institutions, "municipality_city"),
         provinces: getUniqueValues(institutions, "province"),
     };
 
-    // Persist filters to localStorage
     useEffect(() => {
         localStorage.setItem("searchTerm", searchTerm);
         localStorage.setItem("typeFilter", typeFilter);
@@ -90,7 +95,6 @@ const InstitutionManagement = () => {
         localStorage.setItem("provinceFilter", provinceFilter);
     }, [searchTerm, typeFilter, cityFilter, provinceFilter]);
 
-    // Clear all filters
     const clearFilters = () => {
         setSearchTerm("");
         setTypeFilter("");
@@ -130,7 +134,7 @@ const InstitutionManagement = () => {
             } else {
                 institutionsData = response.data;
             }
-
+            console.log("institutionsData", institutionsData);
             setInstitutions(institutionsData);
         } catch (error) {
             console.error("Error fetching institutions:", error);
@@ -145,7 +149,6 @@ const InstitutionManagement = () => {
 
     useEffect(() => {
         fetchInstitutions();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleFileUpload = async () => {
@@ -175,16 +178,17 @@ const InstitutionManagement = () => {
 
                 const toNullableInteger = (value) => {
                     if (!value || value === "N/A" || value === "") return null;
-                    const parsed = parseInt(value, 10);
+                    const parsed = Number.parseInt(value, 10);
                     return isNaN(parsed) ? null : parsed;
                 };
 
                 const extractedInstitution = {
                     name: String(jsonDataA1[4]?.[2] || "Unknown"),
-                    region: String(jsonDataA1[10]?.[2] || "Unknown"),
+                    region_id: Number.parseInt(selectedRegion, 10) || null,
                     address_street: String(jsonDataA1[7]?.[2] || ""),
-                    municipality_city: String(jsonDataA1[8]?.[2] || ""),
-                    province: String(jsonDataA1[9]?.[2] || ""),
+                    municipality_id:
+                        Number.parseInt(selectedMunicipality, 10) || null,
+                    province_id: Number.parseInt(selectedProvince, 10) || null,
                     postal_code: String(jsonDataA1[11]?.[2] || ""),
                     institutional_telephone: String(jsonDataA1[12]?.[2] || ""),
                     institutional_fax: String(jsonDataA1[13]?.[2] || ""),
@@ -256,7 +260,7 @@ const InstitutionManagement = () => {
                                 isNaN(value)
                             )
                                 return null;
-                            const num = parseFloat(value);
+                            const num = Number.parseFloat(value);
                             if (min !== undefined && num < min) return null;
                             if (max !== undefined && num > max) return null;
                             return num;
@@ -269,7 +273,7 @@ const InstitutionManagement = () => {
                                 isNaN(value)
                             )
                                 return null;
-                            const int = parseInt(value, 10);
+                            const int = Number.parseInt(value, 10);
                             if (min !== undefined && int < min) return null;
                             if (max !== undefined && int > max) return null;
                             return int;
@@ -311,7 +315,8 @@ const InstitutionManagement = () => {
                                 -180,
                                 180
                             ),
-                            institution_id: parseInt(institutionId, 10) || null,
+                            institution_id:
+                                Number.parseInt(institutionId, 10) || null,
                         };
                     });
 
@@ -342,6 +347,9 @@ const InstitutionManagement = () => {
                 setOpenUploadDialog(false);
                 setSelectedFile(null);
                 setSelectedInstitutionType("");
+                setSelectedRegion("");
+                setSelectedProvince("");
+                setSelectedMunicipality("");
                 fetchInstitutions();
             }
         };
@@ -361,13 +369,11 @@ const InstitutionManagement = () => {
         <Box>
             {loading ? (
                 <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-                    {/* Breadcrumbs Skeleton */}
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Skeleton variant="text" width={80} height={20} />
                         <Typography sx={{ mx: 1 }}>›</Typography>
                         <Skeleton variant="text" width={150} height={20} />
                     </Box>
-                    {/* Button Skeleton */}
                     <Box
                         sx={{
                             display: "flex",
@@ -388,12 +394,10 @@ const InstitutionManagement = () => {
                             height={36}
                         />
                     </Box>
-                    {/* Table Skeleton */}
                     <Skeleton variant="rounded" width="100%" height={400} />
                 </Box>
             ) : (
                 <Box sx={{ p: 2 }}>
-                    {/* Header Section */}
                     <Box>
                         <Breadcrumbs
                             separator="›"
@@ -423,7 +427,6 @@ const InstitutionManagement = () => {
                         </Breadcrumbs>
                     </Box>
 
-                    {/* Filter Controls and Actions */}
                     <Box
                         sx={{
                             p: { xs: 1, md: 2 },
@@ -435,7 +438,6 @@ const InstitutionManagement = () => {
                         }}
                     >
                         <Grid container spacing={2}>
-                            {/* Filter Toggle and Actions */}
                             <Grid size={{ xs: 6, md: 3 }}>
                                 <TextField
                                     label="Search"
@@ -472,7 +474,6 @@ const InstitutionManagement = () => {
                                         alignItems: "center",
                                     }}
                                 >
-                                    {/* Filter Controls with Side Slide */}
                                     <Box
                                         sx={{
                                             display: "flex",
@@ -815,7 +816,6 @@ const InstitutionManagement = () => {
                         </Grid>
                     </Box>
 
-                    {/* Table Section */}
                     <Box>
                         <InstitutionTable
                             institutions={institutions}
@@ -828,7 +828,6 @@ const InstitutionManagement = () => {
                             cityFilter={cityFilter}
                             provinceFilter={provinceFilter}
                             onEdit={(updatedInstitution) => {
-                                // Update the institution in the local state
                                 setInstitutions((prev) =>
                                     prev.map((inst) =>
                                         inst.id === updatedInstitution.id
@@ -845,189 +844,21 @@ const InstitutionManagement = () => {
                 </Box>
             )}
 
-            {/* Upload Dialog */}
-            <Dialog
-                open={openUploadDialog}
-                onClose={() => setOpenUploadDialog(false)}
-                fullWidth
-                maxWidth="sm"
-                PaperProps={{
-                    sx: {
-                        borderRadius: 2,
-                        width: { xs: "95%", sm: "80%", md: "500px" },
-                        maxWidth: "100%",
-                        m: { xs: 1, sm: 2 },
-                    },
-                }}
-            >
-                <DialogTitle
-                    sx={{
-                        bgcolor: alpha(theme.palette.primary.main, 0.05),
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        px: 3,
-                        py: 2,
-                    }}
-                >
-                    <Typography fontWeight={600}>
-                        Upload Institution Form A
-                    </Typography>
-                </DialogTitle>
-                <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 3 }}
-                    >
-                        Please select an institution type and upload the Form A
-                        Excel document.
-                    </Typography>
-
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel id="institution-type-label">
-                            Institution Type
-                        </InputLabel>
-                        <Select
-                            labelId="institution-type-label"
-                            value={selectedInstitutionType}
-                            label="Institution Type"
-                            onChange={(e) =>
-                                setSelectedInstitutionType(e.target.value)
-                            }
-                        >
-                            <MenuItem value="SUC">SUC</MenuItem>
-                            <MenuItem value="LUC">LUC</MenuItem>
-                            <MenuItem value="Private">Private</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    <Box
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            if (
-                                e.dataTransfer.files &&
-                                e.dataTransfer.files[0]
-                            ) {
-                                setSelectedFile(e.dataTransfer.files[0]);
-                            }
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        sx={{
-                            p: 1.5,
-                            border: `1px dashed ${theme.palette.primary.main}`,
-                            borderRadius: 1.5,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            cursor: "pointer",
-                            bgcolor: "background.paper",
-                        }}
-                        onClick={() =>
-                            document.getElementById("upload-input").click()
-                        }
-                    >
-                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography>
-                            Drag & drop file or click to browse
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Supported formats: .xlsx, .xls
-                        </Typography>
-                        <input
-                            id="upload-input"
-                            type="file"
-                            hidden
-                            accept=".xlsx, .xls"
-                            onChange={(e) => setSelectedFile(e.target.files[0])}
-                        />
-                    </Box>
-
-                    {selectedFile && (
-                        <Paper
-                            variant="outlined"
-                            sx={{
-                                mt: 2,
-                                p: 1.5,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                borderRadius: 1.5,
-                            }}
-                        >
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        noWrap
-                                        sx={{ maxWidth: { xs: 120, sm: 200 } }}
-                                    >
-                                        {selectedFile.name}
-                                    </Typography>
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                    >
-                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
-                                        KB
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <IconButton
-                                size="small"
-                                onClick={() => setSelectedFile(null)}
-                                sx={{
-                                    color: theme.palette.error.main,
-                                    "&:hover": {
-                                        bgcolor: alpha(
-                                            theme.palette.error.main,
-                                            0.1
-                                        ),
-                                    },
-                                }}
-                            >
-                                ×
-                            </IconButton>
-                        </Paper>
-                    )}
-                </DialogContent>
-                <DialogActions
-                    sx={{
-                        flexDirection: { xs: "column", sm: "row" },
-                        gap: 1,
-                        px: { xs: 2, sm: 3 },
-                        py: { xs: 2, sm: 2 },
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                    }}
-                >
-                    <Button
-                        onClick={() => setOpenUploadDialog(false)}
-                        fullWidth={isXsScreen}
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            color: theme.palette.text.primary,
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleFileUpload}
-                        variant="contained"
-                        disabled={!selectedFile || !selectedInstitutionType}
-                        fullWidth={isXsScreen}
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            borderRadius: 1.5,
-                            px: 3,
-                        }}
-                    >
-                        Upload
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <UploadDialog
+                openUploadDialog={openUploadDialog}
+                setOpenUploadDialog={setOpenUploadDialog}
+                selectedInstitutionType={selectedInstitutionType}
+                setSelectedInstitutionType={setSelectedInstitutionType}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
+                handleFileUpload={handleFileUpload}
+                selectedRegion={selectedRegion}
+                setSelectedRegion={setSelectedRegion}
+                selectedProvince={selectedProvince}
+                setSelectedProvince={setSelectedProvince}
+                selectedMunicipality={selectedMunicipality}
+                setSelectedMunicipality={setSelectedMunicipality}
+            />
 
             <ManualInstitutionDialog
                 open={openManualDialog}

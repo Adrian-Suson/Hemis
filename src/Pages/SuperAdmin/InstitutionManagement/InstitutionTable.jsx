@@ -41,7 +41,7 @@ const InstitutionTable = ({
     setSnackbarOpen,
     searchTerm = "",
     typeFilter = "",
-    cityFilter = "",
+    municipalityFilter = "",
     provinceFilter = "",
 }) => {
     const navigate = useNavigate();
@@ -114,7 +114,7 @@ const InstitutionTable = ({
                 const a1Fields = [
                     { row: 5, cell: 3, key: "name" },
                     { row: 8, cell: 3, key: "address_street" },
-                    { row: 9, cell: 3, key: "municipality_city" },
+                    { row: 9, cell: 3, key: "municipality" },
                     { row: 10, cell: 3, key: "province" },
                     { row: 11, cell: 3, key: "region" },
                     { row: 12, cell: 3, key: "postal_code" },
@@ -260,17 +260,17 @@ const InstitutionTable = ({
             const matchesType = typeFilter
                 ? institution.institution_type === typeFilter
                 : true;
-            const matchesCity = cityFilter
-                ? institution.municipality_city === cityFilter
+            const matchesMunicipality = municipalityFilter
+                ? institution.municipality === municipalityFilter
                 : true;
             const matchesProvince = provinceFilter
                 ? institution.province === provinceFilter
                 : true;
             return (
-                matchesSearch && matchesType && matchesCity && matchesProvince
+                matchesSearch && matchesType && matchesMunicipality && matchesProvince
             );
         });
-    }, [institutions, searchTerm, typeFilter, cityFilter, provinceFilter]);
+    }, [institutions, searchTerm, typeFilter, municipalityFilter, provinceFilter]);
 
     const handleNavigation = (path, action) => {
         if (!selectedInstitution) return;
@@ -350,8 +350,8 @@ const InstitutionTable = ({
             headerAlign: "center",
         },
         {
-            field: "municipality_city",
-            headerName: "City",
+            field: "municipality",
+            headerName: "Municipality",
             width: 250,
             align: "center",
 
@@ -761,7 +761,7 @@ InstitutionTable.propTypes = {
     setSnackbarOpen: PropTypes.func.isRequired,
     searchTerm: PropTypes.string,
     typeFilter: PropTypes.string,
-    cityFilter: PropTypes.string,
+    municipalityFilter: PropTypes.string,
     provinceFilter: PropTypes.string,
 };
 

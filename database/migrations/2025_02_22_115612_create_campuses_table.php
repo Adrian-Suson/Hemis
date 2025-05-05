@@ -13,8 +13,10 @@ class CreateCampusesTable extends Migration
             $table->string('suc_name', 255)->nullable();
             $table->string('campus_type', 255)->nullable();
             $table->string('institutional_code', 255)->nullable();
-            $table->string('region', 255)->nullable();
-            $table->string('municipality_city_province', 255)->nullable();
+            // Foreign key for region (nullable)
+            $table->foreignId('region_id')->nullable()->constrained('regions')->onDelete('set null');
+            // Remove separate province -> merged with municipality:
+            $table->foreignId('municipality_id')->nullable()->constrained('municipalities')->onDelete('set null');
             $table->integer('year_first_operation')->nullable();
             $table->decimal('land_area_hectares', 10, 2)->nullable();
             $table->decimal('distance_from_main', 10, 2)->nullable();

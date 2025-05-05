@@ -9,27 +9,40 @@ use Illuminate\Http\JsonResponse;
 
 class InstitutionController extends Controller
 {
+    private function transformInstitution(Institution $institution): array
+    {
+        $data = $institution->toArray();
+        $data['region'] = $institution->region ? $institution->region->name : null;
+        $data['province'] = $institution->province ? $institution->province->name : null;
+        $data['municipality'] = $institution->municipality ? $institution->municipality->name : null;
+        return $data;
+    }
+
     public function index(Request $request): JsonResponse
     {
-
-        // Check if type is provided
         if ($request->has('type')) {
-            $institutions = Institution::where('institution_type', $request->type)->get();
+            $institutions = Institution::where('institution_type', $request->type)
+                ->with('region', 'province', 'municipality')
+                ->get();
         } else {
-            $institutions = Institution::all();
+            $institutions = Institution::with('region', 'province', 'municipality')->get();
         }
 
-        return response()->json($institutions);
+        $transformed = $institutions->map(function ($inst) {
+            return $this->transformInstitution($inst);
+        });
+
+        return response()->json($transformed);
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
+            'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
-            'municipality_city' => 'nullable|string|max:255',
-            'province' => 'nullable|string|max:255',
+            'municipality_id' => 'nullable|integer|exists:municipalities,id',
+            'province_id' => 'nullable|integer|exists:provinces,id',
             'postal_code' => 'nullable|string|max:10',
             'institutional_telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
@@ -48,22 +61,26 @@ class InstitutionController extends Controller
         ]);
 
         $institution = Institution::create($validated);
-        return response()->json($institution, 201);
+        $institution->load('region', 'province', 'municipality');
+
+        return response()->json($this->transformInstitution($institution), 201);
     }
 
     public function show(Institution $institution): JsonResponse
     {
-        return response()->json($institution);
+        $institution->load('region', 'province', 'municipality');
+
+        return response()->json($this->transformInstitution($institution));
     }
 
     public function update(Request $request, Institution $institution): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
+            'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
-            'municipality_city' => 'nullable|string|max:255',
-            'province' => 'nullable|string|max:255',
+            'municipality_id' => 'nullable|integer|exists:municipalities,id',
+            'province_id' => 'nullable|integer|exists:provinces,id',
             'postal_code' => 'nullable|string|max:10',
             'institutional_telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
@@ -82,10 +99,10 @@ class InstitutionController extends Controller
         ]);
 
         $institution->update($validated);
-        return response()->json($institution);
+        $institution->load('region', 'province', 'municipality');
+
+        return response()->json($this->transformInstitution($institution));
     }
-
-
 
     public function destroy(Institution $institution): JsonResponse
     {

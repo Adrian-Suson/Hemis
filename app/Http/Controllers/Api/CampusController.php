@@ -46,8 +46,8 @@ class CampusController extends Controller
                 '*.suc_name' => 'nullable|string|max:255',
                 '*.campus_type' => 'nullable|string|max:255',
                 '*.institutional_code' => 'nullable|string|max:255',
-                '*.region' => 'nullable|string|max:255',
-                '*.municipality_city_province' => 'nullable|string|max:255',
+                '*.region_id' => 'nullable|string|max:255',
+                '*.municipality_id' => 'nullable|string|max:255',
                 '*.year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
                 '*.land_area_hectares' => 'nullable|numeric|min:0',
                 '*.distance_from_main' => 'nullable|numeric|min:0',
@@ -108,12 +108,13 @@ class CampusController extends Controller
             return response()->json(['message' => 'Campus not found'], 404);
         }
 
-        $validated = $request->validate(rules: [
+        $validated = $request->validate([
             'suc_name' => 'nullable|string|max:255',
             'campus_type' => 'nullable|string|max:255',
             'institutional_code' => 'nullable|string|max:255',
-            'region' => 'nullable|string|max:255', // FIXED: Changed from integer to string
-            'municipality_city_province' => 'nullable|string|max:255',
+            'region_id' => 'nullable|integer|exists:regions,id',          // updated key
+            'province_id' => 'nullable|integer|exists:provinces,id',       // new key
+            'municipality_id' => 'nullable|integer|exists:municipalities,id',// updated key
             'year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
             'land_area_hectares' => 'nullable|numeric|min:0',
             'distance_from_main' => 'nullable|numeric|min:0',
@@ -148,8 +149,9 @@ class CampusController extends Controller
                     'suc_name' => $campus->suc_name,
                     'campus_type' => $campus->campus_type,
                     'institutional_code' => $campus->institutional_code,
-                    'region' => $campus->region,
-                    'municipality_city_province' => $campus->municipality_city_province,
+                    'region_id' => $campus->region_id,       // updated key
+                    'province_id' => $campus->province_id,     // new key
+                    'municipality_id' => $campus->municipality_id, // updated key
                     'year_first_operation' => $campus->year_first_operation,
                     'land_area_hectares' => $campus->land_area_hectares,
                     'distance_from_main' => $campus->distance_from_main,
@@ -163,8 +165,6 @@ class CampusController extends Controller
             }),
         ]);
     }
-
-
 
     // Delete a campus
     public function destroy($id)
