@@ -15,6 +15,7 @@ class InstitutionController extends Controller
         $data['region'] = $institution->region ? $institution->region->name : null;
         $data['province'] = $institution->province ? $institution->province->name : null;
         $data['municipality'] = $institution->municipality ? $institution->municipality->name : null;
+        $data['report_year'] = $institution->report_year;
         return $data;
     }
 
@@ -58,6 +59,7 @@ class InstitutionController extends Controller
             'head_title' => 'nullable|string|max:255',
             'head_education' => 'nullable|string|max:255',
             'institution_type' => 'nullable|string|max:255',
+            'report_year' => 'nullable|integer'
         ]);
 
         $institution = Institution::create($validated);
@@ -96,6 +98,7 @@ class InstitutionController extends Controller
             'head_title' => 'nullable|string|max:255',
             'head_education' => 'nullable|string|max:255',
             'institution_type' => 'nullable|string|max:255',
+            'report_year' => 'nullable|integer'
         ]);
 
         $institution->update($validated);

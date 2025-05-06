@@ -68,7 +68,9 @@ class CreateFacultyProfilesTable extends Migration
             $table->float('other_load_credits')->nullable(); // OTHER OFFICIAL LOAD CREDITS (E6)
             $table->float('total_work_load')->nullable(); // TOTAL WORK LOAD (E7)
 
+            $table->integer('report_year')->nullable(); // added column for yearly report
             $table->timestamps();
+            $table->softDeletes(); // added soft delete support
         });
     }
 

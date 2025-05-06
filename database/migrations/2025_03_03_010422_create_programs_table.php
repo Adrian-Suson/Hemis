@@ -62,7 +62,9 @@ return new class extends Migration {
             $table->integer('suc_funded_grantees')->nullable();
 
             $table->foreign('institution_id')->references('id')->on('institutions')->onDelete('cascade');
+            $table->integer('report_year')->nullable(); // added column for yearly report
             $table->timestamps();
+            $table->softDeletes(); // added soft delete support
         });
     }
 

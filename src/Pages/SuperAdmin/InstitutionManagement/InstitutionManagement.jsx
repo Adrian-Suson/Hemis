@@ -1,7 +1,5 @@
-"use client";
-
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import {
@@ -28,9 +26,10 @@ import {
     UploadFile as UploadIcon,
     Add as AddIcon,
     FilterList as FilterListIcon,
-    Clear as ClearIcon,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
+import { RiResetLeftLine } from "react-icons/ri";
+
 import InstitutionTable from "./InstitutionTable";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
@@ -66,15 +65,17 @@ const InstitutionManagement = () => {
     const [typeFilter, setTypeFilter] = useState(
         localStorage.getItem("typeFilter") || ""
     );
-    const [cityFilter, setCityFilter] = useState(
-        localStorage.getItem("cityFilter") || ""
+    const [municipalityFilter, setMunicipalityFilter] = useState(
+        localStorage.getItem("municipalityFilter") || ""
     );
     const [provinceFilter, setProvinceFilter] = useState(
         localStorage.getItem("provinceFilter") || ""
     );
+    const [reportYearFilter, setReportYearFilter] = useState(
+        localStorage.getItem("reportYearFilter") || ""
+    );
 
     const getUniqueValues = (arr, key) => {
-        // Check if arr is an array and not empty before attempting to map
         if (!Array.isArray(arr) || arr.length === 0) {
             return [];
         }
@@ -84,26 +85,30 @@ const InstitutionManagement = () => {
     };
     const filterOptions = {
         types: getUniqueValues(institutions, "institution_type"),
-        cities: getUniqueValues(institutions, "municipality_city"),
+        municipalities: getUniqueValues(institutions, "municipality"),
         provinces: getUniqueValues(institutions, "province"),
+        reportYears: getUniqueValues(institutions, "report_year"),
     };
 
     useEffect(() => {
         localStorage.setItem("searchTerm", searchTerm);
         localStorage.setItem("typeFilter", typeFilter);
-        localStorage.setItem("cityFilter", cityFilter);
+        localStorage.setItem("municipalityFilter", municipalityFilter);
         localStorage.setItem("provinceFilter", provinceFilter);
-    }, [searchTerm, typeFilter, cityFilter, provinceFilter]);
+        localStorage.setItem("reportYearFilter", reportYearFilter);
+    }, [searchTerm, typeFilter, municipalityFilter, provinceFilter, reportYearFilter]);
 
     const clearFilters = () => {
         setSearchTerm("");
         setTypeFilter("");
-        setCityFilter("");
+        setMunicipalityFilter("");
         setProvinceFilter("");
+        setReportYearFilter("");
         localStorage.setItem("searchTerm", "");
         localStorage.setItem("typeFilter", "");
-        localStorage.setItem("cityFilter", "");
+        localStorage.setItem("municipalityFilter", "");
         localStorage.setItem("provinceFilter", "");
+        localStorage.setItem("reportYearFilter", "");
     };
 
     const handleCloseSnackbar = () => {
@@ -151,7 +156,7 @@ const InstitutionManagement = () => {
         fetchInstitutions();
     }, []);
 
-    const handleFileUpload = async () => {
+    const handleFileUpload = async (reportYear) => {
         if (!selectedFile || !selectedInstitutionType) {
             setSnackbarMessage(
                 "Please select both an institution type and a file."
@@ -210,6 +215,7 @@ const InstitutionManagement = () => {
                     head_title: String(jsonDataA1[23]?.[2] || ""),
                     head_education: String(jsonDataA1[24]?.[2] || ""),
                     institution_type: selectedInstitutionType,
+                    report_year: reportYear, // include the report year from the datepicker
                 };
 
                 updateProgress(50);
@@ -292,8 +298,13 @@ const InstitutionManagement = () => {
                             suc_name: parseString(row[1]),
                             campus_type: parseString(row[2]),
                             institutional_code: parseString(row[3]),
-                            region: parseString(row[4]),
-                            municipality_city_province: parseString(row[5]),
+                            region_id:
+                                Number.parseInt(selectedRegion, 10) || null,
+                            municipality_id:
+                                Number.parseInt(selectedMunicipality, 10) ||
+                                null,
+                            province_id:
+                                Number.parseInt(selectedProvince, 10) || null,
                             year_first_operation: parseInteger(
                                 row[6],
                                 1800,
@@ -317,6 +328,7 @@ const InstitutionManagement = () => {
                             ),
                             institution_id:
                                 Number.parseInt(institutionId, 10) || null,
+                            report_year: reportYear, // include the report year from the datepicker
                         };
                     });
 
@@ -365,8 +377,42 @@ const InstitutionManagement = () => {
         setShowFilters((prev) => !prev);
     };
 
+    const filteredInstitutions = useMemo(() => {
+        return institutions.filter((institution) => {
+            const matchesSearch = institution.name
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase());
+            const matchesType = typeFilter
+                ? institution.institution_type === typeFilter
+                : true;
+            const matchesMunicipality = municipalityFilter
+                ? institution.municipality === municipalityFilter
+                : true;
+            const matchesProvince = provinceFilter
+                ? institution.province === provinceFilter
+                : true;
+            const matchesReportYear = reportYearFilter
+                ? String(institution.report_year) === reportYearFilter
+                : true;
+            return (
+                matchesSearch &&
+                matchesType &&
+                matchesMunicipality &&
+                matchesProvince &&
+                matchesReportYear
+            );
+        });
+    }, [
+        institutions,
+        searchTerm,
+        typeFilter,
+        municipalityFilter,
+        provinceFilter,
+        reportYearFilter,
+    ]);
+
     return (
-        <Box>
+        <Box>  
             {loading ? (
                 <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -513,10 +559,7 @@ const InstitutionManagement = () => {
                                             >
                                                 <Box
                                                     sx={{
-                                                        flex: {
-                                                            xs: "0 0 100%",
-                                                            md: "0 0 30%",
-                                                        },
+                                                        flex: "0 0 25%",
                                                     }}
                                                 >
                                                     <FormControl
@@ -581,10 +624,7 @@ const InstitutionManagement = () => {
                                                 </Box>
                                                 <Box
                                                     sx={{
-                                                        flex: {
-                                                            xs: "0 0 100%",
-                                                            md: "0 0 30%",
-                                                        },
+                                                        flex: "0 0 40%",
                                                     }}
                                                 >
                                                     <FormControl
@@ -599,17 +639,19 @@ const InstitutionManagement = () => {
                                                             }}
                                                             size="small"
                                                         >
-                                                            City
+                                                            Municipality
                                                         </InputLabel>
                                                         <Select
-                                                            value={cityFilter}
+                                                            value={
+                                                                municipalityFilter
+                                                            }
                                                             onChange={(e) =>
-                                                                setCityFilter(
+                                                                setMunicipalityFilter(
                                                                     e.target
                                                                         .value
                                                                 )
                                                             }
-                                                            label="City"
+                                                            label="Municipality"
                                                             size="small"
                                                             sx={{
                                                                 height: 40,
@@ -624,23 +666,28 @@ const InstitutionManagement = () => {
                                                                         "0.875rem",
                                                                 }}
                                                             >
-                                                                All Cities
+                                                                All
+                                                                Municipalities
                                                             </MenuItem>
-                                                            {filterOptions.cities.map(
-                                                                (city) => (
+                                                            {filterOptions.municipalities.map(
+                                                                (
+                                                                    municipality
+                                                                ) => (
                                                                     <MenuItem
                                                                         key={
-                                                                            city
+                                                                            municipality
                                                                         }
                                                                         value={
-                                                                            city
+                                                                            municipality
                                                                         }
                                                                         sx={{
                                                                             fontSize:
                                                                                 "0.875rem",
                                                                         }}
                                                                     >
-                                                                        {city}
+                                                                        {
+                                                                            municipality
+                                                                        }
                                                                     </MenuItem>
                                                                 )
                                                             )}
@@ -649,10 +696,7 @@ const InstitutionManagement = () => {
                                                 </Box>
                                                 <Box
                                                     sx={{
-                                                        flex: {
-                                                            xs: "0 0 100%",
-                                                            md: "0 0 30%",
-                                                        },
+                                                        flex: "0 0 40%",
                                                     }}
                                                 >
                                                     <FormControl
@@ -719,10 +763,74 @@ const InstitutionManagement = () => {
                                                 </Box>
                                                 <Box
                                                     sx={{
-                                                        flex: {
-                                                            xs: "0 0 100%",
-                                                            md: "0 0 auto",
-                                                        },
+                                                        flex: "0 0 35%",
+                                                    }}
+                                                >
+                                                    <FormControl
+                                                        variant="outlined"
+                                                        size="small"
+                                                        fullWidth
+                                                    >
+                                                        <InputLabel
+                                                            sx={{
+                                                                fontSize:
+                                                                    "0.75rem",
+                                                            }}
+                                                            size="small"
+                                                        >
+                                                            Report Year
+                                                        </InputLabel>
+                                                        <Select
+                                                            value={
+                                                                reportYearFilter
+                                                            }
+                                                            onChange={(e) =>
+                                                                setReportYearFilter(
+                                                                    e.target
+                                                                        .value
+                                                                )
+                                                            }
+                                                            label="Report Year"
+                                                            size="small"
+                                                            sx={{
+                                                                height: 40,
+                                                                fontSize:
+                                                                    "0.875rem",
+                                                            }}
+                                                        >
+                                                            <MenuItem
+                                                                value=""
+                                                                sx={{
+                                                                    fontSize:
+                                                                        "0.875rem",
+                                                                }}
+                                                            >
+                                                                All Years
+                                                            </MenuItem>
+                                                            {filterOptions.reportYears.map(
+                                                                (year) => (
+                                                                    <MenuItem
+                                                                        key={
+                                                                            year
+                                                                        }
+                                                                        value={String(
+                                                                            year
+                                                                        )}
+                                                                        sx={{
+                                                                            fontSize:
+                                                                                "0.875rem",
+                                                                        }}
+                                                                    >
+                                                                        {year}
+                                                                    </MenuItem>
+                                                                )
+                                                            )}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                                <Box
+                                                    sx={{
+                                                        flex: "0 0 40%",
                                                         display: "flex",
                                                         alignItems: "center",
                                                     }}
@@ -730,7 +838,7 @@ const InstitutionManagement = () => {
                                                     <Button
                                                         variant="text"
                                                         startIcon={
-                                                            <ClearIcon />
+                                                            <RiResetLeftLine />
                                                         }
                                                         onClick={clearFilters}
                                                         sx={{
@@ -749,9 +857,7 @@ const InstitutionManagement = () => {
                                                                 ),
                                                             },
                                                         }}
-                                                    >
-                                                        Clear Filters
-                                                    </Button>
+                                                    />
                                                 </Box>
                                             </Box>
                                         </Collapse>
@@ -818,14 +924,14 @@ const InstitutionManagement = () => {
 
                     <Box>
                         <InstitutionTable
-                            institutions={institutions}
+                            institutions={filteredInstitutions}
                             setSnackbarMessage={setSnackbarMessage}
                             fetchInstitutions={fetchInstitutions}
                             setSnackbarSeverity={setSnackbarSeverity}
                             setSnackbarOpen={setSnackbarOpen}
                             searchTerm={searchTerm}
                             typeFilter={typeFilter}
-                            cityFilter={cityFilter}
+                            municipalityFilter={municipalityFilter}
                             provinceFilter={provinceFilter}
                             onEdit={(updatedInstitution) => {
                                 setInstitutions((prev) =>

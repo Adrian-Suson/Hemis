@@ -21,7 +21,9 @@ return new class extends Migration {
             $table->string('program_major')->nullable(); // Program major (optional)
             $table->string('program_authority_to_operate_graduate')->nullable(); // Program authority (optional)
             $table->integer('year_granted')->nullable(); // Year granted (optional)
+            $table->integer('report_year')->nullable(); // added column for yearly report
             $table->timestamps(); // Created_at and updated_at timestamps
+            $table->softDeletes(); // added soft delete support
         });
     }
 

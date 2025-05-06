@@ -14,7 +14,6 @@ class CampusController extends Controller
     // Get all campuses
     public function index(Request $request)
     {
-        // Check if institution_id is provided
         if ($request->has('institution_id')) {
             $institution = Institution::find($request->institution_id);
 
@@ -22,20 +21,28 @@ class CampusController extends Controller
                 return response()->json(['message' => 'Institution not found'], 404);
             }
 
-            $campuses = Campus::with('institution')
+            $campuses = Campus::with('province', 'municipality', 'institution')
                 ->where('institution_id', $request->institution_id)
                 ->get();
 
+            $transformed = $campuses->map(function ($campus) {
+                return $this->transformCampus($campus);
+            });
+
             return response()->json([
-                'institution_name' => $institution->name, // Send institution name
-                'campuses' => $campuses, // Wrap campuses inside a key
+                'institution_name' => $institution->name,
+                'campuses' => $transformed,
             ]);
         }
 
-        // Return all campuses if no institution_id is provided
+        $campuses = Campus::with('province', 'municipality', 'institution')->get();
+        $transformed = $campuses->map(function ($campus) {
+            return $this->transformCampus($campus);
+        });
+
         return response()->json([
             'institution_name' => 'All Institutions',
-            'campuses' => Campus::with('institution')->get(),
+            'campuses' => $transformed,
         ]);
     }
 
@@ -46,8 +53,9 @@ class CampusController extends Controller
                 '*.suc_name' => 'nullable|string|max:255',
                 '*.campus_type' => 'nullable|string|max:255',
                 '*.institutional_code' => 'nullable|string|max:255',
-                '*.region_id' => 'nullable|string|max:255',
-                '*.municipality_id' => 'nullable|string|max:255',
+                '*.region_id' => 'nullable|integer|exists:regions,id',      // updated rule
+                '*.province_id' => 'nullable|integer|exists:provinces,id',    // added rule
+                '*.municipality_id' => 'nullable|integer|exists:municipalities,id', // updated rule
                 '*.year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
                 '*.land_area_hectares' => 'nullable|numeric|min:0',
                 '*.distance_from_main' => 'nullable|numeric|min:0',
@@ -58,6 +66,7 @@ class CampusController extends Controller
                 '*.latitude_coordinates' => 'nullable|numeric|between:-90,90',
                 '*.longitude_coordinates' => 'nullable|numeric|between:-180,180',
                 '*.institution_id' => 'required|exists:institutions,id',
+                '*.report_year' => 'nullable|integer' // added rule for report_year
             ]);
 
             // Add timestamps to each record
@@ -114,7 +123,7 @@ class CampusController extends Controller
             'institutional_code' => 'nullable|string|max:255',
             'region_id' => 'nullable|integer|exists:regions,id',          // updated key
             'province_id' => 'nullable|integer|exists:provinces,id',       // new key
-            'municipality_id' => 'nullable|integer|exists:municipalities,id',// updated key
+            'municipality_id' => 'nullable|integer|exists:municipalities,id', // updated key
             'year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
             'land_area_hectares' => 'nullable|numeric|min:0',
             'distance_from_main' => 'nullable|numeric|min:0',
@@ -125,6 +134,7 @@ class CampusController extends Controller
             'latitude_coordinates' => 'nullable|numeric|between:-90,90',
             'longitude_coordinates' => 'nullable|numeric|between:-180,180',
             'institution_id' => 'required|exists:institutions,id',
+            'report_year' => 'nullable|integer' // added rule for report_year
         ]);
 
         $campus->update($validated);
@@ -149,9 +159,9 @@ class CampusController extends Controller
                     'suc_name' => $campus->suc_name,
                     'campus_type' => $campus->campus_type,
                     'institutional_code' => $campus->institutional_code,
-                    'region_id' => $campus->region_id,       // updated key
-                    'province_id' => $campus->province_id,     // new key
-                    'municipality_id' => $campus->municipality_id, // updated key
+                    'region_id' => $campus->region_id,
+                    'province_id' => $campus->province_id,
+                    'municipality_id' => $campus->municipality_id,
                     'year_first_operation' => $campus->year_first_operation,
                     'land_area_hectares' => $campus->land_area_hectares,
                     'distance_from_main' => $campus->distance_from_main,
@@ -161,6 +171,7 @@ class CampusController extends Controller
                     'former_name' => $campus->former_name,
                     'latitude_coordinates' => $campus->latitude_coordinates,
                     'longitude_coordinates' => $campus->longitude_coordinates,
+                    'report_year' => $campus->report_year // added report_year
                 ];
             }),
         ]);
@@ -176,5 +187,16 @@ class CampusController extends Controller
 
         $campus->delete();
         return response()->json(['message' => 'Campus deleted successfully']);
+    }
+
+    // New helper to transform a campus by concatenating province and municipality
+    private function transformCampus(Campus $campus): array
+    {
+        $data = $campus->toArray();
+        $data['region'] = $campus->region ? $campus->region->name : null;
+        $province = $campus->province ? $campus->province->name : "";
+        $municipality = $campus->municipality ? $campus->municipality->name : "";
+        $data['location'] = trim($province . ", " . $municipality, ", ");
+        return $data;
     }
 }

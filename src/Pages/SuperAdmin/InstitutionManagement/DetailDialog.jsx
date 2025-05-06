@@ -135,7 +135,7 @@ const DetailDialog = ({
                                 {formatField("Street Address", institution.address_street)}
                                 {formatField("Region", institution.region)}
                                 {formatField("Province", institution.province)}
-                                {formatField("Municipality/City", institution.municipality_city)}
+                                {formatField("Municipality/City", institution.municipality)}
                                 {formatField("Postal Code", institution.postal_code)}
                             </Grid>
                         </Box>
@@ -243,7 +243,7 @@ DetailDialog.propTypes = {
         name: PropTypes.string,
         region: PropTypes.string,
         address_street: PropTypes.string,
-        municipality_city: PropTypes.string,
+        municipality: PropTypes.string,
         province: PropTypes.string,
         postal_code: PropTypes.string,
         institutional_telephone: PropTypes.string,

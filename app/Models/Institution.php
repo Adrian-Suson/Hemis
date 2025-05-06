@@ -29,6 +29,7 @@ class Institution extends Model
         'institution_type',
         'province_id',      // added foreign key for province
         'municipality_id',  // added foreign key for municipality
+        'report_year'       // added column for yearly report
     ];
 
     // Define the relationship with Region

@@ -91,12 +91,12 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                         : "-",
             },
             {
-                field: "municipality_city_province",
-                headerName: "City/Province",
+                field: "location",
+                headerName: "Municipal/City and Province",
                 minWidth: 200,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -226,7 +226,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             campus_type: campus.campus_type || "",
             institutional_code: campus.institutional_code || "",
             region: campus.region || "",
-            municipality_city_province: campus.municipality_city_province || "",
+            location: campus.location || "",
             former_name: campus.former_name || "",
             year_first_operation: campus.year_first_operation || "",
             land_area_hectares: campus.land_area_hectares || 0.0,
@@ -612,7 +612,7 @@ CampusDataGrid.propTypes = {
             campus_type: PropTypes.string,
             institutional_code: PropTypes.string,
             region: PropTypes.string,
-            municipality_city_province: PropTypes.string,
+            location: PropTypes.string,
             former_name: PropTypes.string,
             year_first_operation: PropTypes.oneOfType([
                 PropTypes.string,

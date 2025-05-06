@@ -15,7 +15,7 @@ class CreateCampusesTable extends Migration
             $table->string('institutional_code', 255)->nullable();
             // Foreign key for region (nullable)
             $table->foreignId('region_id')->nullable()->constrained('regions')->onDelete('set null');
-            // Remove separate province -> merged with municipality:
+            $table->foreignId('province_id')->nullable()->constrained('provinces')->onDelete('set null');
             $table->foreignId('municipality_id')->nullable()->constrained('municipalities')->onDelete('set null');
             $table->integer('year_first_operation')->nullable();
             $table->decimal('land_area_hectares', 10, 2)->nullable();
@@ -26,8 +26,10 @@ class CreateCampusesTable extends Migration
             $table->string('former_name', 255)->nullable();
             $table->decimal('latitude_coordinates', 9, 6)->nullable();
             $table->decimal('longitude_coordinates', 9, 6)->nullable();
+            $table->integer('report_year')->nullable(); // added column for yearly report
             $table->foreignId('institution_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes(); // added soft delete support
         });
     }
 

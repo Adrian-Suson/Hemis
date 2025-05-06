@@ -31,6 +31,7 @@ return new class extends Migration
             $table->string('head_title', 255)->nullable();
             $table->string('head_education', 255)->nullable();
             $table->string('institution_type', 255)->nullable();
+            $table->integer('report_year')->nullable(); // added column for yearly report
             $table->timestamps();
             $table->softDeletes(); // Adds deleted_at column for soft deletes
         });

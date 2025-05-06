@@ -3,16 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // added import
 
 class Campus extends Model
 {
+    use SoftDeletes; // added soft delete support
+
     protected $fillable = [
         'suc_name',
         'campus_type',
         'institutional_code',
         'region_id',      // updated to use foreign key
         'province_id',    // added foreign key for province
-        'municipality_id',// added foreign key for municipality
+        'municipality_id', // added foreign key for municipality
         'year_first_operation',
         'land_area_hectares',
         'distance_from_main',
@@ -23,6 +26,7 @@ class Campus extends Model
         'latitude_coordinates',
         'longitude_coordinates',
         'institution_id',
+        'report_year',    // added for yearly report
     ];
 
     // Relationship with Institution

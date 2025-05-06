@@ -21,6 +21,10 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import config from "../../../utils/config";
 import { useTheme } from "@mui/material";
+import TextField from "@mui/material/TextField"; // added for datepicker input
+import moment from "moment"; // added import for moment
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers"; // updated import
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment"; // new import
 
 const UploadDialog = ({
     openUploadDialog,
@@ -43,6 +47,7 @@ const UploadDialog = ({
     const [regions, setRegions] = useState([]); // State for regions
     const [provinces, setProvinces] = useState([]); // State for provinces
     const [municipalities, setMunicipalities] = useState([]); // State for municipalities
+    const [selectedDate, setSelectedDate] = useState(moment()); // added state for datepicker
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
     const ACCEPTED_FILE_TYPES = [
@@ -176,7 +181,8 @@ const UploadDialog = ({
     const handleUploadClick = () => {
         setValidationTriggered(true); // Mark validation as attempted
         if (validateInputs()) {
-            handleFileUpload(); // Proceed with upload if valid
+            // Pass selected year (as integer) to the upload handler
+            handleFileUpload(selectedDate.year());
         }
     };
 
@@ -334,6 +340,28 @@ const UploadDialog = ({
                                 </MenuItem>
                             ))}
                         </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth variant="outlined">
+                        {/* Wrapped DatePicker with LocalizationProvider */}
+                        <LocalizationProvider dateAdapter={AdapterMoment}>
+                            <DatePicker
+                                label="Select Year"
+                                views={["year"]} // restrict to year only
+                                value={selectedDate}
+                                onChange={(newValue) =>
+                                    setSelectedDate(newValue)
+                                }
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        variant="outlined"
+                                        sx={{ bgcolor: "white" }}
+                                        fullWidth
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
                     </FormControl>
 
                     <Box

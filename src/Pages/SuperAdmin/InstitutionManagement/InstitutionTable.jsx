@@ -267,10 +267,19 @@ const InstitutionTable = ({
                 ? institution.province === provinceFilter
                 : true;
             return (
-                matchesSearch && matchesType && matchesMunicipality && matchesProvince
+                matchesSearch &&
+                matchesType &&
+                matchesMunicipality &&
+                matchesProvince
             );
         });
-    }, [institutions, searchTerm, typeFilter, municipalityFilter, provinceFilter]);
+    }, [
+        institutions,
+        searchTerm,
+        typeFilter,
+        municipalityFilter,
+        provinceFilter,
+    ]);
 
     const handleNavigation = (path, action) => {
         if (!selectedInstitution) return;
@@ -371,6 +380,13 @@ const InstitutionTable = ({
             width: 193,
             align: "center",
 
+            headerAlign: "center",
+        },
+        {
+            field: "report_year",
+            headerName: "Report Year",
+            width: 120,
+            align: "center",
             headerAlign: "center",
         },
         {
