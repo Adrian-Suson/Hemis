@@ -49,6 +49,21 @@ const useLocationData = () => {
         }
     };
 
+    const fetchMunicipalitiesByRegion = async (regionId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await axios.get(
+                `${config.API_URL}/municipalities?region_id=${regionId}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            setMunicipalities(res.data);
+        } catch {
+            setMunicipalities([]);
+        }
+    };
+
     return {
         regions,
         provinces,
@@ -56,6 +71,7 @@ const useLocationData = () => {
         fetchRegions,
         fetchProvinces,
         fetchMunicipalities,
+        fetchMunicipalitiesByRegion,
     };
 };
 

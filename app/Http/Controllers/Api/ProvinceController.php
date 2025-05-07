@@ -8,8 +8,13 @@ use Illuminate\Http\Request;
 
 class ProvinceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        if ($request->has('region_id')) {
+            return Province::where('region_id', $request->input('region_id'))
+                ->orderBy('name', 'asc')
+                ->get();
+        }
         return Province::orderBy('name', 'asc')->get();
     }
 

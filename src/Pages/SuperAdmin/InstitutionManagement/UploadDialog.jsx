@@ -13,6 +13,7 @@ import {
     Box,
     IconButton,
     Divider,
+    Grid,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -227,220 +228,243 @@ const UploadDialog = ({
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3, mt: 1 }}>
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 3,
-                        mt: 1,
-                    }}
-                >
-                    <FormControl
-                        fullWidth
-                        variant="outlined"
-                        error={!!typeError}
-                    >
-                        <InputLabel id="institution-type-label">
-                            Institution Type
-                        </InputLabel>
-                        <Select
-                            labelId="institution-type-label"
-                            value={selectedInstitutionType}
-                            onChange={(e) => {
-                                setSelectedInstitutionType(e.target.value);
-                                if (validationTriggered)
-                                    setValidationTriggered(false); // Reset validation trigger
-                            }}
-                            label="Institution Type"
-                            sx={{ bgcolor: "white" }}
+            <DialogContent sx={{ p: 3, my: 1 }}>
+                <Grid mt={1} container spacing={2}>
+                    <Grid item size={6}>
+                        <FormControl
+                            fullWidth
+                            variant="outlined"
+                            error={!!typeError}
                         >
-                            <MenuItem value="">
-                                <em>Select Type</em>
-                            </MenuItem>
-                            <MenuItem value="SUC">SUC</MenuItem>
-                            <MenuItem value="LUC">LUC</MenuItem>
-                            <MenuItem value="PHEI">PHEI</MenuItem>
-                        </Select>
-                        {typeError && validationTriggered && (
+                            <InputLabel id="institution-type-label">
+                                Institution Type
+                            </InputLabel>
+                            <Select
+                                labelId="institution-type-label"
+                                value={selectedInstitutionType}
+                                onChange={(e) => {
+                                    setSelectedInstitutionType(e.target.value);
+                                    if (validationTriggered)
+                                        setValidationTriggered(false); // Reset validation trigger
+                                }}
+                                label="Institution Type"
+                                sx={{ bgcolor: "white" }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select Type</em>
+                                </MenuItem>
+                                <MenuItem value="SUC">SUC</MenuItem>
+                                <MenuItem value="LUC">LUC</MenuItem>
+                                <MenuItem value="PHEI">PHEI</MenuItem>
+                            </Select>
+                            {typeError && validationTriggered && (
+                                <Typography
+                                    variant="caption"
+                                    color="error"
+                                    sx={{ mt: 1 }}
+                                >
+                                    {typeError}
+                                </Typography>
+                            )}
+                        </FormControl>
+                    </Grid>
+                    <Grid item size={6}>
+                        <FormControl fullWidth variant="outlined">
+                            {/* Wrapped DatePicker with LocalizationProvider */}
+                            <LocalizationProvider dateAdapter={AdapterMoment}>
+                                <DatePicker
+                                    label="Select Year"
+                                    views={["year"]} // restrict to year only
+                                    value={selectedDate}
+                                    onChange={(newValue) =>
+                                        setSelectedDate(newValue)
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            variant="outlined"
+                                            sx={{ bgcolor: "white" }}
+                                            fullWidth
+                                        />
+                                    )}
+                                />
+                            </LocalizationProvider>
+                        </FormControl>
+                    </Grid>
+                    <Grid item size={4}>
+                        <FormControl fullWidth variant="outlined">
+                            <InputLabel id="region-select-label">
+                                Region
+                            </InputLabel>
+                            <Select
+                                labelId="region-select-label"
+                                value={selectedRegion}
+                                onChange={(e) =>
+                                    setSelectedRegion(e.target.value)
+                                }
+                                label="Region"
+                                sx={{ bgcolor: "white" }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select Region</em>
+                                </MenuItem>
+                                {regions.map((region) => (
+                                    <MenuItem key={region.id} value={region.id}>
+                                        {region.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item size={4}>
+                        <FormControl fullWidth variant="outlined">
+                            <InputLabel id="province-select-label">
+                                Province
+                            </InputLabel>
+                            <Select
+                                labelId="province-select-label"
+                                value={selectedProvince}
+                                onChange={(e) =>
+                                    setSelectedProvince(e.target.value)
+                                }
+                                label="Province"
+                                sx={{ bgcolor: "white" }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select Province</em>
+                                </MenuItem>
+                                {provinces.map((province) => (
+                                    <MenuItem
+                                        key={province.id}
+                                        value={province.id}
+                                    >
+                                        {province.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item size={4}>
+                        <FormControl fullWidth variant="outlined">
+                            <InputLabel id="municipality-select-label">
+                                Municipality
+                            </InputLabel>
+                            <Select
+                                labelId="municipality-select-label"
+                                value={selectedMunicipality}
+                                onChange={(e) =>
+                                    setSelectedMunicipality(e.target.value)
+                                }
+                                label="Municipality"
+                                sx={{ bgcolor: "white" }}
+                            >
+                                <MenuItem value="">
+                                    <em>Select Municipality</em>
+                                </MenuItem>
+                                {municipalities.map((municipality) => (
+                                    <MenuItem
+                                        key={municipality.id}
+                                        value={municipality.id}
+                                    >
+                                        {municipality.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+
+                    <Grid item size={12}>
+                        <Box
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                if (
+                                    e.dataTransfer.files &&
+                                    e.dataTransfer.files[0]
+                                ) {
+                                    setSelectedFile(e.dataTransfer.files[0]);
+                                }
+                            }}
+                            onDragOver={(e) => e.preventDefault()}
+                            sx={{
+                                p: 1.5,
+                                border: `1px dashed ${theme.palette.primary.main}`,
+                                borderRadius: 1.5,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 1,
+                                cursor: "pointer",
+                                bgcolor: "background.paper",
+                            }}
+                            onClick={() =>
+                                document.getElementById("upload-input").click()
+                            }
+                        >
+                            <UploadFileIcon
+                                color="primary"
+                                sx={{ fontSize: 28 }}
+                            />
+                            <Typography>
+                                Drag & drop file or click to browse
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Supported formats: .xlsx, .xls
+                            </Typography>
+                            <input
+                                id="upload-input"
+                                type="file"
+                                hidden
+                                accept=".xlsx, .xls"
+                                onChange={handleFileChange}
+                            />
+                        </Box>
+                    </Grid>
+                    {selectedFile && (
+                        <Grid item size={12}>
+                            <Box
+                                sx={{
+                                    mt: 2,
+                                    p: 1.5,
+                                    bgcolor: "#f9f9f9",
+                                    borderRadius: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    border: "1px solid #e0e0e0",
+                                }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    sx={{ color: "#555" }}
+                                >
+                                    {selectedFile.name}
+                                </Typography>
+                                <IconButton
+                                    size="small"
+                                    onClick={handleRemoveFile}
+                                    aria-label="Remove selected file"
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </Box>
+                        </Grid>
+                    )}
+                    {fileError && validationTriggered && (
+                        <Grid item size={12}>
                             <Typography
                                 variant="caption"
                                 color="error"
                                 sx={{ mt: 1 }}
                             >
-                                {typeError}
+                                {fileError}
                             </Typography>
-                        )}
-                    </FormControl>
-
-                    <FormControl fullWidth variant="outlined">
-                        <InputLabel id="region-select-label">Region</InputLabel>
-                        <Select
-                            labelId="region-select-label"
-                            value={selectedRegion}
-                            onChange={(e) => setSelectedRegion(e.target.value)}
-                            label="Region"
-                            sx={{ bgcolor: "white" }}
-                        >
-                            <MenuItem value="">
-                                <em>Select Region</em>
-                            </MenuItem>
-                            {regions.map((region) => (
-                                <MenuItem key={region.id} value={region.id}>
-                                    {region.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <FormControl fullWidth variant="outlined">
-                        <InputLabel id="province-select-label">
-                            Province
-                        </InputLabel>
-                        <Select
-                            labelId="province-select-label"
-                            value={selectedProvince}
-                            onChange={(e) =>
-                                setSelectedProvince(e.target.value)
-                            }
-                            label="Province"
-                            sx={{ bgcolor: "white" }}
-                        >
-                            <MenuItem value="">
-                                <em>Select Province</em>
-                            </MenuItem>
-                            {provinces.map((province) => (
-                                <MenuItem key={province.id} value={province.id}>
-                                    {province.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <FormControl fullWidth variant="outlined">
-                        <InputLabel id="municipality-select-label">
-                            Municipality
-                        </InputLabel>
-                        <Select
-                            labelId="municipality-select-label"
-                            value={selectedMunicipality}
-                            onChange={(e) =>
-                                setSelectedMunicipality(e.target.value)
-                            }
-                            label="Municipality"
-                            sx={{ bgcolor: "white" }}
-                        >
-                            <MenuItem value="">
-                                <em>Select Municipality</em>
-                            </MenuItem>
-                            {municipalities.map((municipality) => (
-                                <MenuItem
-                                    key={municipality.id}
-                                    value={municipality.id}
-                                >
-                                    {municipality.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl fullWidth variant="outlined">
-                        {/* Wrapped DatePicker with LocalizationProvider */}
-                        <LocalizationProvider dateAdapter={AdapterMoment}>
-                            <DatePicker
-                                label="Select Year"
-                                views={["year"]} // restrict to year only
-                                value={selectedDate}
-                                onChange={(newValue) =>
-                                    setSelectedDate(newValue)
-                                }
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        variant="outlined"
-                                        sx={{ bgcolor: "white" }}
-                                        fullWidth
-                                    />
-                                )}
-                            />
-                        </LocalizationProvider>
-                    </FormControl>
-
-                    <Box
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            if (
-                                e.dataTransfer.files &&
-                                e.dataTransfer.files[0]
-                            ) {
-                                setSelectedFile(e.dataTransfer.files[0]);
-                            }
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        sx={{
-                            p: 1.5,
-                            border: `1px dashed ${theme.palette.primary.main}`,
-                            borderRadius: 1.5,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            cursor: "pointer",
-                            bgcolor: "background.paper",
-                        }}
-                        onClick={() =>
-                            document.getElementById("upload-input").click()
-                        }
-                    >
-                        <UploadFileIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography>
-                            Drag & drop file or click to browse
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Supported formats: .xlsx, .xls
-                        </Typography>
-                        <input
-                            id="upload-input"
-                            type="file"
-                            hidden
-                            accept=".xlsx, .xls"
-                            onChange={handleFileChange}
-                        />
-                    </Box>
-                    {selectedFile && (
-                        <Box
-                            sx={{
-                                mt: 2,
-                                p: 1.5,
-                                bgcolor: "#f9f9f9",
-                                borderRadius: 1,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                border: "1px solid #e0e0e0",
-                            }}
-                        >
-                            <Typography variant="body2" sx={{ color: "#555" }}>
-                                {selectedFile.name}
-                            </Typography>
-                            <IconButton
-                                size="small"
-                                onClick={handleRemoveFile}
-                                aria-label="Remove selected file"
-                            >
-                                <CloseIcon fontSize="small" />
-                            </IconButton>
-                        </Box>
+                        </Grid>
                     )}
-                    {fileError && validationTriggered && (
-                        <Typography
-                            variant="caption"
-                            color="error"
-                            sx={{ mt: 1 }}
-                        >
-                            {fileError}
-                        </Typography>
-                    )}
-                </Box>
+                </Grid>
             </DialogContent>
             <Divider />
             <DialogActions sx={{ p: 2 }}>
