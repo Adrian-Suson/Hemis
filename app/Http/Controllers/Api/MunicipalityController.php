@@ -8,8 +8,13 @@ use Illuminate\Http\Request;
 
 class MunicipalityController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        if ($request->has('province_id')) {
+            return Municipality::where('province_id', $request->input('province_id'))
+                ->orderBy('name', 'asc')
+                ->get();
+        }
         return Municipality::orderBy('name', 'asc')->get();
     }
 

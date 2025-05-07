@@ -19,6 +19,7 @@ import {
     Alert,
     Grid,
     Divider,
+    Button,
 } from "@mui/material";
 import config from "../../../utils/config";
 
@@ -427,6 +428,32 @@ const DashboardPage = () => {
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
                     Insights into Users, Faculty, Programs, and More
                 </Typography>
+            </Box>
+
+            {/* Upload Buttons Row */}
+            <Box sx={{ mb: 4 }}>
+                <Grid container spacing={2}>
+                    <Grid item size={12} sm={3}>
+                        <Button variant="contained" color="primary" fullWidth>
+                            Upload CurricularProgram
+                        </Button>
+                    </Grid>
+                    <Grid item size={12} sm={3}>
+                        <Button variant="contained" color="primary" fullWidth>
+                            Upload Faculty
+                        </Button>
+                    </Grid>
+                    <Grid item size={12} sm={3}>
+                        <Button variant="contained" color="primary" fullWidth>
+                            Upload Graduates
+                        </Button>
+                    </Grid>
+                    <Grid item size={12} sm={3}>
+                        <Button variant="contained" color="primary" fullWidth>
+                            Upload Campus
+                        </Button>
+                    </Grid>
+                </Grid>
             </Box>
 
             {/* Stats Cards */}
