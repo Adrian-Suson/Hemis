@@ -38,7 +38,15 @@ class User extends Authenticatable
      */
     public function institution()
     {
-        return $this->belongsTo(Institution::class);
+        return $this->belongsTo(\App\Models\Institution::class);
+    }
+
+    /**
+     * New relation: one user can own many institutions.
+     */
+    public function institutions()
+    {
+        return $this->hasMany(\App\Models\Institution::class, 'user_id', 'id');
     }
 
     /**

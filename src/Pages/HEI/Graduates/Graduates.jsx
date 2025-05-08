@@ -415,7 +415,7 @@ const Graduates = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/dashboard")}
+                    onClick={() => navigate("/super-admin/dashboard")}
                 >
                     Dashboard
                 </Link>
@@ -423,7 +423,7 @@ const Graduates = () => {
                     underline="hover"
                     color="inherit"
                     sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/institutions")}
+                    onClick={() => navigate("/super-admin/institutions")}
                 >
                     Institution Management
                 </Link>

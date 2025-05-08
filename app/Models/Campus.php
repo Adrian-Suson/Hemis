@@ -13,9 +13,8 @@ class Campus extends Model
         'suc_name',
         'campus_type',
         'institutional_code',
-        'region_id',      // updated to use foreign key
-        'province_id',    // added foreign key for province
-        'municipality_id', // added foreign key for municipality
+        'region',                   // updated field name
+        'province/municipality',    // combined field for province and municipality
         'year_first_operation',
         'land_area_hectares',
         'distance_from_main',
@@ -26,30 +25,12 @@ class Campus extends Model
         'latitude_coordinates',
         'longitude_coordinates',
         'institution_id',
-        'report_year',    // added for yearly report
+        'report_year',
     ];
 
     // Relationship with Institution
     public function institution()
     {
         return $this->belongsTo(Institution::class);
-    }
-
-    // Relationship with Region
-    public function region()
-    {
-        return $this->belongsTo(Region::class);
-    }
-
-    // Relationship with Province
-    public function province()
-    {
-        return $this->belongsTo(Province::class);
-    }
-
-    // Relationship with Municipality
-    public function municipality()
-    {
-        return $this->belongsTo(Municipality::class);
     }
 }

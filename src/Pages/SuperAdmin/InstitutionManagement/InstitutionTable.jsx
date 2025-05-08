@@ -382,13 +382,13 @@ const InstitutionTable = ({
 
             headerAlign: "center",
         },
-        {
-            field: "report_year",
-            headerName: "Report Year",
-            width: 120,
-            align: "center",
-            headerAlign: "center",
-        },
+        // {
+        //     field: "report_year",
+        //     headerName: "Report Year",
+        //     width: 120,
+        //     align: "center",
+        //     headerAlign: "center",
+        // },
         {
             field: "actions",
             headerName: "Actions",

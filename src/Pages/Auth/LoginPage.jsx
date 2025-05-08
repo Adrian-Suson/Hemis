@@ -59,9 +59,11 @@ const LoginPage = () => {
 
             const token = response.data.data.token;
             const user = response.data.data.user;
+            const institution = response.data.data.institution;
 
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("institution", JSON.stringify(institution));
 
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 

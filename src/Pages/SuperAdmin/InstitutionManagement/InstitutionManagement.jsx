@@ -71,9 +71,9 @@ const InstitutionManagement = () => {
     const [provinceFilter, setProvinceFilter] = useState(
         localStorage.getItem("provinceFilter") || ""
     );
-    const [reportYearFilter, setReportYearFilter] = useState(
-        localStorage.getItem("reportYearFilter") || ""
-    );
+    // const [reportYearFilter, setReportYearFilter] = useState(
+    //     localStorage.getItem("reportYearFilter") || ""
+    // );
 
     const getUniqueValues = (arr, key) => {
         if (!Array.isArray(arr) || arr.length === 0) {
@@ -95,15 +95,15 @@ const InstitutionManagement = () => {
         localStorage.setItem("typeFilter", typeFilter);
         localStorage.setItem("municipalityFilter", municipalityFilter);
         localStorage.setItem("provinceFilter", provinceFilter);
-        localStorage.setItem("reportYearFilter", reportYearFilter);
-    }, [searchTerm, typeFilter, municipalityFilter, provinceFilter, reportYearFilter]);
+        // localStorage.setItem("reportYearFilter", reportYearFilter);
+    }, [searchTerm, typeFilter, municipalityFilter, provinceFilter]);
 
     const clearFilters = () => {
         setSearchTerm("");
         setTypeFilter("");
         setMunicipalityFilter("");
         setProvinceFilter("");
-        setReportYearFilter("");
+        // setReportYearFilter("");
         localStorage.setItem("searchTerm", "");
         localStorage.setItem("typeFilter", "");
         localStorage.setItem("municipalityFilter", "");
@@ -298,13 +298,8 @@ const InstitutionManagement = () => {
                             suc_name: parseString(row[1]),
                             campus_type: parseString(row[2]),
                             institutional_code: parseString(row[3]),
-                            region_id:
-                                Number.parseInt(selectedRegion, 10) || null,
-                            municipality_id:
-                                Number.parseInt(selectedMunicipality, 10) ||
-                                null,
-                            province_id:
-                                Number.parseInt(selectedProvince, 10) || null,
+                            region: parseString(row[4]) || "",
+                            "province/municipality": parseString(row[5]) || "",
                             year_first_operation: parseInteger(
                                 row[6],
                                 1800,
@@ -391,15 +386,14 @@ const InstitutionManagement = () => {
             const matchesProvince = provinceFilter
                 ? institution.province === provinceFilter
                 : true;
-            const matchesReportYear = reportYearFilter
-                ? String(institution.report_year) === reportYearFilter
-                : true;
+            // const matchesReportYear = reportYearFilter
+            //     ? String(institution.report_year) === reportYearFilter
+            //     : true;
             return (
                 matchesSearch &&
                 matchesType &&
                 matchesMunicipality &&
-                matchesProvince &&
-                matchesReportYear
+                matchesProvince
             );
         });
     }, [
@@ -408,11 +402,11 @@ const InstitutionManagement = () => {
         typeFilter,
         municipalityFilter,
         provinceFilter,
-        reportYearFilter,
+        // reportYearFilter,
     ]);
 
     return (
-        <Box>  
+        <Box>
             {loading ? (
                 <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -761,7 +755,7 @@ const InstitutionManagement = () => {
                                                         </Select>
                                                     </FormControl>
                                                 </Box>
-                                                <Box
+                                                {/* <Box
                                                     sx={{
                                                         flex: "0 0 35%",
                                                     }}
@@ -827,7 +821,7 @@ const InstitutionManagement = () => {
                                                             )}
                                                         </Select>
                                                     </FormControl>
-                                                </Box>
+                                                </Box> */}
                                                 <Box
                                                     sx={{
                                                         flex: "0 0 40%",

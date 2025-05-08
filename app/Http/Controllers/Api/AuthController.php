@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Institution;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -60,13 +61,17 @@ class AuthController extends Controller
             // Create a token for the user (no need to check authentication here)
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            // Return success response with the token
+            // Fetch institution data based on the user's institution id
+            $institution = Institution::where('id', $user->institution_id)->first();
+
+            // Return success response with the token and institution data
             return response()->json([
                 'status' => 'success',
                 'message' => 'Logged in successfully',
                 'data' => [
                     'user' => $user,
                     'token' => $token,
+                    'institution' => $institution,
                 ]
             ]);
         }

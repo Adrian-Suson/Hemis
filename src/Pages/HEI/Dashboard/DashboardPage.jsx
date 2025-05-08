@@ -21,6 +21,10 @@ import {
     Divider,
     Button,
 } from "@mui/material";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import SchoolIcon from "@mui/icons-material/School";
+import ApartmentIcon from "@mui/icons-material/Apartment";
 import config from "../../../utils/config";
 
 // Register Chart.js components
@@ -363,11 +367,6 @@ const DashboardPage = () => {
     // Stat cards configuration
     const statCards = [
         {
-            label: "Total Users",
-            value: aggregations.totals.users,
-            color: "warning.main",
-        },
-        {
             label: "Total Faculty",
             value: aggregations.totals.faculty,
             color: "success.main",
@@ -387,16 +386,7 @@ const DashboardPage = () => {
             value: aggregations.totals.enrollments.toLocaleString(),
             color: "primary.main",
         },
-        {
-            label: "Total Graduates",
-            value: aggregations.totals.graduates.toLocaleString(),
-            color: "error.main",
-        },
-        {
-            label: "Institution ID",
-            value: stats.institutionId || "N/A",
-            color: "info.main",
-        },
+
     ];
 
     return (
@@ -431,57 +421,178 @@ const DashboardPage = () => {
             </Box>
 
             {/* Upload Buttons Row */}
-            <Box sx={{ mb: 4 }}>
+            <Box
+                sx={{
+                    mb: 4,
+                    py: 3,
+                    px: 2,
+                    bgcolor: "background.paper",
+                    borderRadius: 2,
+                    boxShadow: 1,
+                }}
+            >
+                <Typography
+                    variant="h6"
+                    sx={{ mb: 2, fontWeight: "medium", color: "text.primary" }}
+                >
+                    Data Upload
+                </Typography>
                 <Grid container spacing={2}>
-                    <Grid item size={12} sm={3}>
-                        <Button variant="contained" color="primary" fullWidth>
-                            Upload CurricularProgram
+                    <Grid size={{ xs: 12, sm: 3 }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            startIcon={<FileUploadIcon />}
+                            sx={{
+                                py: 1.5,
+                                textTransform: "none",
+                                fontWeight: 500,
+                                boxShadow: 2,
+                                "&:hover": {
+                                    boxShadow: 4,
+                                    bgcolor: "primary.dark",
+                                },
+                            }}
+                        >
+                            Upload Curricular
                         </Button>
                     </Grid>
-                    <Grid item size={12} sm={3}>
-                        <Button variant="contained" color="primary" fullWidth>
+                    <Grid size={{ xs: 12, sm: 3 }}>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            fullWidth
+                            startIcon={<PeopleAltIcon />}
+                            sx={{
+                                py: 1.5,
+                                textTransform: "none",
+                                fontWeight: 500,
+                                boxShadow: 2,
+                                "&:hover": {
+                                    boxShadow: 4,
+                                    bgcolor: "secondary.dark",
+                                },
+                            }}
+                        >
                             Upload Faculty
                         </Button>
                     </Grid>
-                    <Grid item size={12} sm={3}>
-                        <Button variant="contained" color="primary" fullWidth>
+                    <Grid size={{ xs: 12, sm: 3 }}>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            fullWidth
+                            startIcon={<SchoolIcon />}
+                            sx={{
+                                py: 1.5,
+                                textTransform: "none",
+                                fontWeight: 500,
+                                boxShadow: 2,
+                                "&:hover": {
+                                    boxShadow: 4,
+                                    bgcolor: "success.dark",
+                                },
+                            }}
+                        >
                             Upload Graduates
                         </Button>
                     </Grid>
-                    <Grid item size={12} sm={3}>
-                        <Button variant="contained" color="primary" fullWidth>
+                    <Grid size={{ xs: 12, sm: 3 }}>
+                        <Button
+                            variant="contained"
+                            color="info"
+                            fullWidth
+                            startIcon={<ApartmentIcon />}
+                            sx={{
+                                py: 1.5,
+                                textTransform: "none",
+                                fontWeight: 500,
+                                boxShadow: 2,
+                                "&:hover": {
+                                    boxShadow: 4,
+                                    bgcolor: "info.dark",
+                                },
+                            }}
+                        >
                             Upload Campus
                         </Button>
                     </Grid>
                 </Grid>
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 2, display: "block" }}
+                >
+                    Supported formats: CSV, Excel (.xlsx, .xls)
+                </Typography>
             </Box>
 
             {/* Stats Cards */}
-            <Grid container spacing={2} sx={{ mb: 4 }}>
+            <Grid container spacing={1.5} sx={{ mb: 3 }}>
                 {statCards.map((stat, index) => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                    <Grid size={{xs: 12, sm: 3}} key={index}>
                         <motion.div
                             variants={CARD_VARIANTS}
                             initial="hidden"
                             animate="visible"
                             whileHover="hover"
                         >
-                            <Card sx={{ border: 1, borderColor: "grey.200" }}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Typography
-                                        variant="h5"
-                                        color={stat.color}
-                                        fontWeight="bold"
-                                        gutterBottom
-                                    >
-                                        {stat.value}
-                                    </Typography>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        {stat.label}
-                                    </Typography>
+                            <Card
+                                sx={{
+                                    border: 1,
+                                    borderColor: "grey.200",
+                                    borderLeft: 4,
+                                    borderLeftColor: stat.color,
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        boxShadow: 1,
+                                    },
+                                }}
+                            >
+                                <CardContent
+                                    sx={{
+                                        p: 1.5,
+                                        "&:last-child": { pb: 1.5 },
+                                        display: "flex",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    {stat.icon && (
+                                        <Box
+                                            sx={{
+                                                mr: 1.5,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                color: stat.color,
+                                            }}
+                                        >
+                                            {stat.icon}
+                                        </Box>
+                                    )}
+                                    <Box>
+                                        <Typography
+                                            variant="h6"
+                                            color={stat.color}
+                                            fontWeight="medium"
+                                            sx={{
+                                                lineHeight: 1.2,
+                                                fontSize: "1.1rem",
+                                            }}
+                                        >
+                                            {stat.value}
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{
+                                                fontSize: "0.75rem",
+                                                mt: 0.5,
+                                            }}
+                                        >
+                                            {stat.label}
+                                        </Typography>
+                                    </Box>
                                 </CardContent>
                             </Card>
                         </motion.div>

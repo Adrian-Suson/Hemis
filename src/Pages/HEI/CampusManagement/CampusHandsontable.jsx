@@ -15,8 +15,9 @@ import {
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useLoading } from "../../../Context/LoadingContext";
-import config from "../../../utils/config";
 import AddCampusDialog from "./AddCampusDialog";
+import EditCampusDialog from "./EditCampusDialog";
+import config from "../../../utils/config";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
@@ -24,13 +25,27 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
     const [campuses, setCampuses] = useState(initialCampuses);
     const { showLoading, hideLoading } = useLoading();
     const [tabValue, setTabValue] = useState(0);
-    const [openDialog, setOpenDialog] = useState(false);
+    const [openAddDialog, setOpenAddDialog] = useState(false);
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [editField, setEditField] = useState("");
+    const [editValue, setEditValue] = useState("");
+    const [editCampusId, setEditCampusId] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
+    // Initialize campuses and update only if local changes are not present
     useEffect(() => {
-        setCampuses(initialCampuses);
+        console.log("initialCampuses:", initialCampuses);
+        setCampuses((prevCampuses) => {
+            if (
+                prevCampuses.length === 0 ||
+                initialCampuses.length > prevCampuses.length
+            ) {
+                return initialCampuses;
+            }
+            return prevCampuses;
+        });
     }, [initialCampuses]);
 
     const allColumns = useMemo(
@@ -40,7 +55,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Campus Name",
                 minWidth: 200,
                 flex: 2,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -51,7 +65,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Type",
                 minWidth: 120,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -62,7 +75,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Code",
                 minWidth: 120,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -73,20 +85,18 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Region",
                 minWidth: 150,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
                         : "-",
             },
             {
-                field: "municipality_city_province",
-                headerName: "City/Province",
+                field: "location",
+                headerName: "Municipal/City and Province",
                 minWidth: 200,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -95,7 +105,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Former Name",
                 minWidth: 200,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -106,7 +115,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Established",
                 minWidth: 120,
                 flex: 1,
-                editable: true,
                 type: "number",
                 align: "center",
                 headerAlign: "center",
@@ -120,7 +128,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Land Area (ha)",
                 minWidth: 150,
                 flex: 1,
-                editable: true,
                 type: "number",
                 align: "center",
                 headerAlign: "center",
@@ -134,7 +141,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Distance (km)",
                 minWidth: 150,
                 flex: 1,
-                editable: true,
                 type: "number",
                 align: "center",
                 headerAlign: "center",
@@ -148,7 +154,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Auto Code",
                 minWidth: 120,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -159,7 +164,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Position",
                 minWidth: 150,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -170,7 +174,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Head",
                 minWidth: 200,
                 flex: 1,
-                editable: true,
                 renderCell: (params) =>
                     params.value !== null && params.value !== undefined
                         ? params.value
@@ -181,7 +184,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Latitude",
                 minWidth: 150,
                 flex: 1,
-                editable: true,
                 type: "number",
                 align: "center",
                 headerAlign: "center",
@@ -195,7 +197,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Longitude",
                 minWidth: 150,
                 flex: 1,
-                editable: true,
                 type: "number",
                 align: "center",
                 headerAlign: "center",
@@ -219,13 +220,13 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
     );
 
     const data = useMemo(() => {
-        return campuses.map((campus, index) => ({
-            id: campus.id || `temp-${index}`,
+        const rows = campuses.map((campus, index) => ({
+            id: campus.id ? String(campus.id) : `temp-${index}`,
             suc_name: campus.suc_name || "",
             campus_type: campus.campus_type || "",
             institutional_code: campus.institutional_code || "",
             region: campus.region || "",
-            municipality_city_province: campus.municipality_city_province || "",
+            location: campus.location || "",
             former_name: campus.former_name || "",
             year_first_operation: campus.year_first_operation || "",
             land_area_hectares: campus.land_area_hectares || 0.0,
@@ -237,64 +238,153 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             longitude_coordinates: campus.longitude_coordinates || 0.0,
             institution_id: campus.institution_id || "",
         }));
+        console.log("DataGrid rows:", rows);
+        return rows;
     }, [campuses]);
 
-    const handleCellEditStop = useCallback(
-        async (params) => {
-            const { id, field, value } = params;
-            showLoading();
-            const updatedCampuses = [...campuses];
-            const campusIndex = updatedCampuses.findIndex(
-                (c) =>
-                    c.id === id || `temp-${updatedCampuses.indexOf(c)}` === id
-            );
-            if (campusIndex === -1) return;
+    const handleCellClick = useCallback((params) => {
+        console.log("Cell clicked:", {
+            id: params.id,
+            field: params.field,
+            value: params.value,
+        });
+        setEditCampusId(params.id);
+        setEditField(params.field);
+        setEditValue(params.value);
+        setOpenEditDialog(true);
+    }, []);
 
-            const campus = { ...updatedCampuses[campusIndex], [field]: value };
-            updatedCampuses[campusIndex] = campus;
+    const handleEditSubmit = useCallback(
+        async (campusId, field, value) => {
+            console.log("Edit submit:", { campusId, field, value });
+            showLoading();
+
+            // Find the campus to update
+            const campusIndex = campuses.findIndex(
+                (c) =>
+                    String(c.id) === campusId ||
+                    `temp-${campuses.indexOf(c)}` === campusId
+            );
+            if (campusIndex === -1) {
+                setSnackbarMessage("Campus not found.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+                hideLoading();
+                return;
+            }
+
+            // Create updated campus object
+            const originalCampus = campuses[campusIndex];
+            console.log("Original campus:", originalCampus);
+
+            // Check if the value has changed
+            if (originalCampus[field] === value) {
+                console.log(`No change in ${field}: ${value}`);
+                setSnackbarMessage("No changes made.");
+                setSnackbarSeverity("info");
+                setSnackbarOpen(true);
+                hideLoading();
+                return;
+            }
+
+            const updatedCampus = { ...originalCampus, [field]: value };
+            console.log("Updated campus before API:", updatedCampus);
+
+            // Validate required fields
+            if (!updatedCampus.suc_name || !updatedCampus.institution_id) {
+                setSnackbarMessage(
+                    "Campus name and institution ID are required."
+                );
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+                hideLoading();
+                return;
+            }
+
             const token = localStorage.getItem("token");
+            if (!token) {
+                setSnackbarMessage("Authentication token is missing.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+                hideLoading();
+                return;
+            }
 
             try {
-                if (campus.id && campus.id !== `temp-${campusIndex}`) {
-                    await axios.put(
-                        `${config.API_URL}/campuses/${campus.id}`,
-                        campus,
+                let response;
+                const campusIdStr = updatedCampus.id
+                    ? String(updatedCampus.id)
+                    : "";
+                console.log("campusId:", campusIdStr);
+                if (campusIdStr && !campusIdStr.startsWith("temp-")) {
+                    // Update existing campus with partial payload
+                    const payload = {
+                        [field]: value,
+                        institution_id: updatedCampus.institution_id,
+                    };
+                    console.log("PUT payload:", payload);
+                    response = await axios.put(
+                        `${config.API_URL}/campuses/${updatedCampus.id}`,
+                        payload,
                         {
                             headers: { Authorization: `Bearer ${token}` },
                         }
                     );
+                    console.log("PUT response:", response.data);
                 } else {
-                    const response = await axios.post(
+                    // Create new campus
+                    console.log("POST payload:", updatedCampus);
+                    response = await axios.post(
                         `${config.API_URL}/campuses`,
-                        [campus],
+                        updatedCampus,
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
-                    campus.id = response.data.data[0].id;
+                    console.log("POST response:", response.data);
+                    updatedCampus.id = response.data.data.id;
                 }
+
+                // Update state with response data
+                const updatedCampuses = [...campuses];
+                updatedCampuses[campusIndex] = {
+                    ...updatedCampus,
+                    ...response.data.data,
+                };
+                console.log("New campuses state:", updatedCampuses);
+                setCampuses(updatedCampuses);
+
                 setSnackbarMessage("Campus updated successfully!");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
             } catch (error) {
                 console.error("Error saving campus:", error);
-                setSnackbarMessage("Failed to save campus changes.");
+                let errorMessage = "Failed to save campus changes.";
+                if (error.response) {
+                    errorMessage = `Error: ${
+                        error.response.data.message ||
+                        error.response.data.errors?.join("; ") ||
+                        error.message
+                    }`;
+                    console.log("Error response:", error.response.data);
+                }
+                setSnackbarMessage(errorMessage);
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
             } finally {
                 hideLoading();
             }
-
-            setCampuses(updatedCampuses);
         },
         [campuses]
     );
 
-    const handleOpenDialog = () => setOpenDialog(true);
+    const handleOpenAddDialog = () => setOpenAddDialog(true);
 
-    const handleCloseDialog = () => setOpenDialog(false);
+    const handleCloseAddDialog = () => setOpenAddDialog(false);
+
+    const handleCloseEditDialog = () => setOpenEditDialog(false);
 
     const handleAddCampus = (newCampusData) => {
         setCampuses((prev) => [...prev, newCampusData]);
-        handleCloseDialog();
+        handleCloseAddDialog();
     };
 
     const handleTabChange = (event, newValue) => {
@@ -345,7 +435,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={handleOpenDialog}
+                    onClick={handleOpenAddDialog}
                     sx={{
                         borderRadius: "8px",
                         textTransform: "none",
@@ -370,9 +460,9 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                         md: "60vh",
                     },
                     maxWidth: {
-                        xs: "99 vw",
-                        sm: "99vw",
-                        md: "99vw",
+                        xs: "99vw",
+                        sm: "95vw",
+                        md: "95vw",
                     },
                     overflowX: "auto",
                     overflowY: "hidden",
@@ -408,8 +498,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                     <DataGrid
                         rows={data}
                         columns={currentColumns}
-                        editMode="cell"
-                        onCellEditStop={handleCellEditStop}
+                        onCellClick={handleCellClick}
                         density="compact"
                         disableVirtualization
                         sx={{
@@ -453,6 +542,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                                 whiteSpace: "normal",
                                 wordWrap: "break-word",
                                 padding: "4px 8px",
+                                cursor: "pointer",
                             },
                             "& .MuiDataGrid-columnHeader": {
                                 borderRight: "1px solid",
@@ -475,10 +565,22 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             </Paper>
 
             <AddCampusDialog
-                open={openDialog}
-                onClose={handleCloseDialog}
+                open={openAddDialog}
+                onClose={handleCloseAddDialog}
                 onAddCampus={handleAddCampus}
                 initialRegion={campuses[0]?.region || ""}
+                setSnackbarOpen={setSnackbarOpen}
+                setSnackbarMessage={setSnackbarMessage}
+                setSnackbarSeverity={setSnackbarSeverity}
+            />
+
+            <EditCampusDialog
+                open={openEditDialog}
+                onClose={handleCloseEditDialog}
+                onSubmit={handleEditSubmit}
+                field={editField}
+                value={editValue}
+                campusId={editCampusId}
                 setSnackbarOpen={setSnackbarOpen}
                 setSnackbarMessage={setSnackbarMessage}
                 setSnackbarSeverity={setSnackbarSeverity}
@@ -510,7 +612,7 @@ CampusDataGrid.propTypes = {
             campus_type: PropTypes.string,
             institutional_code: PropTypes.string,
             region: PropTypes.string,
-            municipality_city_province: PropTypes.string,
+            location: PropTypes.string,
             former_name: PropTypes.string,
             year_first_operation: PropTypes.oneOfType([
                 PropTypes.string,
