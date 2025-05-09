@@ -13,34 +13,19 @@ import {
 import { Pie } from "react-chartjs-2";
 import { motion } from "framer-motion";
 import {
-    Box,
-    CardContent,
-    Typography,
-    Alert,
-    Grid,
-    Divider,
-    Paper,
-    Chip,
-    Avatar,
-    useTheme,
-    Container,
-    Skeleton,
-} from "@mui/material";
-import {
-    People as PeopleIcon,
-    School as SchoolIcon,
-    MenuBook as MenuBookIcon,
-    Business as BusinessIcon,
-    BarChart as BarChartIcon,
-    TrendingUp as TrendingUpIcon,
-} from "@mui/icons-material";
+    Users,
+    GraduationCap,
+    BookOpen,
+    Building2,
+    BarChart2,
+    TrendingUp,
+} from "lucide-react";
 import config from "../../../utils/config";
 
 // Register Chart.js components for Pie charts
 ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 const DashboardPage = () => {
-    const theme = useTheme();
     const [stats, setStats] = useState({
         users: [],
         facultyProfiles: [],
@@ -155,15 +140,15 @@ const DashboardPage = () => {
         return acc;
     }, {});
 
-    // Define chart colors using MUI theme
+    // Chart colors
     const chartColors = {
-        primary: theme.palette.primary.main,
-        secondary: theme.palette.secondary.main,
-        success: theme.palette.success.main,
-        warning: theme.palette.warning.main,
-        info: theme.palette.info.main,
-        error: theme.palette.error.main,
-        grey: theme.palette.grey[500],
+        primary: "#3b82f6",
+        secondary: "#ec4899",
+        success: "#22c55e",
+        warning: "#f59e0b",
+        info: "#06b6d4",
+        error: "#ef4444",
+        grey: "#6b7280",
         purple: "#8b5cf6",
     };
 
@@ -174,10 +159,7 @@ const DashboardPage = () => {
             {
                 data: [genderBreakdown.male, genderBreakdown.female],
                 backgroundColor: [chartColors.primary, chartColors.secondary],
-                borderColor: [
-                    theme.palette.background.paper,
-                    theme.palette.background.paper,
-                ],
+                borderColor: ["#ffffff", "#ffffff"],
                 borderWidth: 2,
             },
         ],
@@ -199,7 +181,7 @@ const DashboardPage = () => {
                     chartColors.success,
                     chartColors.grey,
                 ],
-                borderColor: Array(4).fill(theme.palette.background.paper),
+                borderColor: Array(4).fill("#ffffff"),
                 borderWidth: 2,
             },
         ],
@@ -211,10 +193,7 @@ const DashboardPage = () => {
             {
                 data: [totalEnrollments, totalGraduates],
                 backgroundColor: [chartColors.purple, chartColors.error],
-                borderColor: [
-                    theme.palette.background.paper,
-                    theme.palette.background.paper,
-                ],
+                borderColor: ["#ffffff", "#ffffff"],
                 borderWidth: 2,
             },
         ],
@@ -237,7 +216,7 @@ const DashboardPage = () => {
                 ].slice(0, Object.keys(enrollmentByYearLevel).length),
                 borderColor: Array(
                     Object.keys(enrollmentByYearLevel).length
-                ).fill(theme.palette.background.paper),
+                ).fill("#ffffff"),
                 borderWidth: 2,
             },
         ],
@@ -253,34 +232,31 @@ const DashboardPage = () => {
                 labels: {
                     font: {
                         size: 12,
-                        family: theme.typography.fontFamily,
+                        family: "Inter, sans-serif",
                     },
                     usePointStyle: true,
                     padding: 15,
-                    color: theme.palette.text.primary,
+                    color: "#1f2937",
                 },
             },
             tooltip: {
                 enabled: true,
-                backgroundColor:
-                    theme.palette.mode === "dark"
-                        ? "rgba(0, 0, 0, 0.8)"
-                        : "rgba(255, 255, 255, 0.9)",
-                titleColor: theme.palette.text.primary,
-                bodyColor: theme.palette.text.secondary,
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                titleColor: "#1f2937",
+                bodyColor: "#4b5563",
                 titleFont: {
                     size: 13,
-                    family: theme.typography.fontFamily,
+                    family: "Inter, sans-serif",
                     weight: "600",
                 },
                 bodyFont: {
                     size: 12,
-                    family: theme.typography.fontFamily,
+                    family: "Inter, sans-serif",
                 },
                 padding: 12,
                 cornerRadius: 8,
                 displayColors: true,
-                borderColor: theme.palette.divider,
+                borderColor: "#e5e7eb",
                 borderWidth: 1,
             },
         },
@@ -297,8 +273,8 @@ const DashboardPage = () => {
             },
         }),
         hover: {
-            scale: 1.02,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+            scale: 1.03,
+            boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
             transition: { duration: 0.2 },
         },
     };
@@ -307,44 +283,44 @@ const DashboardPage = () => {
         {
             label: "Total Users",
             value: totalUsers,
-            icon: <PeopleIcon />,
-            color: theme.palette.warning.main,
-            bgColor: theme.palette.warning.light,
+            icon: <Users className="w-6 h-6" />,
+            color: "text-amber-600",
+            bgColor: "bg-amber-100",
         },
         {
             label: "Total Faculty",
             value: totalFaculty,
-            icon: <SchoolIcon />,
-            color: theme.palette.success.main,
-            bgColor: theme.palette.success.light,
+            icon: <GraduationCap className="w-6 h-6" />,
+            color: "text-green-600",
+            bgColor: "bg-green-100",
         },
         {
             label: "Total Programs",
             value: totalPrograms,
-            icon: <MenuBookIcon />,
-            color: theme.palette.secondary.main,
-            bgColor: theme.palette.secondary.light,
+            icon: <BookOpen className="w-6 h-6" />,
+            color: "text-pink-600",
+            bgColor: "bg-pink-100",
         },
         {
             label: "Total Institutions",
             value: totalInstitutions,
-            icon: <BusinessIcon />,
-            color: theme.palette.grey[700],
-            bgColor: theme.palette.grey[200],
+            icon: <Building2 className="w-6 h-6" />,
+            color: "text-gray-600",
+            bgColor: "bg-gray-100",
         },
         {
             label: "Total Enrollments",
             value: totalEnrollments.toLocaleString(),
-            icon: <PeopleIcon />,
-            color: theme.palette.primary.main,
-            bgColor: theme.palette.primary.light,
+            icon: <Users className="w-6 h-6" />,
+            color: "text-blue-600",
+            bgColor: "bg-blue-100",
         },
         {
             label: "Total Graduates",
             value: totalGraduates.toLocaleString(),
-            icon: <SchoolIcon />,
-            color: theme.palette.error.main,
-            bgColor: theme.palette.error.light,
+            icon: <GraduationCap className="w-6 h-6" />,
+            color: "text-red-600",
+            bgColor: "bg-red-100",
         },
     ];
 
@@ -355,7 +331,7 @@ const DashboardPage = () => {
             ChartComponent: Pie,
             data: genderPieData,
             options: chartOptions,
-            icon: <BarChartIcon />,
+            icon: <BarChart2 className="w-5 h-5" />,
         },
         {
             title: "Totals by Category",
@@ -364,7 +340,7 @@ const DashboardPage = () => {
             ChartComponent: Pie,
             data: totalsPieData,
             options: chartOptions,
-            icon: <BarChartIcon />,
+            icon: <BarChart2 className="w-5 h-5" />,
         },
         {
             title: "Enrollments vs Graduates",
@@ -372,7 +348,7 @@ const DashboardPage = () => {
             ChartComponent: Pie,
             data: enrollmentPieData,
             options: chartOptions,
-            icon: <BarChartIcon />,
+            icon: <BarChart2 className="w-5 h-5" />,
         },
         {
             title: "Enrollments by Year",
@@ -381,300 +357,149 @@ const DashboardPage = () => {
             ChartComponent: Pie,
             data: yearLevelPieData,
             options: chartOptions,
-            icon: <BarChartIcon />,
+            icon: <BarChart2 className="w-5 h-5" />,
         },
     ];
 
     if (stats.loading) {
         return (
-            <Box
-                sx={{
-                    p: { xs: 2, sm: 4, md: 6 },
-                    bgcolor: "background.default",
-                    minHeight: "100vh",
-                }}
-            >
-                <Container maxWidth="xl">
-                    <Box sx={{ mb: 4 }}>
-                        <Skeleton
-                            variant="rectangular"
-                            width={300}
-                            height={40}
-                            sx={{ mb: 2 }}
-                        />
-                        <Skeleton
-                            variant="rectangular"
-                            width="60%"
-                            height={24}
-                        />
-                    </Box>
-
-                    <Grid container spacing={3} sx={{ mb: 4 }}>
+            <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="mb-6">
+                        <div className="h-10 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-6 w-96 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                         {[...Array(6)].map((_, i) => (
-                            <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-                                <Skeleton
-                                    variant="rectangular"
-                                    height={120}
-                                    sx={{ borderRadius: 2 }}
-                                />
-                            </Grid>
+                            <div
+                                key={i}
+                                className="h-32 bg-gray-200 rounded-lg animate-pulse"
+                            ></div>
                         ))}
-                    </Grid>
-
-                    <Grid container spacing={3}>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {[...Array(4)].map((_, i) => (
-                            <Grid item size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
-                                <Skeleton
-                                    variant="rectangular"
-                                    height={300}
-                                    sx={{ borderRadius: 2 }}
-                                />
-                            </Grid>
+                            <div
+                                key={i}
+                                className="h-80 bg-gray-200 rounded-lg animate-pulse"
+                            ></div>
                         ))}
-                    </Grid>
-                </Container>
-            </Box>
+                    </div>
+                </div>
+            </div>
         );
     }
 
     if (stats.error) {
         return (
-            <Box
-                sx={{
-                    p: { xs: 2, sm: 4, md: 6 },
-                    bgcolor: "background.default",
-                    minHeight: "100vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-            >
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    style={{ width: "100%", maxWidth: "600px" }}
+                    className="w-full max-w-md"
                 >
-                    <Alert
-                        severity="error"
-                        sx={{ boxShadow: 3, borderRadius: 2 }}
-                    >
-                        <Typography variant="h6" component="div">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg">
+                        <h2 className="text-lg font-semibold text-red-700">
                             Error
-                        </Typography>
-                        <Typography variant="body2">{stats.error}</Typography>
-                    </Alert>
+                        </h2>
+                        <p className="text-red-600">{stats.error}</p>
+                    </div>
                 </motion.div>
-            </Box>
+            </div>
         );
     }
 
     return (
-        <Box
-            sx={{
-                p: { xs: 2, sm: 4, md: 6 },
-                bgcolor: "background.default",
-                minHeight: "100vh",
-            }}
-        >
-            <Container maxWidth="xl">
+        <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <Box sx={{ mb: 4 }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: { xs: "column", md: "row" },
-                            alignItems: { xs: "flex-start", md: "center" },
-                            justifyContent: "space-between",
-                        }}
-                    >
-                        <Box>
-                            <Typography
-                                variant="h4"
-                                component="h1"
-                                fontWeight="bold"
-                                gutterBottom
-                                color="text.primary"
-                            >
-                                Statistics Dashboard
-                            </Typography>
-                            <Typography
-                                variant="subtitle1"
-                                color="text.secondary"
-                            >
-                                Comprehensive insights into educational data and
-                                metrics
-                            </Typography>
-                        </Box>
-                        <Box sx={{ mt: { xs: 2, md: 0 } }}>
-                            <Chip
-                                icon={<TrendingUpIcon />}
-                                label="Last updated: Today"
-                                color="primary"
-                                variant="outlined"
-                                sx={{
-                                    borderRadius: 4,
-                                    px: 1,
-                                    "& .MuiChip-label": { px: 1 },
-                                }}
-                            />
-                        </Box>
-                    </Box>
-                </Box>
+                <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                            Statistics Dashboard
+                        </h1>
+                        <p className="text-gray-600 mt-1">
+                            Comprehensive insights into educational data and
+                            metrics
+                        </p>
+                    </div>
+                    <div className="mt-4 md:mt-0">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            <TrendingUp className="w-4 h-4 mr-1" />
+                            Last updated: Today
+                        </span>
+                    </div>
+                </div>
 
                 {/* Stats Cards */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     {statCards.map((stat, index) => (
-                        <Grid item size={{ xs: 12, sm: 6, md: 4 }} key={index}>
-                            <motion.div
-                                custom={index}
-                                variants={cardVariants}
-                                initial="hidden"
-                                animate="visible"
-                                whileHover="hover"
-                                style={{ height: "100%" }}
-                            >
-                                <Paper
-                                    elevation={2}
-                                    sx={{
-                                        height: "100%",
-                                        borderRadius: 2,
-                                        overflow: "hidden",
-                                        transition:
-                                            "box-shadow 0.3s ease-in-out",
-                                        "&:hover": {
-                                            boxShadow: 6,
-                                        },
-                                    }}
+                        <motion.div
+                            key={index}
+                            custom={index}
+                            variants={cardVariants}
+                            initial="hidden"
+                            animate="visible"
+                            whileHover="hover"
+                            className="bg-white rounded-lg shadow-sm overflow-hidden"
+                        >
+                            <div className="p-4 flex items-center justify-between">
+                                <div
+                                    className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}
                                 >
-                                    <CardContent sx={{ p: 3, height: "100%" }}>
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                mb: 2,
-                                            }}
-                                        >
-                                            <Avatar
-                                                sx={{
-                                                    bgcolor: stat.bgColor,
-                                                    color: stat.color,
-                                                    width: 48,
-                                                    height: 48,
-                                                }}
-                                            >
-                                                {stat.icon}
-                                            </Avatar>
-                                            <Typography
-                                                variant="overline"
-                                                sx={{
-                                                    color: "text.secondary",
-                                                    fontWeight: 500,
-                                                    letterSpacing: 1,
-                                                }}
-                                            >
-                                                {stat.label}
-                                            </Typography>
-                                        </Box>
-                                        <Typography
-                                            variant="h4"
-                                            component="div"
-                                            sx={{
-                                                fontWeight: 700,
-                                                color: "text.primary",
-                                            }}
-                                        >
-                                            {stat.value}
-                                        </Typography>
-                                    </CardContent>
-                                </Paper>
-                            </motion.div>
-                        </Grid>
+                                    {stat.icon}
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-500 uppercase tracking-wide">
+                                        {stat.label}
+                                    </p>
+                                    <h2 className="text-2xl font-bold text-gray-900">
+                                        {stat.value}
+                                    </h2>
+                                </div>
+                            </div>
+                        </motion.div>
                     ))}
-                </Grid>
+                </div>
 
                 {/* Charts */}
-                <Grid container spacing={3}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {chartCards.map((chart, index) => (
-                        <Grid item size={{ xs: 12, sm: 6, lg: 3 }} key={index}>
-                            <motion.div
-                                custom={index + 6} // Continue the sequence from stat cards
-                                variants={cardVariants}
-                                initial="hidden"
-                                animate="visible"
-                                whileHover="hover"
-                                style={{ height: "100%" }}
-                            >
-                                <Paper
-                                    elevation={2}
-                                    sx={{
-                                        height: "100%",
-                                        borderRadius: 2,
-                                        overflow: "hidden",
-                                        transition:
-                                            "box-shadow 0.3s ease-in-out",
-                                        "&:hover": {
-                                            boxShadow: 6,
-                                        },
-                                    }}
-                                >
-                                    <Box sx={{ p: 3, pb: 2 }}>
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                mb: 1,
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="h6"
-                                                component="h2"
-                                                sx={{ fontWeight: 600 }}
-                                            >
-                                                {chart.title}
-                                            </Typography>
-                                            <Avatar
-                                                sx={{
-                                                    bgcolor:
-                                                        theme.palette.grey[100],
-                                                    color: theme.palette
-                                                        .grey[700],
-                                                    width: 32,
-                                                    height: 32,
-                                                }}
-                                            >
-                                                {chart.icon}
-                                            </Avatar>
-                                        </Box>
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                            sx={{ mb: 2 }}
-                                        >
-                                            {chart.description}
-                                        </Typography>
-                                        <Divider sx={{ mb: 2 }} />
-                                        <Box
-                                            sx={{
-                                                height: 240,
-                                                position: "relative",
-                                            }}
-                                        >
-                                            <chart.ChartComponent
-                                                data={chart.data}
-                                                options={chart.options}
-                                            />
-                                        </Box>
-                                    </Box>
-                                </Paper>
-                            </motion.div>
-                        </Grid>
+                        <motion.div
+                            key={index}
+                            custom={index + 6}
+                            variants={cardVariants}
+                            initial="hidden"
+                            animate="visible"
+                            whileHover="hover"
+                            className="bg-white rounded-lg shadow-sm overflow-hidden"
+                        >
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className="text-lg font-semibold text-gray-900">
+                                        {chart.title}
+                                    </h2>
+                                    <div className="p-2 bg-gray-100 rounded-full text-gray-600">
+                                        {chart.icon}
+                                    </div>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-4">
+                                    {chart.description}
+                                </p>
+                                <hr className="border-gray-200 mb-4" />
+                                <div className="h-60 relative">
+                                    <chart.ChartComponent
+                                        data={chart.data}
+                                        options={chart.options}
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
                     ))}
-                </Grid>
-            </Container>
-        </Box>
+                </div>
+            </div>
+        </div>
     );
 };
 

@@ -2,15 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Institution extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $primaryKey = 'code';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'id',
+        'uuid',
+        'region_id',
+        'province_id',
+        'municipality_id',
         'name',
-        'region_id', // updated foreign key instead of string 'region'
         'address_street',
         'postal_code',
         'institutional_telephone',
@@ -27,32 +37,37 @@ class Institution extends Model
         'head_title',
         'head_education',
         'institution_type',
-        'province_id',      // added foreign key for province
-        'municipality_id',  // added foreign key for municipality
-        'report_year'       // added column for yearly report
+        'report_year',
     ];
 
-    // Define the relationship with Region
+    public function parent()
+    {
+        return $this->belongsTo(Institution::class, 'parent_code', 'code');
+    }
+
+    public function satellites()
+    {
+        return $this->hasMany(Institution::class, 'parent_code', 'code');
+    }
+
+    public function campusDetails()
+    {
+        return $this->hasOne(CampusDetail::class, 'code', 'code');
+    }
+
     public function region()
     {
         return $this->belongsTo(Region::class);
     }
 
-    // Define the relationship with Province
     public function province()
     {
         return $this->belongsTo(Province::class);
     }
 
-    // Define the relationship with Municipality
     public function municipality()
     {
         return $this->belongsTo(Municipality::class);
     }
 
-    // Optionally, define the relationship with Campus
-    public function campuses()
-    {
-        return $this->hasMany(Campus::class);
-    }
 }

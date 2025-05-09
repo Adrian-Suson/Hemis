@@ -36,14 +36,21 @@ const AddCampusDialog = ({
     const { updateProgress, hideLoading } = useLoading();
     const { institutionId: encryptedInstitutionId } = useParams();
     const decryptedInstitutionId = decryptId(encryptedInstitutionId);
-    const { regions, provinces, municipalities, fetchRegions, fetchProvinces, fetchMunicipalities } = useLocationData();
+    const {
+        regions,
+        provinces,
+        municipalities,
+        fetchRegions,
+        fetchProvinces,
+        fetchMunicipalities,
+    } = useLocationData();
 
     const [newCampus, setNewCampus] = useState({
         institution_id: decryptedInstitutionId || "",
         suc_name: "",
         campus_type: "",
         institutional_code: "",
-        region_id: "",
+        region: "",
         province_id: "",
         municipality_id: "",
         former_name: "",
@@ -65,21 +72,21 @@ const AddCampusDialog = ({
         if (open) {
             fetchRegions();
         }
-    }, [open, ]);
+    }, [open]);
 
     // Fetch provinces when region is selected
     useEffect(() => {
         if (newCampus.region_id) {
             fetchProvinces(newCampus.region_id);
         }
-    }, [newCampus.region_id, ]);
+    }, [newCampus.region_id]);
 
     // Fetch municipalities when province is selected
     useEffect(() => {
         if (newCampus.province_id) {
             fetchMunicipalities(newCampus.province_id);
         }
-    }, [newCampus.province_id, ]);
+    }, [newCampus.province_id]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -134,7 +141,8 @@ const AddCampusDialog = ({
             } else if (year < 1800) {
                 newErrors.year_first_operation = "Year must be 1800 or later.";
             } else if (year > currentYear) {
-                newErrors.year_first_operation = "Year cannot be in the future.";
+                newErrors.year_first_operation =
+                    "Year cannot be in the future.";
             }
         }
 
@@ -172,7 +180,8 @@ const AddCampusDialog = ({
             if (isNaN(value)) {
                 newErrors.longitude_coordinates = "Must be a valid number.";
             } else if (value < -180 || value > 180) {
-                newErrors.longitude_coordinates = "Must be between -180 and 180.";
+                newErrors.longitude_coordinates =
+                    "Must be between -180 and 180.";
             }
         }
 
@@ -197,7 +206,7 @@ const AddCampusDialog = ({
             suc_name: "",
             campus_type: "",
             institutional_code: "",
-            region_id: "",
+            region: "",
             province_id: "",
             municipality_id: "",
             former_name: "",
@@ -224,14 +233,14 @@ const AddCampusDialog = ({
 
         const token = localStorage.getItem("token");
         try {
+            const location = `${municipalities.find(m => m.id === parseInt(newCampus.municipality_id, 10))?.name || ""}, ${provinces.find(p => p.id === parseInt(newCampus.province_id, 10))?.name || ""}`.replace(/^(,\s*)|(\s*,\s*)$/g, "");
             const payload = {
                 institution_id: parseInt(newCampus.institution_id, 10),
                 suc_name: newCampus.suc_name || null,
                 campus_type: newCampus.campus_type || null,
                 institutional_code: newCampus.institutional_code || null,
-                region_id: parseInt(newCampus.region_id, 10),
-                province_id: parseInt(newCampus.province_id, 10),
-                municipality_id: parseInt(newCampus.municipality_id, 10),
+                region: regions.find(r => r.id === parseInt(newCampus.region_id, 10))?.name || "",
+                location: location, // combined output: e.g. "Siay, Zamboanga Sibugay"
                 former_name: newCampus.former_name || null,
                 year_first_operation: newCampus.year_first_operation
                     ? newCampus.year_first_operation.year()
@@ -282,8 +291,13 @@ const AddCampusDialog = ({
             let errorMessage = "Failed to add campus. Please try again.";
             if (error.response && error.response.status === 422) {
                 const validationErrors = error.response.data.errors;
-                console.log("[Add Campus] Validation Errors:", validationErrors);
-                errorMessage = "Validation failed: " + Object.values(validationErrors).flat().join(", ");
+                console.log(
+                    "[Add Campus] Validation Errors:",
+                    validationErrors
+                );
+                errorMessage =
+                    "Validation failed: " +
+                    Object.values(validationErrors).flat().join(", ");
             }
             setSnackbarMessage(errorMessage);
             setSnackbarSeverity("error");
@@ -348,7 +362,9 @@ const AddCampusDialog = ({
                                 <MenuItem value="Satellite">Satellite</MenuItem>
                             </Select>
                             {errors.campus_type && (
-                                <FormHelperText>{errors.campus_type}</FormHelperText>
+                                <FormHelperText>
+                                    {errors.campus_type}
+                                </FormHelperText>
                             )}
                         </FormControl>
                     </Grid>
@@ -369,13 +385,18 @@ const AddCampusDialog = ({
                         <Autocomplete
                             options={regions}
                             getOptionLabel={(option) => option.name}
-                            value={regions.find(r => r.id === parseInt(newCampus.region_id)) || null}
+                            value={
+                                regions.find(
+                                    (r) =>
+                                        r.id === parseInt(newCampus.region_id)
+                                ) || null
+                            }
                             onChange={(event, newValue) => {
-                                setNewCampus(prev => ({
+                                setNewCampus((prev) => ({
                                     ...prev,
                                     region_id: newValue ? newValue.id : "",
                                     province_id: "",
-                                    municipality_id: ""
+                                    municipality_id: "",
                                 }));
                             }}
                             renderInput={(params) => (
@@ -394,12 +415,17 @@ const AddCampusDialog = ({
                         <Autocomplete
                             options={provinces}
                             getOptionLabel={(option) => option.name}
-                            value={provinces.find(p => p.id === parseInt(newCampus.province_id)) || null}
+                            value={
+                                provinces.find(
+                                    (p) =>
+                                        p.id === parseInt(newCampus.province_id)
+                                ) || null
+                            }
                             onChange={(event, newValue) => {
-                                setNewCampus(prev => ({
+                                setNewCampus((prev) => ({
                                     ...prev,
                                     province_id: newValue ? newValue.id : "",
-                                    municipality_id: ""
+                                    municipality_id: "",
                                 }));
                             }}
                             disabled={!newCampus.region_id}
@@ -420,11 +446,19 @@ const AddCampusDialog = ({
                         <Autocomplete
                             options={municipalities}
                             getOptionLabel={(option) => option.name}
-                            value={municipalities.find(m => m.id === parseInt(newCampus.municipality_id)) || null}
+                            value={
+                                municipalities.find(
+                                    (m) =>
+                                        m.id ===
+                                        parseInt(newCampus.municipality_id)
+                                ) || null
+                            }
                             onChange={(event, newValue) => {
-                                setNewCampus(prev => ({
+                                setNewCampus((prev) => ({
                                     ...prev,
-                                    municipality_id: newValue ? newValue.id : ""
+                                    municipality_id: newValue
+                                        ? newValue.id
+                                        : "",
                                 }));
                             }}
                             disabled={!newCampus.province_id}
@@ -447,9 +481,15 @@ const AddCampusDialog = ({
                                 label="Established"
                                 value={newCampus.year_first_operation}
                                 onChange={(date) => {
-                                    setNewCampus(prev => ({ ...prev, year_first_operation: date }));
+                                    setNewCampus((prev) => ({
+                                        ...prev,
+                                        year_first_operation: date,
+                                    }));
                                     if (errors.year_first_operation) {
-                                        setErrors(prev => ({ ...prev, year_first_operation: undefined }));
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            year_first_operation: undefined,
+                                        }));
                                     }
                                 }}
                                 renderInput={(params) => (

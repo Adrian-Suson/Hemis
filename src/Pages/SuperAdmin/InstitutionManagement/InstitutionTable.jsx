@@ -1,37 +1,42 @@
 import { useNavigate } from "react-router-dom";
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import ExcelJS from "exceljs";
 import axios from "axios";
+import Swal from "sweetalert2";
 import DetailDialog from "./DetailDialog";
 import config from "../../../utils/config";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import {
-    Paper,
-    Menu,
-    CircularProgress,
-    Typography,
-    Tooltip,
-    IconButton,
-    Divider,
-    Box,
-    MenuItem,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-} from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import { CiSquareMore } from "react-icons/ci";
-import { FaEye } from "react-icons/fa";
-import { BiSolidBusiness } from "react-icons/bi";
-import { HiMiniUserGroup } from "react-icons/hi2";
-import { RiBookShelfFill } from "react-icons/ri";
-import { FaUserGraduate } from "react-icons/fa6";
-import { MdOutlineDownload, MdDelete } from "react-icons/md";
+    MoreHorizontal,
+    Eye,
+    Building2,
+    Users,
+    BookOpen,
+    UserCheck,
+    Download,
+    Trash2,
+    Loader2,
+} from "lucide-react";
 import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 import { encryptId } from "../../../utils/encryption";
+
+// Custom hook to detect clicks outside an element
+const useClickOutside = (ref, callback) => {
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (ref.current && !ref.current.contains(event.target)) {
+                console.log("Click outside detected, closing menu");
+                callback();
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [ref, callback]);
+};
 
 const InstitutionTable = ({
     institutions = [],
@@ -49,7 +54,6 @@ const InstitutionTable = ({
     const { createLog } = useActivityLog();
     const [selectedInstitution, setSelectedInstitution] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
-    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
     const [loading, setLoading] = useState({
         viewCampuses: false,
@@ -59,6 +63,18 @@ const InstitutionTable = ({
         deleteInstitution: false,
     });
     const menuButtonRef = useRef(null);
+    const menuRef = useRef(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(25);
+
+    // Define handleMenuClose before useClickOutside
+    const handleMenuClose = () => {
+        setMenuAnchorEl(null);
+        menuButtonRef.current?.focus();
+    };
+
+    // Attach click-outside handler to menu
+    useClickOutside(menuRef, handleMenuClose);
 
     const handleOpenDialog = (institution) => {
         localStorage.setItem("institutionId", institution.id);
@@ -73,170 +89,67 @@ const InstitutionTable = ({
     };
 
     const handleMenuOpen = (event, institution) => {
+        event.stopPropagation();
+        console.log("handleMenuOpen triggered", institution.name);
         setMenuAnchorEl(event.currentTarget);
         setSelectedInstitution(institution);
         menuButtonRef.current = event.currentTarget;
     };
 
-    const handleMenuClose = () => {
-        setMenuAnchorEl(null);
-        menuButtonRef.current?.focus();
-    };
-
-    const handleOpenConfirmDialog = () => {
-        setOpenConfirmDialog(true);
+    const handleOpenConfirmDialog = (event, institution) => {
+        event.stopPropagation();
+        console.log("handleOpenConfirmDialog triggered for", institution.name);
+        Swal.fire({
+            title: "Confirm Deletion",
+            text: `Are you sure you want to delete ${institution.name}? This action cannot be undone.`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Delete",
+            cancelButtonText: "Cancel",
+            customClass: {
+                popup: "swal2-popup",
+                title: "text-lg font-semibold text-gray-900",
+                content: "text-gray-600",
+            },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                handleDeleteInstitution(institution.id);
+            }
+        });
         handleMenuClose();
     };
 
-    const handleCloseConfirmDialog = () => {
-        setOpenConfirmDialog(false);
-    };
-
-    const handleExportToFormA = useCallback(
-        async (institution) => {
-            console.log("Exporting Form A for institution:", institution);
-            setLoading((prev) => ({ ...prev, exportFormA: true }));
-            try {
-                updateProgress(10);
-                const response = await fetch(
-                    "/templates/Form-A-Themeplate.xlsx"
-                );
-                if (!response.ok)
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                const arrayBuffer = await response.arrayBuffer();
-
-                const workbook = new ExcelJS.Workbook();
-                await workbook.xlsx.load(arrayBuffer);
-
-                const sheetA1 = workbook.getWorksheet("FORM A1");
-                const sheetA2 = workbook.getWorksheet("FORM A2");
-
-                const a1Fields = [
-                    { row: 5, cell: 3, key: "name" },
-                    { row: 8, cell: 3, key: "address_street" },
-                    { row: 9, cell: 3, key: "municipality" },
-                    { row: 10, cell: 3, key: "province" },
-                    { row: 11, cell: 3, key: "region" },
-                    { row: 12, cell: 3, key: "postal_code" },
-                    { row: 13, cell: 3, key: "institutional_telephone" },
-                    { row: 14, cell: 3, key: "institutional_fax" },
-                    { row: 15, cell: 3, key: "head_telephone" },
-                    { row: 16, cell: 3, key: "institutional_email" },
-                    { row: 17, cell: 3, key: "institutional_website" },
-                    { row: 18, cell: 3, key: "year_established" },
-                    { row: 19, cell: 3, key: "sec_registration" },
-                    { row: 20, cell: 3, key: "year_granted_approved" },
-                    { row: 21, cell: 3, key: "year_converted_college" },
-                    { row: 22, cell: 3, key: "year_converted_university" },
-                    { row: 23, cell: 3, key: "head_name" },
-                    { row: 24, cell: 3, key: "head_title" },
-                    { row: 25, cell: 3, key: "head_education" },
-                ];
-                a1Fields.forEach(({ row, cell, key }) => {
-                    sheetA1.getRow(row).getCell(cell).value =
-                        institution[key] || "";
-                });
-                updateProgress(20);
-                const token = localStorage.getItem("token");
-                const { data } = await axios.get(
-                    `${config.API_URL}/campuses?institution_id=${institution.id}`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-                const campuses = Array.isArray(data.campuses)
-                    ? data.campuses
-                    : [];
-
-                const a2StartRow = 11;
-                campuses.forEach((campus, index) => {
-                    const row = sheetA2.getRow(a2StartRow + index);
-                    row.values = [
-                        index + 1,
-                        campus.suc_name || "",
-                        campus.campus_type || "",
-                        campus.institutional_code || "",
-                        campus.region || "",
-                        campus.municipality_city_province || "",
-                        campus.year_first_operation || "",
-                        campus.land_area_hectares || "0.0",
-                        campus.distance_from_main || "0.0",
-                        campus.autonomous_code || "",
-                        campus.position_title || "",
-                        campus.head_full_name || "",
-                        campus.former_name || "",
-                        campus.latitude_coordinates || "0.0",
-                        campus.longitude_coordinates || "0.0",
-                    ];
-                    row.commit();
-                });
-                updateProgress(50);
-                const fileName = `Form_A_${institution.name || "Unknown"}_${
-                    institution.institution_type || "Unknown"
-                }_${new Date().toISOString().split("T")[0]}.xlsx`;
-                const buffer = await workbook.xlsx.writeBuffer();
-                const blob = new Blob([buffer], {
-                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-
-                setSnackbarMessage(
-                    `Form A exported successfully for ${institution.name}!`
-                );
-
-                setSnackbarSeverity("success");
-                updateProgress(100);
-                setSnackbarOpen(true);
-            } catch (error) {
-                console.error("Error exporting Form A:", error);
-                setSnackbarMessage(`Failed to export Form A: ${error.message}`);
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-            } finally {
-                setLoading((prev) => ({ ...prev, exportFormA: false }));
-                handleMenuClose();
-            }
-        },
-        [
-            setSnackbarMessage,
-            setSnackbarSeverity,
-            setSnackbarOpen,
-            updateProgress,
-        ]
-    );
-
-    const handleDeleteInstitution = async () => {
-        setOpenConfirmDialog(false);
+    const handleDeleteInstitution = async (institutionId) => {
         setLoading((prev) => ({ ...prev, deleteInstitution: true }));
         try {
             const token = localStorage.getItem("token");
             await axios.delete(
-                `${config.API_URL}/institutions/${selectedInstitution.id}`,
+                `${config.API_URL}/institutions/${institutionId}`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
 
+            const institution = institutions.find(
+                (inst) => inst.id === institutionId
+            );
             await createLog({
                 action: "deleted_institution",
-                description: `Deleted institution: ${selectedInstitution.name}`,
+                description: `Deleted institution: ${institution.name}`,
                 properties: {
-                    name: selectedInstitution.name,
-                    institution_type: selectedInstitution.institution_type,
+                    name: institution.name,
+                    institution_type: institution.institution_type,
                 },
                 modelType: "App\\Models\\Institution",
-                modelId: selectedInstitution.id,
+                modelId: institutionId,
             });
 
             fetchInstitutions();
 
             setSnackbarMessage(
-                `Institution ${selectedInstitution.name} deleted successfully!`
+                `Institution ${institution.name} deleted successfully!`
             );
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
@@ -251,6 +164,158 @@ const InstitutionTable = ({
             setLoading((prev) => ({ ...prev, deleteInstitution: false }));
         }
     };
+
+    const handleExportToFormA = useCallback(
+        (institution) => {
+            console.log(
+                "handleExportToFormA confirmation triggered for",
+                institution.name
+            );
+            Swal.fire({
+                title: "Confirm Export",
+                text: `Do you want to export Form A for ${institution.name}?`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Export",
+                cancelButtonText: "Cancel",
+                customClass: {
+                    popup: "swal2-popup",
+                    title: "text-lg font-semibold text-gray-900",
+                    content: "text-gray-600",
+                },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    setLoading((prev) => ({ ...prev, exportFormA: true }));
+                    try {
+                        updateProgress(10);
+                        const response = await fetch(
+                            "/templates/Form-A-Themeplate.xlsx"
+                        );
+                        if (!response.ok)
+                            throw new Error(
+                                `HTTP error! Status: ${response.status}`
+                            );
+                        const arrayBuffer = await response.arrayBuffer();
+
+                        const workbook = new ExcelJS.Workbook();
+                        await workbook.xlsx.load(arrayBuffer);
+
+                        const sheetA1 = workbook.getWorksheet("FORM A1");
+                        const sheetA2 = workbook.getWorksheet("FORM A2");
+
+                        const a1Fields = [
+                            { row: 5, cell: 3, key: "name" },
+                            { row: 8, cell: 3, key: "address_street" },
+                            { row: 9, cell: 3, key: "municipality" },
+                            { row: 10, cell: 3, key: "province" },
+                            { row: 11, cell: 3, key: "region" },
+                            { row: 12, cell: 3, key: "postal_code" },
+                            {
+                                row: 13,
+                                cell: 3,
+                                key: "institutional_telephone",
+                            },
+                            { row: 14, cell: 3, key: "institutional_fax" },
+                            { row: 15, cell: 3, key: "head_telephone" },
+                            { row: 16, cell: 3, key: "institutional_email" },
+                            { row: 17, cell: 3, key: "institutional_website" },
+                            { row: 18, cell: 3, key: "year_established" },
+                            { row: 19, cell: 3, key: "sec_registration" },
+                            { row: 20, cell: 3, key: "year_granted_approved" },
+                            { row: 21, cell: 3, key: "year_converted_college" },
+                            {
+                                row: 22,
+                                cell: 3,
+                                key: "year_converted_university",
+                            },
+                            { row: 23, cell: 3, key: "head_name" },
+                            { row: 24, cell: 3, key: "head_title" },
+                            { row: 25, cell: 3, key: "head_education" },
+                        ];
+                        a1Fields.forEach(({ row, cell, key }) => {
+                            sheetA1.getRow(row).getCell(cell).value =
+                                institution[key] || "";
+                        });
+                        updateProgress(20);
+                        const token = localStorage.getItem("token");
+                        const { data } = await axios.get(
+                            `${config.API_URL}/campuses?institution_id=${institution.id}`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        const campuses = Array.isArray(data.campuses)
+                            ? data.campuses
+                            : [];
+
+                        const a2StartRow = 11;
+                        campuses.forEach((campus, index) => {
+                            const row = sheetA2.getRow(a2StartRow + index);
+                            row.values = [
+                                index + 1,
+                                campus.suc_name || "",
+                                campus.campus_type || "",
+                                campus.institutional_code || "",
+                                campus.region || "",
+                                campus.municipality_city_province || "",
+                                campus.year_first_operation || "",
+                                campus.land_area_hectares || "0.0",
+                                campus.distance_from_main || "0.0",
+                                campus.autonomous_code || "",
+                                campus.position_title || "",
+                                campus.head_full_name || "",
+                                campus.former_name || "",
+                                campus.latitude_coordinates || "0.0",
+                                campus.longitude_coordinates || "0.0",
+                            ];
+                            row.commit();
+                        });
+                        updateProgress(50);
+                        const fileName = `${
+                            institution.institution_code || "0000"
+                        }_${institution.name || "Unknown"}_${
+                            institution.institution_type || "Unknown"
+                        }_${new Date().toISOString().split("T")[0]}.xlsx`;
+                        const buffer = await workbook.xlsx.writeBuffer();
+                        const blob = new Blob([buffer], {
+                            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        setSnackbarMessage(
+                            `Form A exported successfully for ${institution.name}!`
+                        );
+                        setSnackbarSeverity("success");
+                        updateProgress(100);
+                        setSnackbarOpen(true);
+                    } catch (error) {
+                        console.error("Error exporting Form A:", error);
+                        setSnackbarMessage(
+                            `Failed to export Form A: ${error.message}`
+                        );
+                        setSnackbarSeverity("error");
+                        setSnackbarOpen(true);
+                    } finally {
+                        setLoading((prev) => ({ ...prev, exportFormA: false }));
+                    }
+                }
+            });
+            handleMenuClose();
+        },
+        [
+            setSnackbarMessage,
+            setSnackbarSeverity,
+            setSnackbarOpen,
+            updateProgress,
+        ]
+    );
 
     const filteredInstitutions = useMemo(() => {
         return institutions.filter((institution) => {
@@ -309,417 +374,309 @@ const InstitutionTable = ({
         }
     };
 
-    const renderActionsCell = (params) => {
-        return (
-            <Tooltip title="More Options" arrow placement="top">
-                <IconButton
-                    onClick={(e) => handleMenuOpen(e, params.row)}
-                    disabled={Boolean(menuAnchorEl)}
-                    aria-label={`More options for ${params.row.name}`}
-                    size="small"
-                    sx={{
-                        color: "primary.main",
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.04)",
-                        },
-                    }}
-                >
-                    <CiSquareMore style={{ fontSize: "20px" }} />
-                </IconButton>
-            </Tooltip>
-        );
+    const handleChangePage = (newPage) => {
+        setPage(newPage);
     };
 
-    const columns = [
-        {
-            field: "id",
-            headerName: "ID",
-            minwidth: 70,
-            align: "center",
-            headerAlign: "center",
-        },
-        {
-            field: "name",
-            headerName: "Name",
-            width: 400,
-        },
-        {
-            field: "region",
-            headerName: "Region",
-            width: 250,
-            align: "center",
-            headerAlign: "center",
-        },
-        {
-            field: "address_street",
-            headerName: "Address",
-            width: 250,
-            align: "center",
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
 
-            headerAlign: "center",
-        },
-        {
-            field: "municipality",
-            headerName: "Municipality",
-            width: 250,
-            align: "center",
-
-            headerAlign: "center",
-        },
-        {
-            field: "province",
-            headerName: "Province",
-            width: 250,
-            align: "center",
-
-            headerAlign: "center",
-        },
-        {
-            field: "institution_type",
-            headerName: "Type",
-            width: 193,
-            align: "center",
-
-            headerAlign: "center",
-        },
-        // {
-        //     field: "report_year",
-        //     headerName: "Report Year",
-        //     width: 120,
-        //     align: "center",
-        //     headerAlign: "center",
-        // },
-        {
-            field: "actions",
-            headerName: "Actions",
-            width: 150,
-            sortable: false,
-            filterable: false,
-            renderCell: renderActionsCell,
-            align: "center",
-            headerAlign: "center",
-        },
-    ];
+    const paginatedInstitutions = useMemo(() => {
+        const start = page * rowsPerPage;
+        return filteredInstitutions.slice(start, start + rowsPerPage);
+    }, [filteredInstitutions, page, rowsPerPage]);
 
     return (
-        <Box sx={{ mb: 2 }}>
-            {/* DataGrid */}
-            <Paper
-                sx={{
-                    borderRadius: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    height: {
-                        xs: "40vh",
-                        sm: "50vh",
-                        md: "55vh",
-                    },
-                    maxWidth: {
-                        xs: "99vw",
-                        sm: "95vw",
-                        md: "99vw",
-                    },
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                }}
-            >
-                <DataGrid
-                    rows={filteredInstitutions}
-                    columns={columns}
-                    initialState={{
-                        pagination: {
-                            paginationModel: { pageSize: 25, page: 0 },
-                        },
-                    }}
-                    pageSizeOptions={[25, 50, 100]}
-                    experimentalFeatures={{ columnGrouping: true }}
-                    disableRowSelectionOnClick
-                    disableColumnFilter
-                    disableColumnMenu
-                    disableColumnSorting
-                    density="compact"
-                    sx={{
-                        border: 0,
-                        "& .MuiDataGrid-root": {
-                            height: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            minWidth: "fit-content",
-                        },
-                        "& .MuiDataGrid-main": {
-                            flex: 1,
-                            overflowX: "auto",
-                            overflowY: "auto",
-                            "&::-webkit-scrollbar": {
-                                height: "8px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                                backgroundColor: "rgba(0,0,0,0.2)",
-                                borderRadius: "4px",
-                            },
-                        },
-                        "& .MuiDataGrid-footerContainer": {
-                            borderTop: 1,
-                            borderColor: "divider",
-                            position: "sticky",
-                            bottom: 0,
-                            backgroundColor: "background.paper",
-                            zIndex: 1,
-                            minWidth: "fit-content",
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                        },
-                        "& .MuiDataGrid-columnSeparator": {
-                            visibility: "hidden",
-                        },
-                        "& .MuiDataGrid-cell": {
-                            borderRight: "1px solid",
-                            borderColor: "divider",
-                            whiteSpace: "normal",
-                            wordWrap: "break-word",
-                            padding: "4px 8px",
-                        },
-                        "& .MuiDataGrid-columnHeader": {
-                            borderRight: "1px solid",
-                            borderColor: "divider",
-                            whiteSpace: "normal",
-                            wordWrap: "break-word",
-                            padding: "4px 8px",
-                        },
-                    }}
-                />
-            </Paper>
+        <div className="mb-4">
+            {/* Custom Table */}
+            <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
+                <table className="w-full min-w-[800px] text-sm text-gray-900">
+                    <thead className="bg-gray-100">
+                        <tr>
+                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
+                            UUID
+                            </th>
+                            <th className="py-3 px-4 text-left font-semibold border-r border-gray-200">
+                                Name
+                            </th>
+                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
+                                Region
+                            </th>
+                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
+                                Address
+                            </th>
+                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
+                                Municipality
+                            </th>
+                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
+                                Province
+                            </th>
+                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
+                                Type
+                            </th>
+                            <th className="py-3 px-4 text-center font-semibold">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paginatedInstitutions.length === 0 ? (
+                            <tr>
+                                <td
+                                    colSpan="8"
+                                    className="py-4 text-center text-gray-500"
+                                >
+                                    No institutions found.
+                                </td>
+                            </tr>
+                        ) : (
+                            paginatedInstitutions.map((institution) => (
+                                <tr
+                                    key={institution.id}
+                                    className="border-t border-gray-200 hover:bg-gray-50"
+                                >
+                                    <td className="py-2 px-4 text-center border-r border-gray-200">
+                                        {institution.uuid}
+                                    </td>
+                                    <td className="py-2 px-4 text-left border-r border-gray-200">
+                                        {institution.name}
+                                    </td>
+                                    <td className="py-2 px-4 text-center border-r border-gray-200">
+                                        {institution.region}
+                                    </td>
+                                    <td className="py-2 px-4 text-center border-r border-gray-200">
+                                        {institution.address_street}
+                                    </td>
+                                    <td className="py-2 px-4 text-center border-r border-gray-200">
+                                        {institution.municipality}
+                                    </td>
+                                    <td className="py-2 px-4 text-center border-r border-gray-200">
+                                        {institution.province}
+                                    </td>
+                                    <td className="py-2 px-4 text-center border-r border-gray-200">
+                                        {institution.institution_type}
+                                    </td>
+                                    <td className="py-2 px-4 text-center">
+                                        <button
+                                            onClick={(e) =>
+                                                handleMenuOpen(e, institution)
+                                            }
+                                            disabled={Boolean(menuAnchorEl)}
+                                            aria-label={`More options for ${institution.name}`}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
+                                        >
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
-            {/* Action Menu */}
-            <Menu
-                anchorEl={menuAnchorEl}
-                open={Boolean(menuAnchorEl)}
-                onClose={handleMenuClose}
-                anchorOrigin={{
-                    vertical: "bottom",
-                    horizontal: "right",
-                }}
-                transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                }}
-                PaperProps={{
-                    elevation: 3,
-                    sx: {
-                        mt: 0.5,
-                        minWidth: 180,
-                        borderRadius: 1,
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                        "& .MuiList-root": {
-                            padding: "4px 0",
-                        },
-                    },
-                }}
-            >
-                <MenuItem
-                    onClick={() => handleOpenDialog(selectedInstitution)}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.08)",
-                        },
-                    }}
-                >
-                    <FaEye
+            {/* Pagination */}
+            {filteredInstitutions.length > 0 && (
+                <div className="flex justify-end items-center mt-4 space-x-4 text-sm">
+                    <div>
+                        Rows per page:
+                        <select
+                            value={rowsPerPage}
+                            onChange={handleChangeRowsPerPage}
+                            className="ml-2 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {[25, 50, 100].map((option) => (
+                                <option key={option} value={option}>
+                                    {option}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        {page * rowsPerPage + 1}-
+                        {Math.min(
+                            (page + 1) * rowsPerPage,
+                            filteredInstitutions.length
+                        )}{" "}
+                        of {filteredInstitutions.length}
+                    </div>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => handleChangePage(page - 1)}
+                            disabled={page === 0}
+                            className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => handleChangePage(page + 1)}
+                            disabled={
+                                (page + 1) * rowsPerPage >=
+                                filteredInstitutions.length
+                            }
+                            className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Action Menu (Portal) */}
+            {selectedInstitution &&
+                menuAnchorEl &&
+                createPortal(
+                    <div
+                        ref={menuRef}
+                        className="fixed z-50 bg-white rounded-lg shadow-lg min-w-[180px]"
                         style={{
-                            fontSize: "20px",
-                            marginRight: "5px",
-                            color: "#438FFF",
+                            top:
+                                menuAnchorEl.getBoundingClientRect().bottom + 4,
+                            right:
+                                window.innerWidth -
+                                menuAnchorEl.getBoundingClientRect().right,
                         }}
-                    />
-                    <Typography variant="body2">View Details</Typography>
-                </MenuItem>
-
-                <Divider sx={{ my: 0.5 }} />
-
-                <MenuItem
-                    onClick={() =>
-                        handleNavigation(
-                            "/super-admin/institutions/campuses",
-                            "viewCampuses"
-                        )
-                    }
-                    disabled={loading.viewCampuses}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.08)",
-                        },
-                    }}
-                >
-                    {loading.viewCampuses ? (
-                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
-                    ) : (
-                        <BiSolidBusiness
-                            style={{
-                                fontSize: "20px",
-                                marginRight: "5px",
-                                color: "#438FFF",
-                            }}
-                        />
-                    )}
-                    <Typography variant="body2">Manage Campuses</Typography>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() =>
-                        handleNavigation(
-                            "/super-admin/institutions/faculties",
-                            "faculties"
-                        )
-                    }
-                    disabled={loading.faculties}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.08)",
-                        },
-                    }}
-                >
-                    {loading.faculties ? (
-                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
-                    ) : (
-                        <HiMiniUserGroup
-                            style={{
-                                fontSize: "20px",
-                                marginRight: "5px",
-                                color: "#438FFF",
-                            }}
-                        />
-                    )}
-                    <Typography variant="body2">Manage Faculties</Typography>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() =>
-                        handleNavigation(
-                            "/super-admin/institutions/curricular-programs",
-                            "curricularPrograms"
-                        )
-                    }
-                    disabled={loading.academicPrograms}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.08)",
-                        },
-                    }}
-                >
-                    {loading.curricularPrograms ? (
-                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
-                    ) : (
-                        <RiBookShelfFill
-                            style={{
-                                fontSize: "20px",
-                                marginRight: "5px",
-                                color: "#438FFF",
-                            }}
-                        />
-                    )}
-                    <Typography variant="body2">Curricular Programs</Typography>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() =>
-                        handleNavigation(
-                            "/super-admin/institutions/graduates-list",
-                            "curricularPrograms"
-                        )
-                    }
-                    disabled={loading.curricularPrograms}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.08)",
-                        },
-                    }}
-                >
-                    {loading.curricularPrograms ? (
-                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
-                    ) : (
-                        <FaUserGraduate
-                            style={{
-                                fontSize: "20px",
-                                marginRight: "5px",
-                                color: "#438FFF",
-                            }}
-                        />
-                    )}
-                    <Typography variant="body2">List of Graduates</Typography>
-                </MenuItem>
-
-                <Divider sx={{ my: 0.5 }} />
-
-                <MenuItem
-                    onClick={() => handleExportToFormA(selectedInstitution)}
-                    disabled={loading.exportFormA}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(25, 118, 210, 0.08)",
-                        },
-                    }}
-                >
-                    {loading.exportFormA ? (
-                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
-                    ) : (
-                        <MdOutlineDownload
-                            style={{
-                                fontSize: "20px",
-                                marginRight: "5px",
-                                color: "#438FFF",
-                            }}
-                        />
-                    )}
-                    <Typography variant="body2">Export to Excel</Typography>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={handleOpenConfirmDialog}
-                    disabled={loading.deleteInstitution}
-                    sx={{
-                        py: 1,
-                        mx: 1,
-                        borderRadius: 1,
-                        "&:hover": {
-                            backgroundColor: "rgba(255, 99, 71, 0.08)",
-                        },
-                    }}
-                >
-                    {loading.deleteInstitution ? (
-                        <CircularProgress size={18} sx={{ mr: 1.5 }} />
-                    ) : (
-                        <MdDelete
-                            style={{
-                                fontSize: "20px",
-                                marginRight: "5px",
-                                color: "#FF6347",
-                            }}
-                        />
-                    )}
-                    <Typography variant="body2" color="error">
-                        Delete Institution
-                    </Typography>
-                </MenuItem>
-            </Menu>
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <ul className="py-1">
+                            <li>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenDialog(selectedInstitution);
+                                    }}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"
+                                >
+                                    <Eye className="w-5 h-5 mr-2 text-blue-600" />
+                                    View Details
+                                </button>
+                            </li>
+                            <li className="border-t border-gray-200 my-1"></li>
+                            <li>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleNavigation(
+                                            "/super-admin/institutions/campuses",
+                                            "viewCampuses"
+                                        );
+                                    }}
+                                    disabled={loading.viewCampuses}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 disabled:opacity-50"
+                                >
+                                    {loading.viewCampuses ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-blue-600" />
+                                    ) : (
+                                        <Building2 className="w-5 h-5 mr-2 text-blue-600" />
+                                    )}
+                                    Manage Campuses
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleNavigation(
+                                            "/super-admin/institutions/faculties",
+                                            "faculties"
+                                        );
+                                    }}
+                                    disabled={loading.faculties}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 disabled:opacity-50"
+                                >
+                                    {loading.faculties ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-blue-600" />
+                                    ) : (
+                                        <Users className="w-5 h-5 mr-2 text-blue-600" />
+                                    )}
+                                    Manage Faculties
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleNavigation(
+                                            "/super-admin/institutions/curricular-programs",
+                                            "curricularPrograms"
+                                        );
+                                    }}
+                                    disabled={loading.curricularPrograms}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 disabled:opacity-50"
+                                >
+                                    {loading.curricularPrograms ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-blue-600" />
+                                    ) : (
+                                        <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
+                                    )}
+                                    Curricular Programs
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleNavigation(
+                                            "/super-admin/institutions/graduates-list",
+                                            "curricularPrograms"
+                                        );
+                                    }}
+                                    disabled={loading.curricularPrograms}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 disabled:opacity-50"
+                                >
+                                    {loading.curricularPrograms ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-blue-600" />
+                                    ) : (
+                                        <UserCheck className="w-5 h-5 mr-2 text-blue-600" />
+                                    )}
+                                    List of Graduates
+                                </button>
+                            </li>
+                            <li className="border-t border-gray-200 my-1"></li>
+                            <li>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleExportToFormA(
+                                            selectedInstitution
+                                        );
+                                    }}
+                                    disabled={loading.exportFormA}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 disabled:opacity-50"
+                                >
+                                    {loading.exportFormA ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-blue-600" />
+                                    ) : (
+                                        <Download className="w-5 h-5 mr-2 text-blue-600" />
+                                    )}
+                                    Export to Excel
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={(e) =>
+                                        handleOpenConfirmDialog(
+                                            e,
+                                            selectedInstitution
+                                        )
+                                    }
+                                    disabled={loading.deleteInstitution}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                >
+                                    {loading.deleteInstitution ? (
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-red-600" />
+                                    ) : (
+                                        <Trash2 className="w-5 h-5 mr-2 text-red-600" />
+                                    )}
+                                    Delete Institution
+                                </button>
+                            </li>
+                        </ul>
+                    </div>,
+                    document.body
+                )}
 
             {/* Detail Dialog */}
             {selectedInstitution && (
@@ -734,37 +691,7 @@ const InstitutionTable = ({
                     setSnackbarSeverity={setSnackbarSeverity}
                 />
             )}
-
-            {/* Confirmation Dialog for Delete */}
-            <Dialog
-                open={openConfirmDialog}
-                onClose={handleCloseConfirmDialog}
-                aria-labelledby="confirm-delete-dialog"
-            >
-                <DialogTitle id="confirm-delete-dialog">
-                    Confirm Deletion
-                </DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        Are you sure you want to delete{" "}
-                        {selectedInstitution?.name}? This action cannot be
-                        undone.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseConfirmDialog} color="primary">
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleDeleteInstitution}
-                        color="error"
-                        disabled={loading.deleteInstitution}
-                    >
-                        Delete
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+        </div>
     );
 };
 

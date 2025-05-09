@@ -44,22 +44,22 @@ class CampusController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                '*.suc_name'             => 'nullable|string|max:255',
-                '*.campus_type'          => 'nullable|string|max:255',
-                '*.institutional_code'   => 'nullable|string|max:255',
+                '*.suc_name' => 'nullable|string|max:255',
+                '*.campus_type' => 'nullable|string|max:255',
+                '*.institutional_code' => 'nullable|string|max:255',
                 '*.year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
-                '*.land_area_hectares'   => 'nullable|numeric|min:0',
-                '*.distance_from_main'   => 'nullable|numeric|min:0',
-                '*.autonomous_code'      => 'nullable|string|max:255',
-                '*.position_title'       => 'nullable|string|max:255',
-                '*.head_full_name'       => 'nullable|string|max:255',
-                '*.former_name'          => 'nullable|string|max:255',
+                '*.land_area_hectares' => 'nullable|numeric|min:0',
+                '*.distance_from_main' => 'nullable|numeric|min:0',
+                '*.autonomous_code' => 'nullable|string|max:255',
+                '*.position_title' => 'nullable|string|max:255',
+                '*.head_full_name' => 'nullable|string|max:255',
+                '*.former_name' => 'nullable|string|max:255',
                 '*.latitude_coordinates' => 'nullable|numeric|between:-90,90',
-                '*.longitude_coordinates'=> 'nullable|numeric|between:-180,180',
-                '*.institution_id'       => 'required|exists:institutions,id',
-                '*.report_year'          => 'nullable|integer',
-                '*.region'               => 'required|string|max:255',
-                '*.province/municipality'=> 'required|string|max:255',
+                '*.longitude_coordinates' => 'nullable|numeric|between:-180,180',
+                '*.institution_id' => 'required|exists:institutions,id',
+                '*.report_year' => 'nullable|integer',
+                '*.region' => 'nullable|string|max:255',
+                '*.province/municipality' => 'nullable|string|max:255',
             ]);
 
             // Add timestamps to each record
@@ -77,17 +77,17 @@ class CampusController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors'  => $e->errors(),
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error inserting campuses: ' . $e->getMessage(), [
                 'request_data' => $request->all(),
-                'exception'    => $e,
+                'exception' => $e,
             ]);
 
             return response()->json([
                 'message' => 'Failed to add campuses. Please try again.',
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -111,22 +111,22 @@ class CampusController extends Controller
         }
 
         $validated = $request->validate([
-            'suc_name'             => 'nullable|string|max:255',
-            'campus_type'          => 'nullable|string|max:255',
-            'institutional_code'   => 'nullable|string|max:255',
+            'suc_name' => 'nullable|string|max:255',
+            'campus_type' => 'nullable|string|max:255',
+            'institutional_code' => 'nullable|string|max:255',
             'year_first_operation' => 'nullable|integer|min:1800|max:' . date('Y'),
-            'land_area_hectares'   => 'nullable|numeric|min:0',
-            'distance_from_main'   => 'nullable|numeric|min:0',
-            'autonomous_code'      => 'nullable|string|max:255',
-            'position_title'       => 'nullable|string|max:255',
-            'head_full_name'       => 'nullable|string|max:255',
-            'former_name'          => 'nullable|string|max:255',
+            'land_area_hectares' => 'nullable|numeric|min:0',
+            'distance_from_main' => 'nullable|numeric|min:0',
+            'autonomous_code' => 'nullable|string|max:255',
+            'position_title' => 'nullable|string|max:255',
+            'head_full_name' => 'nullable|string|max:255',
+            'former_name' => 'nullable|string|max:255',
             'latitude_coordinates' => 'nullable|numeric|between:-90,90',
-            'longitude_coordinates'=> 'nullable|numeric|between:-180,180',
-            'institution_id'       => 'required|exists:institutions,id',
-            'report_year'          => 'nullable|integer',
-            'region'               => 'sometimes|string|max:255',
-            'province/municipality'=> 'sometimes|string|max:255',
+            'longitude_coordinates' => 'nullable|numeric|between:-180,180',
+            'institution_id' => 'required|exists:institutions,id',
+            'report_year' => 'nullable|integer',
+            'region' => 'sometimes|string|max:255',
+            'province/municipality' => 'sometimes|string|max:255',
         ]);
 
         $campus->update($validated);
@@ -149,7 +149,7 @@ class CampusController extends Controller
 
         return response()->json([
             'institution_name' => $institution->name,
-            'campuses'         => $campuses->map(function ($campus) {
+            'campuses' => $campuses->map(function ($campus) {
                 return $this->transformCampus($campus);
             }),
         ]);

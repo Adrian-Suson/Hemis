@@ -122,6 +122,7 @@ const FacultyProfileUpload = () => {
         const institutionId = decryptId(
             decodeURIComponent(encryptedInstitutionId)
         );
+        console.log("Decrypted Institution ID:", institutionId);
 
         // Validate decrypted ID
         if (!institutionId || isNaN(institutionId)) {

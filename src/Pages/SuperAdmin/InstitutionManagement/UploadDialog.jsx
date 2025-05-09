@@ -1,31 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Button,
-    Typography,
-    Box,
-    IconButton,
-    Divider,
-    Grid,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { useState, useEffect, useRef } from "react";
+import Swal from "sweetalert2";
 import PropTypes from "prop-types";
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { X, Upload } from "lucide-react";
+import moment from "moment";
 import config from "../../../utils/config";
-import { useTheme } from "@mui/material";
-import TextField from "@mui/material/TextField"; // added for datepicker input
-import moment from "moment"; // added import for moment
-import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers"; // updated import
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment"; // new import
+import axios from "axios";
 
 const UploadDialog = ({
     openUploadDialog,
@@ -42,23 +22,26 @@ const UploadDialog = ({
     selectedMunicipality,
     setSelectedMunicipality,
 }) => {
-    const [fileError, setFileError] = useState(""); // State for file validation errors
-    const [typeError, setTypeError] = useState(""); // State for institution type error
-    const [validationTriggered, setValidationTriggered] = useState(false); // Track if validation was attempted
-    const [regions, setRegions] = useState([]); // State for regions
-    const [provinces, setProvinces] = useState([]); // State for provinces
-    const [municipalities, setMunicipalities] = useState([]); // State for municipalities
-    const [selectedDate, setSelectedDate] = useState(moment()); // added state for datepicker
+    const [fileError, setFileError] = useState("");
+    const [typeError, setTypeError] = useState("");
+    const [uuidError, setUuidError] = useState("");
+    const [validationTriggered, setValidationTriggered] = useState(false);
+    const [regions, setRegions] = useState([]);
+    const [provinces, setProvinces] = useState([]);
+    const [municipalities, setMunicipalities] = useState([]);
+    const [selectedDate, setSelectedDate] = useState(moment());
+    const [uuid, setUuid] = useState("");
+    const [existingUuids, setExistingUuids] = useState([]);
+    const [filteredUuids, setFilteredUuids] = useState([]);
+    const [showUuidSuggestions, setShowUuidSuggestions] = useState(false);
+    const uuidInputRef = useRef(null);
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const ACCEPTED_FILE_TYPES = [
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
-        "application/vnd.ms-excel", // .xls
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
     ];
 
-    const theme = useTheme();
-
-    // Set default region id to "10" on mount if not already set
     useEffect(() => {
         if (!selectedRegion) {
             setSelectedRegion("10");
@@ -66,7 +49,11 @@ const UploadDialog = ({
     }, []);
 
     useEffect(() => {
-        // Fetch all regions on mount
+        const storedUuids = JSON.parse(localStorage.getItem("uuids")) || [];
+        setExistingUuids(storedUuids);
+        setFilteredUuids(storedUuids);
+    }, []);
+    useEffect(() => {
         const fetchRegions = async () => {
             try {
                 const token = localStorage.getItem("token");
@@ -74,7 +61,8 @@ const UploadDialog = ({
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 setRegions(res.data);
-            } catch {
+            } catch (error) {
+                console.error("Error fetching regions:", error);
                 setRegions([]);
             }
         };
@@ -88,12 +76,11 @@ const UploadDialog = ({
                     const token = localStorage.getItem("token");
                     const res = await axios.get(
                         `${config.API_URL}/provinces?region_id=${regionId}`,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
+                        { headers: { Authorization: `Bearer ${token}` } }
                     );
                     setProvinces(res.data);
-                } catch {
+                } catch (error) {
+                    console.error("Error fetching provinces:", error);
                     setProvinces([]);
                 }
             };
@@ -113,12 +100,11 @@ const UploadDialog = ({
                     const token = localStorage.getItem("token");
                     const res = await axios.get(
                         `${config.API_URL}/municipalities?province_id=${provinceId}`,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
+                        { headers: { Authorization: `Bearer ${token}` } }
                     );
                     setMunicipalities(res.data);
-                } catch {
+                } catch (error) {
+                    console.error("Error fetching municipalities:", error);
                     setMunicipalities([]);
                 }
             };
@@ -133,248 +119,331 @@ const UploadDialog = ({
         setOpenUploadDialog(false);
         setSelectedFile(null);
         setSelectedInstitutionType("");
+        setUuid("");
         setFileError("");
         setTypeError("");
-        setValidationTriggered(false); // Reset validation state
+        setUuidError("");
+        setValidationTriggered(false);
+        setShowUuidSuggestions(false);
     };
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        setSelectedFile(file || null); // Set file even if invalid, validate on upload
-        setFileError(""); // Clear previous error until upload is attempted
-        if (validationTriggered) setValidationTriggered(false); // Reset validation trigger if file changes
+        setSelectedFile(file || null);
+        setFileError("");
+        if (validationTriggered) setValidationTriggered(false);
     };
 
     const handleRemoveFile = () => {
         setSelectedFile(null);
         setFileError("");
-        if (validationTriggered) setValidationTriggered(false); // Reset validation trigger
+        if (validationTriggered) setValidationTriggered(false);
     };
 
-    const validateInputs = () => {
-        let isValid = true;
+    const handleUuidChange = (e) => {
+        const value = e.target.value;
+        setUuid(value);
+        setShowUuidSuggestions(true);
 
-        // Validate institution type
+        if (value.trim()) {
+            const filtered = existingUuids.filter((item) =>
+                item.toLowerCase().includes(value.toLowerCase())
+            );
+            setFilteredUuids(filtered);
+        } else {
+            setFilteredUuids(existingUuids);
+        }
+
+        if (validationTriggered) setValidationTriggered(false);
+    };
+
+    const handleUuidSelect = (selectedUuid) => {
+        setUuid(selectedUuid);
+        setShowUuidSuggestions(false);
+    };
+
+    const handleClickOutside = (e) => {
+        if (uuidInputRef.current && !uuidInputRef.current.contains(e.target)) {
+            setShowUuidSuggestions(false);
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const validateInputs = () => {
+        const errors = [];
+
         if (!selectedInstitutionType) {
             setTypeError("Please select an institution type.");
-            isValid = false;
+            errors.push("Institution type is required.");
         } else {
             setTypeError("");
         }
 
-        // Validate file
+        if (!uuid.trim()) {
+            setUuidError("Please enter a UUID.");
+            errors.push("UUID is required.");
+        } else {
+            setUuidError("");
+        }
+
         if (!selectedFile) {
             setFileError("Please choose a file.");
-            isValid = false;
+            errors.push("A file is required.");
         } else if (!ACCEPTED_FILE_TYPES.includes(selectedFile.type)) {
             setFileError("Please upload a valid Excel file (.xlsx or .xls).");
-            isValid = false;
+            errors.push("File must be a valid Excel file (.xlsx or .xls).");
         } else if (selectedFile.size > MAX_FILE_SIZE) {
             setFileError("File size exceeds 10MB limit.");
-            isValid = false;
+            errors.push("File size exceeds 10MB limit.");
         } else {
             setFileError("");
         }
 
-        return isValid;
+        return errors;
     };
 
     const handleUploadClick = () => {
-        setValidationTriggered(true); // Mark validation as attempted
-        if (validateInputs()) {
-            // Pass selected year (as integer) to the upload handler
-            handleFileUpload(selectedDate.year());
+        setValidationTriggered(true);
+        const errors = validateInputs();
+        if (errors.length > 0) {
+            Swal.fire({
+                title: "Validation Error",
+                html: `<ul class="list-disc pl-5 text-left">${errors
+                    .map((error) => `<li>${error}</li>`)
+                    .join("")}</ul>`,
+                icon: "error",
+                confirmButtonColor: "#d33",
+                confirmButtonText: "OK",
+                customClass: {
+                    popup: "swal2-popup",
+                    title: "text-lg font-semibold text-gray-900",
+                    content: "text-gray-600",
+                },
+            });
+            return;
         }
+
+        const isNewUuid = !existingUuids.includes(uuid);
+        if (isNewUuid) {
+            const updatedUuids = [...existingUuids, uuid];
+            setExistingUuids(updatedUuids);
+            setFilteredUuids(updatedUuids);
+            localStorage.setItem("uuids", JSON.stringify(updatedUuids)); // Save to local storage
+        }
+
+        handleFileUpload(selectedDate.year(), uuid);
     };
 
+    if (!openUploadDialog) return null;
+
     return (
-        <Dialog
-            open={openUploadDialog}
-            onClose={handleClose}
-            maxWidth="sm"
-            fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: 2,
-                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-                },
-            }}
-        >
-            <DialogTitle
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    bgcolor: "#f5f5f5",
-                    py: 1.5,
-                    px: 3,
-                    borderBottom: "1px solid #e0e0e0",
-                }}
-            >
-                <Box component="span">
-                    <Typography
-                        variant="h6"
-                        component="div"
-                        sx={{ fontWeight: 600 }}
-                    >
+        <div className="fixed inset-0 shadow-amber-900 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                {/* Dialog Header */}
+                <div className="flex items-center justify-between p-4 bg-gray-100 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
                         Upload Form A
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={handleClose}
-                    size="small"
-                    aria-label="Close dialog"
-                >
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent sx={{ p: 3, my: 1 }}>
-                <Grid mt={1} container spacing={2}>
-                    <Grid item size={6}>
-                        <FormControl
-                            fullWidth
-                            variant="outlined"
-                            error={!!typeError}
-                        >
-                            <InputLabel id="institution-type-label">
+                    </h2>
+                    <button
+                        onClick={handleClose}
+                        className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full"
+                        aria-label="Close dialog"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Dialog Content */}
+                <div className="p-4 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Institution Type */}
+                        <div>
+                            <label
+                                htmlFor="institution-type"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
                                 Institution Type
-                            </InputLabel>
-                            <Select
-                                labelId="institution-type-label"
+                            </label>
+                            <select
+                                id="institution-type"
                                 value={selectedInstitutionType}
                                 onChange={(e) => {
                                     setSelectedInstitutionType(e.target.value);
                                     if (validationTriggered)
-                                        setValidationTriggered(false); // Reset validation trigger
+                                        setValidationTriggered(false);
                                 }}
-                                label="Institution Type"
-                                sx={{ bgcolor: "white" }}
+                                className={`w-full px-3 py-2 border ${
+                                    typeError && validationTriggered
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                             >
-                                <MenuItem value="">
-                                    <em>Select Type</em>
-                                </MenuItem>
-                                <MenuItem value="SUC">SUC</MenuItem>
-                                <MenuItem value="LUC">LUC</MenuItem>
-                                <MenuItem value="PHEI">PHEI</MenuItem>
-                            </Select>
-                            {typeError && validationTriggered && (
-                                <Typography
-                                    variant="caption"
-                                    color="error"
-                                    sx={{ mt: 1 }}
-                                >
-                                    {typeError}
-                                </Typography>
-                            )}
-                        </FormControl>
-                    </Grid>
-                    <Grid item size={6}>
-                        <FormControl fullWidth variant="outlined">
-                            {/* Wrapped DatePicker with LocalizationProvider */}
-                            <LocalizationProvider dateAdapter={AdapterMoment}>
-                                <DatePicker
-                                    label="Select Year"
-                                    views={["year"]} // restrict to year only
-                                    value={selectedDate}
-                                    onChange={(newValue) =>
-                                        setSelectedDate(newValue)
-                                    }
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            variant="outlined"
-                                            sx={{ bgcolor: "white" }}
-                                            fullWidth
-                                        />
-                                    )}
+                                <option value="">Select Type</option>
+                                <option value="SUC">SUC</option>
+                                <option value="LUC">LUC</option>
+                                <option value="PHEI">PHEI</option>
+                            </select>
+                        </div>
+
+                        {/* UUID Combo Box */}
+                        <div ref={uuidInputRef}>
+                            <label
+                                htmlFor="uuid"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                                UUID
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="uuid"
+                                    type="text"
+                                    value={uuid}
+                                    onChange={handleUuidChange}
+                                    onFocus={() => setShowUuidSuggestions(true)}
+                                    placeholder="Enter or select UUID"
+                                    className={`w-full px-3 py-2 border ${
+                                        uuidError && validationTriggered
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                                 />
-                            </LocalizationProvider>
-                        </FormControl>
-                    </Grid>
-                    <Grid item size={4}>
-                        <FormControl fullWidth variant="outlined">
-                            <InputLabel id="region-select-label">
+                                {showUuidSuggestions &&
+                                    filteredUuids.length > 0 && (
+                                        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
+                                            {filteredUuids.map(
+                                                (item, index) => (
+                                                    <li
+                                                        key={index}
+                                                        onClick={() =>
+                                                            handleUuidSelect(
+                                                                item
+                                                            )
+                                                        }
+                                                        className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-100 cursor-pointer"
+                                                    >
+                                                        {item}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+                                    )}
+                            </div>
+                        </div>
+
+                        {/* Year Picker */}
+                        <div>
+                            <label
+                                htmlFor="year"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                                Select Year
+                            </label>
+                            <input
+                                id="year"
+                                type="number"
+                                value={selectedDate.year()}
+                                onChange={(e) =>
+                                    setSelectedDate(
+                                        moment().year(Number(e.target.value))
+                                    )
+                                }
+                                min="1900"
+                                max={new Date().getFullYear()}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            />
+                        </div>
+
+                        {/* Region */}
+                        <div>
+                            <label
+                                htmlFor="region"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
                                 Region
-                            </InputLabel>
-                            <Select
-                                labelId="region-select-label"
+                            </label>
+                            <select
+                                id="region"
                                 value={selectedRegion}
                                 onChange={(e) =>
                                     setSelectedRegion(e.target.value)
                                 }
-                                label="Region"
-                                sx={{ bgcolor: "white" }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             >
-                                <MenuItem value="">
-                                    <em>Select Region</em>
-                                </MenuItem>
+                                <option value="">Select Region</option>
                                 {regions.map((region) => (
-                                    <MenuItem key={region.id} value={region.id}>
+                                    <option key={region.id} value={region.id}>
                                         {region.name}
-                                    </MenuItem>
+                                    </option>
                                 ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item size={4}>
-                        <FormControl fullWidth variant="outlined">
-                            <InputLabel id="province-select-label">
+                            </select>
+                        </div>
+
+                        {/* Province */}
+                        <div>
+                            <label
+                                htmlFor="province"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
                                 Province
-                            </InputLabel>
-                            <Select
-                                labelId="province-select-label"
+                            </label>
+                            <select
+                                id="province"
                                 value={selectedProvince}
                                 onChange={(e) =>
                                     setSelectedProvince(e.target.value)
                                 }
-                                label="Province"
-                                sx={{ bgcolor: "white" }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             >
-                                <MenuItem value="">
-                                    <em>Select Province</em>
-                                </MenuItem>
+                                <option value="">Select Province</option>
                                 {provinces.map((province) => (
-                                    <MenuItem
+                                    <option
                                         key={province.id}
                                         value={province.id}
                                     >
                                         {province.name}
-                                    </MenuItem>
+                                    </option>
                                 ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item size={4}>
-                        <FormControl fullWidth variant="outlined">
-                            <InputLabel id="municipality-select-label">
+                            </select>
+                        </div>
+
+                        {/* Municipality */}
+                        <div>
+                            <label
+                                htmlFor="municipality"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
                                 Municipality
-                            </InputLabel>
-                            <Select
-                                labelId="municipality-select-label"
+                            </label>
+                            <select
+                                id="municipality"
                                 value={selectedMunicipality}
                                 onChange={(e) =>
                                     setSelectedMunicipality(e.target.value)
                                 }
-                                label="Municipality"
-                                sx={{ bgcolor: "white" }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             >
-                                <MenuItem value="">
-                                    <em>Select Municipality</em>
-                                </MenuItem>
+                                <option value="">Select Municipality</option>
                                 {municipalities.map((municipality) => (
-                                    <MenuItem
+                                    <option
                                         key={municipality.id}
                                         value={municipality.id}
                                     >
                                         {municipality.name}
-                                    </MenuItem>
+                                    </option>
                                 ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
+                            </select>
+                        </div>
+                    </div>
 
-                    <Grid item size={12}>
-                        <Box
+                    {/* File Upload */}
+                    <div>
+                        <div
                             onDrop={(e) => {
                                 e.preventDefault();
                                 if (
@@ -382,121 +451,72 @@ const UploadDialog = ({
                                     e.dataTransfer.files[0]
                                 ) {
                                     setSelectedFile(e.dataTransfer.files[0]);
+                                    setFileError("");
+                                    if (validationTriggered)
+                                        setValidationTriggered(false);
                                 }
                             }}
                             onDragOver={(e) => e.preventDefault()}
-                            sx={{
-                                p: 1.5,
-                                border: `1px dashed ${theme.palette.primary.main}`,
-                                borderRadius: 1.5,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 1,
-                                cursor: "pointer",
-                                bgcolor: "background.paper",
-                            }}
                             onClick={() =>
                                 document.getElementById("upload-input").click()
                             }
+                            className={`p-4 border-2 border-dashed ${
+                                fileError && validationTriggered
+                                    ? "border-red-500"
+                                    : "border-blue-500"
+                            } rounded-lg flex flex-col items-center justify-center cursor-pointer bg-white hover:bg-gray-50 transition-colors`}
                         >
-                            <UploadFileIcon
-                                color="primary"
-                                sx={{ fontSize: 28 }}
-                            />
-                            <Typography>
+                            <Upload className="w-7 h-7 text-blue-500" />
+                            <p className="mt-2 text-sm text-gray-600">
                                 Drag & drop file or click to browse
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                            >
+                            </p>
+                            <p className="text-xs text-gray-500">
                                 Supported formats: .xlsx, .xls
-                            </Typography>
+                            </p>
                             <input
                                 id="upload-input"
                                 type="file"
-                                hidden
                                 accept=".xlsx, .xls"
                                 onChange={handleFileChange}
+                                className="hidden"
                             />
-                        </Box>
-                    </Grid>
+                        </div>
+                    </div>
+
+                    {/* Selected File Preview */}
                     {selectedFile && (
-                        <Grid item size={12}>
-                            <Box
-                                sx={{
-                                    mt: 2,
-                                    p: 1.5,
-                                    bgcolor: "#f9f9f9",
-                                    borderRadius: 1,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    border: "1px solid #e0e0e0",
-                                }}
+                        <div className="flex items-center justify-between p-2 bg-gray-100 border border-gray-200 rounded-md">
+                            <span className="text-sm text-gray-700 truncate">
+                                {selectedFile.name}
+                            </span>
+                            <button
+                                onClick={handleRemoveFile}
+                                className="p-1 text-gray-600 hover:text-red-600 hover:bg-gray-200 rounded-full"
+                                aria-label="Remove selected file"
                             >
-                                <Typography
-                                    variant="body2"
-                                    sx={{ color: "#555" }}
-                                >
-                                    {selectedFile.name}
-                                </Typography>
-                                <IconButton
-                                    size="small"
-                                    onClick={handleRemoveFile}
-                                    aria-label="Remove selected file"
-                                >
-                                    <CloseIcon fontSize="small" />
-                                </IconButton>
-                            </Box>
-                        </Grid>
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
                     )}
-                    {fileError && validationTriggered && (
-                        <Grid item size={12}>
-                            <Typography
-                                variant="caption"
-                                color="error"
-                                sx={{ mt: 1 }}
-                            >
-                                {fileError}
-                            </Typography>
-                        </Grid>
-                    )}
-                </Grid>
-            </DialogContent>
-            <Divider />
-            <DialogActions sx={{ p: 2 }}>
-                <Button
-                    onClick={handleClose}
-                    variant="outlined"
-                    sx={{
-                        textTransform: "none",
-                        color: "#555",
-                        borderColor: "#ccc",
-                        "&:hover": { borderColor: "#999" },
-                    }}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleUploadClick}
-                    variant="contained"
-                    sx={{
-                        textTransform: "none",
-                        bgcolor: "#1976d2",
-                        "&:hover": { bgcolor: "#115293" },
-                        "&:disabled": {
-                            bgcolor: "#b0bec5",
-                            color: "#fff",
-                        },
-                    }}
-                >
-                    Upload
-                </Button>
-            </DialogActions>
-        </Dialog>
+                </div>
+
+                {/* Dialog Footer */}
+                <div className="flex justify-end space-x-2 p-4 border-t border-gray-200">
+                    <button
+                        onClick={handleClose}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-100 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleUploadClick}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+                    >
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -507,8 +527,8 @@ UploadDialog.propTypes = {
     setSelectedInstitutionType: PropTypes.func.isRequired,
     selectedFile: PropTypes.shape({
         name: PropTypes.string.isRequired,
-        type: PropTypes.string.isRequired, // Added for validation
-        size: PropTypes.number.isRequired, // Added for validation
+        type: PropTypes.string.isRequired,
+        size: PropTypes.number.isRequired,
     }),
     setSelectedFile: PropTypes.func.isRequired,
     handleFileUpload: PropTypes.func.isRequired,

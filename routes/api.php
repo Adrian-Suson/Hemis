@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //graduate list
     Route::apiResource('graduates', GraduateController::class);
 
+
     //Activity Log Routes
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::post('/activity-logs', [ActivityLogController::class, 'store']);

@@ -4,13 +4,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('institutions', function (Blueprint $table) {
             $table->id();
             // Foreign keys for region, province, municipality
+            $table->string('uuid', length: 255); // Changed from foreign key to a regular string column
             $table->foreignId('region_id')->constrained('regions')->onDelete('restrict');
             $table->foreignId('province_id')->nullable()->constrained('provinces')->onDelete('set null');
             $table->foreignId('municipality_id')->nullable()->constrained('municipalities')->onDelete('set null');
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('institution_type', 255)->nullable();
             $table->integer('report_year')->nullable(); // added column for yearly report
             $table->timestamps();
-            $table->softDeletes(); // Adds deleted_at column for soft deletes
+            $table->softDeletes();
         });
     }
 

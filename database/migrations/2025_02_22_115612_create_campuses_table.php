@@ -13,7 +13,6 @@ class CreateCampusesTable extends Migration
             $table->string('suc_name', 255)->nullable();
             $table->string('campus_type', 255)->nullable();
             $table->string('institutional_code', 255)->nullable();
-            // Foreign key for region (nullable)
             $table->string('region', 255)->nullable();
             $table->string('province/municipality', 255)->nullable();
             $table->integer('year_first_operation')->nullable();

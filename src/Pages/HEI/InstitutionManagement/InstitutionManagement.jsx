@@ -216,6 +216,7 @@ const InstitutionManagement = () => {
 
             setInstitutions(filteredInstitutions);
             setInstitution(filteredInstitutions[0] || null);
+            console.log("Selected institution:", filteredInstitutions[0].id);
         } catch (error) {
             console.error("Error fetching institution:", error);
             setSnackbar({
@@ -895,23 +896,21 @@ const InstitutionManagement = () => {
                                     Management Options
                                 </Typography>
                             </Box>
-                            <Grid container spacing={1} size={12}>
-                                <Grid size={{ sx: 12, md: 3 }}>
+                            <Grid container spacing={1} columns={12}>
+                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
                                     <ActionButton
                                         icon={
                                             <BusinessIcon
-                                                sx={{
-                                                    color: theme.palette.primary
-                                                        .main,
-                                                    fontSize: "1rem",
-                                                }}
+                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
                                             />
                                         }
                                         label="Campuses"
                                         onClick={() =>
                                             handleNavigation(
                                                 `/hei-admin/institutions/campuses/${encryptId(
-                                                    institution.id
+                                                    reportYearFilter
+                                                        ? `${institution.id}`
+                                                        : institution.id
                                                 )}`,
                                                 "viewCampuses"
                                             )
@@ -920,22 +919,20 @@ const InstitutionManagement = () => {
                                         disabled={!institution?.id}
                                     />
                                 </Grid>
-                                <Grid size={{ sx: 12, md: 3 }}>
+                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
                                     <ActionButton
                                         icon={
                                             <PeopleIcon
-                                                sx={{
-                                                    color: theme.palette.primary
-                                                        .main,
-                                                    fontSize: "1rem",
-                                                }}
+                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
                                             />
                                         }
                                         label="Faculties"
                                         onClick={() =>
                                             handleNavigation(
                                                 `/hei-admin/institutions/faculties/${encryptId(
-                                                    institution.id
+                                                    reportYearFilter
+                                                        ? `${institution.id}`
+                                                        : institution.id
                                                 )}`,
                                                 "faculties"
                                             )
@@ -944,22 +941,20 @@ const InstitutionManagement = () => {
                                         disabled={!institution?.id}
                                     />
                                 </Grid>
-                                <Grid size={{ sx: 12, md: 3 }}>
+                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
                                     <ActionButton
                                         icon={
                                             <LibraryBooksIcon
-                                                sx={{
-                                                    color: theme.palette.primary
-                                                        .main,
-                                                    fontSize: "1rem",
-                                                }}
+                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
                                             />
                                         }
                                         label="Programs"
                                         onClick={() =>
                                             handleNavigation(
                                                 `/hei-admin/institutions/curricular-programs/${encryptId(
-                                                    institution.id
+                                                    reportYearFilter
+                                                        ? `${institution.id}`
+                                                        : institution.id
                                                 )}`,
                                                 "curricularPrograms"
                                             )
@@ -968,22 +963,20 @@ const InstitutionManagement = () => {
                                         disabled={!institution?.id}
                                     />
                                 </Grid>
-                                <Grid size={{ sx: 12, md: 3 }}>
+                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
                                     <ActionButton
                                         icon={
                                             <SchoolIcon
-                                                sx={{
-                                                    color: theme.palette.primary
-                                                        .main,
-                                                    fontSize: "1rem",
-                                                }}
+                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
                                             />
                                         }
                                         label="Graduates"
                                         onClick={() =>
                                             handleNavigation(
                                                 `/hei-admin/institutions/graduates-list/${encryptId(
-                                                    institution.id
+                                                    reportYearFilter
+                                                        ? `${institution.id}`
+                                                        : institution.id
                                                 )}`,
                                                 "graduates"
                                             )

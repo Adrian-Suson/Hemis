@@ -3,34 +3,12 @@ import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import {
-    Box,
-    Button,
-    Typography,
-    Breadcrumbs,
-    Link,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Skeleton,
-    IconButton,
-    useTheme,
-    alpha,
-    TextField,
-    useMediaQuery,
-    Collapse,
-    InputAdornment,
-} from "@mui/material";
-import Grid from "@mui/material/Grid";
-import {
-    UploadFile as UploadIcon,
-    Add as AddIcon,
-    FilterList as FilterListIcon,
-} from "@mui/icons-material";
-import SearchIcon from "@mui/icons-material/Search";
-import { RiResetLeftLine } from "react-icons/ri";
-
-import InstitutionTable from "./InstitutionTable";
+    Search,
+    Upload,
+    Plus,
+    Filter,
+    RotateCcw,
+} from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
@@ -38,11 +16,9 @@ import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import UploadDialog from "./UploadDialog";
+import InstitutionTable from "./InstitutionTable";
 
 const InstitutionManagement = () => {
-    const theme = useTheme();
-    const isXsScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showLoading, hideLoading, updateProgress } = useLoading();
@@ -71,9 +47,6 @@ const InstitutionManagement = () => {
     const [provinceFilter, setProvinceFilter] = useState(
         localStorage.getItem("provinceFilter") || ""
     );
-    // const [reportYearFilter, setReportYearFilter] = useState(
-    //     localStorage.getItem("reportYearFilter") || ""
-    // );
 
     const getUniqueValues = (arr, key) => {
         if (!Array.isArray(arr) || arr.length === 0) {
@@ -95,7 +68,6 @@ const InstitutionManagement = () => {
         localStorage.setItem("typeFilter", typeFilter);
         localStorage.setItem("municipalityFilter", municipalityFilter);
         localStorage.setItem("provinceFilter", provinceFilter);
-        // localStorage.setItem("reportYearFilter", reportYearFilter);
     }, [searchTerm, typeFilter, municipalityFilter, provinceFilter]);
 
     const clearFilters = () => {
@@ -103,7 +75,6 @@ const InstitutionManagement = () => {
         setTypeFilter("");
         setMunicipalityFilter("");
         setProvinceFilter("");
-        // setReportYearFilter("");
         localStorage.setItem("searchTerm", "");
         localStorage.setItem("typeFilter", "");
         localStorage.setItem("municipalityFilter", "");
@@ -139,7 +110,6 @@ const InstitutionManagement = () => {
             } else {
                 institutionsData = response.data;
             }
-            console.log("institutionsData", institutionsData);
             setInstitutions(institutionsData);
         } catch (error) {
             console.error("Error fetching institutions:", error);
@@ -156,7 +126,7 @@ const InstitutionManagement = () => {
         fetchInstitutions();
     }, []);
 
-    const handleFileUpload = async (reportYear) => {
+    const handleFileUpload = async (reportYear, uuid) => {
         if (!selectedFile || !selectedInstitutionType) {
             setSnackbarMessage(
                 "Please select both an institution type and a file."
@@ -188,6 +158,7 @@ const InstitutionManagement = () => {
                 };
 
                 const extractedInstitution = {
+                    uuid: String(uuid || ""),
                     name: String(jsonDataA1[4]?.[2] || "Unknown"),
                     region_id: Number.parseInt(selectedRegion, 10) || null,
                     address_street: String(jsonDataA1[7]?.[2] || ""),
@@ -215,7 +186,7 @@ const InstitutionManagement = () => {
                     head_title: String(jsonDataA1[23]?.[2] || ""),
                     head_education: String(jsonDataA1[24]?.[2] || ""),
                     institution_type: selectedInstitutionType,
-                    report_year: reportYear, // include the report year from the datepicker
+                    report_year: reportYear,
                 };
 
                 updateProgress(50);
@@ -230,7 +201,7 @@ const InstitutionManagement = () => {
                         },
                     }
                 );
-
+                console.log("Institution response:", institutionResponse.data);
                 await createLog({
                     action: "uploaded_institution",
                     description: `Uploaded institution: ${extractedInstitution.name}`,
@@ -323,12 +294,12 @@ const InstitutionManagement = () => {
                             ),
                             institution_id:
                                 Number.parseInt(institutionId, 10) || null,
-                            report_year: reportYear, // include the report year from the datepicker
+                            report_year: reportYear,
                         };
                     });
 
-                console.log("processedCampuses", processedCampuses);
                 updateProgress(70);
+                console.log("Processed campuses:", processedCampuses);
                 await axios.post(
                     `${config.API_URL}/campuses`,
                     processedCampuses,
@@ -386,9 +357,6 @@ const InstitutionManagement = () => {
             const matchesProvince = provinceFilter
                 ? institution.province === provinceFilter
                 : true;
-            // const matchesReportYear = reportYearFilter
-            //     ? String(institution.report_year) === reportYearFilter
-            //     : true;
             return (
                 matchesSearch &&
                 matchesType &&
@@ -402,521 +370,161 @@ const InstitutionManagement = () => {
         typeFilter,
         municipalityFilter,
         provinceFilter,
-        // reportYearFilter,
     ]);
 
+    const user = JSON.parse(localStorage.getItem("user"));
+    const dashboardLink =
+        user?.role === "Super Admin"
+            ? "/super-admin/dashboard"
+            : user?.role === "HEI Admin"
+            ? "/hei-admin/dashboard"
+            : "/hei-staff/dashboard";
+
     return (
-        <Box>
+        <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8 overflow-x-auto">
             {loading ? (
-                <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Skeleton variant="text" width={80} height={20} />
-                        <Typography sx={{ mx: 1 }}>›</Typography>
-                        <Skeleton variant="text" width={150} height={20} />
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: { xs: "column", sm: "row" },
-                            justifyContent: "flex-end",
-                            gap: 1,
-                            mb: 2,
-                        }}
-                    >
-                        <Skeleton
-                            variant="rounded"
-                            width={isXsScreen ? "100%" : 150}
-                            height={36}
-                        />
-                        <Skeleton
-                            variant="rounded"
-                            width={isXsScreen ? "100%" : 150}
-                            height={36}
-                        />
-                    </Box>
-                    <Skeleton variant="rounded" width="100%" height={400} />
-                </Box>
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex items-center mb-4">
+                        <div className="h-5 w-20 bg-gray-200 rounded animate-pulse"></div>
+                        <span className="mx-2 text-gray-500">›</span>
+                        <div className="h-5 w-40 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 mb-4">
+                        <div className="h-9 w-full sm:w-36 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-9 w-full sm:w-36 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <div className="h-96 w-full bg-gray-200 rounded animate-pulse"></div>
+                </div>
             ) : (
-                <Box sx={{ p: 2 }}>
-                    <Box>
-                        <Breadcrumbs
-                            separator="›"
-                            aria-label="breadcrumb"
-                            sx={{ mb: 1 }}
-                        >
-                            <Link
-                                underline="hover"
-                                color="inherit"
-                                component={RouterLink}
-                                to={
-                                    JSON.parse(localStorage.getItem("user"))
-                                        ?.role === "Super Admin"
-                                        ? "/super-admin/dashboard"
-                                        : JSON.parse(
-                                              localStorage.getItem("user")
-                                          )?.role === "HEI Admin"
-                                        ? "/hei-admin/dashboard"
-                                        : "/hei-staff/dashboard"
-                                }
-                            >
-                                Dashboard
-                            </Link>
-                            <Typography color="text.primary">
-                                Institution Management
-                            </Typography>
-                        </Breadcrumbs>
-                    </Box>
-
-                    <Box
-                        sx={{
-                            p: { xs: 1, md: 2 },
-                            borderBottom: 1,
-                            borderColor: "divider",
-                            bgcolor: "grey.50",
-                            mb: 2,
-                            borderRadius: 1,
-                        }}
-                    >
-                        <Grid container spacing={2}>
-                            <Grid size={{ xs: 6, md: 3 }}>
-                                <TextField
-                                    label="Search"
-                                    variant="outlined"
-                                    size="small"
-                                    fullWidth
-                                    value={searchTerm}
-                                    onChange={(e) =>
-                                        setSearchTerm(e.target.value)
-                                    }
-                                    InputProps={{
-                                        endAdornment: (
-                                            <InputAdornment position="end">
-                                                <SearchIcon />
-                                            </InputAdornment>
-                                        ),
-                                        sx: {
-                                            fontSize: "0.875rem",
-                                            height: 40,
-                                        },
-                                    }}
-                                    InputLabelProps={{
-                                        sx: {
-                                            fontSize: "0.75rem",
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                            <Grid size={{ xs: 6, md: 9 }}>
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                    }}
+                <div className="max-w-8xl mx-auto">
+                    {/* Breadcrumbs */}
+                    <nav aria-label="breadcrumb" className="mb-4">
+                        <ol className="flex items-center space-x-2 text-sm text-gray-600">
+                            <li>
+                                <RouterLink
+                                    to={dashboardLink}
+                                    className="hover:text-blue-600 transition-colors"
                                 >
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 2,
-                                        }}
-                                    >
-                                        <IconButton
-                                            onClick={toggleFilters}
-                                            sx={{
-                                                color: theme.palette.primary
-                                                    .main,
-                                                "&:hover": {
-                                                    bgcolor: alpha(
-                                                        theme.palette.primary
-                                                            .main,
-                                                        0.1
-                                                    ),
-                                                },
-                                            }}
-                                            aria-label={
-                                                showFilters
-                                                    ? "Hide filters"
-                                                    : "Show filters"
-                                            }
-                                        >
-                                            <FilterListIcon />
-                                        </IconButton>
-                                        <Collapse in={showFilters}>
-                                            <Box
-                                                sx={{
-                                                    display: "flex",
-                                                    gap: 2,
-                                                    width: "100%",
-                                                    alignItems: "center",
-                                                }}
-                                            >
-                                                <Box
-                                                    sx={{
-                                                        flex: "0 0 25%",
-                                                    }}
-                                                >
-                                                    <FormControl
-                                                        variant="outlined"
-                                                        size="small"
-                                                        fullWidth
-                                                    >
-                                                        <InputLabel
-                                                            sx={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                            }}
-                                                            size="small"
-                                                        >
-                                                            Type
-                                                        </InputLabel>
-                                                        <Select
-                                                            value={typeFilter}
-                                                            onChange={(e) =>
-                                                                setTypeFilter(
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                            label="Type"
-                                                            size="small"
-                                                            sx={{
-                                                                height: 40,
-                                                                fontSize:
-                                                                    "0.875rem",
-                                                            }}
-                                                        >
-                                                            <MenuItem
-                                                                value=""
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                All Types
-                                                            </MenuItem>
-                                                            {filterOptions.types.map(
-                                                                (type) => (
-                                                                    <MenuItem
-                                                                        key={
-                                                                            type
-                                                                        }
-                                                                        value={
-                                                                            type
-                                                                        }
-                                                                        sx={{
-                                                                            fontSize:
-                                                                                "0.875rem",
-                                                                        }}
-                                                                    >
-                                                                        {type}
-                                                                    </MenuItem>
-                                                                )
-                                                            )}
-                                                        </Select>
-                                                    </FormControl>
-                                                </Box>
-                                                <Box
-                                                    sx={{
-                                                        flex: "0 0 40%",
-                                                    }}
-                                                >
-                                                    <FormControl
-                                                        variant="outlined"
-                                                        size="small"
-                                                        fullWidth
-                                                    >
-                                                        <InputLabel
-                                                            sx={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                            }}
-                                                            size="small"
-                                                        >
-                                                            Municipality
-                                                        </InputLabel>
-                                                        <Select
-                                                            value={
-                                                                municipalityFilter
-                                                            }
-                                                            onChange={(e) =>
-                                                                setMunicipalityFilter(
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                            label="Municipality"
-                                                            size="small"
-                                                            sx={{
-                                                                height: 40,
-                                                                fontSize:
-                                                                    "0.875rem",
-                                                            }}
-                                                        >
-                                                            <MenuItem
-                                                                value=""
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                All
-                                                                Municipalities
-                                                            </MenuItem>
-                                                            {filterOptions.municipalities.map(
-                                                                (
-                                                                    municipality
-                                                                ) => (
-                                                                    <MenuItem
-                                                                        key={
-                                                                            municipality
-                                                                        }
-                                                                        value={
-                                                                            municipality
-                                                                        }
-                                                                        sx={{
-                                                                            fontSize:
-                                                                                "0.875rem",
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            municipality
-                                                                        }
-                                                                    </MenuItem>
-                                                                )
-                                                            )}
-                                                        </Select>
-                                                    </FormControl>
-                                                </Box>
-                                                <Box
-                                                    sx={{
-                                                        flex: "0 0 40%",
-                                                    }}
-                                                >
-                                                    <FormControl
-                                                        variant="outlined"
-                                                        size="small"
-                                                        fullWidth
-                                                    >
-                                                        <InputLabel
-                                                            sx={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                            }}
-                                                        >
-                                                            Province
-                                                        </InputLabel>
-                                                        <Select
-                                                            value={
-                                                                provinceFilter
-                                                            }
-                                                            onChange={(e) =>
-                                                                setProvinceFilter(
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                            label="Province"
-                                                            sx={{
-                                                                height: 40,
-                                                                fontSize:
-                                                                    "0.875rem",
-                                                            }}
-                                                        >
-                                                            <MenuItem
-                                                                value=""
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                All Provinces
-                                                            </MenuItem>
-                                                            {filterOptions.provinces.map(
-                                                                (province) => (
-                                                                    <MenuItem
-                                                                        key={
-                                                                            province
-                                                                        }
-                                                                        value={
-                                                                            province
-                                                                        }
-                                                                        sx={{
-                                                                            fontSize:
-                                                                                "0.875rem",
-                                                                        }}
-                                                                    >
-                                                                        {
-                                                                            province
-                                                                        }
-                                                                    </MenuItem>
-                                                                )
-                                                            )}
-                                                        </Select>
-                                                    </FormControl>
-                                                </Box>
-                                                {/* <Box
-                                                    sx={{
-                                                        flex: "0 0 35%",
-                                                    }}
-                                                >
-                                                    <FormControl
-                                                        variant="outlined"
-                                                        size="small"
-                                                        fullWidth
-                                                    >
-                                                        <InputLabel
-                                                            sx={{
-                                                                fontSize:
-                                                                    "0.75rem",
-                                                            }}
-                                                            size="small"
-                                                        >
-                                                            Report Year
-                                                        </InputLabel>
-                                                        <Select
-                                                            value={
-                                                                reportYearFilter
-                                                            }
-                                                            onChange={(e) =>
-                                                                setReportYearFilter(
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                            label="Report Year"
-                                                            size="small"
-                                                            sx={{
-                                                                height: 40,
-                                                                fontSize:
-                                                                    "0.875rem",
-                                                            }}
-                                                        >
-                                                            <MenuItem
-                                                                value=""
-                                                                sx={{
-                                                                    fontSize:
-                                                                        "0.875rem",
-                                                                }}
-                                                            >
-                                                                All Years
-                                                            </MenuItem>
-                                                            {filterOptions.reportYears.map(
-                                                                (year) => (
-                                                                    <MenuItem
-                                                                        key={
-                                                                            year
-                                                                        }
-                                                                        value={String(
-                                                                            year
-                                                                        )}
-                                                                        sx={{
-                                                                            fontSize:
-                                                                                "0.875rem",
-                                                                        }}
-                                                                    >
-                                                                        {year}
-                                                                    </MenuItem>
-                                                                )
-                                                            )}
-                                                        </Select>
-                                                    </FormControl>
-                                                </Box> */}
-                                                <Box
-                                                    sx={{
-                                                        flex: "0 0 40%",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                    }}
-                                                >
-                                                    <Button
-                                                        variant="text"
-                                                        startIcon={
-                                                            <RiResetLeftLine />
-                                                        }
-                                                        onClick={clearFilters}
-                                                        sx={{
-                                                            textTransform:
-                                                                "none",
-                                                            fontWeight: 500,
-                                                            color: theme.palette
-                                                                .error.main,
-                                                            "&:hover": {
-                                                                bgcolor: alpha(
-                                                                    theme
-                                                                        .palette
-                                                                        .error
-                                                                        .main,
-                                                                    0.1
-                                                                ),
-                                                            },
-                                                        }}
-                                                    />
-                                                </Box>
-                                            </Box>
-                                        </Collapse>
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            flexDirection: {
-                                                xs: "column",
-                                                sm: "row",
-                                            },
-                                            gap: 1,
-                                        }}
-                                    >
-                                        <Button
-                                            variant="outlined"
-                                            startIcon={<AddIcon />}
-                                            onClick={handleManualAdd}
-                                            sx={{
-                                                borderRadius: 1.5,
-                                                textTransform: "none",
-                                                fontWeight: 500,
-                                                py: 1,
-                                                width: {
-                                                    xs: "100%",
-                                                    sm: "auto",
-                                                },
-                                            }}
-                                        >
-                                            Add Institution
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<UploadIcon />}
-                                            onClick={() =>
-                                                setOpenUploadDialog(true)
-                                            }
-                                            sx={{
-                                                borderRadius: 1.5,
-                                                bgcolor:
-                                                    theme.palette.primary.main,
-                                                color: "white",
-                                                "&:hover": {
-                                                    bgcolor:
-                                                        theme.palette.primary
-                                                            .dark,
-                                                },
-                                                textTransform: "none",
-                                                fontWeight: 500,
-                                                py: 1,
-                                                width: {
-                                                    xs: "100%",
-                                                    sm: "auto",
-                                                },
-                                            }}
-                                        >
-                                            Upload Form A
-                                        </Button>
-                                    </Box>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </Box>
+                                    Dashboard
+                                </RouterLink>
+                            </li>
+                            <li className="text-gray-500">›</li>
+                            <li className="text-gray-900" aria-current="page">
+                                Institution Management
+                            </li>
+                        </ol>
+                    </nav>
 
-                    <Box>
+                    {/* Search, Filters, and Actions */}
+                    <div className="bg-gray-100 rounded-lg p-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Search Field */}
+                            <div className="md:col-span-1">
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search institutions..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <Search className="w-5 h-5 text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                                </div>
+                            </div>
+
+                            {/* Filters and Actions */}
+                            <div className="md:col-span-2 flex flex-col md:flex-row justify-between gap-4">
+                                {/* Filter Toggle and Filters */}
+                                <div className="flex-1">
+                                    <div className="flex items-center mb-2">
+                                        <button
+                                            onClick={toggleFilters}
+                                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
+                                            aria-label={showFilters ? "Hide filters" : "Show filters"}
+                                        >
+                                            <Filter className="w-5 h-5" />
+                                        </button>
+                                        {showFilters && (
+                                            <button
+                                                onClick={clearFilters}
+                                                className="ml-2 flex items-center text-red-600 hover:bg-red-100 px-2 py-1 rounded text-sm font-medium transition-colors"
+                                            >
+                                                <RotateCcw className="w-4 h-4 mr-1" />
+                                                Reset Filters
+                                            </button>
+                                        )}
+                                    </div>
+                                    {showFilters && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div>
+                                                <select
+                                                    value={typeFilter}
+                                                    onChange={(e) => setTypeFilter(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">All Types</option>
+                                                    {filterOptions?.types?.map((type) => (
+                                                        <option key={type} value={type}>
+                                                            {type}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <select
+                                                    value={municipalityFilter}
+                                                    onChange={(e) => setMunicipalityFilter(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">All Municipalities</option>
+                                                    {filterOptions?.municipalities?.map((municipality) => (
+                                                        <option key={municipality} value={municipality}>
+                                                            {municipality}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <select
+                                                    value={provinceFilter}
+                                                    onChange={(e) => setProvinceFilter(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">All Provinces</option>
+                                                    {filterOptions?.provinces?.map((province) => (
+                                                        <option key={province} value={province}>
+                                                            {province}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <button
+                                        onClick={handleManualAdd}
+                                        className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors w-full sm:w-auto"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add Institution
+                                    </button>
+                                    <button
+                                        onClick={() => setOpenUploadDialog(true)}
+                                        className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload Form A
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Institution Table */}
+                    <div>
                         <InstitutionTable
                             institutions={filteredInstitutions}
                             setSnackbarMessage={setSnackbarMessage}
@@ -940,8 +548,8 @@ const InstitutionManagement = () => {
                                 );
                             }}
                         />
-                    </Box>
-                </Box>
+                    </div>
+                </div>
             )}
 
             <UploadDialog
@@ -978,7 +586,7 @@ const InstitutionManagement = () => {
                 autoHideDuration={5000}
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
             />
-        </Box>
+        </div>
     );
 };
 

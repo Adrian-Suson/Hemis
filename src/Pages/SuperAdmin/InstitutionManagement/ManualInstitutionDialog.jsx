@@ -1,31 +1,11 @@
 import { useState, useEffect } from "react";
-import moment from "moment";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    Typography,
-    Grid,
-    Divider,
-    IconButton,
-    Box,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import SaveIcon from "@mui/icons-material/Save";
 import axios from "axios";
+import Swal from "sweetalert2";
 import PropTypes from "prop-types";
+import config from "../../../utils/config";
+import { X, Save } from "lucide-react";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
-import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
-import config from "../../../utils/config";
 
 function ManualInstitutionDialog({
     open,
@@ -39,43 +19,41 @@ function ManualInstitutionDialog({
     const { updateProgress } = useLoading();
     const { createLog } = useActivityLog();
     const [manualData, setManualData] = useState({
-        name: "",
-        region: "",
-        address_street: "",
-        municipality_city: "",
-        province: "",
-        postal_code: "",
-        institutional_telephone: "",
-        institutional_fax: "",
-        head_telephone: "",
-        institutional_email: "",
-        institutional_website: "",
-        year_established: null,
-        sec_registration: "",
-        year_granted_approved: null,
-        year_converted_college: null,
-        year_converted_university: null,
-        head_name: "",
-        head_title: "",
-        institution_type: "",
-        head_education: "",
+        institution_code: null, // required|integer|unique
+        name: "", // required|string|max:255
+        region: null, // required|integer|exists:regions,id
+        address_street: "", // nullable|string|max:255
+        municipality_city: null, // nullable|integer|exists:municipalities,id
+        province: null, // nullable|integer|exists:provinces,id
+        postal_code: "", // nullable|string|max:10
+        institutional_telephone: "", // nullable|string|max:20
+        institutional_fax: "", // nullable|string|max:20
+        head_telephone: "", // nullable|string|max:20
+        institutional_email: "", // nullable|string|max:255
+        institutional_website: "", // nullable|string|max:255
+        year_established: null, // nullable|integer
+        sec_registration: "", // nullable|string|max:255
+        year_granted_approved: null, // nullable|integer
+        year_converted_college: null, // nullable|integer
+        year_converted_university: null, // nullable|integer
+        head_name: "", // nullable|string|max:255
+        head_title: "", // nullable|string|max:255
+        head_education: "", // nullable|string|max:255
+        institution_type: "", // nullable|string|max:255
+        report_year: null, // nullable|integer
     });
-
     const [formErrors, setFormErrors] = useState({});
     const [regions, setRegions] = useState([]);
     const [provinces, setProvinces] = useState([]);
     const [municipalities, setMunicipalities] = useState([]);
 
     useEffect(() => {
-        if (open) {
-            fetchRegions();
-        }
+        if (open) fetchRegions();
     }, [open]);
 
     useEffect(() => {
-        if (manualData.region) {
-            fetchProvinces(manualData.region);
-        } else {
+        if (manualData.region) fetchProvinces(manualData.region);
+        else {
             setProvinces([]);
             setMunicipalities([]);
             setManualData((prev) => ({
@@ -87,9 +65,8 @@ function ManualInstitutionDialog({
     }, [manualData.region]);
 
     useEffect(() => {
-        if (manualData.province) {
-            fetchMunicipalities(manualData.province);
-        } else {
+        if (manualData.province) fetchMunicipalities(manualData.province);
+        else {
             setMunicipalities([]);
             setManualData((prev) => ({ ...prev, municipality_city: "" }));
         }
@@ -102,7 +79,8 @@ function ManualInstitutionDialog({
                 headers: { Authorization: `Bearer ${token}` },
             });
             setRegions(res.data);
-        } catch {
+        } catch (error) {
+            console.error("Error fetching regions:", error);
             setRegions([]);
         }
     };
@@ -112,12 +90,11 @@ function ManualInstitutionDialog({
             const token = localStorage.getItem("token");
             const res = await axios.get(
                 `${config.API_URL}/provinces?region_id=${regionId}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             setProvinces(res.data);
-        } catch {
+        } catch (error) {
+            console.error("Error fetching provinces:", error);
             setProvinces([]);
         }
     };
@@ -127,86 +104,77 @@ function ManualInstitutionDialog({
             const token = localStorage.getItem("token");
             const res = await axios.get(
                 `${config.API_URL}/municipalities?province_id=${provinceId}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             setMunicipalities(res.data);
-        } catch {
+        } catch (error) {
+            console.error("Error fetching municipalities:", error);
             setMunicipalities([]);
         }
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // For region, province, municipality_city, store the name, not the id
+
         if (name === "region") {
-            const regionObj = regions.find((r) => r.id === value);
             setManualData((prev) => ({
                 ...prev,
-                region: regionObj ? regionObj.name : "",
+                region: value, // Store region id
                 province: "",
                 municipality_city: "",
             }));
-            // Also update provinces for the selected region
-            if (regionObj) fetchProvinces(regionObj.id);
-            else {
-                setProvinces([]);
-                setMunicipalities([]);
-            }
+            fetchProvinces(value);
         } else if (name === "province") {
-            const provinceObj = provinces.find((p) => p.id === value);
             setManualData((prev) => ({
                 ...prev,
-                province: provinceObj ? provinceObj.name : "",
+                province: value, // Store province id
                 municipality_city: "",
             }));
-            // Also update municipalities for the selected province
-            if (provinceObj) fetchMunicipalities(provinceObj.id);
-            else setMunicipalities([]);
+            fetchMunicipalities(value);
         } else if (name === "municipality_city") {
-            const muniObj = municipalities.find((m) => m.id === value);
             setManualData((prev) => ({
                 ...prev,
-                municipality_city: muniObj ? muniObj.name : "",
+                municipality_city: value, // Store municipality id
             }));
         } else {
-            setManualData((prev) => ({
-                ...prev,
-                [name]: value,
-            }));
+            setManualData((prev) => ({ ...prev, [name]: value }));
         }
+
+        setFormErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
     const handleYearChange = (field, value) => {
         setManualData((prev) => ({
             ...prev,
-            [field]: value ? value.year() : null,
+            [field]: value ? Number(value) : null,
         }));
+        setFormErrors((prev) => ({ ...prev, [field]: "" }));
     };
 
     const resetForm = () => {
         setManualData({
-            name: "",
-            region: "",
-            address_street: "",
-            municipality_city: "",
-            province: "",
-            postal_code: "",
-            institutional_telephone: "",
-            institutional_fax: "",
-            head_telephone: "",
-            institutional_email: "",
-            institutional_website: "",
-            year_established: null,
-            sec_registration: "",
-            year_granted_approved: null,
-            year_converted_college: null,
-            year_converted_university: null,
-            head_name: "",
-            head_title: "",
-            institution_type: "",
-            head_education: "",
+            institution_code: null, // required|integer|unique
+            name: "", // required|string|max:255
+            region: null, // required|integer|exists:regions,id
+            address_street: "", // nullable|string|max:255
+            municipality_city: null, // nullable|integer|exists:municipalities,id
+            province: null, // nullable|integer|exists:provinces,id
+            postal_code: "", // nullable|string|max:10
+            institutional_telephone: "", // nullable|string|max:20
+            institutional_fax: "", // nullable|string|max:20
+            head_telephone: "", // nullable|string|max:20
+            institutional_email: "", // nullable|string|max:255
+            institutional_website: "", // nullable|string|max:255
+            year_established: null, // nullable|integer
+            sec_registration: "", // nullable|string|max:255
+            year_granted_approved: null, // nullable|integer
+            year_converted_college: null, // nullable|integer
+            year_converted_university: null, // nullable|integer
+            head_name: "", // nullable|string|max:255
+            head_title: "", // nullable|string|max:255
+            head_education: "", // nullable|string|max:255
+            institution_type: "", // nullable|string|max:255
+            report_year: null, // nullable|integer
         });
         setFormErrors({});
         setProvinces([]);
@@ -219,31 +187,143 @@ function ManualInstitutionDialog({
     };
 
     const validateForm = () => {
-        const errors = {};
+        const errors = [];
+        const errorObj = {};
+
+        if (!manualData.institution_code) {
+            errorObj.institution_code = "Institution code is required.";
+            errors.push("Institution code is required.");
+        } else if (!Number.isInteger(Number(manualData.institution_code))) {
+            errorObj.institution_code = "Institution code must be an integer.";
+            errors.push("Institution code must be an integer.");
+        }
+
         if (!manualData.name.trim()) {
-            errors.name = "Name is required.";
+            errorObj.name = "Name is required.";
+            errors.push("Institution name is required.");
         } else if (manualData.name.length > 255) {
-            errors.name = "Name must not exceed 255 characters.";
+            errorObj.name = "Name must not exceed 255 characters.";
+            errors.push("Institution name must not exceed 255 characters.");
         }
+
         if (!manualData.region) {
-            errors.region = "Region is required.";
+            errorObj.region = "Region is required.";
+            errors.push("Region is required.");
         }
-        if (!manualData.province) {
-            errors.province = "Province is required.";
+
+        if (manualData.postal_code && manualData.postal_code.length > 10) {
+            errorObj.postal_code = "Postal code must not exceed 10 characters.";
+            errors.push("Postal code must not exceed 10 characters.");
         }
-        if (!manualData.municipality_city) {
-            errors.municipality_city = "Municipality/City is required.";
+
+        if (
+            manualData.institutional_telephone &&
+            manualData.institutional_telephone.length > 20
+        ) {
+            errorObj.institutional_telephone =
+                "Institutional telephone must not exceed 20 characters.";
+            errors.push(
+                "Institutional telephone must not exceed 20 characters."
+            );
         }
-        if (!manualData.institution_type) {
-            errors.institution_type = "Institution type is required.";
+
+        if (
+            manualData.institutional_fax &&
+            manualData.institutional_fax.length > 20
+        ) {
+            errorObj.institutional_fax =
+                "Institutional fax must not exceed 20 characters.";
+            errors.push("Institutional fax must not exceed 20 characters.");
         }
-        return errors;
+
+        if (
+            manualData.head_telephone &&
+            manualData.head_telephone.length > 20
+        ) {
+            errorObj.head_telephone =
+                "Head telephone must not exceed 20 characters.";
+            errors.push("Head telephone must not exceed 20 characters.");
+        }
+
+        if (
+            manualData.institutional_email &&
+            manualData.institutional_email.length > 255
+        ) {
+            errorObj.institutional_email =
+                "Institutional email must not exceed 255 characters.";
+            errors.push("Institutional email must not exceed 255 characters.");
+        }
+
+        if (
+            manualData.institutional_website &&
+            manualData.institutional_website.length > 255
+        ) {
+            errorObj.institutional_website =
+                "Institutional website must not exceed 255 characters.";
+            errors.push(
+                "Institutional website must not exceed 255 characters."
+            );
+        }
+
+        if (
+            manualData.sec_registration &&
+            manualData.sec_registration.length > 255
+        ) {
+            errorObj.sec_registration =
+                "SEC registration must not exceed 255 characters.";
+            errors.push("SEC registration must not exceed 255 characters.");
+        }
+
+        if (manualData.head_name && manualData.head_name.length > 255) {
+            errorObj.head_name = "Head name must not exceed 255 characters.";
+            errors.push("Head name must not exceed 255 characters.");
+        }
+
+        if (manualData.head_title && manualData.head_title.length > 255) {
+            errorObj.head_title = "Head title must not exceed 255 characters.";
+            errors.push("Head title must not exceed 255 characters.");
+        }
+
+        if (
+            manualData.head_education &&
+            manualData.head_education.length > 255
+        ) {
+            errorObj.head_education =
+                "Head education must not exceed 255 characters.";
+            errors.push("Head education must not exceed 255 characters.");
+        }
+
+        if (
+            manualData.institution_type &&
+            manualData.institution_type.length > 255
+        ) {
+            errorObj.institution_type =
+                "Institution type must not exceed 255 characters.";
+            errors.push("Institution type must not exceed 255 characters.");
+        }
+
+        console.log("Validation errors:", errors);
+        return { errors, errorObj };
     };
 
     const handleSave = async () => {
-        const errors = validateForm();
-        if (Object.keys(errors).length > 0) {
-            setFormErrors(errors);
+        const { errors, errorObj } = validateForm();
+        if (errors.length > 0) {
+            setFormErrors(errorObj);
+            Swal.fire({
+                title: "Validation Error",
+                html: `<ul class="list-disc pl-5 text-left">${errors
+                    .map((error) => `<li>${error}</li>`)
+                    .join("")}</ul>`,
+                icon: "error",
+                confirmButtonColor: "#d33",
+                confirmButtonText: "OK",
+                customClass: {
+                    popup: "swal2-popup",
+                    title: "text-lg font-semibold text-gray-900",
+                    content: "text-gray-600",
+                },
+            });
             return;
         }
 
@@ -255,6 +335,7 @@ function ManualInstitutionDialog({
                 institution_type:
                     manualData.institution_type || getInstitutionType(),
             };
+            console.log("Saving institution with payload:", payload);
 
             const response = await axios.post(
                 `${config.API_URL}/institutions`,
@@ -276,13 +357,13 @@ function ManualInstitutionDialog({
             });
 
             fetchInstitutions();
-            setSnackbarMessage("Institution data successfully added!");
+            setSnackbarMessage("Institution added successfully!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
             handleClose();
         } catch (error) {
             console.error("Error sending manual data to backend:", error);
-            setSnackbarMessage("Error adding institution data");
+            setSnackbarMessage("Error adding institution");
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         } finally {
@@ -290,569 +371,593 @@ function ManualInstitutionDialog({
         }
     };
 
+    if (!open) return null;
+
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            fullWidth
-            maxWidth="md"
-            PaperProps={{
-                sx: { borderRadius: 2 },
-            }}
-        >
-            <DialogTitle
-                sx={{
-                    borderBottom: 1,
-                    borderColor: "divider",
-                    p: 2,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                }}
-            >
-                <Typography variant="h6" component="div">
-                    Add Institution Manually
-                </Typography>
-                <IconButton
-                    edge="end"
-                    color="inherit"
-                    onClick={handleClose}
-                    aria-label="close"
-                >
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-
-            <DialogContent dividers sx={{ p: 3 }}>
-                {/* Basic Information */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl">
+                {/* Dialog Header */}
+                <div className="flex items-center justify-between p-2 bg-gray-100 border-b border-gray-200">
+                    <h2 className="text-base font-semibold text-gray-900">
+                        Add Institution
+                    </h2>
+                    <button
+                        onClick={handleClose}
+                        className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-full"
+                        aria-label="Close dialog"
                     >
-                        Basic Information
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12 }}>
-                            <TextField
-                                name="name"
-                                size="small"
-                                label="Institution Name"
-                                value={manualData.name}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                required
-                                error={!!formErrors.name}
-                                helperText={formErrors.name}
-                            />
-                        </Grid>
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
 
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="sec_registration"
-                                size="small"
-                                label="SEC Registration"
-                                value={manualData.sec_registration}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.sec_registration}
-                                helperText={formErrors.sec_registration}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                                required
-                                error={!!formErrors.institution_type}
-                            >
-                                <InputLabel id="institution-type-label">
-                                    Institution Type
-                                </InputLabel>
-                                <Select
-                                    labelId="institution-type-label"
+                {/* Dialog Content */}
+                <div className="p-3 space-y-3">
+                    {/* Basic Information */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                            Basic Information
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div className="col-span-2">
+                                <label
+                                    htmlFor="name"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institution Name *
+                                </label>
+                                <input
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    value={manualData.name}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.name
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <label
+                                    htmlFor="institution_code"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institution Code *
+                                </label>
+                                <input
+                                    id="institution_code"
+                                    name="institution_code"
+                                    type="number"
+                                    value={manualData.institution_code || ""}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.institution_code
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="sec_registration"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    SEC Registration
+                                </label>
+                                <input
+                                    id="sec_registration"
+                                    name="sec_registration"
+                                    type="text"
+                                    value={manualData.sec_registration}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.sec_registration
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="institution_type"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institution Type *
+                                </label>
+                                <select
+                                    id="institution_type"
                                     name="institution_type"
                                     value={manualData.institution_type}
                                     onChange={handleChange}
-                                    label="Institution Type"
-                                    required
-                                    error={!!formErrors.institution_type}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.institution_type
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 >
-                                    <MenuItem value="">
-                                        <em>Select Type</em>
-                                    </MenuItem>
-                                    <MenuItem value="SUC">SUC</MenuItem>
-                                    <MenuItem value="LUC">LUC</MenuItem>
-                                    <MenuItem value="Private">Private</MenuItem>
-                                </Select>
-                                {formErrors.institution_type && (
-                                    <Typography variant="caption" color="error">
-                                        {formErrors.institution_type}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                </Box>
+                                    <option value="">Select Type</option>
+                                    <option value="SUC">SUC</option>
+                                    <option value="LUC">LUC</option>
+                                    <option value="Private">Private</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
 
-                <Divider sx={{ my: 1 }} />
+                    <hr className="border-gray-200" />
 
-                {/* Address Information */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
-                    >
-                        Address Information
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12 }}>
-                            <TextField
-                                name="address_street"
-                                size="small"
-                                label="Street Address"
-                                value={manualData.address_street}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.address_street}
-                                helperText={formErrors.address_street}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <FormControl
-                                fullWidth
-                                size="small"
-                                error={!!formErrors.region}
-                            >
-                                <InputLabel id="region-label">
-                                    Region
-                                </InputLabel>
-                                <Select
-                                    labelId="region-label"
-                                    name="region"
-                                    value={
-                                        // Find the id of the selected region name for Select value
-                                        regions.find(
-                                            (r) => r.name === manualData.region
-                                        )?.id || ""
-                                    }
+                    {/* Address Information */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                            Address Information
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                            <div className="col-span-2 lg:col-span-4">
+                                <label
+                                    htmlFor="address_street"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Street Address
+                                </label>
+                                <input
+                                    id="address_street"
+                                    name="address_street"
+                                    type="text"
+                                    value={manualData.address_street}
                                     onChange={handleChange}
-                                    label="Region"
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.address_street
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            {/* Region Select */}
+                            <div>
+                                <label
+                                    htmlFor="region"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
                                 >
-                                    <MenuItem value="">
-                                        <em>Select Region</em>
-                                    </MenuItem>
+                                    Region *
+                                </label>
+                                <select
+                                    id="region"
+                                    name="region"
+                                    value={manualData.region} // Bind to region id
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.region
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                >
+                                    <option value="">Select Region</option>
                                     {regions.map((region) => (
-                                        <MenuItem
+                                        <option
                                             key={region.id}
                                             value={region.id}
                                         >
                                             {region.name}
-                                        </MenuItem>
+                                        </option>
                                     ))}
-                                </Select>
-                                {formErrors.region && (
-                                    <Typography variant="caption" color="error">
-                                        {formErrors.region}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <FormControl
-                                fullWidth
-                                size="small"
-                                error={!!formErrors.province}
-                            >
-                                <InputLabel id="province-label">
-                                    Province
-                                </InputLabel>
-                                <Select
-                                    labelId="province-label"
-                                    name="province"
-                                    value={
-                                        provinces.find(
-                                            (p) =>
-                                                p.name === manualData.province
-                                        )?.id || ""
-                                    }
-                                    onChange={handleChange}
-                                    label="Province"
-                                    disabled={!manualData.region}
+                                </select>
+                            </div>
+                            {/* Province Select */}
+                            <div>
+                                <label
+                                    htmlFor="province"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
                                 >
-                                    <MenuItem value="">
-                                        <em>Select Province</em>
-                                    </MenuItem>
+                                    Province *
+                                </label>
+                                <select
+                                    id="province"
+                                    name="province"
+                                    value={manualData.province} // Bind to province id
+                                    onChange={handleChange}
+                                    disabled={!manualData.region}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.province
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100`}
+                                >
+                                    <option value="">Select Province</option>
                                     {provinces.map((province) => (
-                                        <MenuItem
+                                        <option
                                             key={province.id}
                                             value={province.id}
                                         >
                                             {province.name}
-                                        </MenuItem>
+                                        </option>
                                     ))}
-                                </Select>
-                                {formErrors.province && (
-                                    <Typography variant="caption" color="error">
-                                        {formErrors.province}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <FormControl
-                                fullWidth
-                                size="small"
-                                error={!!formErrors.municipality_city}
-                            >
-                                <InputLabel id="municipality-label">
-                                    Municipality/City
-                                </InputLabel>
-                                <Select
-                                    labelId="municipality-label"
-                                    name="municipality_city"
-                                    value={
-                                        municipalities.find(
-                                            (m) =>
-                                                m.name ===
-                                                manualData.municipality_city
-                                        )?.id || ""
-                                    }
-                                    onChange={handleChange}
-                                    label="Municipality/City"
-                                    disabled={!manualData.province}
+                                </select>
+                            </div>
+
+                            {/* Municipality/City Select */}
+                            <div>
+                                <label
+                                    htmlFor="municipality_city"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
                                 >
-                                    <MenuItem value="">
-                                        <em>Select Municipality/City</em>
-                                    </MenuItem>
+                                    Municipality/City *
+                                </label>
+                                <select
+                                    id="municipality_city"
+                                    name="municipality_city"
+                                    value={manualData.municipality_city} // Bind to municipality id
+                                    onChange={handleChange}
+                                    disabled={!manualData.province}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.municipality_city
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100`}
+                                >
+                                    <option value="">
+                                        Select Municipality/City
+                                    </option>
                                     {municipalities.map((m) => (
-                                        <MenuItem key={m.id} value={m.id}>
+                                        <option key={m.id} value={m.id}>
                                             {m.name}
-                                        </MenuItem>
+                                        </option>
                                     ))}
-                                </Select>
-                                {formErrors.municipality_city && (
-                                    <Typography variant="caption" color="error">
-                                        {formErrors.municipality_city}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="postal_code"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Postal Code
+                                </label>
+                                <input
+                                    id="postal_code"
+                                    name="postal_code"
+                                    type="text"
+                                    value={manualData.postal_code}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.postal_code
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <TextField
-                                name="postal_code"
-                                size="small"
-                                label="Postal Code"
-                                value={manualData.postal_code}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.postal_code}
-                                helperText={formErrors.postal_code}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
+                    <hr className="border-gray-200" />
 
-                <Divider sx={{ my: 1 }} />
+                    {/* Contact Information */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                            Contact Information
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label
+                                    htmlFor="institutional_telephone"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institutional Telephone
+                                </label>
+                                <input
+                                    id="institutional_telephone"
+                                    name="institutional_telephone"
+                                    type="text"
+                                    value={manualData.institutional_telephone}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.institutional_telephone
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="institutional_fax"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institutional Fax
+                                </label>
+                                <input
+                                    id="institutional_fax"
+                                    name="institutional_fax"
+                                    type="text"
+                                    value={manualData.institutional_fax}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.institutional_fax
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="institutional_email"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institutional Email
+                                </label>
+                                <input
+                                    id="institutional_email"
+                                    name="institutional_email"
+                                    type="email"
+                                    value={manualData.institutional_email}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.institutional_email
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="institutional_website"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Institutional Website
+                                </label>
+                                <input
+                                    id="institutional_website"
+                                    name="institutional_website"
+                                    type="text"
+                                    value={manualData.institutional_website}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.institutional_website
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-                {/* Contact Information */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
-                    >
-                        Contact Information
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_telephone"
-                                size="small"
-                                label="Institutional Telephone"
-                                value={manualData.institutional_telephone}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.institutional_telephone}
-                                helperText={formErrors.institutional_telephone}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_fax"
-                                size="small"
-                                label="Institutional Fax"
-                                value={manualData.institutional_fax}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.institutional_fax}
-                                helperText={formErrors.institutional_fax}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_email"
-                                size="small"
-                                label="Institutional Email"
-                                value={manualData.institutional_email}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.institutional_email}
-                                helperText={formErrors.institutional_email}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_website"
-                                size="small"
-                                label="Institutional Website"
-                                value={manualData.institutional_website}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.institutional_website}
-                                helperText={formErrors.institutional_website}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
+                    <hr className="border-gray-200" />
 
-                <Divider sx={{ my: 1 }} />
+                    {/* Head of Institution */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                            Head of Institution
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label
+                                    htmlFor="head_name"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Head Name
+                                </label>
+                                <input
+                                    id="head_name"
+                                    name="head_name"
+                                    type="text"
+                                    value={manualData.head_name}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.head_name
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="head_telephone"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Head Telephone
+                                </label>
+                                <input
+                                    id="head_telephone"
+                                    name="head_telephone"
+                                    type="text"
+                                    value={manualData.head_telephone}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.head_telephone
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="head_title"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Head Title
+                                </label>
+                                <input
+                                    id="head_title"
+                                    name="head_title"
+                                    type="text"
+                                    value={manualData.head_title}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.head_title
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="head_education"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Head Education
+                                </label>
+                                <input
+                                    id="head_education"
+                                    name="head_education"
+                                    type="text"
+                                    value={manualData.head_education}
+                                    onChange={handleChange}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.head_education
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-                {/* Head of Institution */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
-                    >
-                        Head of Institution
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_name"
-                                size="small"
-                                label="Head Name"
-                                value={manualData.head_name}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.head_name}
-                                helperText={formErrors.head_name}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_telephone"
-                                size="small"
-                                label="Head Telephone"
-                                value={manualData.head_telephone}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.head_telephone}
-                                helperText={formErrors.head_telephone}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_title"
-                                size="small"
-                                label="Head Title"
-                                value={manualData.head_title}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.head_title}
-                                helperText={formErrors.head_title}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_education"
-                                size="small"
-                                label="Head Education"
-                                value={manualData.head_education}
-                                onChange={handleChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!formErrors.head_education}
-                                helperText={formErrors.head_education}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
+                    <hr className="border-gray-200" />
 
-                <Divider sx={{ my: 1 }} />
-
-                {/* Historical Dates */}
-                <Box>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
-                    >
-                        Historical Dates
-                    </Typography>
-                    <LocalizationProvider dateAdapter={AdapterMoment}>
-                        <Grid container spacing={2}>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year Established"
-                                    value={
-                                        manualData.year_established
-                                            ? moment().year(
-                                                  manualData.year_established
-                                              )
-                                            : null
-                                    }
-                                    onChange={(value) =>
+                    {/* Historical Dates */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                            Historical Dates
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                            <div>
+                                <label
+                                    htmlFor="year_established"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Year Established
+                                </label>
+                                <input
+                                    id="year_established"
+                                    name="year_established"
+                                    type="number"
+                                    value={manualData.year_established || ""}
+                                    onChange={(e) =>
                                         handleYearChange(
                                             "year_established",
-                                            value
+                                            e.target.value
                                         )
                                     }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!formErrors.year_established,
-                                            helperText:
-                                                formErrors.year_established,
-                                        },
-                                    }}
+                                    min="1900"
+                                    max={new Date().getFullYear()}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.year_established
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 />
-                            </Grid>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year Approved"
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="year_granted_approved"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Year Approved
+                                </label>
+                                <input
+                                    id="year_granted_approved"
+                                    name="year_granted_approved"
+                                    type="number"
                                     value={
-                                        manualData.year_granted_approved
-                                            ? moment().year(
-                                                  manualData.year_granted_approved
-                                              )
-                                            : null
+                                        manualData.year_granted_approved || ""
                                     }
-                                    onChange={(value) =>
+                                    onChange={(e) =>
                                         handleYearChange(
                                             "year_granted_approved",
-                                            value
+                                            e.target.value
                                         )
                                     }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!formErrors.year_granted_approved,
-                                            helperText:
-                                                formErrors.year_granted_approved,
-                                        },
-                                    }}
+                                    min="1900"
+                                    max={new Date().getFullYear()}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.year_granted_approved
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 />
-                            </Grid>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year → College"
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="year_converted_college"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Year → College
+                                </label>
+                                <input
+                                    id="year_converted_college"
+                                    name="year_converted_college"
+                                    type="number"
                                     value={
-                                        manualData.year_converted_college
-                                            ? moment().year(
-                                                  manualData.year_converted_college
-                                              )
-                                            : null
+                                        manualData.year_converted_college || ""
                                     }
-                                    onChange={(value) =>
+                                    onChange={(e) =>
                                         handleYearChange(
                                             "year_converted_college",
-                                            value
+                                            e.target.value
                                         )
                                     }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!formErrors.year_converted_college,
-                                            helperText:
-                                                formErrors.year_converted_college,
-                                        },
-                                    }}
+                                    min="1900"
+                                    max={new Date().getFullYear()}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.year_converted_college
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 />
-                            </Grid>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year → University"
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="year_converted_university"
+                                    className="block text-xs font-medium text-gray-700 mb-0.5"
+                                >
+                                    Year → University
+                                </label>
+                                <input
+                                    id="year_converted_university"
+                                    name="year_converted_university"
+                                    type="number"
                                     value={
-                                        manualData.year_converted_university
-                                            ? moment().year(
-                                                  manualData.year_converted_university
-                                              )
-                                            : null
+                                        manualData.year_converted_university ||
+                                        ""
                                     }
-                                    onChange={(value) =>
+                                    onChange={(e) =>
                                         handleYearChange(
                                             "year_converted_university",
-                                            value
+                                            e.target.value
                                         )
                                     }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!formErrors.year_converted_university,
-                                            helperText:
-                                                formErrors.year_converted_university,
-                                        },
-                                    }}
+                                    min="1900"
+                                    max={new Date().getFullYear()}
+                                    className={`w-full px-2 py-1 border ${
+                                        formErrors.year_converted_university
+                                            ? "border-red-500"
+                                            : "border-gray-300"
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                 />
-                            </Grid>
-                        </Grid>
-                    </LocalizationProvider>
-                </Box>
-            </DialogContent>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <DialogActions sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                <Button
-                    onClick={handleClose}
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<CloseIcon />}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSave}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveIcon />}
-                >
-                    Save Institution
-                </Button>
-            </DialogActions>
-        </Dialog>
+                {/* Dialog Footer */}
+                <div className="flex justify-end space-x-1 p-2 border-t border-gray-200">
+                    <button
+                        onClick={handleClose}
+                        className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50 flex items-center"
+                    >
+                        <X className="w-3 h-3 mr-1" />
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-600 flex items-center"
+                    >
+                        <Save className="w-3 h-3 mr-1" />
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }
 
