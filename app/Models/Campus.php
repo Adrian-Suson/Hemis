@@ -14,7 +14,7 @@ class Campus extends Model
         'campus_type',
         'institutional_code',
         'region',                   // updated field name
-        'province/municipality',    // combined field for province and municipality
+        'province_municipality',    // combined field for province and municipality
         'year_first_operation',
         'land_area_hectares',
         'distance_from_main',

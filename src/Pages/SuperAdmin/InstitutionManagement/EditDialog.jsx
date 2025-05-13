@@ -1,32 +1,10 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import moment from "moment";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    Typography,
-    Grid,
-    Divider,
-    IconButton,
-    Box,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-} from "@mui/material";
 import PropTypes from "prop-types";
-import CloseIcon from "@mui/icons-material/Close";
-import SaveIcon from "@mui/icons-material/Save";
+import { X, Save, Calendar } from "lucide-react";
 import axios from "axios";
 import useActivityLog from "../../../Hooks/useActivityLog";
-import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
-import config from "../../../utils/config";
 import useLocationData from "../../../utils/useLocationData";
+import config from "../../../utils/config";
 
 const EditDialog = ({
     open,
@@ -39,31 +17,9 @@ const EditDialog = ({
     fetchInstitutions,
 }) => {
     const { createLog } = useActivityLog();
-    const [formData, setFormData] = useState({
-        id: institution?.id || null,
-        name: institution?.name || "",
-        region: institution?.region || "",
-        address_street: institution?.address_street || "",
-        municipality_city: institution?.municipality_city || "",
-        province: institution?.province || "",
-        postal_code: institution?.postal_code || "",
-        institutional_telephone: institution?.institutional_telephone || "",
-        institutional_fax: institution?.institutional_fax || "",
-        head_telephone: institution?.head_telephone || "",
-        institutional_email: institution?.institutional_email || "",
-        institutional_website: institution?.institutional_website || "",
-        year_established: institution?.year_established || null,
-        sec_registration: institution?.sec_registration || "",
-        year_granted_approved: institution?.year_granted_approved || null,
-        year_converted_college: institution?.year_converted_college || null,
-        year_converted_university:
-            institution?.year_converted_university || null,
-        head_name: institution?.head_name || "",
-        head_title: institution?.head_title || "",
-        head_education: institution?.head_education || "",
-        institution_type: institution?.institution_type || "",
-    });
+    const [formData, setFormData] = useState({});
     const [errors, setErrors] = useState({});
+    const [openDatePicker, setOpenDatePicker] = useState(null);
     const {
         regions,
         provinces,
@@ -74,92 +30,122 @@ const EditDialog = ({
     } = useLocationData();
 
     useEffect(() => {
-        if (open) {
-            fetchRegions();
+        if (open && institution) {
+            setFormData({
+                id: institution.id || null,
+                uuid: institution.uuid || "",
+                name: institution.name || "",
+                region: institution.region || "",
+                address_street: institution.address_street || "",
+                municipality: institution.municipality || "",
+                province: institution.province || "",
+                postal_code: institution.postal_code || "",
+                institutional_telephone:
+                    institution.institutional_telephone || "",
+                institutional_fax: institution.institutional_fax || "",
+                head_telephone: institution.head_telephone || "",
+                institutional_email: institution.institutional_email || "",
+                institutional_website: institution.institutional_website || "",
+                year_established: institution.year_established || null,
+                sec_registration: institution.sec_registration || "",
+                year_granted_approved:
+                    institution.year_granted_approved || null,
+                year_converted_college:
+                    institution.year_converted_college || null,
+                year_converted_university:
+                    institution.year_converted_university || null,
+                head_name: institution.head_name || "",
+                head_title: institution.head_title || "",
+                head_education: institution.head_education || "",
+                institution_type: institution.institution_type || "",
+            });
+            setErrors({});
         }
-    }, [open]);
+    }, [open, institution]);
 
     useEffect(() => {
-        if (formData.region) {
+        if (!open || !institution) return;
+
+        // Step 1: Fetch regions when the dialog opens
+        fetchRegions();
+
+        // Step 2: Fetch provinces if a region is selected and regions are populated
+        if (formData.region && regions.length > 0) {
             const regionObj = regions.find((r) => r.name === formData.region);
             if (regionObj) {
                 fetchProvinces(regionObj.id);
-            } else {
-                setFormData((prev) => ({
-                    ...prev,
-                    province: "",
-                    municipality_city: "",
-                }));
             }
-        } else {
-            setFormData((prev) => ({
-                ...prev,
-                province: "",
-                municipality_city: "",
-            }));
         }
-    }, [formData.region, regions]);
 
-    useEffect(() => {
-        if (formData.province) {
-            const provinceObj = provinces.find((p) => p.name === formData.province);
+        // Step 3: Fetch municipalities if a province is selected and provinces are populated
+        if (formData.province && provinces.length > 0) {
+            const provinceObj = provinces.find(
+                (p) => p.name === formData.province
+            );
             if (provinceObj) {
                 fetchMunicipalities(provinceObj.id);
-            } else {
-                setFormData((prev) => ({ ...prev, municipality_city: "" }));
             }
-        } else {
-            setFormData((prev) => ({ ...prev, municipality_city: "" }));
         }
-    }, [formData.province, provinces]);
+    }, [
+        open,
+        institution,
+        formData.region,
+        formData.province,
+        regions,
+        provinces,
+        fetchRegions,
+        fetchProvinces,
+        fetchMunicipalities,
+    ]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                openDatePicker &&
+                !event.target.closest(".year-picker-container")
+            ) {
+                setOpenDatePicker(null);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [openDatePicker]);
 
     const showSnackbar = (message, severity) => {
         if (setSnackbarMessage && setSnackbarOpen && setSnackbarSeverity) {
             setSnackbarMessage(message);
             setSnackbarSeverity(severity);
             setSnackbarOpen(true);
-        } else {
-            console.log(`[Snackbar] ${severity}: ${message}`);
         }
     };
 
     const validateForm = () => {
         const newErrors = {};
+
         if (!formData.name?.trim()) {
-            newErrors.name = "Institution name is required.";
-        } else if (formData.name.length > 255) {
-            newErrors.name = "Must be 255 characters or less.";
+            newErrors.name = "Institution name is required";
         }
 
         if (!formData.region?.trim()) {
-            newErrors.region = "Region is required.";
+            newErrors.region = "Region is required";
         }
 
         if (!formData.province?.trim()) {
-            newErrors.province = "Province is required.";
+            newErrors.province = "Province is required";
         }
 
-        if (!formData.municipality_city?.trim()) {
-            newErrors.municipality_city = "Municipality/City is required.";
-        }
-
-        if (!formData.id || isNaN(parseInt(formData.id, 10))) {
-            newErrors.id = "Valid institution ID is required.";
-        }
-
-        if (formData.address_street && formData.address_street.length > 255) {
-            newErrors.address_street = "Must be 255 characters or less.";
-        }
-
-        if (formData.postal_code && formData.postal_code.length > 10) {
-            newErrors.postal_code = "Must be 10 characters or less.";
+        if (!formData.municipality?.trim()) {
+            newErrors.municipality = "Municipality is required";
         }
 
         if (
             formData.institutional_email &&
             !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.institutional_email)
         ) {
-            newErrors.institutional_email = "Must be a valid email address.";
+            newErrors.institutional_email = "Must be a valid email";
         }
 
         if (
@@ -168,72 +154,27 @@ const EditDialog = ({
                 formData.institutional_website
             )
         ) {
-            newErrors.institutional_website = "Must be a valid URL.";
+            newErrors.institutional_website = "Must be a valid URL";
         }
 
+        const currentYear = new Date().getFullYear();
         const yearFields = [
             "year_established",
             "year_granted_approved",
             "year_converted_college",
             "year_converted_university",
         ];
+
         yearFields.forEach((field) => {
             if (formData[field]) {
                 const year = parseInt(formData[field], 10);
-                if (isNaN(year)) {
-                    newErrors[field] = "Must be a valid year.";
-                } else if (year < 1800 || year > new Date().getFullYear()) {
+                if (isNaN(year) || year < 1800 || year > currentYear) {
                     newErrors[
                         field
-                    ] = `Must be between 1800 and ${new Date().getFullYear()}.`;
+                    ] = `Must be between 1800 and ${currentYear}`;
                 }
             }
         });
-
-        if (
-            formData.institutional_telephone &&
-            formData.institutional_telephone.length > 20
-        ) {
-            newErrors.institutional_telephone =
-                "Must be 20 characters or less.";
-        }
-
-        if (
-            formData.institutional_fax &&
-            formData.institutional_fax.length > 20
-        ) {
-            newErrors.institutional_fax = "Must be 20 characters or less.";
-        }
-
-        if (formData.head_telephone && formData.head_telephone.length > 20) {
-            newErrors.head_telephone = "Must be 20 characters or less.";
-        }
-
-        if (
-            formData.sec_registration &&
-            formData.sec_registration.length > 255
-        ) {
-            newErrors.sec_registration = "Must be 255 characters or less.";
-        }
-
-        if (formData.head_name && formData.head_name.length > 255) {
-            newErrors.head_name = "Must be 255 characters or less.";
-        }
-
-        if (formData.head_title && formData.head_title.length > 255) {
-            newErrors.head_title = "Must be 255 characters or less.";
-        }
-
-        if (formData.head_education && formData.head_education.length > 255) {
-            newErrors.head_education = "Must be 255 characters or less.";
-        }
-
-        if (
-            formData.institution_type &&
-            !["SUC", "LUC", "Private"].includes(formData.institution_type)
-        ) {
-            newErrors.institution_type = "Must be SUC, LUC, or Private.";
-        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -241,45 +182,78 @@ const EditDialog = ({
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        if (name === "region") {
-            const regionObj = regions.find((r) => r.id === value);
-            setFormData((prev) => ({
-                ...prev,
-                region: regionObj ? regionObj.name : "",
-                province: "",
-                municipality_city: "",
-            }));
-            if (regionObj) fetchProvinces(regionObj.id);
-            else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: undefined }));
+        }
+    };
+
+    const handleSelectChange = (
+        name,
+        value,
+        options,
+        idKey = "id",
+        nameKey = "name"
+    ) => {
+        if (!value) {
+            if (name === "region") {
+                setFormData((prev) => ({
+                    ...prev,
+                    region: "",
+                    province: "",
+                    municipality: "",
+                }));
+            } else if (name === "province") {
                 setFormData((prev) => ({
                     ...prev,
                     province: "",
-                    municipality_city: "",
+                    municipality: "",
+                }));
+            } else if (name === "municipality") {
+                setFormData((prev) => ({
+                    ...prev,
+                    municipality: "",
                 }));
             }
-        } else if (name === "province") {
-            const provinceObj = provinces.find((p) => p.id === value);
-            setFormData((prev) => ({
-                ...prev,
-                province: provinceObj ? provinceObj.name : "",
-                municipality_city: "",
-            }));
-            if (provinceObj) fetchMunicipalities(provinceObj.id);
-            else {
-                setFormData((prev) => ({ ...prev, municipality_city: "" }));
+
+            if (errors[name]) {
+                setErrors((prev) => ({ ...prev, [name]: undefined }));
             }
-        } else if (name === "municipality_city") {
-            const muniObj = municipalities.find((m) => m.id === value);
+            return;
+        }
+
+        const selectedOption = options.find(
+            (opt) => opt[idKey].toString() === value.toString()
+        );
+        if (!selectedOption) {
+            console.warn(
+                `Option with ID ${value} not found in options for ${name}`
+            );
+            return;
+        }
+
+        if (name === "region") {
             setFormData((prev) => ({
                 ...prev,
-                municipality_city: muniObj ? muniObj.name : "",
+                region: selectedOption[nameKey],
+                province: "",
+                municipality: "",
             }));
-        } else {
+            fetchProvinces(selectedOption[idKey]);
+        } else if (name === "province") {
             setFormData((prev) => ({
                 ...prev,
-                [name]: value,
+                province: selectedOption[nameKey],
+                municipality: "",
+            }));
+            fetchMunicipalities(selectedOption[idKey]);
+        } else if (name === "municipality") {
+            setFormData((prev) => ({
+                ...prev,
+                municipality: selectedOption[nameKey],
             }));
         }
+
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: undefined }));
         }
@@ -288,56 +262,56 @@ const EditDialog = ({
     const handleYearChange = (field, value) => {
         setFormData((prev) => ({
             ...prev,
-            [field]: value ? value.year() : null,
+            [field]: value || null,
         }));
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         }
+        setOpenDatePicker(null);
     };
 
-    const handleCancel = () => {
-        setFormData({
-            id: institution.id,
-            name: institution.name || "",
-            region: institution.region || "",
-            address_street: institution.address_street || "",
-            municipality_city: institution.municipality_city || "",
-            province: institution.province || "",
-            postal_code: institution.postal_code || "",
-            institutional_telephone: institution.institutional_telephone || "",
-            institutional_fax: institution.institutional_fax || "",
-            head_telephone: institution.head_telephone || "",
-            institutional_email: institution.institutional_email || "",
-            institutional_website: institution.institutional_website || "",
-            year_established: institution.year_established || null,
-            sec_registration: institution.sec_registration || "",
-            year_granted_approved: institution.year_granted_approved || null,
-            year_converted_college: institution.year_converted_college || null,
-            year_converted_university:
-                institution.year_converted_university || null,
-            head_name: institution.head_name || "",
-            head_title: institution.head_title || "",
-            head_education: institution.head_education || "",
-            institution_type: institution.institution_type || "",
-        });
-        setErrors({});
-        onClose();
+    const toggleYearPicker = (field) => {
+        if (openDatePicker === field) {
+            setOpenDatePicker(null);
+        } else {
+            setOpenDatePicker(field);
+        }
+    };
+
+    const generateYearOptions = () => {
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let year = currentYear; year >= 1800; year--) {
+            years.push(year);
+        }
+        return years;
     };
 
     const handleUpdate = async () => {
         if (!validateForm()) {
-            showSnackbar("Validation failed. Please check the form.", "error");
+            showSnackbar("Please fix the validation errors", "error");
+            return;
+        }
+
+        if (!formData.uuid) {
+            showSnackbar("Institution UUID is missing", "error");
             return;
         }
 
         const token = localStorage.getItem("token");
         try {
             const payload = {
-                name: formData.name || null,
-                region: formData.region || null,
+                uuid: formData.uuid,
+                name: formData.name,
+                region_id:
+                    regions.find((r) => r.name === formData.region)?.id || null,
+                province_id:
+                    provinces.find((p) => p.name === formData.province)?.id ||
+                    null,
+                municipality_id:
+                    municipalities.find((m) => m.name === formData.municipality)
+                        ?.id || null,
                 address_street: formData.address_street || null,
-                municipality_city: formData.municipality_city || null,
-                province: formData.province || null,
                 postal_code: formData.postal_code || null,
                 institutional_telephone:
                     formData.institutional_telephone || null,
@@ -346,17 +320,17 @@ const EditDialog = ({
                 institutional_email: formData.institutional_email || null,
                 institutional_website: formData.institutional_website || null,
                 year_established: formData.year_established
-                    ? parseInt(formData.year_established, 10) || null
+                    ? parseInt(formData.year_established, 10)
                     : null,
                 sec_registration: formData.sec_registration || null,
                 year_granted_approved: formData.year_granted_approved
-                    ? parseInt(formData.year_granted_approved, 10) || null
+                    ? parseInt(formData.year_granted_approved, 10)
                     : null,
                 year_converted_college: formData.year_converted_college
-                    ? parseInt(formData.year_converted_college, 10) || null
+                    ? parseInt(formData.year_converted_college, 10)
                     : null,
                 year_converted_university: formData.year_converted_university
-                    ? parseInt(formData.year_converted_university, 10) || null
+                    ? parseInt(formData.year_converted_university, 10)
                     : null,
                 head_name: formData.head_name || null,
                 head_title: formData.head_title || null,
@@ -364,7 +338,7 @@ const EditDialog = ({
                 institution_type: formData.institution_type || null,
             };
 
-            console.log("[Update Institution] Sending data:", payload);
+            console.log("Payload to update:", JSON.stringify(payload, null, 2));
 
             const response = await axios.put(
                 `${config.API_URL}/institutions/${formData.id}`,
@@ -376,8 +350,6 @@ const EditDialog = ({
                     },
                 }
             );
-
-            console.log("[Update Institution] Server response:", response.data);
 
             await createLog({
                 action: "updated_institution",
@@ -391,595 +363,397 @@ const EditDialog = ({
             });
 
             onEdit(response.data || payload);
-            showSnackbar("Institution updated successfully!", "success");
+            showSnackbar("Institution updated successfully", "success");
             fetchInstitutions();
             onClose();
         } catch (error) {
-            console.error(
-                "[Update Institution] Error:",
-                error.response?.data || error.message
-            );
-            let errorMessage =
-                "Failed to update institution. Please try again.";
+            let errorMessage = "Failed to update institution";
+
             if (error.response?.status === 422) {
                 const validationErrors = error.response.data.errors;
-                console.log(
-                    "[Update Institution] Validation Errors:",
-                    validationErrors
-                );
-                errorMessage =
-                    "Validation failed: " +
-                    Object.values(validationErrors).flat().join(", ");
                 const mappedErrors = {};
+
                 Object.keys(validationErrors).forEach((key) => {
                     const field = key.split(".").pop();
                     mappedErrors[field] = validationErrors[key][0];
                 });
+
                 setErrors(mappedErrors);
+                errorMessage =
+                    "Validation failed: " +
+                    Object.values(validationErrors).flat().join(", ");
+            } else {
+                console.error(
+                    "Update error:",
+                    error.response?.data || error.message
+                );
             }
+
             showSnackbar(errorMessage, "error");
         }
     };
 
+    if (!open || !institution) return null;
+
+    const getLocationId = (name, collection) => {
+        if (!name || !collection || !collection.length) return "";
+        const item = collection.find((i) => i.name === name);
+        return item ? item.id.toString() : "";
+    };
+
+    const formattedField = (label, field, type = "text", options = []) => {
+        const error = errors[field];
+
+        return (
+            <div className="mb-3">
+                <label
+                    htmlFor={field}
+                    className="block text-xs font-medium text-gray-700 mb-1"
+                >
+                    {label}
+                </label>
+                {type === "text" && (
+                    <input
+                        type="text"
+                        id={field}
+                        name={field}
+                        value={formData[field] || ""}
+                        onChange={handleInputChange}
+                        className={`w-full px-2 py-1 text-sm border ${
+                            error ? "border-red-500" : "border-gray-300"
+                        } rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                    />
+                )}
+                {type === "select" && (
+                    <select
+                        id={field}
+                        name={field}
+                        value={
+                            field === "region"
+                                ? getLocationId(formData.region, regions)
+                                : field === "province"
+                                ? getLocationId(formData.province, provinces)
+                                : field === "municipality"
+                                ? getLocationId(
+                                      formData.municipality,
+                                      municipalities
+                                  )
+                                : formData[field] || ""
+                        }
+                        onChange={(e) => {
+                            if (
+                                ["region", "province", "municipality"].includes(
+                                    field
+                                )
+                            ) {
+                                handleSelectChange(
+                                    field,
+                                    e.target.value,
+                                    field === "region"
+                                        ? regions
+                                        : field === "province"
+                                        ? provinces
+                                        : municipalities
+                                );
+                            } else {
+                                handleInputChange(e);
+                            }
+                        }}
+                        disabled={
+                            (field === "province" && !formData.region) ||
+                            (field === "municipality" && !formData.province)
+                        }
+                        className={`w-full px-2 py-1 text-sm border ${
+                            error ? "border-red-500" : "border-gray-300"
+                        } rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                    >
+                        <option value="">Select {label}</option>
+                        {options.map((option) => (
+                            <option
+                                key={option.id || option.value}
+                                value={option.id || option.value}
+                            >
+                                {option.name || option.label}
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {type === "year" && (
+                    <div className="relative year-picker-container">
+                        <div
+                            className={`w-full px-2 py-1 text-sm border ${
+                                error ? "border-red-500" : "border-gray-300"
+                            } rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 flex justify-between items-center cursor-pointer`}
+                            onClick={() => toggleYearPicker(field)}
+                        >
+                            <span>{formData[field] || "Select year"}</span>
+                            <Calendar className="w-4 h-4 text-gray-500" />
+                        </div>
+                        {openDatePicker === field && (
+                            <div className="absolute z-10 bottom-full mb-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                <div className="p-1">
+                                    <button
+                                        className="w-full text-left p-1 text-xs text-gray-500 hover:bg-gray-100 rounded"
+                                        onClick={() =>
+                                            handleYearChange(field, "")
+                                        }
+                                    >
+                                        Clear
+                                    </button>
+                                    {generateYearOptions().map((year) => (
+                                        <button
+                                            key={year}
+                                            className={`w-full text-left p-1 text-sm hover:bg-gray-100 rounded ${
+                                                parseInt(
+                                                    formData[field],
+                                                    10
+                                                ) === year
+                                                    ? "bg-blue-100"
+                                                    : ""
+                                            }`}
+                                            onClick={() =>
+                                                handleYearChange(
+                                                    field,
+                                                    year.toString()
+                                                )
+                                            }
+                                        >
+                                            {year}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {error && (
+                            <p className="mt-1 text-xs text-red-500">{error}</p>
+                        )}
+                    </div>
+                )}
+                {error && type !== "year" && (
+                    <p className="mt-1 text-xs text-red-500">{error}</p>
+                )}
+            </div>
+        );
+    };
+
     return (
-        <Dialog
-            open={open}
-            onClose={handleCancel}
-            fullWidth
-            maxWidth="md"
-            PaperProps={{
-                sx: { borderRadius: 2 },
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => {
+                setOpenDatePicker(null);
+                onClose();
             }}
         >
-            <DialogTitle
-                sx={{
-                    borderBottom: 1,
-                    borderColor: "divider",
-                    p: 2,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                }}
+            <div
+                className="w-full max-w-4xl bg-white rounded-lg shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-labelledby="edit-institution-dialog"
             >
-                <Typography variant="h6" component="div">
-                    Edit Institution
-                </Typography>
-                <IconButton
-                    edge="end"
-                    color="inherit"
-                    onClick={handleCancel}
-                    aria-label="close"
-                >
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-
-            <DialogContent dividers sx={{ p: 3 }}>
-                {/* Basic Information */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
+                <div className="flex justify-between items-center bg-blue-600 text-white p-2 rounded-t-lg">
+                    <h2
+                        id="edit-institution-dialog"
+                        className="text-lg font-semibold pl-2"
                     >
-                        Basic Information
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12 }}>
-                            <TextField
-                                name="name"
-                                size="small"
-                                label="Institution Name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                required
-                                error={!!errors.name}
-                                helperText={errors.name}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="sec_registration"
-                                size="small"
-                                label="SEC Registration"
-                                value={formData.sec_registration}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.sec_registration}
-                                helperText={errors.sec_registration}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <FormControl
-                                fullWidth
-                                variant="outlined"
-                                size="small"
-                                required
-                                error={!!errors.institution_type}
-                            >
-                                <InputLabel id="institution-type-label">
-                                    Institution Type
-                                </InputLabel>
-                                <Select
-                                    labelId="institution-type-label"
-                                    name="institution_type"
-                                    value={formData.institution_type}
-                                    onChange={handleInputChange}
-                                    label="Institution Type"
-                                    required
-                                    error={!!errors.institution_type}
-                                >
-                                    <MenuItem value="">
-                                        <em>Select Type</em>
-                                    </MenuItem>
-                                    <MenuItem value="SUC">SUC</MenuItem>
-                                    <MenuItem value="LUC">LUC</MenuItem>
-                                    <MenuItem value="Private">Private</MenuItem>
-                                </Select>
-                                {errors.institution_type && (
-                                    <Typography variant="caption" color="error">
-                                        {errors.institution_type}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                </Box>
-
-                <Divider sx={{ my: 1 }} />
-
-                {/* Address Information */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
+                        Edit Institution: {institution.name}
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="p-1 text-white hover:bg-white/10 rounded-full"
+                        aria-label="Close dialog"
                     >
-                        Address Information
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12 }}>
-                            <TextField
-                                name="address_street"
-                                size="small"
-                                label="Street Address"
-                                value={formData.address_street}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.address_street}
-                                helperText={errors.address_street}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <FormControl
-                                fullWidth
-                                size="small"
-                                error={!!errors.region}
-                            >
-                                <InputLabel id="region-label">
-                                    Region
-                                </InputLabel>
-                                <Select
-                                    labelId="region-label"
-                                    name="region"
-                                    value={
-                                        regions.find(
-                                            (r) => r.name === formData.region
-                                        )?.id || ""
-                                    }
-                                    onChange={handleInputChange}
-                                    label="Region"
-                                >
-                                    <MenuItem value="">
-                                        <em>Select Region</em>
-                                    </MenuItem>
-                                    {regions.map((region) => (
-                                        <MenuItem
-                                            key={region.id}
-                                            value={region.id}
-                                        >
-                                            {region.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                                {errors.region && (
-                                    <Typography variant="caption" color="error">
-                                        {errors.region}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <FormControl
-                                fullWidth
-                                size="small"
-                                error={!!errors.province}
-                            >
-                                <InputLabel id="province-label">
-                                    Province
-                                </InputLabel>
-                                <Select
-                                    labelId="province-label"
-                                    name="province"
-                                    value={
-                                        provinces.find(
-                                            (p) => p.name === formData.province
-                                        )?.id || ""
-                                    }
-                                    onChange={handleInputChange}
-                                    label="Province"
-                                    disabled={!formData.region}
-                                >
-                                    <MenuItem value="">
-                                        <em>Select Province</em>
-                                    </MenuItem>
-                                    {provinces.map((province) => (
-                                        <MenuItem
-                                            key={province.id}
-                                            value={province.id}
-                                        >
-                                            {province.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                                {errors.province && (
-                                    <Typography variant="caption" color="error">
-                                        {errors.province}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <FormControl
-                                fullWidth
-                                size="small"
-                                error={!!errors.municipality_city}
-                            >
-                                <InputLabel id="municipality-label">
-                                    Municipality/City
-                                </InputLabel>
-                                <Select
-                                    labelId="municipality-label"
-                                    name="municipality_city"
-                                    value={
-                                        municipalities.find(
-                                            (m) =>
-                                                m.name ===
-                                                formData.municipality_city
-                                        )?.id || ""
-                                    }
-                                    onChange={handleInputChange}
-                                    label="Municipality/City"
-                                    disabled={!formData.province}
-                                >
-                                    <MenuItem value="">
-                                        <em>Select Municipality/City</em>
-                                    </MenuItem>
-                                    {municipalities.map((m) => (
-                                        <MenuItem key={m.id} value={m.id}>
-                                            {m.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                                {errors.municipality_city && (
-                                    <Typography variant="caption" color="error">
-                                        {errors.municipality_city}
-                                    </Typography>
-                                )}
-                            </FormControl>
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 3 }}>
-                            <TextField
-                                name="postal_code"
-                                size="small"
-                                label="Postal Code"
-                                value={formData.postal_code}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.postal_code}
-                                helperText={errors.postal_code}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
-
-                <Divider sx={{ my: 1 }} />
-
-                {/* Contact Information */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+                <div className="p-4 bg-gray-50 max-h-[70vh] overflow-y-auto">
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                                Basic Information
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="md:col-span-1">
+                                    {formattedField("Institution Name", "name")}
+                                </div>
+                                <div className="md:col-span-1">
+                                    {formattedField(
+                                        "SEC Registration",
+                                        "sec_registration"
+                                    )}
+                                </div>
+                                <div className="md:col-span-1">
+                                    {formattedField(
+                                        "Institution Type",
+                                        "institution_type",
+                                        "select",
+                                        [
+                                            { id: "SUC", name: "SUC" },
+                                            { id: "LUC", name: "LUC" },
+                                            { id: "Private", name: "Private" },
+                                        ]
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border-t border-gray-200 my-3"></div>
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                                Address Information
+                            </h3>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="col-span-1">
+                                    {formattedField(
+                                        "Street Address",
+                                        "address_street"
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        {formattedField(
+                                            "Region",
+                                            "region",
+                                            "select",
+                                            regions
+                                        )}
+                                    </div>
+                                    <div>
+                                        {formattedField(
+                                            "Province",
+                                            "province",
+                                            "select",
+                                            provinces
+                                        )}
+                                    </div>
+                                    <div>
+                                        {formattedField(
+                                            "Municipality/City",
+                                            "municipality",
+                                            "select",
+                                            municipalities
+                                        )}
+                                    </div>
+                                    <div>
+                                        {formattedField(
+                                            "Postal Code",
+                                            "postal_code"
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border-t border-gray-200 my-3"></div>
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                                Contact Information
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    {formattedField(
+                                        "Institutional Telephone",
+                                        "institutional_telephone"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Institutional Fax",
+                                        "institutional_fax"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Institutional Email",
+                                        "institutional_email"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Institutional Website",
+                                        "institutional_website"
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border-t border-gray-200 my-3"></div>
+                        <div className="mb-4">
+                            <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                                Head of Institution
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    {formattedField("Head Name", "head_name")}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Head Telephone",
+                                        "head_telephone"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField("Head Title", "head_title")}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Head Education",
+                                        "head_education"
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border-t border-gray-200 my-3"></div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-blue-600 mb-2">
+                                Historical Dates
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    {formattedField(
+                                        "Year Established",
+                                        "year_established",
+                                        "year"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Year Approved",
+                                        "year_granted_approved",
+                                        "year"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Year → College",
+                                        "year_converted_college",
+                                        "year"
+                                    )}
+                                </div>
+                                <div>
+                                    {formattedField(
+                                        "Year → University",
+                                        "year_converted_university",
+                                        "year"
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex justify-end p-3 bg-gray-100 border-t border-gray-200 rounded-b-lg">
+                    <button
+                        onClick={onClose}
+                        className="px-3 py-1 mr-2 bg-gray-200 text-gray-800 rounded-md text-xs font-medium hover:bg-gray-300 transition-colors"
                     >
-                        Contact Information
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_telephone"
-                                size="small"
-                                label="Institutional Telephone"
-                                value={formData.institutional_telephone}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.institutional_telephone}
-                                helperText={errors.institutional_telephone}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_fax"
-                                size="small"
-                                label="Institutional Fax"
-                                value={formData.institutional_fax}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.institutional_fax}
-                                helperText={errors.institutional_fax}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_email"
-                                size="small"
-                                label="Institutional Email"
-                                value={formData.institutional_email}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.institutional_email}
-                                helperText={errors.institutional_email}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="institutional_website"
-                                size="small"
-                                label="Institutional Website"
-                                value={formData.institutional_website}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.institutional_website}
-                                helperText={errors.institutional_website}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
-
-                <Divider sx={{ my: 1 }} />
-
-                {/* Head of Institution */}
-                <Box sx={{ mb: 1 }}>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleUpdate}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 transition-colors flex items-center"
+                        disabled={!formData.name || !formData.region}
                     >
-                        Head of Institution
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_name"
-                                size="small"
-                                label="Head Name"
-                                value={formData.head_name}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.head_name}
-                                helperText={errors.head_name}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_telephone"
-                                size="small"
-                                label="Head Telephone"
-                                value={formData.head_telephone}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.head_telephone}
-                                helperText={errors.head_telephone}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_title"
-                                size="small"
-                                label="Head Title"
-                                value={formData.head_title}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.head_title}
-                                helperText={errors.head_title}
-                            />
-                        </Grid>
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                name="head_education"
-                                size="small"
-                                label="Head Education"
-                                value={formData.head_education}
-                                onChange={handleInputChange}
-                                fullWidth
-                                variant="outlined"
-                                error={!!errors.head_education}
-                                helperText={errors.head_education}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
-
-                <Divider sx={{ my: 1 }} />
-
-                {/* Historical Dates */}
-                <Box>
-                    <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        fontWeight="bold"
-                        color="primary"
-                    >
-                        Historical Dates
-                    </Typography>
-                    <LocalizationProvider dateAdapter={AdapterMoment}>
-                        <Grid container spacing={2}>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year Established"
-                                    value={
-                                        formData.year_established
-                                            ? moment().year(
-                                                  formData.year_established
-                                              )
-                                            : null
-                                    }
-                                    onChange={(value) =>
-                                        handleYearChange(
-                                            "year_established",
-                                            value
-                                        )
-                                    }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!errors.year_established,
-                                            helperText: errors.year_established,
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year Approved"
-                                    value={
-                                        formData.year_granted_approved
-                                            ? moment().year(
-                                                  formData.year_granted_approved
-                                              )
-                                            : null
-                                    }
-                                    onChange={(value) =>
-                                        handleYearChange(
-                                            "year_granted_approved",
-                                            value
-                                        )
-                                    }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!errors.year_granted_approved,
-                                            helperText:
-                                                errors.year_granted_approved,
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year → College"
-                                    value={
-                                        formData.year_converted_college
-                                            ? moment().year(
-                                                  formData.year_converted_college
-                                              )
-                                            : null
-                                    }
-                                    onChange={(value) =>
-                                        handleYearChange(
-                                            "year_converted_college",
-                                            value
-                                        )
-                                    }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!errors.year_converted_college,
-                                            helperText:
-                                                errors.year_converted_college,
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
-                                <DatePicker
-                                    views={["year"]}
-                                    label="Year → University"
-                                    value={
-                                        formData.year_converted_university
-                                            ? moment().year(
-                                                  formData.year_converted_university
-                                              )
-                                            : null
-                                    }
-                                    onChange={(value) =>
-                                        handleYearChange(
-                                            "year_converted_university",
-                                            value
-                                        )
-                                    }
-                                    maxDate={moment()}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            error: !!errors.year_converted_university,
-                                            helperText:
-                                                errors.year_converted_university,
-                                        },
-                                    }}
-                                />
-                            </Grid>
-                        </Grid>
-                    </LocalizationProvider>
-                </Box>
-            </DialogContent>
-
-            <DialogActions sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                <Button
-                    onClick={handleCancel}
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<CloseIcon />}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleUpdate}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveIcon />}
-                    disabled={!formData.name || !formData.region}
-                >
-                    Save Institution
-                </Button>
-            </DialogActions>
-        </Dialog>
+                        <Save className="w-3 h-3 mr-1" /> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -988,10 +762,11 @@ EditDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
     institution: PropTypes.shape({
         id: PropTypes.number.isRequired,
+        uuid: PropTypes.string,
         name: PropTypes.string,
         region: PropTypes.string,
         address_street: PropTypes.string,
-        municipality_city: PropTypes.string,
+        municipality: PropTypes.string,
         province: PropTypes.string,
         postal_code: PropTypes.string,
         institutional_telephone: PropTypes.string,

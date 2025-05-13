@@ -374,7 +374,7 @@ function ManualInstitutionDialog({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex bg-black/50 items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl">
                 {/* Dialog Header */}
                 <div className="flex items-center justify-between p-2 bg-gray-100 border-b border-gray-200">

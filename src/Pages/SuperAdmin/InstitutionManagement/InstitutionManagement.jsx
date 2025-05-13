@@ -1,14 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import PropTypes from "prop-types"; // Added import
 import axios from "axios";
 import * as XLSX from "xlsx";
-import {
-    Search,
-    Upload,
-    Plus,
-    Filter,
-    RotateCcw,
-} from "lucide-react";
+import { Search, Upload, Plus, Filter, RotateCcw } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
 import CustomSnackbar from "../../../Components/CustomSnackbar";
@@ -33,8 +28,9 @@ const InstitutionManagement = () => {
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedProvince, setSelectedProvince] = useState("");
     const [selectedMunicipality, setSelectedMunicipality] = useState("");
-    const [showFilters, setShowFilters] = useState(false);
+    const [openFilterPopover, setOpenFilterPopover] = useState(false);
 
+    // Filter states
     const [searchTerm, setSearchTerm] = useState(
         localStorage.getItem("searchTerm") || ""
     );
@@ -47,7 +43,12 @@ const InstitutionManagement = () => {
     const [provinceFilter, setProvinceFilter] = useState(
         localStorage.getItem("provinceFilter") || ""
     );
+    const currentYear = new Date().getFullYear().toString();
+    const [reportYearFilter, setReportYearFilter] = useState(
+        localStorage.getItem("reportYearFilter") || currentYear
+    );
 
+    // Get unique values for filter options
     const getUniqueValues = (arr, key) => {
         if (!Array.isArray(arr) || arr.length === 0) {
             return [];
@@ -56,6 +57,8 @@ const InstitutionManagement = () => {
             ...new Set(arr.map((item) => item?.[key]).filter(Boolean)),
         ].sort();
     };
+
+    // Filter options for dropdowns
     const filterOptions = {
         types: getUniqueValues(institutions, "institution_type"),
         municipalities: getUniqueValues(institutions, "municipality"),
@@ -63,34 +66,47 @@ const InstitutionManagement = () => {
         reportYears: getUniqueValues(institutions, "report_year"),
     };
 
+    // Persist filters to localStorage
     useEffect(() => {
         localStorage.setItem("searchTerm", searchTerm);
         localStorage.setItem("typeFilter", typeFilter);
         localStorage.setItem("municipalityFilter", municipalityFilter);
         localStorage.setItem("provinceFilter", provinceFilter);
-    }, [searchTerm, typeFilter, municipalityFilter, provinceFilter]);
+        localStorage.setItem("reportYearFilter", reportYearFilter);
+    }, [
+        searchTerm,
+        typeFilter,
+        municipalityFilter,
+        provinceFilter,
+        reportYearFilter,
+    ]);
 
+    // Clear all filters
     const clearFilters = () => {
         setSearchTerm("");
         setTypeFilter("");
         setMunicipalityFilter("");
         setProvinceFilter("");
+        setReportYearFilter(currentYear);
         localStorage.setItem("searchTerm", "");
         localStorage.setItem("typeFilter", "");
         localStorage.setItem("municipalityFilter", "");
         localStorage.setItem("provinceFilter", "");
-        localStorage.setItem("reportYearFilter", "");
+        localStorage.setItem("reportYearFilter", currentYear);
     };
 
+    // Close snackbar handler
     const handleCloseSnackbar = () => {
         setSnackbarOpen(false);
     };
 
+    // Get institution type from user
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user"));
         return user?.institution_type || "Unknown";
     };
 
+    // Fetch institutions from API
     const fetchInstitutions = async () => {
         setLoading(true);
         try {
@@ -122,10 +138,12 @@ const InstitutionManagement = () => {
         }
     };
 
+    // Fetch institutions on mount
     useEffect(() => {
         fetchInstitutions();
     }, []);
 
+    // Handle file upload for Form A
     const handleFileUpload = async (reportYear, uuid) => {
         if (!selectedFile || !selectedInstitutionType) {
             setSnackbarMessage(
@@ -215,6 +233,12 @@ const InstitutionManagement = () => {
                 setSnackbarOpen(true);
 
                 const institutionId = institutionResponse.data.id;
+                if (!institutionId || isNaN(Number(institutionId))) {
+                    throw new Error(
+                        "Invalid institution ID received from server."
+                    );
+                }
+                console.log("Institution ID:", institutionId);
 
                 const sheetA2 = workbook.Sheets[workbook.SheetNames[1]];
                 const jsonDataA2 = XLSX.utils.sheet_to_json(sheetA2, {
@@ -270,7 +294,7 @@ const InstitutionManagement = () => {
                             campus_type: parseString(row[2]),
                             institutional_code: parseString(row[3]),
                             region: parseString(row[4]) || "",
-                            "province/municipality": parseString(row[5]) || "",
+                            province_municipality: parseString(row[5]) || "",
                             year_first_operation: parseInteger(
                                 row[6],
                                 1800,
@@ -292,14 +316,16 @@ const InstitutionManagement = () => {
                                 -180,
                                 180
                             ),
-                            institution_id:
-                                Number.parseInt(institutionId, 10) || null,
-                            report_year: reportYear,
+                            institution_id: Number.parseInt(institutionId, 10),
+                            report_year: Number.parseInt(reportYear, 10),
                         };
                     });
 
                 updateProgress(70);
-                console.log("Processed campuses:", processedCampuses);
+                console.log(
+                    "Processed campuses:",
+                    JSON.stringify(processedCampuses, null, 2)
+                );
                 await axios.post(
                     `${config.API_URL}/campuses`,
                     processedCampuses,
@@ -317,7 +343,15 @@ const InstitutionManagement = () => {
                 const errorMessage =
                     error.response?.data?.message ||
                     "Error uploading institution or campus data.";
-                setSnackbarMessage(errorMessage);
+                const validationErrors = error.response?.data?.errors || {};
+                console.log("Validation errors:", validationErrors);
+                setSnackbarMessage(
+                    `${errorMessage}\n${JSON.stringify(
+                        validationErrors,
+                        null,
+                        2
+                    )}`
+                );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
             } finally {
@@ -335,14 +369,12 @@ const InstitutionManagement = () => {
         reader.readAsArrayBuffer(selectedFile);
     };
 
+    // Handle manual institution addition
     const handleManualAdd = () => {
         setOpenManualDialog(true);
     };
 
-    const toggleFilters = () => {
-        setShowFilters((prev) => !prev);
-    };
-
+    // Memoized filtered institutions
     const filteredInstitutions = useMemo(() => {
         return institutions.filter((institution) => {
             const matchesSearch = institution.name
@@ -357,11 +389,15 @@ const InstitutionManagement = () => {
             const matchesProvince = provinceFilter
                 ? institution.province === provinceFilter
                 : true;
+            const matchesReportYear = reportYearFilter
+                ? String(institution.report_year) === reportYearFilter
+                : true;
             return (
                 matchesSearch &&
                 matchesType &&
                 matchesMunicipality &&
-                matchesProvince
+                matchesProvince &&
+                matchesReportYear
             );
         });
     }, [
@@ -370,8 +406,10 @@ const InstitutionManagement = () => {
         typeFilter,
         municipalityFilter,
         provinceFilter,
+        reportYearFilter,
     ]);
 
+    // Determine dashboard link based on user role
     const user = JSON.parse(localStorage.getItem("user"));
     const dashboardLink =
         user?.role === "Super Admin"
@@ -379,6 +417,130 @@ const InstitutionManagement = () => {
             : user?.role === "HEI Admin"
             ? "/hei-admin/dashboard"
             : "/hei-staff/dashboard";
+
+    // Reusable Filter Select Component
+    const FilterSelect = ({
+        value,
+        onChange,
+        options,
+        placeholder,
+        ariaLabel,
+    }) => (
+        <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label={ariaLabel}
+        >
+            <option value="">{placeholder}</option>
+            {options?.map((item) => (
+                <option key={item} value={String(item)}>
+                    {item}
+                </option>
+            ))}
+            {options?.length === 0 && <option disabled>No Options</option>}
+        </select>
+    );
+
+    // PropTypes for FilterSelect
+    FilterSelect.propTypes = {
+        value: PropTypes.string,
+        onChange: PropTypes.func.isRequired,
+        options: PropTypes.arrayOf(PropTypes.string).isRequired,
+        placeholder: PropTypes.string,
+        ariaLabel: PropTypes.string,
+    };
+
+    // Filter Popover Component
+    const FilterPopover = ({ open, onClose }) => {
+        const popoverRef = useRef(null);
+
+        // Close popover on click outside
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (
+                    popoverRef.current &&
+                    !popoverRef.current.contains(event.target)
+                ) {
+                    onClose();
+                }
+            };
+            if (open) {
+                document.addEventListener("mousedown", handleClickOutside);
+            }
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }, [open, onClose]);
+
+        if (!open) return null;
+
+        return (
+            <div
+                className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl z-50 border border-gray-200"
+                ref={popoverRef}
+            >
+                {/* Arrow pointing to the filter button */}
+                <div className="absolute -top-2 left-4 w-4 h-4 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
+                <div className="p-4">
+                    <div className="grid grid-cols-1 gap-3">
+                        <FilterSelect
+                            value={typeFilter}
+                            onChange={setTypeFilter}
+                            options={filterOptions.types}
+                            placeholder="All Types"
+                            ariaLabel="Select institution type"
+                        />
+                        <FilterSelect
+                            value={municipalityFilter}
+                            onChange={setMunicipalityFilter}
+                            options={filterOptions.municipalities}
+                            placeholder="All Municipalities"
+                            ariaLabel="Select municipality"
+                        />
+                        <FilterSelect
+                            value={provinceFilter}
+                            onChange={setProvinceFilter}
+                            options={filterOptions.provinces}
+                            placeholder="All Provinces"
+                            ariaLabel="Select province"
+                        />
+                        <FilterSelect
+                            value={reportYearFilter}
+                            onChange={setReportYearFilter}
+                            options={filterOptions.reportYears}
+                            placeholder="All Years"
+                            ariaLabel="Select report year"
+                        />
+                    </div>
+                    <div className="flex justify-between mt-4">
+                        <button
+                            onClick={() => {
+                                clearFilters();
+                                onClose();
+                            }}
+                            className="flex items-center px-3 py-1 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium"
+                        >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Reset
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                        >
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // PropTypes for FilterPopover
+    FilterPopover.propTypes = {
+        open: PropTypes.bool.isRequired,
+        onClose: PropTypes.func.isRequired,
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8 overflow-x-auto">
@@ -425,98 +587,56 @@ const InstitutionManagement = () => {
                                         type="text"
                                         placeholder="Search institutions..."
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) =>
+                                            setSearchTerm(e.target.value)
+                                        }
                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        aria-label="Search institutions"
                                     />
-                                    <Search className="w-5 h-5 text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                                    <Search className="w-5 h-5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                                 </div>
                             </div>
 
                             {/* Filters and Actions */}
                             <div className="md:col-span-2 flex flex-col md:flex-row justify-between gap-4">
-                                {/* Filter Toggle and Filters */}
-                                <div className="flex-1">
-                                    <div className="flex items-center mb-2">
-                                        <button
-                                            onClick={toggleFilters}
-                                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
-                                            aria-label={showFilters ? "Hide filters" : "Show filters"}
-                                        >
-                                            <Filter className="w-5 h-5" />
-                                        </button>
-                                        {showFilters && (
-                                            <button
-                                                onClick={clearFilters}
-                                                className="ml-2 flex items-center text-red-600 hover:bg-red-100 px-2 py-1 rounded text-sm font-medium transition-colors"
-                                            >
-                                                <RotateCcw className="w-4 h-4 mr-1" />
-                                                Reset Filters
-                                            </button>
-                                        )}
-                                    </div>
-                                    {showFilters && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <div>
-                                                <select
-                                                    value={typeFilter}
-                                                    onChange={(e) => setTypeFilter(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="">All Types</option>
-                                                    {filterOptions?.types?.map((type) => (
-                                                        <option key={type} value={type}>
-                                                            {type}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <select
-                                                    value={municipalityFilter}
-                                                    onChange={(e) => setMunicipalityFilter(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="">All Municipalities</option>
-                                                    {filterOptions?.municipalities?.map((municipality) => (
-                                                        <option key={municipality} value={municipality}>
-                                                            {municipality}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <select
-                                                    value={provinceFilter}
-                                                    onChange={(e) => setProvinceFilter(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="">All Provinces</option>
-                                                    {filterOptions?.provinces?.map((province) => (
-                                                        <option key={province} value={province}>
-                                                            {province}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    )}
+                                {/* Filter Button */}
+                                <div className="relative flex items-center">
+                                    <button
+                                        onClick={() =>
+                                            setOpenFilterPopover(
+                                                (prev) => !prev
+                                            )
+                                        }
+                                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"
+                                        aria-label="Toggle filters"
+                                    >
+                                        <Filter className="w-5 h-5" />
+                                    </button>
+                                    <FilterPopover
+                                        open={openFilterPopover}
+                                        onClose={() =>
+                                            setOpenFilterPopover(false)
+                                        }
+                                    />
                                 </div>
 
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <button
                                         onClick={handleManualAdd}
-                                        className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors w-full sm:w-auto"
+                                        className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 w-full sm:w-auto"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Add Institution
+                                        Add
                                     </button>
                                     <button
-                                        onClick={() => setOpenUploadDialog(true)}
-                                        className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                                        onClick={() =>
+                                            setOpenUploadDialog(true)
+                                        }
+                                        className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 w-full sm:w-auto"
                                     >
                                         <Upload className="w-4 h-4 mr-2" />
-                                        Upload Form A
+                                        Upload
                                     </button>
                                 </div>
                             </div>
@@ -535,14 +655,12 @@ const InstitutionManagement = () => {
                             typeFilter={typeFilter}
                             municipalityFilter={municipalityFilter}
                             provinceFilter={provinceFilter}
+                            reportYearFilter={reportYearFilter}
                             onEdit={(updatedInstitution) => {
                                 setInstitutions((prev) =>
                                     prev.map((inst) =>
                                         inst.id === updatedInstitution.id
-                                            ? {
-                                                  ...inst,
-                                                  ...updatedInstitution,
-                                              }
+                                            ? { ...inst, ...updatedInstitution }
                                             : inst
                                     )
                                 );
@@ -552,6 +670,7 @@ const InstitutionManagement = () => {
                 </div>
             )}
 
+            {/* Upload Dialog */}
             <UploadDialog
                 openUploadDialog={openUploadDialog}
                 setOpenUploadDialog={setOpenUploadDialog}
@@ -568,6 +687,7 @@ const InstitutionManagement = () => {
                 setSelectedMunicipality={setSelectedMunicipality}
             />
 
+            {/* Manual Institution Dialog */}
             <ManualInstitutionDialog
                 open={openManualDialog}
                 onClose={() => setOpenManualDialog(false)}
@@ -578,6 +698,7 @@ const InstitutionManagement = () => {
                 setSnackbarSeverity={setSnackbarSeverity}
             />
 
+            {/* Snackbar for Notifications */}
             <CustomSnackbar
                 open={snackbarOpen}
                 message={snackbarMessage}

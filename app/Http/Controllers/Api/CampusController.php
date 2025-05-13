@@ -59,7 +59,7 @@ class CampusController extends Controller
                 '*.institution_id' => 'required|exists:institutions,id',
                 '*.report_year' => 'nullable|integer',
                 '*.region' => 'nullable|string|max:255',
-                '*.province/municipality' => 'nullable|string|max:255',
+                '*.province_municipality' => 'nullable|string|max:255',
             ]);
 
             // Add timestamps to each record
@@ -126,7 +126,7 @@ class CampusController extends Controller
             'institution_id' => 'required|exists:institutions,id',
             'report_year' => 'nullable|integer',
             'region' => 'sometimes|string|max:255',
-            'province/municipality' => 'sometimes|string|max:255',
+            'province_municipality' => 'sometimes|string|max:255',
         ]);
 
         $campus->update($validated);
@@ -173,8 +173,8 @@ class CampusController extends Controller
         $data = $campus->toArray();
         $data['region'] = $campus->region;
         // Access the combined field using brace syntax
-        $data['province/municipality'] = $campus->{'province/municipality'};
-        $data['location'] = $campus->{'province/municipality'};
+        $data['province_municipality'] = $campus->{'province_municipality'};
+        $data['location'] = $campus->{'province_municipality'};
         return $data;
     }
 }

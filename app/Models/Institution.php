@@ -10,12 +10,11 @@ class Institution extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $primaryKey = 'code';
-    public $incrementing = false;
+    protected $primaryKey = 'id';
+    public $incrementing = true;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
         'uuid',
         'region_id',
         'province_id',
@@ -40,21 +39,6 @@ class Institution extends Model
         'report_year',
     ];
 
-    public function parent()
-    {
-        return $this->belongsTo(Institution::class, 'parent_code', 'code');
-    }
-
-    public function satellites()
-    {
-        return $this->hasMany(Institution::class, 'parent_code', 'code');
-    }
-
-    public function campusDetails()
-    {
-        return $this->hasOne(CampusDetail::class, 'code', 'code');
-    }
-
     public function region()
     {
         return $this->belongsTo(Region::class);
@@ -69,5 +53,4 @@ class Institution extends Model
     {
         return $this->belongsTo(Municipality::class);
     }
-
 }

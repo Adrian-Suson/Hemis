@@ -243,7 +243,7 @@ const UploadDialog = ({
     if (!openUploadDialog) return null;
 
     return (
-        <div className="fixed inset-0 shadow-amber-900 flex items-center justify-center z-50">
+        <div className="fixed inset-0 shadow-amber-900 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
                 {/* Dialog Header */}
                 <div className="flex items-center justify-between p-4 bg-gray-100 border-b border-gray-200">

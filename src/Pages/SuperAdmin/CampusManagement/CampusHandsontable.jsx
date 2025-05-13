@@ -2,22 +2,10 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
-import {
-    Button,
-    Tabs,
-    Tab,
-    Paper,
-    Box,
-    Toolbar,
-    Typography,
-    Snackbar,
-    Alert,
-} from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import { useLoading } from "../../../Context/LoadingContext";
 import AddCampusDialog from "./AddCampusDialog";
-import EditCampusDialog from "./EditCampusDialog";
+import EditCampusFormDialog from "./EditCampusFormDialog";
 import config from "../../../utils/config";
+import { useLoading } from "../../../Context/LoadingContext";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
@@ -27,14 +15,14 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
     const [tabValue, setTabValue] = useState(0);
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const [openEditDialog, setOpenEditDialog] = useState(false);
-    const [editField, setEditField] = useState("");
-    const [editValue, setEditValue] = useState("");
-    const [editCampusId, setEditCampusId] = useState(null);
+    const [editCampusData, setEditCampusData] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
 
-    // Initialize campuses and update only if local changes are not present
+    // Initialize campuses
     useEffect(() => {
         console.log("initialCampuses:", initialCampuses);
         setCampuses((prevCampuses) => {
@@ -56,7 +44,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 200,
                 flex: 2,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -66,7 +54,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 120,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -76,7 +64,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 120,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -86,12 +74,12 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 150,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
             {
-                field: "location",
+                field: "province_municipality",
                 headerName: "Municipal/City and Province",
                 minWidth: 200,
                 flex: 1,
@@ -106,7 +94,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 200,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -115,11 +103,10 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Established",
                 minWidth: 120,
                 flex: 1,
-                type: "number",
                 align: "center",
                 headerAlign: "center",
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -128,24 +115,20 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Land Area (ha)",
                 minWidth: 150,
                 flex: 1,
-                type: "number",
                 align: "center",
                 headerAlign: "center",
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
-                        ? params.value
-                        : "-",
+                    params.value !== null ? params.value : "-",
             },
             {
                 field: "distance_from_main",
                 headerName: "Distance (km)",
                 minWidth: 150,
                 flex: 1,
-                type: "number",
                 align: "center",
                 headerAlign: "center",
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -155,7 +138,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 120,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -165,7 +148,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 150,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -175,7 +158,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 minWidth: 200,
                 flex: 1,
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -184,11 +167,10 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Latitude",
                 minWidth: 150,
                 flex: 1,
-                type: "number",
                 align: "center",
                 headerAlign: "center",
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
             },
@@ -197,13 +179,38 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 headerName: "Longitude",
                 minWidth: 150,
                 flex: 1,
-                type: "number",
                 align: "center",
                 headerAlign: "center",
                 renderCell: (params) =>
-                    params.value !== null && params.value !== undefined
+                    params.value !== null && params.value !== ""
                         ? params.value
                         : "-",
+            },
+            {
+                field: "actions",
+                headerName: "Actions",
+                minWidth: 150,
+                flex: 1,
+                align: "center",
+                headerAlign: "center",
+                renderCell: (params) => (
+                    <div className="flex justify-center space-x-2">
+                        <button
+                            onClick={() => handleEditClick(params.row)}
+                            className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                            title="Edit"
+                        >
+                            Edit
+                        </button>
+                        <button
+                            onClick={() => handleDeleteClick(params.row.id)}
+                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                            title="Delete"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                ),
             },
         ],
         []
@@ -211,10 +218,22 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
 
     const tabbedColumns = useMemo(
         () => ({
-            basic: [allColumns[0], ...allColumns.slice(1, 7)],
-            metrics: [allColumns[0], ...allColumns.slice(7, 10)],
-            leadership: [allColumns[0], ...allColumns.slice(10, 12)],
-            coordinates: [allColumns[0], ...allColumns.slice(12, 14)],
+            basic: [allColumns[0], ...allColumns.slice(1, 7), allColumns[14]],
+            metrics: [
+                allColumns[0],
+                ...allColumns.slice(7, 10),
+                allColumns[14],
+            ],
+            leadership: [
+                allColumns[0],
+                ...allColumns.slice(10, 12),
+                allColumns[14],
+            ],
+            coordinates: [
+                allColumns[0],
+                ...allColumns.slice(12, 14),
+                allColumns[14],
+            ],
         }),
         [allColumns]
     );
@@ -226,7 +245,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             campus_type: campus.campus_type || "",
             institutional_code: campus.institutional_code || "",
             region: campus.region || "",
-            location: campus.location || "",
+            province_municipality: campus.province_municipality || "",
             former_name: campus.former_name || "",
             year_first_operation: campus.year_first_operation || "",
             land_area_hectares: campus.land_area_hectares || 0.0,
@@ -238,28 +257,75 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             longitude_coordinates: campus.longitude_coordinates || 0.0,
             institution_id: campus.institution_id || "",
         }));
-        console.log("DataGrid rows:", rows);
+        console.log("Table rows:", rows);
         return rows;
     }, [campuses]);
 
-    const handleCellClick = useCallback((params) => {
-        console.log("Cell clicked:", {
-            id: params.id,
-            field: params.field,
-            value: params.value,
-        });
-        setEditCampusId(params.id);
-        setEditField(params.field);
-        setEditValue(params.value);
+    const handleEditClick = useCallback((row) => {
+        console.log("Edit clicked:", row);
+        setEditCampusData(row);
         setOpenEditDialog(true);
     }, []);
 
-    const handleEditSubmit = useCallback(
-        async (campusId, field, value) => {
-            console.log("Edit submit:", { campusId, field, value });
+    const handleDeleteClick = useCallback(
+        async (campusId) => {
+            console.log("Delete clicked:", campusId);
             showLoading();
 
-            // Find the campus to update
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setSnackbarMessage("Authentication token is missing.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+                hideLoading();
+                return;
+            }
+
+            try {
+                if (!campusId.startsWith("temp-")) {
+                    await axios.delete(
+                        `${config.API_URL}/campuses/${campusId}`,
+                        {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }
+                    );
+                }
+
+                const updatedCampuses = campuses.filter(
+                    (campus) =>
+                        String(campus.id) !== campusId &&
+                        `temp-${campuses.indexOf(campus)}` !== campusId
+                );
+                setCampuses(updatedCampuses);
+
+                setSnackbarMessage("Campus deleted successfully!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
+            } catch (error) {
+                console.error("Error deleting campus:", error);
+                let errorMessage = "Failed to delete campus.";
+                if (error.response) {
+                    errorMessage = `Error: ${
+                        error.response.data.message ||
+                        error.response.data.errors?.join("; ") ||
+                        error.message
+                    }`;
+                }
+                setSnackbarMessage(errorMessage);
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+            } finally {
+                hideLoading();
+            }
+        },
+        [campuses]
+    );
+
+    const handleEditSubmit = useCallback(
+        async (campusId, updatedData) => {
+            console.log("Edit submit:", { campusId, updatedData });
+            showLoading();
+
             const campusIndex = campuses.findIndex(
                 (c) =>
                     String(c.id) === campusId ||
@@ -273,34 +339,8 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 return;
             }
 
-            // Create updated campus object
             const originalCampus = campuses[campusIndex];
-            console.log("Original campus:", originalCampus);
-
-            // Check if the value has changed
-            if (originalCampus[field] === value) {
-                console.log(`No change in ${field}: ${value}`);
-                setSnackbarMessage("No changes made.");
-                setSnackbarSeverity("info");
-                setSnackbarOpen(true);
-                hideLoading();
-                return;
-            }
-
-            const updatedCampus = { ...originalCampus, [field]: value };
-            console.log("Updated campus before API:", updatedCampus);
-
-            // Validate required fields
-            if (!updatedCampus.suc_name || !updatedCampus.institution_id) {
-                setSnackbarMessage(
-                    "Campus name and institution ID are required."
-                );
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-                hideLoading();
-                return;
-            }
-
+            const updatedCampus = { ...originalCampus, ...updatedData };
             const token = localStorage.getItem("token");
             if (!token) {
                 setSnackbarMessage("Authentication token is missing.");
@@ -315,41 +355,31 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 const campusIdStr = updatedCampus.id
                     ? String(updatedCampus.id)
                     : "";
-                console.log("campusId:", campusIdStr);
                 if (campusIdStr && !campusIdStr.startsWith("temp-")) {
-                    // Update existing campus with partial payload
                     const payload = {
-                        [field]: value,
+                        ...updatedData,
                         institution_id: updatedCampus.institution_id,
                     };
-                    console.log("PUT payload:", payload);
                     response = await axios.put(
                         `${config.API_URL}/campuses/${updatedCampus.id}`,
                         payload,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
-                    );
-                    console.log("PUT response:", response.data);
-                } else {
-                    // Create new campus
-                    console.log("POST payload:", updatedCampus);
-                    response = await axios.post(
-                        `${config.API_URL}/campuses`,
-                        updatedCampus,
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
-                    console.log("POST response:", response.data);
-                    updatedCampus.id = response.data.data.id;
+                } else {
+                    response = await axios.post(
+                        `${config.API_URL}/campuses`,
+                        [updatedCampus], // Wrap in array to match backend expectation
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    updatedCampus.id =
+                        response.data.data?.id || response.data.id;
                 }
 
-                // Update state with response data
                 const updatedCampuses = [...campuses];
                 updatedCampuses[campusIndex] = {
                     ...updatedCampus,
                     ...response.data.data,
                 };
-                console.log("New campuses state:", updatedCampuses);
                 setCampuses(updatedCampuses);
 
                 setSnackbarMessage("Campus updated successfully!");
@@ -364,7 +394,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                         error.response.data.errors?.join("; ") ||
                         error.message
                     }`;
-                    console.log("Error response:", error.response.data);
                 }
                 setSnackbarMessage(errorMessage);
                 setSnackbarSeverity("error");
@@ -377,9 +406,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
     );
 
     const handleOpenAddDialog = () => setOpenAddDialog(true);
-
     const handleCloseAddDialog = () => setOpenAddDialog(false);
-
     const handleCloseEditDialog = () => setOpenEditDialog(false);
 
     const handleAddCampus = (newCampusData) => {
@@ -387,8 +414,9 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
         handleCloseAddDialog();
     };
 
-    const handleTabChange = (event, newValue) => {
+    const handleTabChange = (newValue) => {
         setTabValue(newValue);
+        setPage(0); // Reset to first page on tab change
     };
 
     const currentColumns = useMemo(() => {
@@ -406,164 +434,140 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
         }
     }, [tabValue, tabbedColumns]);
 
+    const paginatedRows = useMemo(() => {
+        const start = page * rowsPerPage;
+        return data.slice(start, start + rowsPerPage);
+    }, [data, page, rowsPerPage]);
+
+    const handlePageChange = (newPage) => {
+        setPage(newPage);
+    };
+
+    const handleRowsPerPageChange = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
     return (
-        <Box
-            sx={{
-                my: 2,
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-            }}
-        >
-            <Toolbar
-                sx={{
-                    pl: { sm: 2 },
-                    pr: { xs: 1, sm: 1 },
-                    mb: 2,
-                    backgroundColor: "background.paper",
-                    borderBottom: 1,
-                    borderColor: "divider",
-                }}
-            >
-                <Typography
-                    variant="h6"
-                    component="div"
-                    sx={{ flexGrow: 1, fontWeight: "medium" }}
-                >
+        <div className="my-4 flex flex-col h-full">
+            {/* Toolbar */}
+            <div className="flex justify-between items-center bg-white border-b border-gray-200 mb-4 sm:pl-4 px-2 py-2">
+                <span className="text-lg font-medium text-gray-900">
                     Campus Management
-                </Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
+                </span>
+                <button
                     onClick={handleOpenAddDialog}
-                    sx={{
-                        borderRadius: "8px",
-                        textTransform: "none",
-                        fontWeight: "medium",
-                        px: 3,
-                        py: 1,
-                    }}
+                    className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
                     Add Campus
-                </Button>
-            </Toolbar>
+                </button>
+            </div>
 
-            <Paper
-                sx={{
-                    borderRadius: 1,
-                    mb: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    height: {
-                        xs: "70vh",
-                        sm: "65vh",
-                        md: "60vh",
-                    },
-                    maxWidth: {
-                        xs: "99vw",
-                        sm: "95vw",
-                        md: "95vw",
-                    },
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                }}
-            >
-                <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    aria-label="campus data tabs"
-                    variant="fullWidth"
-                    sx={{
-                        borderBottom: 1,
-                        borderColor: "divider",
-                        "& .MuiTab-root": {
-                            fontSize: "0.875rem",
-                            fontWeight: "medium",
-                        },
-                        flexShrink: 0,
-                    }}
-                >
-                    <Tab label="Basic Info" />
-                    <Tab label="Metrics" />
-                    <Tab label="Leadership" />
-                    <Tab label="Coordinates" />
-                </Tabs>
+            {/* Table Container */}
+            <div className="bg-white rounded-lg mb-4 flex flex-col xs:h-[70vh] sm:h-[65vh] md:h-[60vh] xs:max-w-[99vw] sm:max-w-[95vw] md:max-w-[95vw] overflow-x-auto overflow-y-hidden shadow-sm">
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 shrink-0">
+                    {["Basic Info", "Metrics", "Leadership", "Coordinates"].map(
+                        (label, index) => (
+                            <button
+                                key={label}
+                                onClick={() => handleTabChange(index)}
+                                className={`flex-1 py-2 px-4 text-sm font-medium text-center transition-colors ${
+                                    tabValue === index
+                                        ? "border-b-2 border-blue-600 text-blue-600"
+                                        : "text-gray-600 hover:text-gray-800"
+                                }`}
+                                aria-selected={tabValue === index}
+                                role="tab"
+                            >
+                                {label}
+                            </button>
+                        )
+                    )}
+                </div>
 
-                <Box
-                    sx={{
-                        flex: 1,
-                        position: "relative",
-                    }}
-                >
-                    <DataGrid
-                        rows={data}
-                        columns={currentColumns}
-                        onCellClick={handleCellClick}
-                        density="compact"
-                        disableVirtualization
-                        sx={{
-                            border: 0,
-                            "& .MuiDataGrid-root": {
-                                height: "100%",
-                                display: "flex",
-                                flexDirection: "column",
-                                minWidth: "fit-content",
-                            },
-                            "& .MuiDataGrid-main": {
-                                flex: 1,
-                                overflowX: "auto",
-                                overflowY: "auto",
-                                "&::-webkit-scrollbar": {
-                                    height: "8px",
-                                },
-                                "&::-webkit-scrollbar-thumb": {
-                                    backgroundColor: "rgba(0,0,0,0.2)",
-                                    borderRadius: "4px",
-                                },
-                            },
-                            "& .MuiDataGrid-footerContainer": {
-                                borderTop: 1,
-                                borderColor: "divider",
-                                position: "sticky",
-                                bottom: 0,
-                                backgroundColor: "background.paper",
-                                zIndex: 1,
-                                minWidth: "fit-content",
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                alignItems: "center",
-                            },
-                            "& .MuiDataGrid-columnSeparator": {
-                                visibility: "hidden",
-                            },
-                            "& .MuiDataGrid-cell": {
-                                borderRight: "1px solid",
-                                borderColor: "divider",
-                                whiteSpace: "normal",
-                                wordWrap: "break-word",
-                                padding: "4px 8px",
-                                cursor: "pointer",
-                            },
-                            "& .MuiDataGrid-columnHeader": {
-                                borderRight: "1px solid",
-                                borderColor: "divider",
-                                whiteSpace: "normal",
-                                wordWrap: "break-word",
-                                padding: "4px 8px",
-                            },
-                        }}
-                        disableRowSelectionOnClick
-                        disableColumnFilter
-                        disableColumnMenu
-                        disableColumnSorting
-                        initialState={{
-                            pagination: { paginationModel: { pageSize: 10 } },
-                        }}
-                        pageSizeOptions={ROWS_PER_PAGE_OPTIONS}
-                    />
-                </Box>
-            </Paper>
+                {/* Table */}
+                <div className="flex-1 overflow-auto">
+                    <table className="w-full min-w-[800px] border-collapse">
+                        <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
+                            <tr>
+                                {currentColumns.map((column) => (
+                                    <th
+                                        key={column.field}
+                                        className={`px-2 py-2 text-sm font-medium text-gray-700 border-r border-gray-200 text-${
+                                            column.align || "left"
+                                        } whitespace-normal break-words`}
+                                        style={{ minWidth: column.minWidth }}
+                                    >
+                                        {column.headerName}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedRows.map((row) => (
+                                <tr
+                                    key={row.id}
+                                    className="border-b border-gray-200 hover:bg-gray-50"
+                                >
+                                    {currentColumns.map((column) => (
+                                        <td
+                                            key={column.field}
+                                            className={`px-2 py-2 text-sm text-gray-900 border-r border-gray-200 text-${
+                                                column.align || "left"
+                                            } whitespace-normal break-words`}
+                                        >
+                                            {column.renderCell({
+                                                value: row[column.field],
+                                                row,
+                                            })}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
+                {/* Pagination */}
+                <div className="flex justify-end items-center p-2 border-t border-gray-200 bg-white sticky bottom-0 z-10">
+                    <div className="flex items-center space-x-2 text-sm">
+                        <span>Rows per page:</span>
+                        <select
+                            value={rowsPerPage}
+                            onChange={handleRowsPerPageChange}
+                            className="border border-gray-300 rounded px-2 py-1"
+                        >
+                            {ROWS_PER_PAGE_OPTIONS.map((option) => (
+                                <option key={option} value={option}>
+                                    {option}
+                                </option>
+                            ))}
+                        </select>
+                        <span>
+                            {page * rowsPerPage + 1}-
+                            {Math.min((page + 1) * rowsPerPage, data.length)} of{" "}
+                            {data.length}
+                        </span>
+                        <button
+                            onClick={() => handlePageChange(page - 1)}
+                            disabled={page === 0}
+                            className="px-2 py-1 disabled:opacity-50"
+                        >
+                            ←
+                        </button>
+                        <button
+                            onClick={() => handlePageChange(page + 1)}
+                            disabled={(page + 1) * rowsPerPage >= data.length}
+                            className="px-2 py-1 disabled:opacity-50"
+                        >
+                            →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Dialogs */}
             <AddCampusDialog
                 open={openAddDialog}
                 onClose={handleCloseAddDialog}
@@ -573,34 +577,43 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 setSnackbarMessage={setSnackbarMessage}
                 setSnackbarSeverity={setSnackbarSeverity}
             />
-
-            <EditCampusDialog
+            <EditCampusFormDialog
                 open={openEditDialog}
                 onClose={handleCloseEditDialog}
                 onSubmit={handleEditSubmit}
-                field={editField}
-                value={editValue}
-                campusId={editCampusId}
+                campusData={editCampusData}
+                campusId={editCampusData?.id || null}
                 setSnackbarOpen={setSnackbarOpen}
                 setSnackbarMessage={setSnackbarMessage}
                 setSnackbarSeverity={setSnackbarSeverity}
             />
 
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={6000}
-                onClose={() => setSnackbarOpen(false)}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-                <Alert
-                    onClose={() => setSnackbarOpen(false)}
-                    severity={snackbarSeverity}
-                    sx={{ width: "100%" }}
-                >
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-        </Box>
+            {/* Snackbar */}
+            {snackbarOpen && (
+                <div className="fixed top-4 right-4 z-50 max-w-xs">
+                    <div
+                        className={`p-4 rounded-lg shadow-lg flex items-center ${
+                            snackbarSeverity === "success"
+                                ? "bg-green-600 text-white"
+                                : snackbarSeverity === "error"
+                                ? "bg-red-600 text-white"
+                                : "bg-blue-600 text-white"
+                        }`}
+                    >
+                        <span className="flex-1 text-sm">
+                            {snackbarMessage}
+                        </span>
+                        <button
+                            onClick={() => setSnackbarOpen(false)}
+                            className="ml-4 text-white hover:text-gray-200"
+                            aria-label="Close notification"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 
@@ -612,7 +625,7 @@ CampusDataGrid.propTypes = {
             campus_type: PropTypes.string,
             institutional_code: PropTypes.string,
             region: PropTypes.string,
-            location: PropTypes.string,
+            province_municipality: PropTypes.string,
             former_name: PropTypes.string,
             year_first_operation: PropTypes.oneOfType([
                 PropTypes.string,

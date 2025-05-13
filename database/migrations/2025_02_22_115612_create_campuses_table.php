@@ -14,7 +14,7 @@ class CreateCampusesTable extends Migration
             $table->string('campus_type', 255)->nullable();
             $table->string('institutional_code', 255)->nullable();
             $table->string('region', 255)->nullable();
-            $table->string('province/municipality', 255)->nullable();
+            $table->string('province_municipality', 255)->nullable();
             $table->integer('year_first_operation')->nullable();
             $table->decimal('land_area_hectares', 10, 2)->nullable();
             $table->decimal('distance_from_main', 10, 2)->nullable();

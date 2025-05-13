@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import axios from "axios";
 import config from "./config";
 
@@ -7,7 +7,7 @@ const useLocationData = () => {
     const [provinces, setProvinces] = useState([]);
     const [municipalities, setMunicipalities] = useState([]);
 
-    const fetchRegions = async () => {
+    const fetchRegions = useCallback(async () => {
         try {
             const token = localStorage.getItem("token");
             const res = await axios.get(`${config.API_URL}/regions`, {
@@ -17,9 +17,9 @@ const useLocationData = () => {
         } catch {
             setRegions([]);
         }
-    };
+    }, []);
 
-    const fetchProvinces = async (regionId) => {
+    const fetchProvinces = useCallback(async (regionId) => {
         try {
             const token = localStorage.getItem("token");
             const res = await axios.get(
@@ -32,9 +32,9 @@ const useLocationData = () => {
         } catch {
             setProvinces([]);
         }
-    };
+    }, []);
 
-    const fetchMunicipalities = async (provinceId) => {
+    const fetchMunicipalities = useCallback(async (provinceId) => {
         try {
             const token = localStorage.getItem("token");
             const res = await axios.get(
@@ -47,9 +47,9 @@ const useLocationData = () => {
         } catch {
             setMunicipalities([]);
         }
-    };
+    }, []);
 
-    const fetchMunicipalitiesByRegion = async (regionId) => {
+    const fetchMunicipalitiesByRegion = useCallback(async (regionId) => {
         try {
             const token = localStorage.getItem("token");
             const res = await axios.get(
@@ -62,7 +62,7 @@ const useLocationData = () => {
         } catch {
             setMunicipalities([]);
         }
-    };
+    }, []);
 
     return {
         regions,
