@@ -2,23 +2,11 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
-import {
-    Tabs,
-    Tab,
-    Paper,
-    Box,
-    Snackbar,
-    Alert,
-    TextField,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Grid,
-} from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
 import { useLoading } from "../../../Context/LoadingContext";
 import config from "../../../utils/config";
+import { ChevronDown, Edit2, Filter, X, Search } from "lucide-react";
+import Pagination from "../../../Components/Pagination";
+import FilterPopover from "../../../Components/FilterPopover";
 
 const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [facultyProfiles, setFacultyProfiles] = useState(
@@ -30,9 +18,13 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterRank, setFilterRank] = useState("");
-    const [filterCollege, setFilterCollege] = useState("");
-    const [filterGender, setFilterGender] = useState("");
+    const [filterRank, setFilterRank] = useState();
+    const [filterCollege, setFilterCollege] = useState();
+    const [filterGender, setFilterGender] = useState();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10); // Update pageSize to be stateful
+    const [editingCell, setEditingCell] = useState(null);
+    const [isFilterOpen, setIsFilterOpen] = useState(false); // State for popover visibility
 
     useEffect(() => {
         const validProfiles = Array.isArray(initialFacultyProfiles)
@@ -60,7 +52,14 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
         });
 
         return {
-            ranks: ["", ...Array.from(ranks).sort()],
+            ranks: [
+                "",
+                ...Array.from(ranks).sort((a, b) => {
+                    const numA = parseFloat(a) || 0;
+                    const numB = parseFloat(b) || 0;
+                    return numA - numB;
+                }),
+            ],
             colleges: ["", ...Array.from(colleges).sort()],
             genders: ["", ...Array.from(genders).sort()],
         };
@@ -83,8 +82,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 minWidth: 100,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "home_college",
@@ -93,8 +90,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "home_department",
@@ -103,8 +98,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "is_tenured",
@@ -113,8 +106,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "ssl_salary_grade",
@@ -123,8 +114,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "annual_basic_salary",
@@ -134,8 +123,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "on_leave_without_pay",
@@ -144,8 +131,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "full_time_equivalent",
@@ -155,8 +140,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "gender",
@@ -165,8 +148,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "highest_degree_attained",
@@ -175,8 +156,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "pursuing_next_degree",
@@ -186,8 +165,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "discipline_teaching_load_1",
@@ -196,8 +173,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "discipline_teaching_load_2",
@@ -206,8 +181,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "discipline_bachelors",
@@ -216,8 +189,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "discipline_masters",
@@ -226,8 +197,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "discipline_doctorate",
@@ -236,8 +205,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 flex: 1,
                 editable: true,
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "masters_with_thesis",
@@ -247,8 +214,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "doctorate_with_dissertation",
@@ -258,8 +223,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_lab_credit_units",
@@ -269,8 +232,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_lecture_credit_units",
@@ -280,8 +241,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_total_credit_units",
@@ -291,8 +250,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_lab_hours_per_week",
@@ -302,8 +259,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_lecture_hours_per_week",
@@ -313,8 +268,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_total_hours_per_week",
@@ -324,8 +277,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_lab_contact_hours",
@@ -335,8 +286,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_lecture_contact_hours",
@@ -346,8 +295,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "undergrad_total_contact_hours",
@@ -357,8 +304,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "graduate_lab_credit_units",
@@ -368,8 +313,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "graduate_lecture_credit_units",
@@ -378,8 +321,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "graduate_total_credit_units",
@@ -388,8 +329,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "graduate_lab_contact_hours",
@@ -399,8 +338,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "graduate_lecture_contact_hours",
@@ -410,8 +347,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "graduate_total_contact_hours",
@@ -421,8 +356,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "research_load",
@@ -432,8 +365,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "extension_services_load",
@@ -443,8 +374,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "study_load",
@@ -454,8 +383,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "production_load",
@@ -464,8 +391,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "administrative_load",
@@ -475,8 +400,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "other_load_credits",
@@ -486,8 +409,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
             {
                 field: "total_work_load",
@@ -496,8 +417,6 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 editable: true,
                 type: "number",
                 sortable: false,
-                align: "center",
-                headerAlign: "center",
             },
         ],
         []
@@ -530,32 +449,22 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 allColumns[18], // doctorate_with_dissertation
             ],
             teaching: [
-                {
-                    headerName: "Undergraduate Teaching Load",
-                    children: [
-                        allColumns[0], // name
-                        allColumns[19], // undergrad_lab_credit_units
-                        allColumns[20], // undergrad_lecture_credit_units
-                        allColumns[21], // undergrad_total_credit_units
-                        allColumns[22], // undergrad_lab_hours_per_week
-                        allColumns[23], // undergrad_lecture_hours_per_week
-                        allColumns[24], // undergrad_total_hours_per_week
-                        allColumns[25], // undergrad_lab_contact_hours
-                        allColumns[26], // undergrad_lecture_contact_hours
-                        allColumns[27], // undergrad_total_contact_hours
-                    ],
-                },
-                {
-                    headerName: "Graduate Teaching Load",
-                    children: [
-                        allColumns[28], // graduate_lab_credit_units
-                        allColumns[29], // graduate_lecture_credit_units
-                        allColumns[30], // graduate_total_credit_units
-                        allColumns[31], // graduate_lab_contact_hours
-                        allColumns[32], // graduate_lecture_contact_hours
-                        allColumns[33], // graduate_total_contact_hours
-                    ],
-                },
+                allColumns[0], // name
+                allColumns[19], // undergrad_lab_credit_units
+                allColumns[20], // undergrad_lecture_credit_units
+                allColumns[21], // undergrad_total_credit_units
+                allColumns[22], // undergrad_lab_hours_per_week
+                allColumns[23], // undergrad_lecture_hours_per_week
+                allColumns[24], // undergrad_total_hours_per_week
+                allColumns[25], // undergrad_lab_contact_hours
+                allColumns[26], // undergrad_lecture_contact_hours
+                allColumns[27], // undergrad_total_contact_hours
+                allColumns[28], // graduate_lab_credit_units
+                allColumns[29], // graduate_lecture_credit_units
+                allColumns[30], // graduate_total_credit_units
+                allColumns[31], // graduate_lab_contact_hours
+                allColumns[32], // graduate_lecture_contact_hours
+                allColumns[33], // graduate_total_contact_hours
             ],
             other: [
                 allColumns[0], // name
@@ -600,9 +509,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             }));
     }, [facultyProfiles, searchTerm, filterRank, filterCollege, filterGender]);
 
-    const handleCellEditStop = useCallback(
-        async (params) => {
-            const { id, field, value } = params;
+    const handleCellEdit = useCallback(
+        async (id, field, value) => {
             showLoading();
             const updatedFacultyProfiles = [...facultyProfiles];
             const profileIndex = updatedFacultyProfiles.findIndex(
@@ -638,13 +546,15 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 setSnackbarOpen(true);
             } finally {
                 hideLoading();
+                setEditingCell(null);
             }
         },
         [facultyProfiles]
     );
 
-    const handleTabChange = (event, newValue) => {
+    const handleTabChange = (newValue) => {
         setTabValue(newValue);
+        setCurrentPage(1); // Reset pagination on tab change
     };
 
     const currentColumns = useMemo(() => {
@@ -654,24 +564,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
             case 1:
                 return tabbedColumns.education;
             case 2:
-                return [
-                    allColumns[0], // name
-                    allColumns[19], // undergrad_lab_credit_units
-                    allColumns[20], // undergrad_lecture_credit_units
-                    allColumns[21], // undergrad_total_credit_units
-                    allColumns[22], // undergrad_lab_hours_per_week
-                    allColumns[23], // undergrad_lecture_hours_per_week
-                    allColumns[24], // undergrad_total_hours_per_week
-                    allColumns[25], // undergrad_lab_contact_hours
-                    allColumns[26], // undergrad_lecture_contact_hours
-                    allColumns[27], // undergrad_total_contact_hours
-                    allColumns[28], // graduate_lab_credit_units
-                    allColumns[29], // graduate_lecture_credit_units
-                    allColumns[30], // graduate_total_credit_units
-                    allColumns[31], // graduate_lab_contact_hours
-                    allColumns[32], // graduate_lecture_contact_hours
-                    allColumns[33], // graduate_total_contact_hours
-                ];
+                return tabbedColumns.teaching;
             case 3:
                 return tabbedColumns.other;
             default:
@@ -683,7 +576,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
         if (tabValue === 2) {
             return [
                 {
-                    groupId: " ",
+                    groupId: "name",
+                    headerName: " ",
                     children: [{ field: "name" }],
                 },
                 {
@@ -718,236 +612,531 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
         return [];
     }, [tabValue]);
 
+    const filters = {
+        filterRank,
+        filterCollege,
+        filterGender,
+    };
+
+    const handleFilterChange = (key, value) => {
+        switch (key) {
+            case "filterRank":
+                setFilterRank(value);
+                break;
+            case "filterCollege":
+                setFilterCollege(value);
+                break;
+            case "filterGender":
+                setFilterGender(value);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Pagination
+    const totalRows = data.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    const paginatedData = data.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
+
     return (
-        <Box sx={{ mt: 2, position: "relative" }}>
-            <Grid container spacing={1} sx={{ mb: 1 }}>
-                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
-                    <TextField
-                        fullWidth
-                        label="Search by Name"
+        <div className="mt-2 relative">
+            {/* Search and Filter - Combined Row */}
+            <div className="flex mb-3 flex-wrap gap-2">
+                {/* Search Box */}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={16} className="text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ "& .MuiInputBase-root": { fontSize: "0.85rem" } }}
+                        className="pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="Search by faculty name..."
                     />
-                </Grid>
-                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
-                    <FormControl fullWidth size="small">
-                        <InputLabel sx={{ fontSize: "0.85rem" }}>
-                            Faculty Rank
-                        </InputLabel>
-                        <Select
-                            value={filterRank}
-                            onChange={(e) => setFilterRank(e.target.value)}
-                            label="Faculty Rank"
-                            sx={{ fontSize: "0.85rem" }}
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm("")}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         >
-                            {filterOptions.ranks.map((rank) => (
-                                <MenuItem
-                                    key={rank || "all"}
-                                    value={rank}
-                                    sx={{ fontSize: "0.85rem" }}
-                                >
-                                    {rank || "All"}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Grid>
-                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
-                    <FormControl fullWidth size="small">
-                        <InputLabel sx={{ fontSize: "0.85rem" }}>
-                            Home College
-                        </InputLabel>
-                        <Select
-                            value={filterCollege}
-                            onChange={(e) => setFilterCollege(e.target.value)}
-                            label="Home College"
-                            sx={{ fontSize: "0.85rem" }}
-                        >
-                            {filterOptions.colleges.map((college) => (
-                                <MenuItem
-                                    key={college || "all"}
-                                    value={college}
-                                    sx={{ fontSize: "0.85rem" }}
-                                >
-                                    {college || "All"}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Grid>
-                <Grid  size={{ xs: 12, sm: 6, md: 3 }}>
-                    <FormControl fullWidth size="small">
-                        <InputLabel sx={{ fontSize: "0.85rem" }}>
-                            Gender
-                        </InputLabel>
-                        <Select
-                            value={filterGender}
-                            onChange={(e) => setFilterGender(e.target.value)}
-                            label="Gender"
-                            sx={{ fontSize: "0.85rem" }}
-                        >
-                            {filterOptions.genders.map((gender) => (
-                                <MenuItem
-                                    key={gender || "all"}
-                                    value={gender}
-                                    sx={{ fontSize: "0.85rem" }}
-                                >
-                                    {gender || "All"}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Grid>
-            </Grid>
-
-            <Paper
-                sx={{
-                    borderRadius: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    height: {
-                        xs: "60vh",
-                        sm: "50vh",
-                        md: "50vh",
-                    },
-                    maxWidth: {
-                        xs: "100vw",
-                        sm: "95vw",
-                        md: "98vw",
-                    },
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                }}
-            >
-                <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    aria-label="faculty data tabs"
-                    variant="fullWidth"
-                    sx={{
-                        borderBottom: 1,
-                        borderColor: "divider",
-                        "& .MuiTab-root": {
-                            fontSize: "0.875rem",
-                            fontWeight: "medium",
-                        },
-                        flexShrink: 0,
-                    }}
-                >
-                    <Tab label="Personal Info" />
-                    <Tab label="Education" />
-                    <Tab label="Teaching Load" />
-                    <Tab label="Other Loads" />
-                </Tabs>
-
-                <Paper
-                    sx={{
-                        borderRadius: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        height: {
-                            xs: "60vh",
-                            sm: "50vh",
-                            md: "50vh",
-                        },
-                        maxWidth: {
-                            xs: "100vw",
-                            sm: "95vw",
-                            md: "98vw",
-                        },
-                        overflowX: "auto",
-                        overflowY: "hidden",
-                    }}
-                >
-                    <DataGrid
-                        rows={data}
-                        columns={currentColumns}
-                        editMode="cell"
-                        disableColumnFilter
-                        disableColumnMenu
-                        disableColumnSorting
-                        onCellEditStop={handleCellEditStop}
-                        density="compact"
-                        columnGroupingModel={columnGroupingModel}
-                        experimentalFeatures={{ columnGrouping: true }}
-                        sx={{
-                            border: 0,
-                            "& .MuiDataGrid-root": {
-                                height: "100%",
-                                p: 1,
-                                flexDirection: "column",
-                                minWidth: "fit-content",
-                            },
-                            "& .MuiDataGrid-main": {
-                                overflowX: "auto",
-                                overflowY: "auto",
-                                "&::-webkit-scrollbar": {
-                                    height: "8px",
-                                },
-                                "&::-webkit-scrollbar-thumb": {
-                                    backgroundColor: "rgba(0,0,0,0.2)",
-                                    borderRadius: "4px",
-                                },
-                            },
-                            "& .MuiDataGrid-footerContainer": {
-                                borderTop: 1,
-                                borderColor: "divider",
-                                position: "sticky",
-                                bottom: 0,
-                                backgroundColor: "background.paper",
-                                zIndex: 1,
-                                minWidth: "fit-content",
-                            },
-                            "& .MuiDataGrid-columnSeparator": {
-                                visibility: "hidden",
-                            },
-                            "& .MuiDataGrid-cell": {
-                                borderRight: "1px solid",
-                                borderColor: "divider",
-                                whiteSpace: "normal",
-                                wordBreak: "break-word",
-                                padding: "4px 8px",
-                            },
-                            "& .MuiDataGrid-columnHeader": {
-                                borderRight: "1px solid",
-                                borderColor: "divider",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "clip",
-                                padding: "4px 8px",
-                            },
-                            "& .MuiDataGrid-columnHeaderTitle": {
-                                whiteSpace: "nowrap",
-                                overflow: "visible",
-                            },
+                            <X
+                                size={16}
+                                className="text-gray-400 hover:text-gray-600"
+                            />
+                        </button>
+                    )}
+                </div>
+                {/* Filter Button */}
+                <div className="relative">
+                    <button
+                        onClick={() => setIsFilterOpen((prev) => !prev)}
+                        className="px-3 py-2 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700"
+                    >
+                        <Filter size={16} />
+                        Filters
+                    </button>
+                    <FilterPopover
+                        open={isFilterOpen}
+                        onClose={() => setIsFilterOpen(false)}
+                        filters={filters}
+                        onFilterChange={handleFilterChange}
+                        onClearFilters={() => {
+                            setFilterRank();
+                            setFilterCollege();
+                            setFilterGender();
                         }}
-                        disableRowSelectionOnClick
-                        initialState={{
-                            pagination: { paginationModel: { pageSize: 10 } },
+                        filterOptions={{
+                            filterRank: filterOptions.ranks,
+                            filterCollege: filterOptions.colleges,
+                            filterGender: filterOptions.genders,
                         }}
-                        pageSizeOptions={[10, 25, 50]}
                     />
-                </Paper>
-            </Paper>
+                </div>
+            </div>
 
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={6000}
-                onClose={() => setSnackbarOpen(false)}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-                <Alert
-                    onClose={() => setSnackbarOpen(false)}
-                    severity={snackbarSeverity}
-                    sx={{ width: "100%" }}
+            {/* Tabs - Scrollable for mobile */}
+            <div className="flex border-b border-gray-200 mb-3 overflow-x-auto hide-scrollbar">
+                {[
+                    "Personal Info",
+                    "Education",
+                    "Teaching Load",
+                    "Other Loads",
+                ].map((label, index) => (
+                    <button
+                        key={label}
+                        onClick={() => handleTabChange(index)}
+                        className={`px-4 py-3 text-sm font-semibold whitespace-nowrap transition-all ${
+                            tabValue === index
+                                ? "text-blue-700 border-b-4 border-blue-700"
+                                : "text-gray-700 hover:text-blue-600 hover:border-b-4 hover:border-blue-600"
+                        }`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Results Summary */}
+            <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
+                <p className="text-xs text-gray-600">
+                    <span className="font-medium">{paginatedData.length}</span>{" "}
+                    of <span className="font-medium">{totalRows}</span> faculty
+                    {searchTerm && (
+                        <span className="hidden sm:inline">
+                            {" matching "}
+                            <strong>&#34;{searchTerm}&#34;</strong>
+                        </span>
+                    )}
+                </p>
+            </div>
+
+            {/* Compact Table Container */}
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-3 max-h-[40vh] overflow-y-auto">
+                {/* Mobile Card View for small screens */}
+                <div className="block sm:hidden">
+                    {paginatedData.length === 0 ? (
+                        <div className="p-4 text-xs text-center text-gray-500">
+                            No faculty profiles found matching your criteria
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-200">
+                            {paginatedData.map((row) => (
+                                <div
+                                    key={row.id}
+                                    className="p-3 hover:bg-gray-50"
+                                >
+                                    <div className="font-medium text-sm text-gray-900 mb-1">
+                                        {row.name || "Unnamed Faculty"}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                        {currentColumns
+                                            .slice(1, 5)
+                                            .map((column) => (
+                                                <div
+                                                    key={column.field}
+                                                    className="flex flex-col"
+                                                >
+                                                    <span className="text-gray-500 text-2xs">
+                                                        {column.headerName}
+                                                    </span>
+                                                    <div
+                                                        className={`${
+                                                            column.editable
+                                                                ? "cursor-pointer hover:bg-blue-50 hover:rounded px-1"
+                                                                : ""
+                                                        }`}
+                                                        onClick={() =>
+                                                            column.editable &&
+                                                            setEditingCell({
+                                                                rowId: row.id,
+                                                                field: column.field,
+                                                            })
+                                                        }
+                                                    >
+                                                        {editingCell?.rowId ===
+                                                            row.id &&
+                                                        editingCell?.field ===
+                                                            column.field ? (
+                                                            <input
+                                                                type={
+                                                                    column.type ===
+                                                                    "number"
+                                                                        ? "number"
+                                                                        : "text"
+                                                                }
+                                                                value={
+                                                                    row[
+                                                                        column
+                                                                            .field
+                                                                    ] ?? ""
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setFacultyProfiles(
+                                                                        (
+                                                                            prev
+                                                                        ) =>
+                                                                            prev.map(
+                                                                                (
+                                                                                    p
+                                                                                ) =>
+                                                                                    p.id ===
+                                                                                    row.id
+                                                                                        ? {
+                                                                                              ...p,
+                                                                                              [column.field]:
+                                                                                                  e
+                                                                                                      .target
+                                                                                                      .value,
+                                                                                          }
+                                                                                        : p
+                                                                            )
+                                                                    )
+                                                                }
+                                                                onBlur={() =>
+                                                                    handleCellEdit(
+                                                                        row.id,
+                                                                        column.field,
+                                                                        row[
+                                                                            column
+                                                                                .field
+                                                                        ]
+                                                                    )
+                                                                }
+                                                                onKeyDown={(
+                                                                    e
+                                                                ) => {
+                                                                    if (
+                                                                        e.key ===
+                                                                        "Enter"
+                                                                    ) {
+                                                                        handleCellEdit(
+                                                                            row.id,
+                                                                            column.field,
+                                                                            row[
+                                                                                column
+                                                                                    .field
+                                                                            ]
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                className="w-full px-1.5 py-0.5 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <span className="font-medium">
+                                                                {row[
+                                                                    column.field
+                                                                ] !==
+                                                                    undefined &&
+                                                                row[
+                                                                    column.field
+                                                                ] !== null
+                                                                    ? column.type ===
+                                                                      "number"
+                                                                        ? Number(
+                                                                              row[
+                                                                                  column
+                                                                                      .field
+                                                                              ]
+                                                                          ).toLocaleString()
+                                                                        : row[
+                                                                              column
+                                                                                  .field
+                                                                          ]
+                                                                    : "-"}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                    <div className="mt-2 flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                // Implement view details functionality
+                                                console.log(
+                                                    "View details for:",
+                                                    row.id
+                                                );
+                                            }}
+                                            className="text-xs text-blue-600 hover:text-blue-800"
+                                        >
+                                            View details
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Table View for larger screens */}
+                <div className="hidden sm:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                        {/* Column Grouping Headers */}
+                        {tabValue === 2 && (
+                            <thead>
+                                <tr className="bg-gray-50">
+                                    {columnGroupingModel.map((group) => (
+                                        <th
+                                            key={group.groupId}
+                                            colSpan={group.children.length}
+                                            className="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-gray-50"
+                                        >
+                                            {group.headerName}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                        )}
+
+                        {/* Column Headers */}
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                                {currentColumns.map((column) => (
+                                    <th
+                                        key={column.field}
+                                        className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r border-gray-200 truncate"
+                                        style={{ minWidth: column.minWidth }}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="truncate">
+                                                {column.headerName}
+                                            </span>
+                                            {column.sortable && (
+                                                <ChevronDown className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                            )}
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+
+                        {/* Table Body */}
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {paginatedData.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={currentColumns.length}
+                                        className="px-3 py-4 text-xs text-center text-gray-500 bg-gray-50"
+                                    >
+                                        No faculty profiles found matching your
+                                        criteria
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedData.map((row, rowIndex) => (
+                                    <tr
+                                        key={row.id}
+                                        className={`${
+                                            rowIndex % 2 === 0
+                                                ? "bg-white"
+                                                : "bg-gray-50"
+                                        } hover:bg-blue-50/50`}
+                                    >
+                                        {currentColumns.map((column) => (
+                                            <td
+                                                key={`${row.id}-${column.field}`}
+                                                className="px-2 py-1.5 text-xs text-gray-900 border-r border-gray-200"
+                                            >
+                                                {editingCell?.rowId ===
+                                                    row.id &&
+                                                editingCell?.field ===
+                                                    column.field ? (
+                                                    <input
+                                                        type={
+                                                            column.type ===
+                                                            "number"
+                                                                ? "number"
+                                                                : "text"
+                                                        }
+                                                        value={
+                                                            row[column.field] ??
+                                                            ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            setFacultyProfiles(
+                                                                (prev) =>
+                                                                    prev.map(
+                                                                        (p) =>
+                                                                            p.id ===
+                                                                            row.id
+                                                                                ? {
+                                                                                      ...p,
+                                                                                      [column.field]:
+                                                                                          e
+                                                                                              .target
+                                                                                              .value,
+                                                                                  }
+                                                                                : p
+                                                                    )
+                                                            )
+                                                        }
+                                                        onBlur={() =>
+                                                            handleCellEdit(
+                                                                row.id,
+                                                                column.field,
+                                                                row[
+                                                                    column.field
+                                                                ]
+                                                            )
+                                                        }
+                                                        onKeyDown={(e) => {
+                                                            if (
+                                                                e.key ===
+                                                                "Enter"
+                                                            ) {
+                                                                handleCellEdit(
+                                                                    row.id,
+                                                                    column.field,
+                                                                    row[
+                                                                        column
+                                                                            .field
+                                                                    ]
+                                                                );
+                                                            }
+                                                        }}
+                                                        className="w-full px-1.5 py-0.5 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    <div className="group relative">
+                                                        <div
+                                                            onClick={() =>
+                                                                column.editable &&
+                                                                setEditingCell({
+                                                                    rowId: row.id,
+                                                                    field: column.field,
+                                                                })
+                                                            }
+                                                            className={`truncate ${
+                                                                column.editable
+                                                                    ? "cursor-pointer group-hover:bg-blue-50 group-hover:rounded px-1.5 py-0.5"
+                                                                    : ""
+                                                            }`}
+                                                        >
+                                                            {row[
+                                                                column.field
+                                                            ] !== undefined &&
+                                                            row[
+                                                                column.field
+                                                            ] !== null
+                                                                ? column.type ===
+                                                                  "number"
+                                                                    ? Number(
+                                                                          row[
+                                                                              column
+                                                                                  .field
+                                                                          ]
+                                                                      ).toLocaleString()
+                                                                    : row[
+                                                                          column
+                                                                              .field
+                                                                      ]
+                                                                : "-"}
+
+                                                            {column.editable && (
+                                                                <Edit2 className="w-2.5 h-2.5 text-blue-500 opacity-0 group-hover:opacity-100 absolute right-0.5 top-1/2 transform -translate-y-1/2" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Pagination */}
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 p-2">
+                <div className="sm:flex justify-end items-center">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        pageSize={pageSize}
+                        onPageChange={(page) => setCurrentPage(page)}
+                        onPageSizeChange={(size) => {
+                            setPageSize(size);
+                            setCurrentPage(1);
+                        }}
+                        showFirstLast={true}
+                        showPageInput={true}
+                        showPageSize={true}
+                        maxPageButtons={5}
+                        className="flex justify-between items-center"
+                    />
+                </div>
+            </div>
+
+            {/* Snackbar */}
+            {snackbarOpen && (
+                <div
+                    className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto sm:max-w-xs p-3 rounded-md shadow-lg z-50 flex items-center justify-between ${
+                        snackbarSeverity === "success"
+                            ? "bg-green-50 border border-green-200"
+                            : "bg-red-50 border border-red-200"
+                    }`}
                 >
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-        </Box>
+                    <div
+                        className={`text-xs sm:text-sm ${
+                            snackbarSeverity === "success"
+                                ? "text-green-700"
+                                : "text-red-700"
+                        }`}
+                    >
+                        {snackbarMessage}
+                    </div>
+                    <button
+                        onClick={() => setSnackbarOpen(false)}
+                        className="p-1 rounded-full hover:bg-gray-200"
+                    >
+                        <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                </div>
+            )}
+
+            {/* Add CSS for hiding scrollbars but allowing scrolling */}
+            <style>{`
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .text-2xs {
+        font-size: 0.65rem;
+      }
+    `}</style>
+        </div>
     );
 };
 

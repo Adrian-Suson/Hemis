@@ -21,6 +21,7 @@ import {
 import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 import { encryptId } from "../../../utils/encryption";
+import Pagination from "../../../Components/Pagination";
 
 // Custom hook to detect clicks outside an element
 const useClickOutside = (ref, callback) => {
@@ -64,8 +65,8 @@ const InstitutionTable = ({
     });
     const menuButtonRef = useRef(null);
     const menuRef = useRef(null);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(25);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
     // Define handleMenuClose before useClickOutside
     const handleMenuClose = () => {
@@ -346,6 +347,14 @@ const InstitutionTable = ({
         provinceFilter,
     ]);
 
+    const totalRows = filteredInstitutions.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    const paginatedInstitutions = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        return filteredInstitutions.slice(startIndex, endIndex);
+    }, [filteredInstitutions, currentPage, pageSize]);
+
     const handleNavigation = (path, action) => {
         if (!selectedInstitution) return;
         setLoading((prev) => ({ ...prev, [action]: true }));
@@ -374,20 +383,6 @@ const InstitutionTable = ({
         }
     };
 
-    const handleChangePage = (newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    const paginatedInstitutions = useMemo(() => {
-        const start = page * rowsPerPage;
-        return filteredInstitutions.slice(start, start + rowsPerPage);
-    }, [filteredInstitutions, page, rowsPerPage]);
-
     return (
         <div className="mb-4">
             {/* Custom Table */}
@@ -396,7 +391,7 @@ const InstitutionTable = ({
                     <thead className="bg-gray-100">
                         <tr>
                             <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                            UUID
+                                UUID
                             </th>
                             <th className="py-3 px-4 text-left font-semibold border-r border-gray-200">
                                 Name
@@ -479,48 +474,21 @@ const InstitutionTable = ({
 
             {/* Pagination */}
             {filteredInstitutions.length > 0 && (
-                <div className="flex justify-end items-center mt-4 space-x-4 text-sm">
-                    <div>
-                        Rows per page:
-                        <select
-                            value={rowsPerPage}
-                            onChange={handleChangeRowsPerPage}
-                            className="ml-2 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            {[25, 50, 100].map((option) => (
-                                <option key={option} value={option}>
-                                    {option}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        {page * rowsPerPage + 1}-
-                        {Math.min(
-                            (page + 1) * rowsPerPage,
-                            filteredInstitutions.length
-                        )}{" "}
-                        of {filteredInstitutions.length}
-                    </div>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => handleChangePage(page - 1)}
-                            disabled={page === 0}
-                            className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => handleChangePage(page + 1)}
-                            disabled={
-                                (page + 1) * rowsPerPage >=
-                                filteredInstitutions.length
-                            }
-                            className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                        >
-                            Next
-                        </button>
-                    </div>
+                <div className="mt-4">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        pageSize={pageSize}
+                        onPageChange={(page) => setCurrentPage(page)}
+                        onPageSizeChange={(size) => {
+                            setPageSize(size);
+                            setCurrentPage(1);
+                        }}
+                        showFirstLast={true}
+                        showPageSize={true}
+                        maxPageButtons={5}
+                        className="flex justify-end items-center"
+                    />
                 </div>
             )}
 

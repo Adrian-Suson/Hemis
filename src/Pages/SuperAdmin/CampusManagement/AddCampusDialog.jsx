@@ -1,53 +1,38 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Grid,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Button,
-    Autocomplete,
-    FormHelperText,
-} from "@mui/material";
 import PropTypes from "prop-types";
 import axios from "axios";
+import AlertComponent from "../../../Components/AlertComponent"; // Import AlertComponent
 import { useLoading } from "../../../Context/LoadingContext";
 import { useParams } from "react-router-dom";
 import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
 import useLocationData from "../../../utils/useLocationData";
-import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
+import FormInput from "../../../Components/FormInput";
+import YearPicker from "../../../Components/YearPicker";
 
-const AddCampusDialog = ({
-    open,
-    onClose,
-    onAddCampus,
-    setSnackbarOpen,
-    setSnackbarMessage,
-    setSnackbarSeverity,
-}) => {
+const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
     const { updateProgress, hideLoading } = useLoading();
     const { institutionId: encryptedInstitutionId } = useParams();
     const decryptedInstitutionId = decryptId(encryptedInstitutionId);
-    const { regions, provinces, municipalities, fetchRegions, fetchProvinces, fetchMunicipalities } = useLocationData();
+    const {
+        regions,
+        provinces,
+        municipalities,
+        fetchRegions,
+        fetchProvinces,
+        fetchMunicipalities,
+    } = useLocationData();
 
     const [newCampus, setNewCampus] = useState({
         institution_id: decryptedInstitutionId || "",
         suc_name: "",
         campus_type: "",
         institutional_code: "",
-        region_id: "",
-        province_id: "",
-        municipality_id: "",
+        region: "",
+        province_municipality: "",
         former_name: "",
-        year_first_operation: null,
+        year_first_operation: "",
         land_area_hectares: "",
         distance_from_main: "",
         autonomous_code: "",
@@ -57,29 +42,34 @@ const AddCampusDialog = ({
         longitude_coordinates: "",
     });
     const [errors, setErrors] = useState({});
+    const [selectedProvince, setSelectedProvince] = useState(""); // Track province for municipality dropdown
 
-    const currentYear = 2025;
+    const currentYear = new Date().getFullYear();
 
     // Fetch regions when dialog opens
     useEffect(() => {
         if (open) {
             fetchRegions();
         }
-    }, [open, ]);
+    }, [open]);
 
     // Fetch provinces when region is selected
     useEffect(() => {
-        if (newCampus.region_id) {
-            fetchProvinces(newCampus.region_id);
+        if (newCampus.region) {
+            fetchProvinces(
+                regions.find((r) => r.name === newCampus.region)?.id || ""
+            );
         }
-    }, [newCampus.region_id, ]);
+    }, [newCampus.region]);
 
     // Fetch municipalities when province is selected
     useEffect(() => {
-        if (newCampus.province_id) {
-            fetchMunicipalities(newCampus.province_id);
+        if (selectedProvince) {
+            fetchMunicipalities(
+                provinces.find((p) => p.name === selectedProvince)?.id || ""
+            );
         }
-    }, [newCampus.province_id, ]);
+    }, [selectedProvince]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -88,29 +78,26 @@ const AddCampusDialog = ({
         if (!newCampus.institution_id) {
             newErrors.institution_id = "Institution ID is required.";
         }
-
         if (!newCampus.suc_name.trim()) {
             newErrors.suc_name = "Campus name is required.";
         }
-
         if (!newCampus.campus_type) {
             newErrors.campus_type = "Campus type is required.";
         }
-
         if (!newCampus.institutional_code.trim()) {
             newErrors.institutional_code = "Institutional code is required.";
         }
 
-        if (!newCampus.region_id) {
-            newErrors.region_id = "Region is required.";
+        // Optional fields (region, province, municipality can be nullable)
+        if (newCampus.region && newCampus.region.length > 255) {
+            newErrors.region = "Region must be 255 characters or less.";
         }
-
-        if (!newCampus.province_id) {
-            newErrors.province_id = "Province is required.";
-        }
-
-        if (!newCampus.municipality_id) {
-            newErrors.municipality_id = "Municipality is required.";
+        if (
+            newCampus.province_municipality &&
+            newCampus.province_municipality.length > 255
+        ) {
+            newErrors.province_municipality =
+                "Province and Municipality must be 255 characters or less.";
         }
 
         // Optional string fields
@@ -128,13 +115,14 @@ const AddCampusDialog = ({
 
         // Year validation
         if (newCampus.year_first_operation) {
-            const year = newCampus.year_first_operation.year();
+            const year = parseInt(newCampus.year_first_operation, 10);
             if (isNaN(year)) {
                 newErrors.year_first_operation = "Must be a valid year.";
             } else if (year < 1800) {
                 newErrors.year_first_operation = "Year must be 1800 or later.";
             } else if (year > currentYear) {
-                newErrors.year_first_operation = "Year cannot be in the future.";
+                newErrors.year_first_operation =
+                    "Year cannot be in the future.";
             }
         }
 
@@ -172,7 +160,8 @@ const AddCampusDialog = ({
             if (isNaN(value)) {
                 newErrors.longitude_coordinates = "Must be a valid number.";
             } else if (value < -180 || value > 180) {
-                newErrors.longitude_coordinates = "Must be between -180 and 180.";
+                newErrors.longitude_coordinates =
+                    "Must be between -180 and 180.";
             }
         }
 
@@ -191,17 +180,27 @@ const AddCampusDialog = ({
         }
     };
 
+    const handleYearChange = (e) => {
+        const value = e.target.value;
+        setNewCampus((prev) => ({
+            ...prev,
+            year_first_operation: value,
+        }));
+        if (errors.year_first_operation) {
+            setErrors((prev) => ({ ...prev, year_first_operation: undefined }));
+        }
+    };
+
     const resetForm = () => {
         setNewCampus({
             institution_id: decryptedInstitutionId || "",
             suc_name: "",
             campus_type: "",
             institutional_code: "",
-            region_id: "",
-            province_id: "",
-            municipality_id: "",
+            region: "",
+            province_municipality: "",
             former_name: "",
-            year_first_operation: null,
+            year_first_operation: "",
             land_area_hectares: "",
             distance_from_main: "",
             autonomous_code: "",
@@ -210,32 +209,35 @@ const AddCampusDialog = ({
             latitude_coordinates: "",
             longitude_coordinates: "",
         });
+        setSelectedProvince("");
         setErrors({});
     };
 
     const handleAddCampus = async () => {
         if (!validateForm()) {
             console.log("[Add Campus] Validation failed:", errors);
-            setSnackbarMessage("Validation failed. Please check the form.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
+            AlertComponent.showAlert(
+                "Please check the form for errors.",
+                "error"
+            );
             return;
         }
-
+        updateProgress(30);
         const token = localStorage.getItem("token");
         try {
+            const yearValue = newCampus.year_first_operation
+                ? parseInt(newCampus.year_first_operation, 10)
+                : null;
+
             const payload = {
                 institution_id: parseInt(newCampus.institution_id, 10),
                 suc_name: newCampus.suc_name || null,
                 campus_type: newCampus.campus_type || null,
                 institutional_code: newCampus.institutional_code || null,
-                region_id: parseInt(newCampus.region_id, 10),
-                province_id: parseInt(newCampus.province_id, 10),
-                municipality_id: parseInt(newCampus.municipality_id, 10),
+                region: newCampus.region || null, // Nullable
+                province_municipality: newCampus.province_municipality || null, // Nullable
                 former_name: newCampus.former_name || null,
-                year_first_operation: newCampus.year_first_operation
-                    ? newCampus.year_first_operation.year()
-                    : null,
+                year_first_operation: yearValue,
                 land_area_hectares: newCampus.land_area_hectares
                     ? parseFloat(newCampus.land_area_hectares)
                     : null,
@@ -252,9 +254,8 @@ const AddCampusDialog = ({
                     ? parseFloat(newCampus.longitude_coordinates)
                     : null,
             };
-
-            console.log("[Add Campus] Sending data:", [payload]);
             updateProgress(50);
+            console.log("[Add Campus] Sending data:", [payload]);
 
             const response = await axios.post(
                 `${config.API_URL}/campuses`,
@@ -271,10 +272,10 @@ const AddCampusDialog = ({
 
             const newCampusData = response.data.data || { id: Date.now() };
             onAddCampus({ ...payload, id: newCampusData.id });
-            setSnackbarMessage("Campus added successfully!");
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
             updateProgress(100);
+            hideLoading();
+            AlertComponent.showAlert("Campus added successfully!", "success");
+
             resetForm();
             onClose();
         } catch (error) {
@@ -282,293 +283,346 @@ const AddCampusDialog = ({
             let errorMessage = "Failed to add campus. Please try again.";
             if (error.response && error.response.status === 422) {
                 const validationErrors = error.response.data.errors;
-                console.log("[Add Campus] Validation Errors:", validationErrors);
-                errorMessage = "Validation failed: " + Object.values(validationErrors).flat().join(", ");
+                console.log(
+                    "[Add Campus] Validation Errors:",
+                    validationErrors
+                );
+                errorMessage =
+                    "Validation failed: " +
+                    Object.values(validationErrors).flat().join(", ");
             }
-            setSnackbarMessage(errorMessage);
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-            hideLoading();
+
+            AlertComponent.showAlert(errorMessage, "error");
         }
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>Add New Campus</DialogTitle>
-            <DialogContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid size={12}>
-                        <TextField
-                            margin="dense"
-                            name="suc_name"
-                            label="Campus Name"
-                            type="text"
-                            fullWidth
-                            required
-                            value={newCampus.suc_name}
-                            onChange={handleInputChange}
-                            error={!!errors.suc_name}
-                            helperText={errors.suc_name}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 6 }}>
-                        <TextField
-                            margin="dense"
-                            name="institutional_code"
-                            label="Code"
-                            type="text"
-                            fullWidth
-                            required
-                            value={newCampus.institutional_code}
-                            onChange={handleInputChange}
-                            error={!!errors.institutional_code}
-                            helperText={errors.institutional_code}
-                        />
-                    </Grid>
+        <div
+            className={`fixed inset-0 bg-black/50 flex items-center justify-center transition-opacity duration-300 z-50 ${
+                open ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+        >
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+                {/* Dialog Header */}
+                <div className="p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-800">
+                        Add New Campus
+                    </h2>
+                </div>
 
-                    <Grid size={{ xs: 12, sm: 6, md: 6 }}>
-                        <FormControl
-                            fullWidth
-                            margin="dense"
-                            required
-                            error={!!errors.campus_type}
-                        >
-                            <InputLabel id="campus-type-label">Type</InputLabel>
-                            <Select
-                                labelId="campus-type-label"
-                                name="campus_type"
-                                value={newCampus.campus_type}
-                                label="Type"
+                {/* Dialog Content */}
+                <div className="p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {/* Campus Name */}
+                        <div className="col-span-1 sm:col-span-2 md:col-span-4">
+                            <FormInput
+                                id="suc_name"
+                                name="suc_name"
+                                label="Campus Name"
+                                type="text"
+                                value={newCampus.suc_name}
                                 onChange={handleInputChange}
-                            >
-                                <MenuItem value="">
-                                    <em>Select Type</em>
-                                </MenuItem>
-                                <MenuItem value="MAIN">MAIN</MenuItem>
-                                <MenuItem value="Satellite">Satellite</MenuItem>
-                            </Select>
-                            {errors.campus_type && (
-                                <FormHelperText>{errors.campus_type}</FormHelperText>
-                            )}
-                        </FormControl>
-                    </Grid>
-                    <Grid size={12}>
-                        <TextField
-                            margin="dense"
-                            name="former_name"
-                            label="Former Name"
-                            type="text"
-                            fullWidth
-                            value={newCampus.former_name}
-                            onChange={handleInputChange}
-                            error={!!errors.former_name}
-                            helperText={errors.former_name}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <Autocomplete
-                            options={regions}
-                            getOptionLabel={(option) => option.name}
-                            value={regions.find(r => r.id === parseInt(newCampus.region_id)) || null}
-                            onChange={(event, newValue) => {
-                                setNewCampus(prev => ({
-                                    ...prev,
-                                    region_id: newValue ? newValue.id : "",
-                                    province_id: "",
-                                    municipality_id: ""
-                                }));
-                            }}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    margin="dense"
-                                    label="Region"
-                                    required
-                                    error={!!errors.region_id}
-                                    helperText={errors.region_id}
-                                />
-                            )}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
-                        <Autocomplete
-                            options={provinces}
-                            getOptionLabel={(option) => option.name}
-                            value={provinces.find(p => p.id === parseInt(newCampus.province_id)) || null}
-                            onChange={(event, newValue) => {
-                                setNewCampus(prev => ({
-                                    ...prev,
-                                    province_id: newValue ? newValue.id : "",
-                                    municipality_id: ""
-                                }));
-                            }}
-                            disabled={!newCampus.region_id}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    margin="dense"
-                                    label="Province"
-                                    required
-                                    error={!!errors.province_id}
-                                    helperText={errors.province_id}
-                                />
-                            )}
-                        />
-                    </Grid>
+                                errorMessage={errors.suc_name}
+                                required
+                            />
+                        </div>
 
-                    <Grid size={{ xs: 12, sm: 4 }}>
-                        <Autocomplete
-                            options={municipalities}
-                            getOptionLabel={(option) => option.name}
-                            value={municipalities.find(m => m.id === parseInt(newCampus.municipality_id)) || null}
-                            onChange={(event, newValue) => {
-                                setNewCampus(prev => ({
-                                    ...prev,
-                                    municipality_id: newValue ? newValue.id : ""
-                                }));
-                            }}
-                            disabled={!newCampus.province_id}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    margin="dense"
-                                    label="Municipality"
-                                    required
-                                    error={!!errors.municipality_id}
-                                    helperText={errors.municipality_id}
-                                />
-                            )}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <LocalizationProvider dateAdapter={AdapterMoment}>
-                            <DatePicker
-                                views={["year"]}
-                                label="Established"
-                                value={newCampus.year_first_operation}
-                                onChange={(date) => {
-                                    setNewCampus(prev => ({ ...prev, year_first_operation: date }));
-                                    if (errors.year_first_operation) {
-                                        setErrors(prev => ({ ...prev, year_first_operation: undefined }));
+                        {/* Institutional Code */}
+                        <div className="col-span-2">
+                            <FormInput
+                                id="institutional_code"
+                                name="institutional_code"
+                                label="Code"
+                                type="text"
+                                value={newCampus.institutional_code}
+                                onChange={handleInputChange}
+                                errorMessage={errors.institutional_code}
+                                required
+                            />
+                        </div>
+
+                        {/* Campus Type */}
+                        <div className="col-span-2">
+                            <FormInput
+                                id="campus_type"
+                                name="campus_type"
+                                label="Type"
+                                type="select"
+                                value={newCampus.campus_type}
+                                onChange={handleInputChange}
+                                errorMessage={errors.campus_type}
+                                required
+                                options={[
+                                    { value: "", label: "Select Type" },
+                                    { value: "MAIN", label: "MAIN" },
+                                    { value: "Satellite", label: "Satellite" },
+                                ]}
+                            />
+                        </div>
+
+                        {/* Former Name */}
+                        <div className="col-span-1 sm:col-span-2 md:col-span-4">
+                            <FormInput
+                                id="former_name"
+                                name="former_name"
+                                label="Former Name"
+                                type="text"
+                                value={newCampus.former_name}
+                                onChange={handleInputChange}
+                                errorMessage={errors.former_name}
+                            />
+                        </div>
+
+                        {/* Region Selection */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="region"
+                                name="region"
+                                label="Region"
+                                type="autocomplete"
+                                value={newCampus.region}
+                                onChange={(e) => {
+                                    setNewCampus((prev) => ({
+                                        ...prev,
+                                        region: e.target.value,
+                                        province_municipality: "",
+                                    }));
+                                    setSelectedProvince("");
+                                    if (errors.region) {
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            region: undefined,
+                                        }));
                                     }
                                 }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        margin="dense"
-                                        fullWidth
-                                        error={!!errors.year_first_operation}
-                                        helperText={errors.year_first_operation}
-                                    />
-                                )}
+                                errorMessage={errors.region}
+                                options={[
+                                    { value: "", label: "Select Region" },
+                                    ...regions.map((region) => ({
+                                        value: region.name,
+                                        label: region.name,
+                                        key: region.id,
+                                    })),
+                                ]}
                             />
-                        </LocalizationProvider>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <TextField
-                            margin="dense"
-                            name="autonomous_code"
-                            label="Auto Code"
-                            fullWidth
-                            value={newCampus.autonomous_code}
-                            onChange={handleInputChange}
-                            error={!!errors.autonomous_code}
-                            helperText={errors.autonomous_code}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                        <TextField
-                            margin="dense"
-                            name="position_title"
-                            label="Position"
-                            fullWidth
-                            value={newCampus.position_title}
-                            onChange={handleInputChange}
-                            error={!!errors.position_title}
-                            helperText={errors.position_title}
-                        />
-                    </Grid>
-                    <Grid size={12}>
-                        <TextField
-                            margin="dense"
-                            name="head_full_name"
-                            label="Head"
-                            fullWidth
-                            value={newCampus.head_full_name}
-                            onChange={handleInputChange}
-                            error={!!errors.head_full_name}
-                            helperText={errors.head_full_name}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <TextField
-                            margin="dense"
-                            name="distance_from_main"
-                            label="Distance (km)"
-                            type="number"
-                            fullWidth
-                            value={newCampus.distance_from_main}
-                            onChange={handleInputChange}
-                            error={!!errors.distance_from_main}
-                            helperText={errors.distance_from_main}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <TextField
-                            margin="dense"
-                            name="land_area_hectares"
-                            label="Land Area (ha)"
-                            type="number"
-                            fullWidth
-                            value={newCampus.land_area_hectares}
-                            onChange={handleInputChange}
-                            error={!!errors.land_area_hectares}
-                            helperText={errors.land_area_hectares}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <TextField
-                            margin="dense"
-                            name="latitude_coordinates"
-                            label="Latitude"
-                            type="number"
-                            fullWidth
-                            value={newCampus.latitude_coordinates}
-                            onChange={handleInputChange}
-                            error={!!errors.latitude_coordinates}
-                            helperText={errors.latitude_coordinates}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <TextField
-                            margin="dense"
-                            name="longitude_coordinates"
-                            label="Longitude"
-                            type="number"
-                            fullWidth
-                            value={newCampus.longitude_coordinates}
-                            onChange={handleInputChange}
-                            error={!!errors.longitude_coordinates}
-                            helperText={errors.longitude_coordinates}
-                        />
-                    </Grid>
-                </Grid>
-            </DialogContent>
-            <DialogActions>
-                <Button
-                    onClick={() => {
-                        resetForm();
-                        onClose();
-                    }}
-                    color="secondary"
-                >
-                    Cancel
-                </Button>
-                <Button onClick={handleAddCampus} color="primary">
-                    Add
-                </Button>
-            </DialogActions>
-        </Dialog>
+                        </div>
+
+                        {/* Province Selection */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="province"
+                                name="province"
+                                label="Province"
+                                type="autocomplete"
+                                value={selectedProvince}
+                                onChange={(e) => {
+                                    setSelectedProvince(e.target.value);
+                                    setNewCampus((prev) => ({
+                                        ...prev,
+                                        province_municipality: "",
+                                    }));
+                                    if (errors.province_municipality) {
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            province_municipality: undefined,
+                                        }));
+                                    }
+                                }}
+                                errorMessage={errors.province_municipality}
+                                disabled={!newCampus.region}
+                                options={[
+                                    { value: "", label: "Select Province" },
+                                    ...provinces.map((province) => ({
+                                        value: province.name,
+                                        label: province.name,
+                                        key: province.id,
+                                    })),
+                                ]}
+                            />
+                        </div>
+
+                        {/* Municipality Selection */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="municipality"
+                                name="municipality"
+                                label="Municipality"
+                                type="autocomplete"
+                                value={
+                                    newCampus.province_municipality
+                                        ? newCampus.province_municipality.split(
+                                              ", "
+                                          )[1] || ""
+                                        : ""
+                                }
+                                onChange={(e) => {
+                                    const municipalityName = e.target.value;
+                                    const provinceName = selectedProvince;
+                                    const combined =
+                                        provinceName && municipalityName
+                                            ? `${provinceName}, ${municipalityName}`
+                                            : "";
+                                    setNewCampus((prev) => ({
+                                        ...prev,
+                                        province_municipality: combined,
+                                    }));
+                                    if (errors.province_municipality) {
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            province_municipality: undefined,
+                                        }));
+                                    }
+                                }}
+                                errorMessage={errors.province_municipality}
+                                disabled={!selectedProvince}
+                                options={[
+                                    { value: "", label: "Select Municipality" },
+                                    ...municipalities.map((municipality) => ({
+                                        value: municipality.name,
+                                        label: municipality.name,
+                                        key: municipality.id,
+                                    })),
+                                ]}
+                            />
+                        </div>
+
+                        {/* Year Established */}
+                        <div className="col-span-1">
+                            <YearPicker
+                                label="Established"
+                                name="year_first_operation"
+                                value={newCampus.year_first_operation}
+                                onChange={handleYearChange}
+                                error={errors.year_first_operation}
+                                minYear={1800}
+                                maxYear={currentYear}
+                            />
+                        </div>
+
+                        {/* Head Name */}
+                        <div className="col-span-1 sm:col-span-2 md:col-span-4">
+                            <FormInput
+                                id="head_full_name"
+                                name="head_full_name"
+                                label="Head"
+                                type="text"
+                                value={newCampus.head_full_name}
+                                onChange={handleInputChange}
+                                errorMessage={errors.head_full_name}
+                            />
+                        </div>
+
+                        {/* Autonomous Code */}
+                        <div className="col-span-2">
+                            <FormInput
+                                id="autonomous_code"
+                                name="autonomous_code"
+                                label="Auto Code"
+                                type="text"
+                                value={newCampus.autonomous_code}
+                                onChange={handleInputChange}
+                                errorMessage={errors.autonomous_code}
+                            />
+                        </div>
+
+                        {/* Position Title */}
+                        <div className="col-span-2">
+                            <FormInput
+                                id="position_title"
+                                name="position_title"
+                                label="Position"
+                                type="text"
+                                value={newCampus.position_title}
+                                onChange={handleInputChange}
+                                errorMessage={errors.position_title}
+                            />
+                        </div>
+
+                        {/* Land Area */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="land_area_hectares"
+                                name="land_area_hectares"
+                                label="Land Area (ha)"
+                                type="number"
+                                value={newCampus.land_area_hectares}
+                                onChange={handleInputChange}
+                                errorMessage={errors.land_area_hectares}
+                                inputProps={{ min: 0, step: 0.01 }}
+                            />
+                        </div>
+
+                        {/* Distance from Main */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="distance_from_main"
+                                name="distance_from_main"
+                                label="Distance from Main (km)"
+                                type="number"
+                                value={newCampus.distance_from_main}
+                                onChange={handleInputChange}
+                                errorMessage={errors.distance_from_main}
+                                inputProps={{ min: 0, step: 0.01 }}
+                            />
+                        </div>
+
+                        {/* Latitude */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="latitude_coordinates"
+                                name="latitude_coordinates"
+                                label="Latitude"
+                                type="number"
+                                value={newCampus.latitude_coordinates}
+                                onChange={handleInputChange}
+                                errorMessage={errors.latitude_coordinates}
+                                inputProps={{
+                                    min: -90,
+                                    max: 90,
+                                    step: 0.000001,
+                                }}
+                            />
+                        </div>
+
+                        {/* Longitude */}
+                        <div className="col-span-1">
+                            <FormInput
+                                id="longitude_coordinates"
+                                name="longitude_coordinates"
+                                label="Longitude"
+                                type="number"
+                                value={newCampus.longitude_coordinates}
+                                onChange={handleInputChange}
+                                errorMessage={errors.longitude_coordinates}
+                                inputProps={{
+                                    min: -180,
+                                    max: 180,
+                                    step: 0.000001,
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dialog Footer */}
+                <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                    <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        onClick={handleAddCampus}
+                    >
+                        Add Campus
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -577,9 +631,6 @@ AddCampusDialog.propTypes = {
     onClose: PropTypes.func.isRequired,
     onAddCampus: PropTypes.func.isRequired,
     initialRegion: PropTypes.string,
-    setSnackbarOpen: PropTypes.func.isRequired,
-    setSnackbarMessage: PropTypes.func.isRequired,
-    setSnackbarSeverity: PropTypes.func.isRequired,
 };
 
 export default AddCampusDialog;

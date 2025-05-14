@@ -79,7 +79,7 @@ const CampusManagement = () => {
 
             {/* Handsontable Component */}
             <div className="mt-4 overflow-x-auto max-w-full">
-                <CampusHandsontable campuses={campuses} />
+                <CampusHandsontable campuses={campuses} fetchCampuses={fetchCampuses} />
             </div>
         </div>
     );

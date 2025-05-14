@@ -61,6 +61,13 @@ const LoginPage = () => {
             const user = response.data.data.user;
             const institution = response.data.data.institution;
 
+            // Check if the user is inactive
+            if (user.status === "Inactive") {
+                setError("Your account is inactive. Please contact support.");
+                setLoading(false);
+                return;
+            }
+
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
             localStorage.setItem("institution", JSON.stringify(institution));

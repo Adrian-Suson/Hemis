@@ -58,6 +58,13 @@ class AuthController extends Controller
 
         // Check if user exists and password matches
         if ($user && Hash::check($validated['password'], $user->password)) {
+            // Check if the user is inactive
+            if ($user->status === 'inactive') {
+                throw ValidationException::withMessages([
+                    'email' => ['Your account is inactive. Please contact support.'],
+                ]);
+            }
+
             // Create a token for the user (no need to check authentication here)
             $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -81,8 +88,6 @@ class AuthController extends Controller
             'email' => ['The provided credentials are incorrect.'],
         ]);
     }
-
-
 
     /**
      * Get authenticated user profile

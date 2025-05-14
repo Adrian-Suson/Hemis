@@ -6,10 +6,11 @@ import AddCampusDialog from "./AddCampusDialog";
 import EditCampusFormDialog from "./EditCampusFormDialog";
 import config from "../../../utils/config";
 import { useLoading } from "../../../Context/LoadingContext";
+import { Plus } from "lucide-react";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
-const CampusDataGrid = ({ campuses: initialCampuses }) => {
+const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
     const [campuses, setCampuses] = useState(initialCampuses);
     const { showLoading, hideLoading } = useLoading();
     const [tabValue, setTabValue] = useState(0);
@@ -321,90 +322,6 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
         [campuses]
     );
 
-    const handleEditSubmit = useCallback(
-        async (campusId, updatedData) => {
-            console.log("Edit submit:", { campusId, updatedData });
-            showLoading();
-
-            const campusIndex = campuses.findIndex(
-                (c) =>
-                    String(c.id) === campusId ||
-                    `temp-${campuses.indexOf(c)}` === campusId
-            );
-            if (campusIndex === -1) {
-                setSnackbarMessage("Campus not found.");
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-                hideLoading();
-                return;
-            }
-
-            const originalCampus = campuses[campusIndex];
-            const updatedCampus = { ...originalCampus, ...updatedData };
-            const token = localStorage.getItem("token");
-            if (!token) {
-                setSnackbarMessage("Authentication token is missing.");
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-                hideLoading();
-                return;
-            }
-
-            try {
-                let response;
-                const campusIdStr = updatedCampus.id
-                    ? String(updatedCampus.id)
-                    : "";
-                if (campusIdStr && !campusIdStr.startsWith("temp-")) {
-                    const payload = {
-                        ...updatedData,
-                        institution_id: updatedCampus.institution_id,
-                    };
-                    response = await axios.put(
-                        `${config.API_URL}/campuses/${updatedCampus.id}`,
-                        payload,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                } else {
-                    response = await axios.post(
-                        `${config.API_URL}/campuses`,
-                        [updatedCampus], // Wrap in array to match backend expectation
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    updatedCampus.id =
-                        response.data.data?.id || response.data.id;
-                }
-
-                const updatedCampuses = [...campuses];
-                updatedCampuses[campusIndex] = {
-                    ...updatedCampus,
-                    ...response.data.data,
-                };
-                setCampuses(updatedCampuses);
-
-                setSnackbarMessage("Campus updated successfully!");
-                setSnackbarSeverity("success");
-                setSnackbarOpen(true);
-            } catch (error) {
-                console.error("Error saving campus:", error);
-                let errorMessage = "Failed to save campus changes.";
-                if (error.response) {
-                    errorMessage = `Error: ${
-                        error.response.data.message ||
-                        error.response.data.errors?.join("; ") ||
-                        error.message
-                    }`;
-                }
-                setSnackbarMessage(errorMessage);
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-            } finally {
-                hideLoading();
-            }
-        },
-        [campuses]
-    );
-
     const handleOpenAddDialog = () => setOpenAddDialog(true);
     const handleCloseAddDialog = () => setOpenAddDialog(false);
     const handleCloseEditDialog = () => setOpenEditDialog(false);
@@ -451,31 +368,31 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
     return (
         <div className="my-4 flex flex-col h-full">
             {/* Toolbar */}
-            <div className="flex justify-between items-center bg-white border-b border-gray-200 mb-4 sm:pl-4 px-2 py-2">
-                <span className="text-lg font-medium text-gray-900">
+            <div className="flex justify-between items-center bg-gray-100 border-b border-gray-300 mb-4 sm:pl-4 px-2 py-2">
+                <span className="text-xl font-semibold text-gray-800">
                     Campus Management
                 </span>
                 <button
                     onClick={handleOpenAddDialog}
-                    className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
+                    className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 w-full sm:w-auto"
                 >
-                    Add Campus
+                <Plus className="w-4 h-4 mr-2" />   Add Campus
                 </button>
             </div>
 
             {/* Table Container */}
-            <div className="bg-white rounded-lg mb-4 flex flex-col xs:h-[70vh] sm:h-[65vh] md:h-[60vh] xs:max-w-[99vw] sm:max-w-[95vw] md:max-w-[95vw] overflow-x-auto overflow-y-hidden shadow-sm">
+            <div className="bg-white rounded-lg mb-4 flex flex-col xs:h-[70vh] sm:h-[65vh] md:h-[60vh] xs:max-w-[99vw] sm:max-w-[95vw] md:max-w-[95vw] overflow-x-auto overflow-y-hidden shadow-md">
                 {/* Tabs */}
-                <div className="flex border-b border-gray-200 shrink-0">
+                <div className="flex border-b border-gray-300 shrink-0">
                     {["Basic Info", "Metrics", "Leadership", "Coordinates"].map(
                         (label, index) => (
                             <button
                                 key={label}
                                 onClick={() => handleTabChange(index)}
-                                className={`flex-1 py-2 px-4 text-sm font-medium text-center transition-colors ${
+                                className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
                                     tabValue === index
-                                        ? "border-b-2 border-blue-600 text-blue-600"
-                                        : "text-gray-600 hover:text-gray-800"
+                                        ? "border-b-2 border-blue-600 text-blue-600 bg-gray-100"
+                                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                                 }`}
                                 aria-selected={tabValue === index}
                                 role="tab"
@@ -489,12 +406,12 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 {/* Table */}
                 <div className="flex-1 overflow-auto">
                     <table className="w-full min-w-[800px] border-collapse">
-                        <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
+                        <thead className="sticky top-0 bg-gray-100 z-10 border-b border-gray-300">
                             <tr>
                                 {currentColumns.map((column) => (
                                     <th
                                         key={column.field}
-                                        className={`px-2 py-2 text-sm font-medium text-gray-700 border-r border-gray-200 text-${
+                                        className={`px-4 py-3 text-sm font-semibold text-gray-800 border-r border-gray-300 text-${
                                             column.align || "left"
                                         } whitespace-normal break-words`}
                                         style={{ minWidth: column.minWidth }}
@@ -505,15 +422,19 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedRows.map((row) => (
+                            {paginatedRows.map((row, index) => (
                                 <tr
                                     key={row.id}
-                                    className="border-b border-gray-200 hover:bg-gray-50"
+                                    className={`border-b border-gray-300 ${
+                                        index % 2 === 0
+                                            ? "bg-white"
+                                            : "bg-gray-50"
+                                    } hover:bg-gray-100 transition-colors`}
                                 >
                                     {currentColumns.map((column) => (
                                         <td
                                             key={column.field}
-                                            className={`px-2 py-2 text-sm text-gray-900 border-r border-gray-200 text-${
+                                            className={`px-4 py-3 text-sm text-gray-800 border-r border-gray-300 text-${
                                                 column.align || "left"
                                             } whitespace-normal break-words`}
                                         >
@@ -530,8 +451,8 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex justify-end items-center p-2 border-t border-gray-200 bg-white sticky bottom-0 z-10">
-                    <div className="flex items-center space-x-2 text-sm">
+                <div className="flex justify-end items-center p-4 border-t border-gray-300 bg-white sticky bottom-0 z-10">
+                    <div className="flex items-center space-x-4 text-sm">
                         <span>Rows per page:</span>
                         <select
                             value={rowsPerPage}
@@ -544,7 +465,7 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                                 </option>
                             ))}
                         </select>
-                        <span>
+                        <span className="text-gray-600">
                             {page * rowsPerPage + 1}-
                             {Math.min((page + 1) * rowsPerPage, data.length)} of{" "}
                             {data.length}
@@ -552,14 +473,14 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
                         <button
                             onClick={() => handlePageChange(page - 1)}
                             disabled={page === 0}
-                            className="px-2 py-1 disabled:opacity-50"
+                            className="px-2 py-1 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-50 transition-colors"
                         >
                             ←
                         </button>
                         <button
                             onClick={() => handlePageChange(page + 1)}
                             disabled={(page + 1) * rowsPerPage >= data.length}
-                            className="px-2 py-1 disabled:opacity-50"
+                            className="px-2 py-1 rounded bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-50 transition-colors"
                         >
                             →
                         </button>
@@ -580,8 +501,9 @@ const CampusDataGrid = ({ campuses: initialCampuses }) => {
             <EditCampusFormDialog
                 open={openEditDialog}
                 onClose={handleCloseEditDialog}
-                onSubmit={handleEditSubmit}
                 campusData={editCampusData}
+                setCampuses={setCampuses}
+                fetchCampuses={fetchCampuses}
                 campusId={editCampusData?.id || null}
                 setSnackbarOpen={setSnackbarOpen}
                 setSnackbarMessage={setSnackbarMessage}
@@ -644,6 +566,7 @@ CampusDataGrid.propTypes = {
             ]),
         })
     ).isRequired,
+    fetchCampuses: PropTypes.func,
 };
 
 export default CampusDataGrid;

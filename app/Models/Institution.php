@@ -39,6 +39,30 @@ class Institution extends Model
         'report_year',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($institution) {
+            if (self::where('uuid', $institution->uuid)
+                ->where('report_year', $institution->report_year)
+                ->exists()
+            ) {
+                throw new \Exception('An institution with the same UUID and report year already exists.');
+            }
+        });
+
+        static::updating(function ($institution) {
+            if (self::where('uuid', $institution->uuid)
+                ->where('report_year', $institution->report_year)
+                ->where('id', '!=', $institution->id)
+                ->exists()
+            ) {
+                throw new \Exception('An institution with the same UUID and report year already exists.');
+            }
+        });
+    }
+
     public function region()
     {
         return $this->belongsTo(Region::class);

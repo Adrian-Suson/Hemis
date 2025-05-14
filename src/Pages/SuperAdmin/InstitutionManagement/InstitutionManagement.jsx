@@ -1,26 +1,23 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo, useRef } from "react";
-import PropTypes from "prop-types"; // Added import
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
-import { Search, Upload, Plus, Filter, RotateCcw } from "lucide-react";
+import { Search, Upload, Plus, Filter } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
-import CustomSnackbar from "../../../Components/CustomSnackbar";
+import AlertComponent from "../../../Components/AlertComponent"; // Import AlertComponent
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
 import UploadDialog from "./UploadDialog";
 import InstitutionTable from "./InstitutionTable";
+import FilterPopover from "../../../Components/FilterPopover";
 
 const InstitutionManagement = () => {
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const { createLog } = useActivityLog();
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [snackbarSeverity, setSnackbarSeverity] = useState("info");
     const [openManualDialog, setOpenManualDialog] = useState(false);
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedInstitutionType, setSelectedInstitutionType] = useState("");
@@ -54,8 +51,12 @@ const InstitutionManagement = () => {
             return [];
         }
         return [
-            ...new Set(arr.map((item) => item?.[key]).filter(Boolean)),
-        ].sort();
+            ...new Set(
+                arr
+                    .map((item) => item?.[key])
+                    .filter((value) => value !== null && value !== undefined)
+            ),
+        ].sort((a, b) => a - b); // Ensure numeric sorting for years
     };
 
     // Filter options for dropdowns
@@ -95,11 +96,6 @@ const InstitutionManagement = () => {
         localStorage.setItem("reportYearFilter", currentYear);
     };
 
-    // Close snackbar handler
-    const handleCloseSnackbar = () => {
-        setSnackbarOpen(false);
-    };
-
     // Get institution type from user
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user"));
@@ -129,9 +125,10 @@ const InstitutionManagement = () => {
             setInstitutions(institutionsData);
         } catch (error) {
             console.error("Error fetching institutions:", error);
-            setSnackbarMessage("Failed to load institution data.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
+            AlertComponent.showAlert(
+                "Failed to load institution data.",
+                "error"
+            );
         } finally {
             setLoading(false);
             hideLoading();
@@ -146,11 +143,10 @@ const InstitutionManagement = () => {
     // Handle file upload for Form A
     const handleFileUpload = async (reportYear, uuid) => {
         if (!selectedFile || !selectedInstitutionType) {
-            setSnackbarMessage(
-                "Please select both an institution type and a file."
+            AlertComponent.showAlert(
+                "Please select both an institution type and a file.",
+                "warning"
             );
-            setSnackbarSeverity("warning");
-            setSnackbarOpen(true);
             return;
         }
         setOpenUploadDialog(false);
@@ -228,9 +224,10 @@ const InstitutionManagement = () => {
                     properties: extractedInstitution,
                 });
 
-                setSnackbarMessage("Institution data uploaded successfully!");
-                setSnackbarSeverity("success");
-                setSnackbarOpen(true);
+                AlertComponent.showAlert(
+                    "Institution data uploaded successfully!",
+                    "success"
+                );
 
                 const institutionId = institutionResponse.data.id;
                 if (!institutionId || isNaN(Number(institutionId))) {
@@ -334,9 +331,10 @@ const InstitutionManagement = () => {
                     }
                 );
 
-                setSnackbarMessage("Campuses added successfully!");
-                setSnackbarSeverity("success");
-                setSnackbarOpen(true);
+                AlertComponent.showAlert(
+                    "Campuses added successfully!",
+                    "success"
+                );
                 updateProgress(100);
             } catch (error) {
                 console.error("Error sending data to backend:", error);
@@ -345,15 +343,18 @@ const InstitutionManagement = () => {
                     "Error uploading institution or campus data.";
                 const validationErrors = error.response?.data?.errors || {};
                 console.log("Validation errors:", validationErrors);
-                setSnackbarMessage(
-                    `${errorMessage}\n${JSON.stringify(
-                        validationErrors,
-                        null,
-                        2
-                    )}`
-                );
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
+
+                if (
+                    error.response?.status === 422 &&
+                    errorMessage.includes("UUID and report year")
+                ) {
+                    AlertComponent.showAlert(
+                        "An institution with the same UUID and report year already exists.",
+                        "error"
+                    );
+                } else {
+                    AlertComponent.showAlert(`${errorMessage}`, "error");
+                }
             } finally {
                 hideLoading();
                 setOpenUploadDialog(false);
@@ -376,6 +377,15 @@ const InstitutionManagement = () => {
 
     // Memoized filtered institutions
     const filteredInstitutions = useMemo(() => {
+        // Ensure institutions is an array before filtering
+        if (!Array.isArray(institutions)) {
+            console.error(
+                "Expected institutions to be an array, but got:",
+                institutions
+            );
+            return [];
+        }
+
         return institutions.filter((institution) => {
             const matchesSearch = institution.name
                 .toLowerCase()
@@ -418,128 +428,30 @@ const InstitutionManagement = () => {
             ? "/hei-admin/dashboard"
             : "/hei-staff/dashboard";
 
-    // Reusable Filter Select Component
-    const FilterSelect = ({
-        value,
-        onChange,
-        options,
-        placeholder,
-        ariaLabel,
-    }) => (
-        <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={ariaLabel}
-        >
-            <option value="">{placeholder}</option>
-            {options?.map((item) => (
-                <option key={item} value={String(item)}>
-                    {item}
-                </option>
-            ))}
-            {options?.length === 0 && <option disabled>No Options</option>}
-        </select>
-    );
-
-    // PropTypes for FilterSelect
-    FilterSelect.propTypes = {
-        value: PropTypes.string,
-        onChange: PropTypes.func.isRequired,
-        options: PropTypes.arrayOf(PropTypes.string).isRequired,
-        placeholder: PropTypes.string,
-        ariaLabel: PropTypes.string,
+    const filters = {
+        typeFilter,
+        municipalityFilter,
+        provinceFilter,
+        reportYearFilter,
     };
 
-    // Filter Popover Component
-    const FilterPopover = ({ open, onClose }) => {
-        const popoverRef = useRef(null);
-
-        // Close popover on click outside
-        useEffect(() => {
-            const handleClickOutside = (event) => {
-                if (
-                    popoverRef.current &&
-                    !popoverRef.current.contains(event.target)
-                ) {
-                    onClose();
-                }
-            };
-            if (open) {
-                document.addEventListener("mousedown", handleClickOutside);
-            }
-            return () => {
-                document.removeEventListener("mousedown", handleClickOutside);
-            };
-        }, [open, onClose]);
-
-        if (!open) return null;
-
-        return (
-            <div
-                className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl z-50 border border-gray-200"
-                ref={popoverRef}
-            >
-                {/* Arrow pointing to the filter button */}
-                <div className="absolute -top-2 left-4 w-4 h-4 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
-                <div className="p-4">
-                    <div className="grid grid-cols-1 gap-3">
-                        <FilterSelect
-                            value={typeFilter}
-                            onChange={setTypeFilter}
-                            options={filterOptions.types}
-                            placeholder="All Types"
-                            ariaLabel="Select institution type"
-                        />
-                        <FilterSelect
-                            value={municipalityFilter}
-                            onChange={setMunicipalityFilter}
-                            options={filterOptions.municipalities}
-                            placeholder="All Municipalities"
-                            ariaLabel="Select municipality"
-                        />
-                        <FilterSelect
-                            value={provinceFilter}
-                            onChange={setProvinceFilter}
-                            options={filterOptions.provinces}
-                            placeholder="All Provinces"
-                            ariaLabel="Select province"
-                        />
-                        <FilterSelect
-                            value={reportYearFilter}
-                            onChange={setReportYearFilter}
-                            options={filterOptions.reportYears}
-                            placeholder="All Years"
-                            ariaLabel="Select report year"
-                        />
-                    </div>
-                    <div className="flex justify-between mt-4">
-                        <button
-                            onClick={() => {
-                                clearFilters();
-                                onClose();
-                            }}
-                            className="flex items-center px-3 py-1 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium"
-                        >
-                            <RotateCcw className="w-4 h-4 mr-1" />
-                            Reset
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-                        >
-                            Apply
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    // PropTypes for FilterPopover
-    FilterPopover.propTypes = {
-        open: PropTypes.bool.isRequired,
-        onClose: PropTypes.func.isRequired,
+    const handleFilterChange = (key, value) => {
+        switch (key) {
+            case "typeFilter":
+                setTypeFilter(value);
+                break;
+            case "municipalityFilter":
+                setMunicipalityFilter(value);
+                break;
+            case "provinceFilter":
+                setProvinceFilter(value);
+                break;
+            case "reportYearFilter":
+                setReportYearFilter(value);
+                break;
+            default:
+                break;
+        }
     };
 
     return (
@@ -607,16 +519,28 @@ const InstitutionManagement = () => {
                                                 (prev) => !prev
                                             )
                                         }
-                                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"
-                                        aria-label="Toggle filters"
+                                        className="px-3 py-2 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700"
                                     >
-                                        <Filter className="w-5 h-5" />
+                                        <Filter size={16} />
+                                        Filters
                                     </button>
                                     <FilterPopover
                                         open={openFilterPopover}
                                         onClose={() =>
                                             setOpenFilterPopover(false)
                                         }
+                                        filters={filters}
+                                        onFilterChange={handleFilterChange}
+                                        onClearFilters={clearFilters}
+                                        filterOptions={{
+                                            typeFilter: filterOptions.types,
+                                            municipalityFilter:
+                                                filterOptions.municipalities,
+                                            provinceFilter:
+                                                filterOptions.provinces,
+                                            reportYearFilter:
+                                                filterOptions.reportYears,
+                                        }}
                                     />
                                 </div>
 
@@ -647,10 +571,7 @@ const InstitutionManagement = () => {
                     <div>
                         <InstitutionTable
                             institutions={filteredInstitutions}
-                            setSnackbarMessage={setSnackbarMessage}
                             fetchInstitutions={fetchInstitutions}
-                            setSnackbarSeverity={setSnackbarSeverity}
-                            setSnackbarOpen={setSnackbarOpen}
                             searchTerm={searchTerm}
                             typeFilter={typeFilter}
                             municipalityFilter={municipalityFilter}
@@ -693,19 +614,6 @@ const InstitutionManagement = () => {
                 onClose={() => setOpenManualDialog(false)}
                 getInstitutionType={getInstitutionType}
                 fetchInstitutions={fetchInstitutions}
-                setSnackbarOpen={setSnackbarOpen}
-                setSnackbarMessage={setSnackbarMessage}
-                setSnackbarSeverity={setSnackbarSeverity}
-            />
-
-            {/* Snackbar for Notifications */}
-            <CustomSnackbar
-                open={snackbarOpen}
-                message={snackbarMessage}
-                severity={snackbarSeverity}
-                onClose={handleCloseSnackbar}
-                autoHideDuration={5000}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
             />
         </div>
     );
