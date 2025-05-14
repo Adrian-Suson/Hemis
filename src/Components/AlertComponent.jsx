@@ -16,6 +16,23 @@ const AlertComponent = {
             timerProgressBar: true,
         });
     },
+
+    showConfirmation: (message, confirmCallback, cancelCallback) => {
+        Swal.fire({
+            title: "Are you sure?",
+            text: message,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, proceed",
+            cancelButtonText: "Cancel",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                confirmCallback();
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                if (cancelCallback) cancelCallback();
+            }
+        });
+    },
 };
 
 export default AlertComponent;

@@ -376,31 +376,39 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
                     onClick={handleOpenAddDialog}
                     className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 w-full sm:w-auto"
                 >
-                <Plus className="w-4 h-4 mr-2" />   Add Campus
+                    <Plus className="w-4 h-4 mr-2" /> Add Campus
                 </button>
             </div>
 
             {/* Table Container */}
             <div className="bg-white rounded-lg mb-4 flex flex-col xs:h-[70vh] sm:h-[65vh] md:h-[60vh] xs:max-w-[99vw] sm:max-w-[95vw] md:max-w-[95vw] overflow-x-auto overflow-y-hidden shadow-md">
-                {/* Tabs */}
-                <div className="flex border-b border-gray-300 shrink-0">
-                    {["Basic Info", "Metrics", "Leadership", "Coordinates"].map(
-                        (label, index) => (
-                            <button
-                                key={label}
-                                onClick={() => handleTabChange(index)}
-                                className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
-                                    tabValue === index
-                                        ? "border-b-2 border-blue-600 text-blue-600 bg-gray-100"
-                                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                                }`}
-                                aria-selected={tabValue === index}
-                                role="tab"
-                            >
-                                {label}
-                            </button>
-                        )
-                    )}
+                {/* Tabs - Enhanced with better styling and accessibility */}
+                <div className="flex border-b border-gray-300 overflow-x-auto hide-scrollbar shrink-0 mb-3">
+                    {[
+                        "Personal Info",
+                        "Education",
+                        "Teaching Load",
+                        "Other Loads",
+                    ].map((label, index) => (
+                        <button
+                            key={label}
+                            onClick={() => handleTabChange(index)}
+                            className={`flex-1 min-w-[120px] py-3 px-4 text-sm font-medium text-center transition-all relative ${
+                                tabValue === index
+                                    ? "text-blue-700 bg-blue-50/50"
+                                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                            }`}
+                            aria-selected={tabValue === index}
+                            role="tab"
+                            aria-controls={`tab-panel-${index}`}
+                            id={`tab-${index}`}
+                        >
+                            {label}
+                            {tabValue === index && (
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700"></div>
+                            )}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Table */}
