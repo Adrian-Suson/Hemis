@@ -6,7 +6,8 @@ import AddCampusDialog from "./AddCampusDialog";
 import EditCampusFormDialog from "./EditCampusFormDialog";
 import config from "../../../utils/config";
 import { useLoading } from "../../../Context/LoadingContext";
-import { Plus } from "lucide-react";
+import { FilePenLine, Plus, Trash2 } from "lucide-react";
+import AlertComponent from "../../../Components/AlertComponent";
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
@@ -17,9 +18,6 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [editCampusData, setEditCampusData] = useState(null);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
 
@@ -195,20 +193,23 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
                 align: "center",
                 headerAlign: "center",
                 renderCell: (params) => (
-                    <div className="flex justify-center space-x-2">
+                    /* More modern, accessible action buttons */
+                    <div className="flex items-center justify-center gap-2">
                         <button
                             onClick={() => handleEditClick(params.row)}
-                            className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                            title="Edit"
+                            className="p-1.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors shadow-sm border border-blue-200"
+                            title="Edit record"
+                            aria-label="Edit"
                         >
-                            Edit
+                            <FilePenLine className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => handleDeleteClick(params.row.id)}
-                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                            title="Delete"
+                            className="p-1.5 rounded-md bg-red-50 text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors shadow-sm border border-red-200"
+                            title="Delete record"
+                            aria-label="Delete"
                         >
-                            Delete
+                            <Trash2 className="w-4 h-4" />
                         </button>
                     </div>
                 ),
@@ -269,55 +270,64 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
     }, []);
 
     const handleDeleteClick = useCallback(
-        async (campusId) => {
+        (campusId) => {
             console.log("Delete clicked:", campusId);
-            showLoading();
+            AlertComponent.showConfirmation(
+                "Do you really want to delete this campus? This action cannot be undone.",
+                async () => {
+                    showLoading();
+                    const token = localStorage.getItem("token");
+                    if (!token) {
+                        AlertComponent.showAlert(
+                            "Authentication token is missing.",
+                            "error"
+                        );
+                        hideLoading();
+                        return;
+                    }
 
-            const token = localStorage.getItem("token");
-            if (!token) {
-                setSnackbarMessage("Authentication token is missing.");
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-                hideLoading();
-                return;
-            }
-
-            try {
-                if (!campusId.startsWith("temp-")) {
-                    await axios.delete(
-                        `${config.API_URL}/campuses/${campusId}`,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
+                    try {
+                        if (!campusId.startsWith("temp-")) {
+                            await axios.delete(
+                                `${config.API_URL}/campuses/${campusId}`,
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                    },
+                                }
+                            );
                         }
-                    );
-                }
 
-                const updatedCampuses = campuses.filter(
-                    (campus) =>
-                        String(campus.id) !== campusId &&
-                        `temp-${campuses.indexOf(campus)}` !== campusId
-                );
-                setCampuses(updatedCampuses);
+                        const updatedCampuses = campuses.filter(
+                            (campus) =>
+                                String(campus.id) !== campusId &&
+                                `temp-${campuses.indexOf(campus)}` !== campusId
+                        );
+                        setCampuses(updatedCampuses);
 
-                setSnackbarMessage("Campus deleted successfully!");
-                setSnackbarSeverity("success");
-                setSnackbarOpen(true);
-            } catch (error) {
-                console.error("Error deleting campus:", error);
-                let errorMessage = "Failed to delete campus.";
-                if (error.response) {
-                    errorMessage = `Error: ${
-                        error.response.data.message ||
-                        error.response.data.errors?.join("; ") ||
-                        error.message
-                    }`;
+                        AlertComponent.showAlert(
+                            "Campus deleted successfully!",
+                            "success"
+                        );
+                    } catch (error) {
+                        console.error("Error deleting campus:", error);
+                        let errorMessage = "Failed to delete campus.";
+                        if (error.response) {
+                            errorMessage = `Error: ${
+                                error.response.data.message ||
+                                error.response.data.errors?.join("; ") ||
+                                error.message
+                            }`;
+                        }
+                        AlertComponent.showAlert(errorMessage, "error");
+                    } finally {
+                        hideLoading();
+                    }
+                },
+                () => {
+                    console.log("Deletion cancelled");
                 }
-                setSnackbarMessage(errorMessage);
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
-            } finally {
-                hideLoading();
-            }
+            );
         },
         [campuses]
     );
@@ -369,46 +379,53 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
         <div className="my-4 flex flex-col h-full">
             {/* Toolbar */}
             <div className="flex justify-between items-center bg-gray-100 border-b border-gray-300 mb-4 sm:pl-4 px-2 py-2">
-                <span className="text-xl font-semibold text-gray-800">
-                    Campus Management
-                </span>
+                <h1 className="text-2xl font-medium">Campus Management</h1>
                 <button
                     onClick={handleOpenAddDialog}
-                    className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 w-full sm:w-auto"
+                    className="group relative flex items-center justify-center px-5 py-3 bg-[#0038A8] text-white rounded-md font-medium shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#0038A8] focus:ring-offset-2 transition-all duration-200 overflow-hidden w-full sm:w-auto"
                 >
-                    <Plus className="w-4 h-4 mr-2" /> Add Campus
+                    {/* Animated ray inspired by sun rays */}
+                    <div className="absolute inset-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="h-full w-16 bg-gradient-to-b from-[#FCD116]/40 via-transparent to-transparent rotate-12 transform translate-x-6 group-hover:translate-x-32 transition-transform duration-1000"></div>
+                        <div className="h-full w-8 bg-gradient-to-b from-[#FCD116]/30 via-transparent to-transparent -rotate-12 transform -translate-x-6 group-hover:translate-x-32 transition-transform duration-700 delay-100"></div>
+                    </div>
+
+                    {/* Red triangle accent */}
+                    <div className="absolute bottom-0 left-0 h-1.5 w-full bg-[#CD0000] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+
+                    <div className="bg-[#FCD116] rounded-full p-1 mr-2 flex items-center justify-center relative z-10">
+                        <Plus className="w-3.5 h-3.5 text-[#0038A8]" />
+                    </div>
+                    <span className="relative z-10 text-sm">Add Campus</span>
                 </button>
             </div>
 
             {/* Table Container */}
             <div className="bg-white rounded-lg mb-4 flex flex-col xs:h-[70vh] sm:h-[65vh] md:h-[60vh] xs:max-w-[99vw] sm:max-w-[95vw] md:max-w-[95vw] overflow-x-auto overflow-y-hidden shadow-md">
-                {/* Tabs - Enhanced with better styling and accessibility */}
+                {/* Tabs */}
                 <div className="flex border-b border-gray-300 overflow-x-auto hide-scrollbar shrink-0 mb-3">
-                    {[
-                        "Personal Info",
-                        "Education",
-                        "Teaching Load",
-                        "Other Loads",
-                    ].map((label, index) => (
-                        <button
-                            key={label}
-                            onClick={() => handleTabChange(index)}
-                            className={`flex-1 min-w-[120px] py-3 px-4 text-sm font-medium text-center transition-all relative ${
-                                tabValue === index
-                                    ? "text-blue-700 bg-blue-50/50"
-                                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                            }`}
-                            aria-selected={tabValue === index}
-                            role="tab"
-                            aria-controls={`tab-panel-${index}`}
-                            id={`tab-${index}`}
-                        >
-                            {label}
-                            {tabValue === index && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700"></div>
-                            )}
-                        </button>
-                    ))}
+                    {["Basic Info", "Metrics", "Leadership", "Coordinates"].map(
+                        (label, index) => (
+                            <button
+                                key={label}
+                                onClick={() => handleTabChange(index)}
+                                className={`flex-1 min-w-[120px] py-3 px-4 text-sm font-medium text-center transition-all relative ${
+                                    tabValue === index
+                                        ? "text-blue-700 bg-blue-50/50"
+                                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                                }`}
+                                aria-selected={tabValue === index}
+                                role="tab"
+                                aria-controls={`tab-panel-${index}`}
+                                id={`tab-${index}`}
+                            >
+                                {label}
+                                {tabValue === index && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700"></div>
+                                )}
+                            </button>
+                        )
+                    )}
                 </div>
 
                 {/* Table */}
@@ -502,9 +519,7 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
                 onClose={handleCloseAddDialog}
                 onAddCampus={handleAddCampus}
                 initialRegion={campuses[0]?.region || ""}
-                setSnackbarOpen={setSnackbarOpen}
-                setSnackbarMessage={setSnackbarMessage}
-                setSnackbarSeverity={setSnackbarSeverity}
+                alertComponent={AlertComponent} // Pass AlertComponent
             />
             <EditCampusFormDialog
                 open={openEditDialog}
@@ -513,36 +528,8 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
                 setCampuses={setCampuses}
                 fetchCampuses={fetchCampuses}
                 campusId={editCampusData?.id || null}
-                setSnackbarOpen={setSnackbarOpen}
-                setSnackbarMessage={setSnackbarMessage}
-                setSnackbarSeverity={setSnackbarSeverity}
+                alertComponent={AlertComponent} // Pass AlertComponent
             />
-
-            {/* Snackbar */}
-            {snackbarOpen && (
-                <div className="fixed top-4 right-4 z-50 max-w-xs">
-                    <div
-                        className={`p-4 rounded-lg shadow-lg flex items-center ${
-                            snackbarSeverity === "success"
-                                ? "bg-green-600 text-white"
-                                : snackbarSeverity === "error"
-                                ? "bg-red-600 text-white"
-                                : "bg-blue-600 text-white"
-                        }`}
-                    >
-                        <span className="flex-1 text-sm">
-                            {snackbarMessage}
-                        </span>
-                        <button
-                            onClick={() => setSnackbarOpen(false)}
-                            className="ml-4 text-white hover:text-gray-200"
-                            aria-label="Close notification"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

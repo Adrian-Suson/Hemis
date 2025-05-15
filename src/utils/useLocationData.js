@@ -64,6 +64,44 @@ const useLocationData = () => {
         }
     }, []);
 
+    const getLocationById = useCallback(
+        async (regionId, provinceId, municipalityId) => {
+            try {
+                const token = localStorage.getItem("token");
+
+                const [regionRes, provinceRes, municipalityRes] =
+                    await Promise.all([
+                        axios.get(`${config.API_URL}/regions/${regionId}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }),
+                        axios.get(`${config.API_URL}/provinces/${provinceId}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }),
+                        axios.get(
+                            `${config.API_URL}/municipalities/${municipalityId}`,
+                            {
+                                headers: { Authorization: `Bearer ${token}` },
+                            }
+                        ),
+                    ]);
+
+                return {
+                    region: regionRes.data,
+                    province: provinceRes.data,
+                    municipality: municipalityRes.data,
+                };
+            } catch (error) {
+                console.error("Error fetching location by ID:", error);
+                return {
+                    region: null,
+                    province: null,
+                    municipality: null,
+                };
+            }
+        },
+        []
+    );
+
     return {
         regions,
         provinces,
@@ -72,6 +110,7 @@ const useLocationData = () => {
         fetchProvinces,
         fetchMunicipalities,
         fetchMunicipalitiesByRegion,
+        getLocationById,
     };
 };
 

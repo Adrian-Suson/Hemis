@@ -12,6 +12,7 @@ import useActivityLog from "../../../Hooks/useActivityLog";
 import UploadDialog from "./UploadDialog";
 import InstitutionTable from "./InstitutionTable";
 import FilterPopover from "../../../Components/FilterPopover";
+import CHEDButton from "../../../Components/CHEDButton";
 
 const InstitutionManagement = () => {
     const [institutions, setInstitutions] = useState([]);
@@ -544,24 +545,31 @@ const InstitutionManagement = () => {
                                     />
                                 </div>
 
-                                {/* Action Buttons */}
+                                {/* CHED-Inspired Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-2">
-                                    <button
+                                    {/* Add Button */}
+                                    <CHEDButton
                                         onClick={handleManualAdd}
-                                        className="flex items-center justify-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 w-full sm:w-auto"
+                                        icon={Plus}
+                                        variant="secondary"
+                                        size="md"
+                                        className="w-full sm:w-auto"
                                     >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add
-                                    </button>
-                                    <button
+                                        Add Institution
+                                    </CHEDButton>
+
+                                    {/* Upload Button */}
+                                    <CHEDButton
                                         onClick={() =>
                                             setOpenUploadDialog(true)
                                         }
-                                        className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 w-full sm:w-auto"
+                                        icon={Upload}
+                                        variant="primary"
+                                        size="md"
+                                        className="w-full sm:w-auto"
                                     >
-                                        <Upload className="w-4 h-4 mr-2" />
-                                        Upload
-                                    </button>
+                                        Upload Form A
+                                    </CHEDButton>
                                 </div>
                             </div>
                         </div>

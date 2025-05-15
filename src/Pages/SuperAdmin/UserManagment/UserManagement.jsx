@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import config from "../../../utils/config";
 import UserDialog from "./Func/UserDialog";
+import Pagination from "../../../Components/Pagination";
 import {
     FaEdit,
     FaUserPlus,
@@ -9,6 +10,8 @@ import {
     FaUser,
     FaUserSlash,
 } from "react-icons/fa";
+import CHEDButton from "../../../Components/CHEDButton";
+import AlertComponent from "../../../Components/AlertComponent";
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -33,6 +36,10 @@ const UserManagement = () => {
             setUsers(response.data);
         } catch {
             setError("Failed to fetch users. Please login again.");
+            AlertComponent.showAlert(
+                "Failed to fetch users. Please login again.",
+                "error"
+            );
         } finally {
             setLoading(false);
         }
@@ -61,12 +68,6 @@ const UserManagement = () => {
         fetchUsers();
     };
 
-    const handleChangePage = (newPage) => setPage(newPage);
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
     const handleDeactivateUser = async (id) => {
         const token = localStorage.getItem("token");
         try {
@@ -76,6 +77,7 @@ const UserManagement = () => {
             fetchUsers();
         } catch {
             setError("Failed to delete user.");
+            AlertComponent.showAlert("Failed to delete user.", "error");
         }
     };
 
@@ -90,6 +92,7 @@ const UserManagement = () => {
             fetchUsers();
         } catch {
             setError("Failed to reactivate user.");
+            AlertComponent.showAlert("Failed to reactivate user.", "error");
         }
     };
 
@@ -138,138 +141,157 @@ const UserManagement = () => {
                         <option value="Inactive">Inactive</option>
                     </select>
                     <div className="flex-grow"></div>
-                    <button
+                    <CHEDButton
                         onClick={fetchUsers}
-                        className="p-2 rounded-full bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        icon={FaSync}
+                        variant="secondary"
+                        size="md"
                         title="Refresh list"
                     >
-                        <FaSync />
-                    </button>
-                    <button
+                        Refresh
+                    </CHEDButton>
+                    <CHEDButton
                         onClick={() => setOpenDialog(true)}
-                        className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        icon={FaUserPlus}
+                        variant="primary"
+                        size="md"
                     >
-                        <FaUserPlus className="mr-2 inline-block" />
                         Add User
-                    </button>
+                    </CHEDButton>
                 </div>
             </div>
 
             {/* Users Table */}
             <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                Name
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                Role
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                Email
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                Institution
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                Status
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredUsers
-                            .slice(
-                                page * rowsPerPage,
-                                page * rowsPerPage + rowsPerPage
-                            )
-                            .map((user) => (
-                                <tr key={user.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {user.name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                user.role === "Super Admin"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : "bg-gray-100 text-gray-800"
-                                            }`}
-                                        >
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {user.email}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {user.institution
-                                            ? user.institution.name
-                                            : "N/A"}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                user.status === "Active"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : "bg-red-100 text-red-800"
-                                            }`}
-                                        >
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <button
-                                            onClick={() => handleEditUser(user)}
-                                            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
-                                            title="Edit user"
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                        {user.status === "Active" && currentUser.id !== user.id && (
-                                            <button
-                                                onClick={() => handleDeactivateUser(user.id)}
-                                                className="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-                                                title="Deactivate user"
+                <div className="max-h-[50vh] overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    Name
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    Role
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    Email
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    Institution
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    Status
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredUsers
+                                .slice(
+                                    page * rowsPerPage,
+                                    page * rowsPerPage + rowsPerPage
+                                )
+                                .map((user) => (
+                                    <tr
+                                        key={user.id}
+                                        className="hover:bg-gray-50"
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {user.name}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    user.role === "Super Admin"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-gray-100 text-gray-800"
+                                                }`}
                                             >
-                                                <FaUserSlash />
-                                            </button>
-                                        )}
-                                        {user.status === "Inactive" && (
-                                            <button
-                                                onClick={() => handleReactivateUser(user.id)}
-                                                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                title="Reactivate user"
+                                                {user.role}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {user.email}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {user.institution
+                                                ? user.institution.name
+                                                : "N/A"}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    user.status === "Active"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
                                             >
-                                                <FaUser />
+                                                {user.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <button
+                                                onClick={() =>
+                                                    handleEditUser(user)
+                                                }
+                                                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+                                                title="Edit user"
+                                            >
+                                                <FaEdit />
                                             </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                    </tbody>
-                </table>
+                                            {user.status === "Active" &&
+                                                currentUser.id !== user.id && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDeactivateUser(
+                                                                user.id
+                                                            )
+                                                        }
+                                                        className="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                        title="Deactivate user"
+                                                    >
+                                                        <FaUserSlash />
+                                                    </button>
+                                                )}
+                                            {user.status === "Inactive" && (
+                                                <button
+                                                    onClick={() =>
+                                                        handleReactivateUser(
+                                                            user.id
+                                                        )
+                                                    }
+                                                    className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                    title="Reactivate user"
+                                                >
+                                                    <FaUser />
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </table>
+                </div>
 
                 {filteredUsers.length === 0 && !loading && (
                     <div className="p-4 text-center text-gray-500">
@@ -278,45 +300,22 @@ const UserManagement = () => {
                 )}
 
                 {/* Pagination */}
-                <div className="px-4 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-200">
-                    <div className="flex-1 flex justify-between">
-                        <button
-                            onClick={() => handleChangePage(page - 1)}
-                            disabled={page === 0}
-                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => handleChangePage(page + 1)}
-                            disabled={
-                                page >=
-                                Math.ceil(filteredUsers.length / rowsPerPage) -
-                                    1
-                            }
-                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                        >
-                            Next
-                        </button>
-                    </div>
-                    <div className="flex items-center">
-                        <span className="text-sm text-gray-700 mr-2">
-                            Page <span className="font-medium">{page + 1}</span>{" "}
-                            of{" "}
-                            <span className="font-medium">
-                                {Math.ceil(filteredUsers.length / rowsPerPage)}
-                            </span>
-                        </span>
-                        <select
-                            value={rowsPerPage}
-                            onChange={handleChangeRowsPerPage}
-                            className="ml-2 pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                        >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                        </select>
-                    </div>
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+                    <Pagination
+                        currentPage={page + 1}
+                        totalPages={Math.ceil(
+                            filteredUsers.length / rowsPerPage
+                        )}
+                        onPageChange={(newPage) => setPage(newPage - 1)}
+                        pageSize={rowsPerPage}
+                        onPageSizeChange={(newSize) => {
+                            setRowsPerPage(newSize);
+                            setPage(0);
+                        }}
+                        pageSizeOptions={[5, 10, 25]}
+                        showFirstLast={true}
+                        showPageSize={true}
+                    />
                 </div>
             </div>
 

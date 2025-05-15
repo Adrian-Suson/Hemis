@@ -1,14 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-// CampusManagement.jsx
 import { useState, useEffect } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import axios from "axios";
-import {
-    Box,
-    Breadcrumbs,
-    Link,
-    Typography,
-} from "@mui/material";
 import CampusHandsontable from "./CampusHandsontable";
 import CampusManagementSkeleton from "./CampusManagementSkeleton";
 import { useLoading } from "../../../Context/LoadingContext";
@@ -19,9 +12,7 @@ const CampusManagement = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
     const [campuses, setCampuses] = useState([]);
     const { showLoading, hideLoading } = useLoading();
-    const [institutionName, setInstitutionName] = useState("");
     const [loading, setLoading] = useState(true);
-
 
     const fetchCampuses = async () => {
         try {
@@ -37,9 +28,6 @@ const CampusManagement = () => {
 
             console.log("Fetched Campuses Data:", response.data);
             setCampuses(response.data.campuses || []);
-            setInstitutionName(
-                response.data.institution_name || "Unknown Institution"
-            );
         } catch (error) {
             console.error("Error fetching campuses:", error);
             setCampuses([]);
@@ -58,62 +46,39 @@ const CampusManagement = () => {
     }
 
     return (
-        <Box
-            sx={{
-                px: { xs: 1, sm: 2, md: 4 },
-                py: { xs: 2, sm: 3 },
-                width: "100%",
-                maxWidth: "100%",
-                overflowX: "hidden",
-            }}
-        >
+        <div className="px-4 sm:px-8 md:px-16 py-4 sm:py-6 w-full max-w-full overflow-x-hidden">
             {/* Breadcrumbs */}
-            <Breadcrumbs
-                separator="›"
+            <nav
                 aria-label="breadcrumb"
-                sx={{
-                    mb: { xs: 1, sm: 2 },
-                    fontSize: { xs: "0.875rem", sm: "1rem" },
-                    flexWrap: "wrap",
-                }}
+                className="mb-2 sm:mb-4 text-sm sm:text-base flex flex-wrap items-center"
             >
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    component={RouterLink}
-                    to="/hei-admin/dashboard"
+                <RouterLink
+                    to="/Super-admin/dashboard"
+                    className="text-gray-600 hover:text-gray-800 hover:underline"
                 >
                     Dashboard
-                </Link>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    component={RouterLink}
-                    to="/hei-admin/institutions"
+                </RouterLink>
+                <span className="mx-2 text-gray-500">›</span>
+                <RouterLink
+                    to="/Super-admin/institutions"
+                    className="text-gray-600 hover:text-gray-800 hover:underline"
                 >
                     Institution Management
-                </Link>
-                <Typography
-                    color="text.primary"
-                    fontSize={{ xs: "0.9rem", sm: "1rem" }}
-                >
-                    {institutionName
-                        ? `${institutionName} Campuses`
-                        : "Campuses"}
-                </Typography>
-            </Breadcrumbs>
+                </RouterLink>
+                <span className="mx-2 text-gray-500">›</span>
+                <span className="text-gray-900 text-sm sm:text-base">
+                    Campus Management
+                </span>
+            </nav>
 
             {/* Handsontable Component */}
-            <Box
-                sx={{
-                    mt: 2,
-                    overflowX: "auto",
-                    maxWidth: "100%",
-                }}
-            >
-                <CampusHandsontable campuses={campuses} />
-            </Box>
-        </Box>
+            <div className="mt-4 overflow-x-auto max-w-full">
+                <CampusHandsontable
+                    campuses={campuses}
+                    fetchCampuses={fetchCampuses}
+                />
+            </div>
+        </div>
     );
 };
 

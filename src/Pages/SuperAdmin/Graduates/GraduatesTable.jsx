@@ -1,311 +1,252 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import {
-    Box,
-    Paper,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Typography,
-    Pagination,
-} from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { ChevronDown } from "lucide-react";
+import Pagination from "../../../Components/Pagination";
 
-const ROWS_PER_PAGE_OPTIONS = [
-    { label: "10", value: 10 },
-    { label: "25", value: 25 },
-    { label: "50", value: 50 },
-    { label: "100", value: 100 },
-    { label: "All", value: -1 },
-];
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 const GraduatesTable = ({ graduates }) => {
-    const [page, setPage] = useState(0);
+    const [page, setPage] = useState(1); // Change to 1-based index for Pagination component
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [visibleColumns, setVisibleColumns] = useState(null);
+    const [isColumnMenuOpen, setIsColumnMenuOpen] = useState(false);
 
-    // Handle page change
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage - 1);
+    // Initialize visible columns on first render
+    useEffect(() => {
+        setVisibleColumns({
+            student_id: true,
+            last_name: true,
+            first_name: true,
+            middle_name: true,
+            sex: true,
+            date_of_birth: true,
+            date_graduated: true,
+            program_name: true,
+            program_major: true,
+            program_authority_to_operate_graduate: true,
+            year_granted: true,
+        });
+    }, []);
+
+    // Toggle column visibility
+    const toggleColumnVisibility = (columnKey) => {
+        setVisibleColumns((prev) => ({
+            ...prev,
+            [columnKey]: !prev[columnKey],
+        }));
     };
 
-    // Handle rows per page change
-    const handleChangeRowsPerPage = (event) => {
-        const newRowsPerPage = event.target.value;
-        setRowsPerPage(newRowsPerPage);
-        setPage(0);
-    };
-
-    // Column definitions for DataGrid
+    // Column definitions
     const columns = [
         {
             field: "student_id",
             headerName: "Student ID",
             minWidth: 120,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "last_name",
             headerName: "Last Name",
             minWidth: 150,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "first_name",
             headerName: "First Name",
             minWidth: 150,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "middle_name",
             headerName: "Middle Name",
             minWidth: 150,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "sex",
             headerName: "Sex",
             minWidth: 80,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "date_of_birth",
             headerName: "Date of Birth",
             minWidth: 120,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "date_graduated",
             headerName: "Date Graduated",
             minWidth: 120,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "program_name",
             headerName: "Program Name",
             minWidth: 290,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "program_major",
             headerName: "Program Major",
             minWidth: 230,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "program_authority_to_operate_graduate",
             headerName: "Program Authority",
             minWidth: 200,
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
         },
         {
             field: "year_granted",
             headerName: "Year Granted",
             minWidth: 150,
-            type: "number",
-            align: "center",
-            headerAlign: "center",
-            renderCell: (params) =>
-                params.value !== null && params.value !== undefined
-                    ? params.value
-                    : "-",
+            isNumeric: true,
         },
-    ];
+    ].filter((col) => visibleColumns?.[col.field]);
+
+    // Calculate pagination
+    const paginatedGraduates =
+        rowsPerPage === -1
+            ? graduates
+            : graduates.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+    const totalPages =
+        rowsPerPage === -1 ? 1 : Math.ceil(graduates.length / rowsPerPage);
+
+    // Skip if columns are not ready yet
+    if (!visibleColumns) {
+        return (
+            <div className="animate-pulse h-[50vh] w-full bg-gray-100 rounded-md"></div>
+        );
+    }
 
     return (
-        <Box sx={{ mb: 2 }}>
-            <Paper
-                sx={{
-                    borderRadius: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    height: {
-                        xs: "50vh",
-                        sm: "50vh",
-                        md: "50vh",
-                    },
-                    maxWidth: {
-                        xs: "100vw",
-                        sm: "90vw",
-                        md: "95vw",
-                    },
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                }}
-            >
-                <DataGrid
-                    rows={graduates}
-                    columns={columns}
-                    getRowId={(row) => row.student_id}
-                    pagination
-                    paginationModel={{ page, pageSize: rowsPerPage }}
-                    onPaginationModelChange={(newModel) => {
-                        setPage(newModel.page);
-                        setRowsPerPage(newModel.pageSize);
-                    }}
-                    pageSizeOptions={ROWS_PER_PAGE_OPTIONS.map(
-                        (option) => option.value
-                    )}
-                    disableRowSelectionOnClick
-                    disableColumnFilter
-                    disableColumnMenu
-                    disableColumnSorting
-                    density="compact"
-                    sx={{
-                        border: 0,
-                        "& .MuiDataGrid-root": {
-                            height: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            minWidth: "fit-content",
-                        },
-                        "& .MuiDataGrid-main": {
-                            flex: 1,
-                            overflowX: "auto",
-                            overflowY: "auto",
-                            "&::-webkit-scrollbar": {
-                                height: "8px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                                backgroundColor: "rgba(0,0,0,0.2)",
-                                borderRadius: "4px",
-                            },
-                        },
-                        "& .MuiDataGrid-footerContainer": {
-                            borderTop: 1,
-                            borderColor: "divider",
-                            position: "sticky",
-                            bottom: 0,
-                            backgroundColor: "background.paper",
-                            zIndex: 1,
-                            minWidth: "fit-content",
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                        },
-                        "& .MuiDataGrid-columnSeparator": {
-                            visibility: "hidden",
-                        },
-                        "& .MuiDataGrid-cell": {
-                            borderRight: "1px solid",
-                            borderColor: "divider",
-                            whiteSpace: "normal",
-                            wordWrap: "break-word",
-                            padding: "4px 8px",
-                        },
-                        "& .MuiDataGrid-columnHeader": {
-                            borderRight: "1px solid",
-                            borderColor: "divider",
-                            whiteSpace: "normal",
-                            wordWrap: "break-word",
-                            padding: "4px 8px",
-                        },
-                    }}
-                    slots={{
-                        pagination: () => (
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    justifyContent: "flex-end",
-                                    alignItems: "center",
-                                    p: 1,
-                                    bgcolor: "grey.50",
-                                }}
-                            >
-                                <FormControl
-                                    size="small"
-                                    sx={{ minWidth: 80, mr: 1 }}
-                                >
-                                    <InputLabel sx={{ fontSize: "0.75rem" }}>
-                                        Rows
-                                    </InputLabel>
-                                    <Select
-                                        value={rowsPerPage}
-                                        onChange={handleChangeRowsPerPage}
-                                        label="Rows"
-                                        sx={{
-                                            height: 32,
-                                            fontSize: "0.875rem",
-                                        }}
+        <div className="mb-4">
+            <div className="bg-white rounded-md shadow-sm border border-gray-200 flex flex-col h-[50vh] w-full overflow-hidden">
+                {/* Table Header with Column Management */}
+                <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700">
+                        Graduates
+                    </h3>
+                    <div className="relative">
+                        <button
+                            className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
+                            onClick={() =>
+                                setIsColumnMenuOpen(!isColumnMenuOpen)
+                            }
+                        >
+                            Columns <ChevronDown size={14} />
+                        </button>
+
+                        {isColumnMenuOpen && (
+                            <div className="absolute right-0 top-full mt-1 z-10 bg-white shadow-lg rounded-md border border-gray-200 p-2 w-48">
+                                <div className="text-xs font-medium text-gray-700 mb-1 pb-1 border-b border-gray-200">
+                                    Show/Hide Columns
+                                </div>
+                                {columns.map((column) => (
+                                    <label
+                                        key={column.field}
+                                        className="flex items-center gap-2 py-1 text-xs cursor-pointer hover:bg-gray-50 px-1 rounded"
                                     >
-                                        {ROWS_PER_PAGE_OPTIONS.map((option) => (
-                                            <MenuItem
-                                                key={option.value}
-                                                value={option.value}
-                                                sx={{ fontSize: "0.875rem" }}
+                                        <input
+                                            type="checkbox"
+                                            checked={
+                                                visibleColumns[column.field]
+                                            }
+                                            onChange={() =>
+                                                toggleColumnVisibility(
+                                                    column.field
+                                                )
+                                            }
+                                            className="rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        {column.headerName}
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Table Container */}
+                <div className="flex-1 overflow-auto">
+                    <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                                {columns.map((column) => (
+                                    <th
+                                        key={column.field}
+                                        className={`px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 bg-gray-50 whitespace-nowrap sticky top-0 ${
+                                            column.isNumeric
+                                                ? "text-right"
+                                                : "text-left"
+                                        }`}
+                                        style={{ minWidth: column.minWidth }}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="truncate">
+                                                {column.headerName}
+                                            </span>
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {paginatedGraduates.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={columns.length}
+                                        className="px-3 py-6 text-sm text-center text-gray-500"
+                                    >
+                                        No graduates found
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedGraduates.map((graduate, index) => (
+                                    <tr
+                                        key={graduate.student_id || index}
+                                        className={`${
+                                            index % 2 === 0
+                                                ? "bg-white"
+                                                : "bg-gray-50"
+                                        } hover:bg-blue-50/30`}
+                                    >
+                                        {columns.map((column) => (
+                                            <td
+                                                key={`${graduate.student_id}-${column.field}`}
+                                                className={`px-2 py-1.5 text-xs border-r border-gray-200 ${
+                                                    column.isNumeric
+                                                        ? "text-right"
+                                                        : "text-left"
+                                                }`}
                                             >
-                                                {option.label}
-                                            </MenuItem>
+                                                {graduate[column.field] !==
+                                                    null &&
+                                                graduate[column.field] !==
+                                                    undefined
+                                                    ? graduate[column.field]
+                                                    : "-"}
+                                            </td>
                                         ))}
-                                    </Select>
-                                </FormControl>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ mr: 1, fontSize: "0.75rem" }}
-                                >
-                                    {graduates.length === 0
-                                        ? "0-0"
-                                        : `${page * rowsPerPage + 1}-${Math.min(
-                                              (page + 1) * rowsPerPage,
-                                              graduates.length
-                                          )}`}{" "}
-                                    of {graduates.length}
-                                </Typography>
-                                <Pagination
-                                    count={
-                                        Math.ceil(
-                                            graduates.length / rowsPerPage
-                                        ) || 1
-                                    }
-                                    page={page + 1}
-                                    onChange={handleChangePage}
-                                    size="small"
-                                    color="primary"
-                                    showFirstButton
-                                    showLastButton
-                                    sx={{
-                                        "& .MuiPaginationItem-root": {
-                                            fontSize: "0.75rem",
-                                        },
-                                    }}
-                                />
-                            </Box>
-                        ),
-                    }}
-                />
-            </Paper>
-        </Box>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Footer */}
+                <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 flex justify-end items-center sticky bottom-0 z-10">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                        pageSize={rowsPerPage}
+                        onPageSizeChange={(newSize) => {
+                            setRowsPerPage(newSize);
+                            setPage(1); // Reset to first page
+                        }}
+                        pageSizeOptions={[...ROWS_PER_PAGE_OPTIONS, -1]}
+                        showFirstLast={true}
+                        showPageSize={true}
+                        className="flex justify-end"
+                    />
+                </div>
+            </div>
+        </div>
     );
 };
 

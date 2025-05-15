@@ -11,6 +11,7 @@ import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
 import AlertComponent from "../../../Components/AlertComponent";
 import { Download, Upload, X } from "lucide-react";
+import CHEDButton from "../../../Components/CHEDButton";
 
 const facultyGroups = [
     {
@@ -80,7 +81,6 @@ const FacultyProfileUpload = () => {
     const [error, setError] = useState(null);
     const { institutionId: encryptedInstitutionId } = useParams();
     const navigate = useNavigate();
-    const [institutionName, setInstitutionName] = useState("");
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
 
@@ -110,7 +110,10 @@ const FacultyProfileUpload = () => {
         try {
             const token = localStorage.getItem("token");
             if (!token) {
-                AlertComponent.showAlert("Authentication token is missing.", "error");
+                AlertComponent.showAlert(
+                    "Authentication token is missing.",
+                    "error"
+                );
                 setLoading(false);
                 hideLoading();
                 return;
@@ -124,12 +127,12 @@ const FacultyProfileUpload = () => {
             setFacultyProfiles(
                 Array.isArray(response.data) ? response.data : []
             );
-            setInstitutionName(
-                response.data[0]?.institution.name || "Unknown Institution"
-            );
         } catch (error) {
             console.error("Error fetching faculty profiles:", error);
-            AlertComponent.showAlert("Failed to load faculty profiles. Please try again.", "error");
+            AlertComponent.showAlert(
+                "Failed to load faculty profiles. Please try again.",
+                "error"
+            );
             setFacultyProfiles([]);
         } finally {
             setLoading(false);
@@ -346,7 +349,10 @@ const FacultyProfileUpload = () => {
             };
         } catch (error) {
             console.error("Error processing the file:", error);
-            AlertComponent.showAlert("Error uploading file. Please try again.", "error");
+            AlertComponent.showAlert(
+                "Error uploading file. Please try again.",
+                "error"
+            );
         } finally {
             setIsUploading(false);
         }
@@ -364,7 +370,10 @@ const FacultyProfileUpload = () => {
                 },
                 () => {
                     // Cancel callback (optional)
-                    AlertComponent.showAlert("File upload canceled.", "question");
+                    AlertComponent.showAlert(
+                        "File upload canceled.",
+                        "question"
+                    );
                 }
             );
         } else {
@@ -378,7 +387,9 @@ const FacultyProfileUpload = () => {
             async () => {
                 // Confirm callback
                 try {
-                    const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
+                    const response = await fetch(
+                        "/templates/Form-E2-Themeplate.xlsx"
+                    );
                     if (!response.ok) {
                         throw new Error(
                             `Failed to load template file: HTTP ${response.status}`
@@ -391,17 +402,21 @@ const FacultyProfileUpload = () => {
 
                     const dataStartRow = 7;
 
-                    const profilesByGroup = facultyGroups.reduce((acc, group) => {
-                        acc[group.sheetName] = facultyProfiles.filter(
-                            (profile) => profile.faculty_group === group.sheetName
-                        );
-                        console.log(
-                            `Sheet ${group.sheetName}: ${
-                                acc[group.sheetName].length
-                            } profiles`
-                        );
-                        return acc;
-                    }, {});
+                    const profilesByGroup = facultyGroups.reduce(
+                        (acc, group) => {
+                            acc[group.sheetName] = facultyProfiles.filter(
+                                (profile) =>
+                                    profile.faculty_group === group.sheetName
+                            );
+                            console.log(
+                                `Sheet ${group.sheetName}: ${
+                                    acc[group.sheetName].length
+                                } profiles`
+                            );
+                            return acc;
+                        },
+                        {}
+                    );
 
                     for (
                         let sheetIndex = 0;
@@ -419,7 +434,8 @@ const FacultyProfileUpload = () => {
                             continue;
                         }
 
-                        const profilesForSheet = profilesByGroup[sheetName] || [];
+                        const profilesForSheet =
+                            profilesByGroup[sheetName] || [];
                         console.log(
                             `Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`
                         );
@@ -427,14 +443,20 @@ const FacultyProfileUpload = () => {
                         profilesForSheet.forEach((profile, i) => {
                             const row = worksheet.getRow(dataStartRow + i);
                             row.getCell(2).value = profile.name || null;
-                            row.getCell(3).value = profile.generic_faculty_rank || 0;
+                            row.getCell(3).value =
+                                profile.generic_faculty_rank || 0;
                             row.getCell(4).value = profile.home_college || null;
-                            row.getCell(5).value = profile.home_department || null;
+                            row.getCell(5).value =
+                                profile.home_department || null;
                             row.getCell(6).value = profile.is_tenured || null;
-                            row.getCell(7).value = profile.ssl_salary_grade || 0;
-                            row.getCell(8).value = profile.annual_basic_salary || 0;
-                            row.getCell(9).value = profile.on_leave_without_pay || 0;
-                            row.getCell(10).value = profile.full_time_equivalent || 0;
+                            row.getCell(7).value =
+                                profile.ssl_salary_grade || 0;
+                            row.getCell(8).value =
+                                profile.annual_basic_salary || 0;
+                            row.getCell(9).value =
+                                profile.on_leave_without_pay || 0;
+                            row.getCell(10).value =
+                                profile.full_time_equivalent || 0;
                             row.getCell(11).value = profile.gender || null;
                             row.getCell(12).value =
                                 profile.highest_degree_attained || 0;
@@ -446,10 +468,12 @@ const FacultyProfileUpload = () => {
                                 profile.discipline_teaching_load_2 || null;
                             row.getCell(16).value =
                                 profile.discipline_bachelors || null;
-                            row.getCell(17).value = profile.discipline_masters || null;
+                            row.getCell(17).value =
+                                profile.discipline_masters || null;
                             row.getCell(18).value =
                                 profile.discipline_doctorate || null;
-                            row.getCell(19).value = profile.masters_with_thesis || null;
+                            row.getCell(19).value =
+                                profile.masters_with_thesis || null;
                             row.getCell(20).value =
                                 profile.doctorate_with_dissertation || null;
                             row.getCell(21).value =
@@ -486,10 +510,14 @@ const FacultyProfileUpload = () => {
                             row.getCell(37).value =
                                 profile.extension_services_load || 0;
                             row.getCell(38).value = profile.study_load || 0;
-                            row.getCell(39).value = profile.production_load || 0;
-                            row.getCell(40).value = profile.administrative_load || 0;
-                            row.getCell(41).value = profile.other_load_credits || 0;
-                            row.getCell(42).value = profile.total_work_load || 0;
+                            row.getCell(39).value =
+                                profile.production_load || 0;
+                            row.getCell(40).value =
+                                profile.administrative_load || 0;
+                            row.getCell(41).value =
+                                profile.other_load_credits || 0;
+                            row.getCell(42).value =
+                                profile.total_work_load || 0;
                             row.commit();
                         });
                     }
@@ -508,10 +536,16 @@ const FacultyProfileUpload = () => {
                     a.click();
                     window.URL.revokeObjectURL(url);
 
-                    AlertComponent.showAlert("Data exported successfully!", "success");
+                    AlertComponent.showAlert(
+                        "Data exported successfully!",
+                        "success"
+                    );
                 } catch (error) {
                     console.error("Error exporting data:", error);
-                    AlertComponent.showAlert("Error exporting data. Please try again.", "error");
+                    AlertComponent.showAlert(
+                        "Error exporting data. Please try again.",
+                        "error"
+                    );
                 }
             },
             () => {
@@ -552,11 +586,7 @@ const FacultyProfileUpload = () => {
                         </a>
                     </li>
                     <li className="text-gray-400">›</li>
-                    <li className="text-gray-900">
-                        {institutionName
-                            ? `${institutionName} Campuses`
-                            : "Campuses"}
-                    </li>
+                    <li className="text-gray-900">Faculties Management</li>
                 </ol>
             </nav>
 
@@ -572,25 +602,29 @@ const FacultyProfileUpload = () => {
                         )?.description || "No description available"}
                     </p>
                 </div>
+                {/* CHED-Styled Action Buttons */}
                 <div className="flex gap-4 items-center">
-                    <button
-                        className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
-                        disabled={isUploading}
+                    {/* Import Button */}
+                    <CHEDButton
                         onClick={() => setOpenUploadDialog(true)}
+                        icon={Upload}
+                        variant="primary"
+                        size="md"
+                        disabled={isUploading}
                     >
-                        <Upload className="w-5 h-5 mr-2" />
-                        <span className="hidden sm:inline">
-                            {isUploading ? "Uploading..." : "Import Form E2"}
-                        </span>
-                    </button>
-                    <button
-                        className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                        {isUploading ? "Uploading..." : "Import Form E2"}
+                    </CHEDButton>
+
+                    {/* Export Button */}
+                    <CHEDButton
                         onClick={handleExportData}
+                        icon={Download}
+                        variant="secondary"
+                        size="md"
                         disabled={isUploading || loading}
                     >
-                        <Download className="w-5 h-5 mr-2" />
-                        <span className="hidden sm:inline">Export Data</span>
-                    </button>
+                        Export Data
+                    </CHEDButton>
                 </div>
             </div>
 

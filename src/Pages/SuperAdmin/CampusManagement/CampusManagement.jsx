@@ -12,7 +12,6 @@ const CampusManagement = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
     const [campuses, setCampuses] = useState([]);
     const { showLoading, hideLoading } = useLoading();
-    const [institutionName, setInstitutionName] = useState("");
     const [loading, setLoading] = useState(true);
 
     const fetchCampuses = async () => {
@@ -29,9 +28,7 @@ const CampusManagement = () => {
 
             console.log("Fetched Campuses Data:", response.data);
             setCampuses(response.data.campuses || []);
-            setInstitutionName(
-                response.data.institution_name || "Unknown Institution"
-            );
+            
         } catch (error) {
             console.error("Error fetching campuses:", error);
             setCampuses([]);
@@ -71,15 +68,16 @@ const CampusManagement = () => {
                 </RouterLink>
                 <span className="mx-2 text-gray-500">›</span>
                 <span className="text-gray-900 text-sm sm:text-base">
-                    {institutionName
-                        ? `${institutionName} Campuses`
-                        : "Campuses"}
+                    Campus Management
                 </span>
             </nav>
 
             {/* Handsontable Component */}
             <div className="mt-4 overflow-x-auto max-w-full">
-                <CampusHandsontable campuses={campuses} fetchCampuses={fetchCampuses} />
+                <CampusHandsontable
+                    campuses={campuses}
+                    fetchCampuses={fetchCampuses}
+                />
             </div>
         </div>
     );

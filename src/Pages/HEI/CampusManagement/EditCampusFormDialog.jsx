@@ -2,17 +2,23 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
-import AlertComponent from "../../../Components/AlertComponent"; // Import AlertComponent
-import { useLoading } from "../../../Context/LoadingContext";
 import { useParams } from "react-router-dom";
 import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
 import useLocationData from "../../../utils/useLocationData";
+import { useLoading } from "../../../Context/LoadingContext";
 import FormInput from "../../../Components/FormInput";
 import YearPicker from "../../../Components/YearPicker";
+import AlertComponent from "../../../Components/AlertComponent"; // Import AlertComponent
 
-const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
-    const { updateProgress, hideLoading } = useLoading();
+const EditCampusFormDialog = ({
+    open,
+    onClose,
+    campusData,
+    campusId,
+    fetchCampuses,
+}) => {
+    const { showLoading, hideLoading } = useLoading();
     const { institutionId: encryptedInstitutionId } = useParams();
     const decryptedInstitutionId = decryptId(encryptedInstitutionId);
     const {
@@ -24,7 +30,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         fetchMunicipalities,
     } = useLocationData();
 
-    const [newCampus, setNewCampus] = useState({
+    const [campus, setCampuses] = useState({
         institution_id: decryptedInstitutionId || "",
         suc_name: "",
         campus_type: "",
@@ -42,9 +48,56 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         longitude_coordinates: "",
     });
     const [errors, setErrors] = useState({});
-    const [selectedProvince, setSelectedProvince] = useState(""); // Track province for municipality dropdown
+    const [selectedProvince, setSelectedProvince] = useState("");
+    const currentYear = 2025;
 
-    const currentYear = new Date().getFullYear();
+    // Initialize form with campusData
+    useEffect(() => {
+        if (campusData) {
+            const provinceMunicipality =
+                campusData.province && campusData.municipality
+                    ? `${campusData.province}, ${campusData.municipality}`
+                    : "";
+            setCampuses({
+                institution_id: campusData.institution_id
+                    ? String(campusData.institution_id)
+                    : decryptedInstitutionId || "",
+                suc_name: campusData.suc_name || "",
+                campus_type: campusData.campus_type || "",
+                institutional_code: campusData.institutional_code || "",
+                region: campusData.region || "",
+                province_municipality: provinceMunicipality,
+                former_name: campusData.former_name || "",
+                year_first_operation: campusData.year_first_operation
+                    ? String(campusData.year_first_operation)
+                    : "",
+                land_area_hectares:
+                    campusData.land_area_hectares !== null &&
+                    campusData.land_area_hectares !== undefined
+                        ? String(campusData.land_area_hectares)
+                        : "",
+                distance_from_main:
+                    campusData.distance_from_main !== null &&
+                    campusData.distance_from_main !== undefined
+                        ? String(campusData.distance_from_main)
+                        : "",
+                autonomous_code: campusData.autonomous_code || "",
+                position_title: campusData.position_title || "",
+                head_full_name: campusData.head_full_name || "",
+                latitude_coordinates:
+                    campusData.latitude_coordinates !== null &&
+                    campusData.latitude_coordinates !== undefined
+                        ? String(campusData.latitude_coordinates)
+                        : "",
+                longitude_coordinates:
+                    campusData.longitude_coordinates !== null &&
+                    campusData.longitude_coordinates !== undefined
+                        ? String(campusData.longitude_coordinates)
+                        : "",
+            });
+            setSelectedProvince(campusData.province || "");
+        }
+    }, [campusData, decryptedInstitutionId]);
 
     // Fetch regions when dialog opens
     useEffect(() => {
@@ -55,12 +108,12 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
 
     // Fetch provinces when region is selected
     useEffect(() => {
-        if (newCampus.region) {
+        if (campus.region) {
             fetchProvinces(
-                regions.find((r) => r.name === newCampus.region)?.id || ""
+                regions.find((r) => r.name === campus.region)?.id || ""
             );
         }
-    }, [newCampus.region]);
+    }, [campus.region]);
 
     // Fetch municipalities when province is selected
     useEffect(() => {
@@ -75,26 +128,26 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         const newErrors = {};
 
         // Required fields
-        if (!newCampus.institution_id) {
+        if (!campus.institution_id) {
             newErrors.institution_id = "Institution ID is required.";
         }
-        if (!newCampus.suc_name.trim()) {
+        if (!campus.suc_name.trim()) {
             newErrors.suc_name = "Campus name is required.";
         }
-        if (!newCampus.campus_type) {
+        if (!campus.campus_type) {
             newErrors.campus_type = "Campus type is required.";
         }
-        if (!newCampus.institutional_code.trim()) {
+        if (!campus.institutional_code.trim()) {
             newErrors.institutional_code = "Institutional code is required.";
         }
 
         // Optional fields (region, province, municipality can be nullable)
-        if (newCampus.region && newCampus.region.length > 255) {
+        if (campus.region && campus.region.length > 255) {
             newErrors.region = "Region must be 255 characters or less.";
         }
         if (
-            newCampus.province_municipality &&
-            newCampus.province_municipality.length > 255
+            campus.province_municipality &&
+            campus.province_municipality.length > 255
         ) {
             newErrors.province_municipality =
                 "Province and Municipality must be 255 characters or less.";
@@ -108,14 +161,14 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
             "head_full_name",
         ];
         optionalStrings.forEach((field) => {
-            if (newCampus[field] && newCampus[field].length > 255) {
+            if (campus[field] && campus[field].length > 255) {
                 newErrors[field] = "Must be 255 characters or less.";
             }
         });
 
         // Year validation
-        if (newCampus.year_first_operation) {
-            const year = parseInt(newCampus.year_first_operation, 10);
+        if (campus.year_first_operation) {
+            const year = parseInt(campus.year_first_operation, 10);
             if (isNaN(year)) {
                 newErrors.year_first_operation = "Must be a valid year.";
             } else if (year < 1800) {
@@ -127,8 +180,8 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         }
 
         // Numeric fields
-        if (newCampus.land_area_hectares !== "") {
-            const value = parseFloat(newCampus.land_area_hectares);
+        if (campus.land_area_hectares !== "") {
+            const value = parseFloat(campus.land_area_hectares);
             if (isNaN(value)) {
                 newErrors.land_area_hectares = "Must be a valid number.";
             } else if (value < 0) {
@@ -136,8 +189,8 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
             }
         }
 
-        if (newCampus.distance_from_main !== "") {
-            const value = parseFloat(newCampus.distance_from_main);
+        if (campus.distance_from_main !== "") {
+            const value = parseFloat(campus.distance_from_main);
             if (isNaN(value)) {
                 newErrors.distance_from_main = "Must be a valid number.";
             } else if (value < 0) {
@@ -146,8 +199,8 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         }
 
         // Coordinates
-        if (newCampus.latitude_coordinates !== "") {
-            const value = parseFloat(newCampus.latitude_coordinates);
+        if (campus.latitude_coordinates !== "") {
+            const value = parseFloat(campus.latitude_coordinates);
             if (isNaN(value)) {
                 newErrors.latitude_coordinates = "Must be a valid number.";
             } else if (value < -90 || value > 90) {
@@ -155,8 +208,8 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
             }
         }
 
-        if (newCampus.longitude_coordinates !== "") {
-            const value = parseFloat(newCampus.longitude_coordinates);
+        if (campus.longitude_coordinates !== "") {
+            const value = parseFloat(campus.longitude_coordinates);
             if (isNaN(value)) {
                 newErrors.longitude_coordinates = "Must be a valid number.";
             } else if (value < -180 || value > 180) {
@@ -171,7 +224,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setNewCampus((prev) => ({
+        setCampuses((prev) => ({
             ...prev,
             [name]: value,
         }));
@@ -182,7 +235,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
 
     const handleYearChange = (e) => {
         const value = e.target.value;
-        setNewCampus((prev) => ({
+        setCampuses((prev) => ({
             ...prev,
             year_first_operation: value,
         }));
@@ -192,7 +245,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
     };
 
     const resetForm = () => {
-        setNewCampus({
+        setCampuses({
             institution_id: decryptedInstitutionId || "",
             suc_name: "",
             campus_type: "",
@@ -213,53 +266,53 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         setErrors({});
     };
 
-    const handleAddCampus = async () => {
+    const handleEditCampus = async () => {
         if (!validateForm()) {
-            console.log("[Add Campus] Validation failed:", errors);
+            console.log("[Edit Campus] Validation failed:", errors);
             AlertComponent.showAlert(
                 "Please check the form for errors.",
                 "error"
             );
             return;
         }
-        updateProgress(30);
+        showLoading();
         const token = localStorage.getItem("token");
         try {
-            const yearValue = newCampus.year_first_operation
-                ? parseInt(newCampus.year_first_operation, 10)
+            const yearValue = campus.year_first_operation
+                ? parseInt(campus.year_first_operation, 10)
                 : null;
 
             const payload = {
-                institution_id: parseInt(newCampus.institution_id, 10),
-                suc_name: newCampus.suc_name || null,
-                campus_type: newCampus.campus_type || null,
-                institutional_code: newCampus.institutional_code || null,
-                region: newCampus.region || null, // Nullable
-                province_municipality: newCampus.province_municipality || null, // Nullable
-                former_name: newCampus.former_name || null,
+                institution_id: parseInt(campus.institution_id, 10),
+                suc_name: campus.suc_name || null,
+                campus_type: campus.campus_type || null,
+                institutional_code: campus.institutional_code || null,
+                region: campus.region || null, // Nullable
+                province_municipality: campus.province_municipality || null, // Nullable
+                former_name: campus.former_name || null,
                 year_first_operation: yearValue,
-                land_area_hectares: newCampus.land_area_hectares
-                    ? parseFloat(newCampus.land_area_hectares)
+                land_area_hectares: campus.land_area_hectares
+                    ? parseFloat(campus.land_area_hectares)
                     : null,
-                distance_from_main: newCampus.distance_from_main
-                    ? parseFloat(newCampus.distance_from_main)
+                distance_from_main: campus.distance_from_main
+                    ? parseFloat(campus.distance_from_main)
                     : null,
-                autonomous_code: newCampus.autonomous_code || null,
-                position_title: newCampus.position_title || null,
-                head_full_name: newCampus.head_full_name || null,
-                latitude_coordinates: newCampus.latitude_coordinates
-                    ? parseFloat(newCampus.latitude_coordinates)
+                autonomous_code: campus.autonomous_code || null,
+                position_title: campus.position_title || null,
+                head_full_name: campus.head_full_name || null,
+                latitude_coordinates: campus.latitude_coordinates
+                    ? parseFloat(campus.latitude_coordinates)
                     : null,
-                longitude_coordinates: newCampus.longitude_coordinates
-                    ? parseFloat(newCampus.longitude_coordinates)
+                longitude_coordinates: campus.longitude_coordinates
+                    ? parseFloat(campus.longitude_coordinates)
                     : null,
             };
-            updateProgress(50);
-            console.log("[Add Campus] Sending data:", [payload]);
 
-            const response = await axios.post(
-                `${config.API_URL}/campuses`,
-                [payload],
+            console.log("[Edit Campus] Sending data:", payload);
+            hideLoading();
+            const response = await axios.put(
+                `${config.API_URL}/campuses/${campusId}`,
+                payload,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -268,31 +321,26 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                 }
             );
 
-            console.log("[Add Campus] Server response:", response.data);
-
-            const newCampusData = response.data.data || { id: Date.now() };
-            onAddCampus({ ...payload, id: newCampusData.id });
-            updateProgress(100);
-            hideLoading();
-            AlertComponent.showAlert("Campus added successfully!", "success");
-
+            console.log("[Edit Campus] Server response:", response.data);
+            AlertComponent.showAlert("Campus updated successfully!", "success");
+            fetchCampuses();
             resetForm();
             onClose();
         } catch (error) {
-            console.error("[Add Campus] Error:", error);
-            let errorMessage = "Failed to add campus. Please try again.";
+            console.error("[Edit Campus] Error:", error);
+            let errorMessage = "Failed to update campus. Please try again.";
             if (error.response && error.response.status === 422) {
                 const validationErrors = error.response.data.errors;
                 console.log(
-                    "[Add Campus] Validation Errors:",
+                    "[Edit Campus] Validation Errors:",
                     validationErrors
                 );
                 errorMessage =
                     "Validation failed: " +
                     Object.values(validationErrors).flat().join(", ");
             }
-
             AlertComponent.showAlert(errorMessage, "error");
+            hideLoading();
         }
     };
 
@@ -306,13 +354,13 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                 {/* Dialog Header */}
                 <div className="p-6 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-gray-800">
-                        Add New Campus
+                        Edit Campus
                     </h2>
                 </div>
 
                 {/* Dialog Content */}
                 <div className="p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1">
                         {/* Campus Name */}
                         <div className="col-span-1 sm:col-span-2 md:col-span-4">
                             <FormInput
@@ -320,7 +368,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="suc_name"
                                 label="Campus Name"
                                 type="text"
-                                value={newCampus.suc_name}
+                                value={campus.suc_name}
                                 onChange={handleInputChange}
                                 errorMessage={errors.suc_name}
                                 required
@@ -334,7 +382,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="institutional_code"
                                 label="Code"
                                 type="text"
-                                value={newCampus.institutional_code}
+                                value={campus.institutional_code}
                                 onChange={handleInputChange}
                                 errorMessage={errors.institutional_code}
                                 required
@@ -348,7 +396,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="campus_type"
                                 label="Type"
                                 type="select"
-                                value={newCampus.campus_type}
+                                value={campus.campus_type}
                                 onChange={handleInputChange}
                                 errorMessage={errors.campus_type}
                                 required
@@ -367,22 +415,22 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="former_name"
                                 label="Former Name"
                                 type="text"
-                                value={newCampus.former_name}
+                                value={campus.former_name}
                                 onChange={handleInputChange}
                                 errorMessage={errors.former_name}
                             />
                         </div>
 
                         {/* Region Selection */}
-                        <div className="col-span-1">
+                        <div className="max-w-md">
                             <FormInput
                                 id="region"
                                 name="region"
                                 label="Region"
-                                type="autocomplete"
-                                value={newCampus.region}
+                                type="select"
+                                value={campus.region}
                                 onChange={(e) => {
-                                    setNewCampus((prev) => ({
+                                    setCampuses((prev) => ({
                                         ...prev,
                                         region: e.target.value,
                                         province_municipality: "",
@@ -408,16 +456,16 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                         </div>
 
                         {/* Province Selection */}
-                        <div className="col-span-1">
+                        <div className="max-w-md">
                             <FormInput
                                 id="province"
                                 name="province"
                                 label="Province"
-                                type="autocomplete"
+                                type="select"
                                 value={selectedProvince}
                                 onChange={(e) => {
                                     setSelectedProvince(e.target.value);
-                                    setNewCampus((prev) => ({
+                                    setCampuses((prev) => ({
                                         ...prev,
                                         province_municipality: "",
                                     }));
@@ -429,7 +477,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                     }
                                 }}
                                 errorMessage={errors.province_municipality}
-                                disabled={!newCampus.region}
+                                disabled={!campus.region}
                                 options={[
                                     { value: "", label: "Select Province" },
                                     ...provinces.map((province) => ({
@@ -442,15 +490,15 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                         </div>
 
                         {/* Municipality Selection */}
-                        <div className="col-span-1">
+                        <div className="max-w-md">
                             <FormInput
                                 id="municipality"
                                 name="municipality"
                                 label="Municipality"
-                                type="autocomplete"
+                                type="select"
                                 value={
-                                    newCampus.province_municipality
-                                        ? newCampus.province_municipality.split(
+                                    campus.province_municipality
+                                        ? campus.province_municipality.split(
                                               ", "
                                           )[1] || ""
                                         : ""
@@ -462,7 +510,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                         provinceName && municipalityName
                                             ? `${provinceName}, ${municipalityName}`
                                             : "";
-                                    setNewCampus((prev) => ({
+                                    setCampuses((prev) => ({
                                         ...prev,
                                         province_municipality: combined,
                                     }));
@@ -487,11 +535,11 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                         </div>
 
                         {/* Year Established */}
-                        <div className="col-span-1">
+                        <div className="max-w-md">
                             <YearPicker
                                 label="Established"
                                 name="year_first_operation"
-                                value={newCampus.year_first_operation}
+                                value={campus.year_first_operation}
                                 onChange={handleYearChange}
                                 error={errors.year_first_operation}
                                 minYear={1800}
@@ -506,7 +554,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="head_full_name"
                                 label="Head"
                                 type="text"
-                                value={newCampus.head_full_name}
+                                value={campus.head_full_name}
                                 onChange={handleInputChange}
                                 errorMessage={errors.head_full_name}
                             />
@@ -519,7 +567,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="autonomous_code"
                                 label="Auto Code"
                                 type="text"
-                                value={newCampus.autonomous_code}
+                                value={campus.autonomous_code}
                                 onChange={handleInputChange}
                                 errorMessage={errors.autonomous_code}
                             />
@@ -532,12 +580,11 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="position_title"
                                 label="Position"
                                 type="text"
-                                value={newCampus.position_title}
+                                value={campus.position_title}
                                 onChange={handleInputChange}
                                 errorMessage={errors.position_title}
                             />
                         </div>
-
                         {/* Land Area */}
                         <div className="col-span-1">
                             <FormInput
@@ -545,7 +592,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="land_area_hectares"
                                 label="Land Area (ha)"
                                 type="number"
-                                value={newCampus.land_area_hectares}
+                                value={campus.land_area_hectares}
                                 onChange={handleInputChange}
                                 errorMessage={errors.land_area_hectares}
                                 inputProps={{ min: 0, step: 0.01 }}
@@ -559,7 +606,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="distance_from_main"
                                 label="Distance from Main (km)"
                                 type="number"
-                                value={newCampus.distance_from_main}
+                                value={campus.distance_from_main}
                                 onChange={handleInputChange}
                                 errorMessage={errors.distance_from_main}
                                 inputProps={{ min: 0, step: 0.01 }}
@@ -573,7 +620,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="latitude_coordinates"
                                 label="Latitude"
                                 type="number"
-                                value={newCampus.latitude_coordinates}
+                                value={campus.latitude_coordinates}
                                 onChange={handleInputChange}
                                 errorMessage={errors.latitude_coordinates}
                                 inputProps={{
@@ -591,7 +638,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                                 name="longitude_coordinates"
                                 label="Longitude"
                                 type="number"
-                                value={newCampus.longitude_coordinates}
+                                value={campus.longitude_coordinates}
                                 onChange={handleInputChange}
                                 errorMessage={errors.longitude_coordinates}
                                 inputProps={{
@@ -616,9 +663,9 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
                     <button
                         type="button"
                         className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        onClick={handleAddCampus}
+                        onClick={handleEditCampus}
                     >
-                        Add Campus
+                        Save Changes
                     </button>
                 </div>
             </div>
@@ -626,11 +673,52 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
     );
 };
 
-AddCampusDialog.propTypes = {
+EditCampusFormDialog.propTypes = {
     open: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
-    onAddCampus: PropTypes.func.isRequired,
-    initialRegion: PropTypes.string,
+    campusData: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        institution_id: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        suc_name: PropTypes.string,
+        campus_type: PropTypes.string,
+        institutional_code: PropTypes.string,
+        region: PropTypes.string,
+        province: PropTypes.string,
+        municipality: PropTypes.string,
+        former_name: PropTypes.string,
+        year_first_operation: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        land_area_hectares: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        distance_from_main: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        autonomous_code: PropTypes.string,
+        position_title: PropTypes.string,
+        head_full_name: PropTypes.string,
+        latitude_coordinates: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+        longitude_coordinates: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
+    }),
+    campusId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+        .isRequired,
+    setSnackbarOpen: PropTypes.func.isRequired,
+    setSnackbarMessage: PropTypes.func.isRequired,
+    setSnackbarSeverity: PropTypes.func.isRequired,
+    fetchCampuses: PropTypes.func, // Add refreshCampuses to prop types
 };
 
-export default AddCampusDialog;
+export default EditCampusFormDialog;

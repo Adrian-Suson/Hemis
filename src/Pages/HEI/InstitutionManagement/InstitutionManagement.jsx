@@ -1,85 +1,98 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+import React from "react";
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-import {
-    Box,
-    Button,
-    Typography,
-    Breadcrumbs,
-    Link,
-    Grid,
-    Paper,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    alpha,
-    FormControl,
-    Select,
-    MenuItem,
-    Avatar,
-    Chip,
-    Card,
-    useTheme,
-    Container,
-} from "@mui/material";
-import {
-    Download as DownloadIcon,
-    Business as BusinessIcon,
-    LibraryBooks as LibraryBooksIcon,
-    School as SchoolIcon,
-    People as PeopleIcon,
-    MenuBook as MenuBookIcon,
-    Info as InfoIcon,
-    Home as HomeIcon,
-    CalendarMonth as CalendarIcon,
-    LocationOn as LocationIcon,
-    Badge as BadgeIcon,
-    Phone as PhoneIcon,
-    Email as EmailIcon,
-    Language as WebIcon,
-    History as HistoryIcon,
-    Person as PersonIcon,
-} from "@mui/icons-material";
-import { RiResetLeftLine } from "react-icons/ri";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import config from "../../../utils/config";
-import CustomSnackbar from "../../../Components/CustomSnackbar";
-import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import ExcelJS from "exceljs";
 import { encryptId } from "../../../utils/encryption";
 import { useLoading } from "../../../Context/LoadingContext";
 import PropTypes from "prop-types";
+import AlertComponent from "../../../Components/AlertComponent";
+import useLocationData from "../../../utils/useLocationData";
+import EditDialog from "./EditDialog";
+import CHEDButton from "../../../Components/CHEDButton";
+import {
+    BookOpen,
+    Building,
+    Calendar,
+    Clipboard,
+    Globe,
+    Home,
+    IdCard,
+    Info,
+    Mail,
+    Phone,
+    School,
+    User,
+    FileSpreadsheet,
+    RefreshCw,
+    Award,
+    Users,
+    ArrowDownToLine,
+    Trash2,
+} from "lucide-react";
 
-// Custom InfoCard component
-const InfoCard = ({ title, icon, children }) => (
-    <Paper elevation={1} sx={{ p: 2, borderRadius: 1, mb: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-            {icon}
-            <Typography variant="subtitle1" sx={{ ml: 0.5, fontWeight: 600 }}>
+// CHED Logo Colors
+const CHED_COLORS = {
+    blue: "#0038A8", // Deep blue from the logo
+    yellow: "#FCD116", // Bright yellow from the sunrays
+    red: "#CE1126", // Red from the triangle
+    darkBlue: "#002776", // Darker blue for hover states
+    lightYellow: "#FFED99", // Light yellow for backgrounds
+    lightRed: "#FFD6D6", // Light red for warnings or highlights
+    gray: "#6B7280", // Gray for neutral text
+    lightGray: "#F3F4F6", // Light gray for backgrounds
+};
+
+// Custom InfoCard component with CHED styling
+const InfoCard = ({
+    title,
+    icon,
+    children,
+    borderColor = CHED_COLORS.blue,
+}) => (
+    <div
+        className="bg-white shadow-md rounded-lg p-5 mb-4 border-t-4"
+        style={{ borderColor }}
+    >
+        <div className="flex items-center mb-3">
+            <div
+                className="rounded-full p-2 mr-3"
+                style={{ backgroundColor: `${borderColor}20` }}
+            >
+                {React.cloneElement(icon, { color: borderColor, size: 20 })}
+            </div>
+            <h3
+                className="text-base font-semibold"
+                style={{ color: borderColor }}
+            >
                 {title}
-            </Typography>
-        </Box>
-        {children}
-    </Paper>
+            </h3>
+        </div>
+        <div className="pl-2">{children}</div>
+    </div>
 );
 
 InfoCard.propTypes = {
     title: PropTypes.string.isRequired,
     icon: PropTypes.node.isRequired,
     children: PropTypes.node.isRequired,
+    borderColor: PropTypes.string,
 };
 
 // Custom InfoItem component
 const InfoItem = ({ icon, label, value }) => (
-    <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
-        {icon}
-        <Typography variant="body2" sx={{ ml: 0.5, fontSize: "0.9rem" }}>
-            <strong>{label}:</strong> {value}
-        </Typography>
-    </Box>
+    <div className="flex items-start mb-3">
+        <div className="text-gray-500 mt-0.5 mr-3">{icon}</div>
+        <div>
+            <p className="text-sm text-gray-700">
+                <span className="font-medium">{label}</span>
+                <br />
+                <span className="text-gray-900">{value}</span>
+            </p>
+        </div>
+    </div>
 );
 
 InfoItem.propTypes = {
@@ -88,33 +101,92 @@ InfoItem.propTypes = {
     value: PropTypes.node.isRequired,
 };
 
-const ActionButton = ({ icon, label, onClick, loading, disabled }) => (
-    <Button
-        variant="outlined"
-        size="small"
-        fullWidth
-        startIcon={icon}
-        onClick={onClick}
-        disabled={disabled || loading}
-        sx={{
-            mb: 1,
-            textTransform: "none",
-            fontSize: "0.85rem",
-            display: "flex",
-            justifyContent: "flex-start",
-            width: "100%",
-        }}
-    >
-        {loading ? (
-            <>
-                <CircularProgress size={16} sx={{ mr: 0.5 }} />
-                Loading...
-            </>
-        ) : (
-            label
-        )}
-    </Button>
-);
+// Custom ActionButton component
+const ActionButton = ({
+    icon,
+    label,
+    onClick,
+    loading,
+    disabled,
+    variant = "primary",
+}) => {
+    const getButtonStyle = () => {
+        switch (variant) {
+            case "primary":
+                return {
+                    bgColor: CHED_COLORS.blue,
+                    hoverBgColor: CHED_COLORS.darkBlue,
+                    textColor: "white",
+                };
+            case "secondary":
+                return {
+                    bgColor: "#FFF",
+                    hoverBgColor: CHED_COLORS.lightYellow,
+                    textColor: CHED_COLORS.blue,
+                    borderColor: CHED_COLORS.blue,
+                };
+            case "warning":
+                return {
+                    bgColor: CHED_COLORS.red,
+                    hoverBgColor: "#B10000",
+                    textColor: "white",
+                };
+            default:
+                return {
+                    bgColor: CHED_COLORS.blue,
+                    hoverBgColor: CHED_COLORS.darkBlue,
+                    textColor: "white",
+                };
+        }
+    };
+
+    const style = getButtonStyle();
+
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled || loading}
+            className={`flex items-center justify-center w-full px-4 py-3 rounded-lg text-sm font-medium 
+      transition-all duration-200 mb-3 border ${
+          disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
+      }`}
+            style={{
+                backgroundColor: style.bgColor,
+                color: style.textColor,
+                borderColor: style.borderColor || style.bgColor,
+            }}
+        >
+            {loading ? (
+                <>
+                    <svg
+                        className="animate-spin h-4 w-4 mr-2"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                        />
+                        <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                        />
+                    </svg>
+                    Processing...
+                </>
+            ) : (
+                <>
+                    {React.cloneElement(icon, { size: 18 })}
+                    <span className="ml-2">{label}</span>
+                </>
+            )}
+        </button>
+    );
+};
 
 ActionButton.propTypes = {
     icon: PropTypes.node.isRequired,
@@ -122,25 +194,45 @@ ActionButton.propTypes = {
     onClick: PropTypes.func.isRequired,
     loading: PropTypes.bool,
     disabled: PropTypes.bool,
+    variant: PropTypes.oneOf(["primary", "secondary", "warning"]),
 };
 
 ActionButton.defaultProps = {
     loading: false,
     disabled: false,
+    variant: "primary",
+};
+
+// Badge component for status indicators
+const Badge = ({ children, color }) => (
+    <span
+        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+        style={{
+            backgroundColor: `${color}20`,
+            color: color,
+            border: `1px solid ${color}`,
+        }}
+    >
+        {children}
+    </span>
+);
+
+Badge.propTypes = {
+    children: PropTypes.node.isRequired,
+    color: PropTypes.string.isRequired,
 };
 
 const InstitutionManagement = () => {
-    const theme = useTheme();
     const [institutions, setInstitutions] = useState([]);
     const [institution, setInstitution] = useState(null);
-    const { showLoading, hideLoading, updateProgress } = useLoading();
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: "",
-        severity: "info",
+    const [location, setLocation] = useState({
+        region: null,
+        province: null,
+        municipality: null,
     });
-    const [openManualDialog, setOpenManualDialog] = useState(false);
-    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const { showLoading, hideLoading, updateProgress } = useLoading();
+    const { getLocationById } = useLocationData();
     const [loading, setLoading] = useState({
         viewCampuses: false,
         faculties: false,
@@ -168,10 +260,6 @@ const InstitutionManagement = () => {
     );
     const navigate = useNavigate();
 
-    const handleCloseSnackbar = () => {
-        setSnackbar((prev) => ({ ...prev, open: false }));
-    };
-
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user"));
         return user?.institution_type || "SUC";
@@ -189,11 +277,10 @@ const InstitutionManagement = () => {
             console.log("Stored institution for filtering:", storedInstitution);
 
             if (!user?.institution_id) {
-                setSnackbar({
-                    open: true,
-                    message: "No institution associated with this user.",
-                    severity: "warning",
-                });
+                AlertComponent.showAlert(
+                    "No institution associated with this user.",
+                    "warning"
+                );
                 return;
             }
 
@@ -208,22 +295,29 @@ const InstitutionManagement = () => {
 
             console.log("Fetched institutions:", institutionsData);
 
-            // Filter based on institution.name matching the stored institution name
             const filteredInstitutions = institutionsData.filter(
                 (inst) => inst.name === storedInstitution.name
             );
             console.log("Filtered institutions:", filteredInstitutions);
 
             setInstitutions(filteredInstitutions);
-            setInstitution(filteredInstitutions[0] || null);
-            console.log("Selected institution:", filteredInstitutions[0].id);
+            const selectedInstitution = filteredInstitutions[0] || null;
+            setInstitution(selectedInstitution);
+
+            if (selectedInstitution) {
+                const locationData = await getLocationById(
+                    selectedInstitution.region_id,
+                    selectedInstitution.province_id,
+                    selectedInstitution.municipality_id
+                );
+                setLocation(locationData);
+            }
         } catch (error) {
             console.error("Error fetching institution:", error);
-            setSnackbar({
-                open: true,
-                message: "Failed to load institution data.",
-                severity: "error",
-            });
+            AlertComponent.showAlert(
+                "Failed to load institution data.",
+                "error"
+            );
         } finally {
             hideLoading();
         }
@@ -282,7 +376,6 @@ const InstitutionManagement = () => {
     ]);
 
     useEffect(() => {
-        // Update the institution detail when the filtered institutions change (i.e. affected by year filter)
         if (filteredInstitutions.length > 0) {
             setInstitution(filteredInstitutions[0]);
         } else {
@@ -321,11 +414,7 @@ const InstitutionManagement = () => {
 
     const handleExportToFormA = async () => {
         if (!institution) {
-            setSnackbar({
-                open: true,
-                message: "No data available to export.",
-                severity: "warning",
-            });
+            AlertComponent.showAlert("No data available to export.", "warning");
             return;
         }
         updateProgress(10);
@@ -412,19 +501,11 @@ const InstitutionManagement = () => {
             a.click();
             window.URL.revokeObjectURL(url);
 
-            setSnackbar({
-                open: true,
-                message: "Data exported successfully!",
-                severity: "success",
-            });
+            AlertComponent.showAlert("Data exported successfully!", "success");
             updateProgress(100);
         } catch (error) {
             console.error("Error exporting data:", error);
-            setSnackbar({
-                open: true,
-                message: "Error exporting data.",
-                severity: "error",
-            });
+            AlertComponent.showAlert("Error exporting data.", "error");
         } finally {
             setLoading((prev) => ({ ...prev, exportFormA: false }));
         }
@@ -439,652 +520,655 @@ const InstitutionManagement = () => {
         }
     };
 
-    const handleConfirmDelete = async () => {
-        setLoading((prev) => ({ ...prev, deleteInstitution: true }));
-        try {
-            const token = localStorage.getItem("token");
-            await axios.delete(
-                `${config.API_URL}/institutions/${institution.id}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
+    const handleConfirmDelete = () => {
+        AlertComponent.showConfirmation(
+            "Are you sure you want to delete this institution? This action cannot be undone.",
+            async () => {
+                setLoading((prev) => ({ ...prev, deleteInstitution: true }));
+                try {
+                    const token = localStorage.getItem("token");
+                    await axios.delete(
+                        `${config.API_URL}/institutions/${institution.id}`,
+                        {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }
+                    );
+                    AlertComponent.showAlert(
+                        "Institution deleted successfully.",
+                        "success"
+                    );
+                    navigate("/hei-admin/dashboard");
+                } catch (error) {
+                    console.error("Error deleting institution:", error);
+                    AlertComponent.showAlert(
+                        "Failed to delete institution.",
+                        "error"
+                    );
+                } finally {
+                    setLoading((prev) => ({
+                        ...prev,
+                        deleteInstitution: false,
+                    }));
                 }
-            );
-            setSnackbar({
-                open: true,
-                message: "Institution deleted successfully.",
-                severity: "success",
-            });
-            navigate("/hei-admin/dashboard");
-        } catch (error) {
-            console.error("Error deleting institution:", error);
-            setSnackbar({
-                open: true,
-                message: "Failed to delete institution.",
-                severity: "error",
-            });
-        } finally {
-            setLoading((prev) => ({ ...prev, deleteInstitution: false }));
-            setConfirmDialogOpen(false);
-        }
+            },
+            () => {
+                console.log("Deletion cancelled");
+            }
+        );
+    };
+
+    const handleEdit = (updatedInstitution) => {
+        setInstitution(updatedInstitution);
+        const updatedInstitutions = institutions.map((inst) =>
+            inst.id === updatedInstitution.id ? updatedInstitution : inst
+        );
+        setInstitutions(updatedInstitutions);
     };
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
-            {/* Header Section with Breadcrumbs */}
-            <Box
-                sx={{
-                    bgcolor: "background.paper",
-                    p: { xs: 1, sm: 1.5 },
-                    borderRadius: 1,
-                    boxShadow: 1,
-                    mb: 2,
-                }}
-            >
-                <Breadcrumbs
-                    separator="›"
-                    aria-label="breadcrumb"
-                    sx={{ mb: 0.5 }}
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6">
+            {/* Compact Header with CHED Branding and Breadcrumbs */}
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+                <div className="flex items-center mb-4 sm:mb-0">
+                    <div
+                        className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center mr-4"
+                        style={{
+                            backgroundColor: CHED_COLORS.blue,
+                            borderColor: CHED_COLORS.yellow,
+                            border: "3px solid",
+                        }}
+                    >
+                        <Award size={24} color="white" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900">
+                            Institution Management
+                        </h1>
+                        <nav className="text-sm">
+                            <ol className="flex items-center text-gray-500">
+                                <li>
+                                    <a
+                                        href="#"
+                                        onClick={() =>
+                                            navigate("/hei-admin/dashboard")
+                                        }
+                                        className="hover:text-blue-600 transition-colors flex items-center"
+                                    >
+                                        <Home className="w-4 h-4 mr-2" />
+                                        Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <span className="mx-2">›</span>
+                                </li>
+                                <li className="text-gray-700 font-medium flex items-center">
+                                    <School className="w-4 h-4 mr-2" />
+                                    My Institution
+                                </li>
+                            </ol>
+                        </nav>
+                    </div>
+                </div>
+                <CHEDButton
+                    onClick={() => setEditDialogOpen(true)}
+                    icon={Building}
+                    variant="primary"
+                    size="md"
                 >
-                    <Link
-                        underline="hover"
-                        color="inherit"
-                        component={RouterLink}
-                        to="/hei-admin/dashboard"
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            fontSize: { xs: "0.8rem", sm: "0.9rem" },
-                            "&:hover": { color: "primary.main" },
-                        }}
-                    >
-                        <HomeIcon sx={{ mr: 0.3, fontSize: "0.8rem" }} />
-                        Dashboard
-                    </Link>
-                    <Typography
-                        color="text.primary"
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            fontSize: { xs: "0.8rem", sm: "0.9rem" },
-                        }}
-                    >
-                        <SchoolIcon sx={{ mr: 0.3, fontSize: "0.8rem" }} />
-                        My Institution
-                    </Typography>
-                </Breadcrumbs>
+                    Edit Institution
+                </CHEDButton>
+            </div>
 
-                <Box
-                    sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: { xs: "flex-start", sm: "center" },
-                        flexDirection: { xs: "column", sm: "row" },
-                        gap: { xs: 1, sm: 0 },
-                    }}
-                >
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Avatar
-                            sx={{
-                                bgcolor: "primary.main",
-                                width: { xs: 32, sm: 36 },
-                                height: { xs: 32, sm: 36 },
-                                mr: 1,
-                                display: { xs: "none", sm: "flex" },
-                            }}
-                        >
-                            <SchoolIcon sx={{ fontSize: "1rem" }} />
-                        </Avatar>
-                        <Box>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    fontWeight: 600,
-                                    color: "text.primary",
-                                    fontSize: { xs: "1rem", sm: "1.25rem" },
-                                }}
-                            >
-                                {institution
-                                    ? institution.name
-                                    : "Institution Details"}
-                            </Typography>
-                            {institution && (
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        mt: 0.25,
-                                        gap: 0.5,
+            {/* Filter and Institution Header Combined */}
+            <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border-b border-gray-200">
+                    <div className="flex items-center mb-4 sm:mb-0">
+                        {institution ? (
+                            <>
+                                <div
+                                    className="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                                    style={{
+                                        backgroundColor: `${CHED_COLORS.yellow}20`,
+                                        color: CHED_COLORS.yellow,
                                     }}
                                 >
-                                    <Chip
-                                        size="small"
-                                        label={
-                                            institution.institution_type ||
-                                            "SUC"
-                                        }
-                                        color="primary"
-                                        variant="outlined"
-                                        sx={{ fontSize: "0.75rem" }}
-                                    />
-                                    <Chip
-                                        size="small"
-                                        label={`Est. ${
-                                            institution.year_established ||
-                                            "N/A"
-                                        }`}
-                                        color="secondary"
-                                        variant="outlined"
-                                        sx={{ fontSize: "0.75rem" }}
-                                    />
-                                </Box>
-                            )}
-                        </Box>
-                    </Box>
-
-                    <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<DownloadIcon sx={{ fontSize: "1rem" }} />}
-                        onClick={handleExportToFormA}
-                        disabled={!institution || loading.exportFormA}
-                        sx={{
-                            bgcolor: institution ? "primary.main" : "grey.400",
-                            "&:hover": {
-                                bgcolor: institution
-                                    ? "primary.dark"
-                                    : "grey.500",
-                            },
-                            textTransform: "none",
-                            px: 2,
-                            py: 0.5,
-                            mt: { xs: 1, sm: 0 },
-                            fontSize: "0.85rem",
-                            boxShadow: 1,
-                        }}
-                    >
-                        {loading.exportFormA ? (
-                            <>
-                                <CircularProgress
-                                    size={16}
-                                    sx={{ mr: 0.5, color: "white" }}
-                                />
-                                Exporting...
+                                    <Building size={24} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center flex-wrap">
+                                        <h2 className="text-lg font-bold text-gray-800 mr-3">
+                                            {institution.name}
+                                        </h2>
+                                        <div className="flex space-x-2 mt-1 sm:mt-0">
+                                            <Badge color={CHED_COLORS.blue}>
+                                                {institution.institution_type ||
+                                                    "SUC"}
+                                            </Badge>
+                                            <Badge color={CHED_COLORS.yellow}>
+                                                Est.{" "}
+                                                {institution.year_established ||
+                                                    "N/A"}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {institution.address_street && (
+                                            <span>
+                                                {institution.address_street},{" "}
+                                            </span>
+                                        )}
+                                        {location.municipality?.name},{" "}
+                                        {location.province?.name},{" "}
+                                        {location.region?.name}
+                                    </p>
+                                </div>
                             </>
                         ) : (
-                            "Export"
+                            <p className="text-base text-gray-500">
+                                No institution data available
+                            </p>
                         )}
-                    </Button>
-                </Box>
-            </Box>
+                    </div>
 
-            {/* Report Year Filter */}
-            <Paper
-                elevation={1}
-                sx={{
-                    p: 2,
-                    mb: 3,
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: { xs: "column", sm: "row" },
-                    alignItems: { xs: "stretch", sm: "center" },
-                    justifyContent: "space-between",
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        width: { xs: "100%", sm: "auto" },
-                        mb: { xs: 2, sm: 0 },
-                    }}
-                >
-                    <CalendarIcon sx={{ mr: 1, color: "primary.main" }} />
-                    <Typography variant="subtitle2" sx={{ mr: 2 }}>
-                        Report Year:
-                    </Typography>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <Select
-                            value={reportYearFilter}
-                            onChange={(e) =>
-                                setReportYearFilter(e.target.value)
-                            }
-                            displayEmpty
-                            sx={{
-                                "& .MuiSelect-select": {
-                                    py: 0.7,
-                                    fontWeight: 500,
-                                },
-                            }}
+                    {/* Compact Filter */}
+                    <div className="flex items-center space-x-3">
+                        <div className="relative">
+                            <select
+                                id="reportYear"
+                                value={reportYearFilter}
+                                onChange={(e) =>
+                                    setReportYearFilter(e.target.value)
+                                }
+                                className="appearance-none pl-8 pr-10 py-2 text-base border border-gray-300 rounded-lg"
+                            >
+                                <option value="">All Years</option>
+                                {filterOptions.reportYears.map((year) => (
+                                    <option key={year} value={String(year)}>
+                                        {year}
+                                    </option>
+                                ))}
+                            </select>
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        </div>
+                        <button
+                            onClick={clearFilters}
+                            className="flex items-center px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                         >
-                            <MenuItem value="" sx={{ fontWeight: 500 }}>
-                                All Years
-                            </MenuItem>
-                            {filterOptions.reportYears.map((year) => (
-                                <MenuItem
-                                    key={year}
-                                    value={String(year)}
-                                    sx={{ fontWeight: 500 }}
-                                >
-                                    {year}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
-
-                <Button
-                    variant="text"
-                    startIcon={<RiResetLeftLine size={18} />}
-                    onClick={clearFilters}
-                    sx={{
-                        textTransform: "none",
-                        fontWeight: 500,
-                        color: "error.main",
-                        "&:hover": {
-                            bgcolor: alpha(theme.palette.error.main, 0.08),
-                        },
-                    }}
-                >
-                    Clear Filters
-                </Button>
-            </Paper>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* Main Content */}
             {institution ? (
-                <Grid container spacing={3}>
-                    {/* Contact Info Card */}
-                    <Grid size={12}>
-                        <InfoCard
-                            title="Contact Information"
-                            icon={<InfoIcon />}
-                        >
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<LocationIcon />}
-                                        label="Location"
-                                        value={
-                                            institution.municipality_city &&
-                                            institution.province
-                                                ? `${institution.municipality_city}, ${institution.province}`
-                                                : "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<BadgeIcon />}
-                                        label="Postal Code"
-                                        value={
-                                            institution.postal_code ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<PhoneIcon />}
-                                        label="Institutional Telephone"
-                                        value={
-                                            institution.institutional_telephone ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<PhoneIcon />}
-                                        label="Head Telephone"
-                                        value={
-                                            institution.head_telephone ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<EmailIcon />}
-                                        label="Email"
-                                        value={
-                                            institution.institutional_email ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<WebIcon />}
-                                        label="Website"
-                                        value={
-                                            institution.institutional_website ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                            </Grid>
-                        </InfoCard>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    {/* Left Column - Contact & Details */}
+                    <div className="lg:col-span-7">
+                        {/* Compact Info Tabs */}
+                        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-4">
+                            <div className="flex border-b">
+                                <button
+                                    className="px-4 py-2 text-sm font-medium text-white flex-1 flex justify-center items-center"
+                                    style={{
+                                        backgroundColor: CHED_COLORS.blue,
+                                    }}
+                                >
+                                    <Info className="w-4 h-4 mr-1.5" />
+                                    Institution Information
+                                </button>
+                            </div>
 
-                        {/* Institutional Details Card */}
-                        <InfoCard
-                            title="Institutional Details"
-                            icon={<SchoolIcon />}
-                        >
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<CalendarIcon />}
-                                        label="Year Established"
-                                        value={
-                                            institution.year_established ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<HistoryIcon />}
-                                        label="Year Granted/Approved"
-                                        value={
-                                            institution.year_granted_approved ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<SchoolIcon />}
-                                        label="Year Converted to College"
-                                        value={
-                                            institution.year_converted_college ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<SchoolIcon />}
-                                        label="Year Converted to University"
-                                        value={
-                                            institution.year_converted_university ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                            </Grid>
-                        </InfoCard>
+                            <div className="p-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Contact Info */}
+                                    <div>
+                                        <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
+                                            Contact Information
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <div className="flex items-start">
+                                                <Phone className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                                <div>
+                                                    <span className="text-xs text-gray-500 block">
+                                                        Telephone
+                                                    </span>
+                                                    <span className="text-sm">
+                                                        {institution.institutional_telephone ||
+                                                            "Not Available"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start">
+                                                <Mail className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                                <div>
+                                                    <span className="text-xs text-gray-500 block">
+                                                        Email
+                                                    </span>
+                                                    <a
+                                                        href={`mailto:${institution.institutional_email}`}
+                                                        className="text-sm text-blue-600 hover:underline"
+                                                    >
+                                                        {institution.institutional_email ||
+                                                            "Not Available"}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start">
+                                                <Globe className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                                <div>
+                                                    <span className="text-xs text-gray-500 block">
+                                                        Website
+                                                    </span>
+                                                    {institution.institutional_website ? (
+                                                        <a
+                                                            href={
+                                                                institution.institutional_website
+                                                            }
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-sm text-blue-600 hover:underline"
+                                                        >
+                                                            {
+                                                                institution.institutional_website
+                                                            }
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-sm">
+                                                            Not Available
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Institutional Details */}
+                                    <div>
+                                        <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
+                                            Institutional Details
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <div className="flex items-start">
+                                                <Calendar className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                                <div>
+                                                    <span className="text-xs text-gray-500 block">
+                                                        Year Established
+                                                    </span>
+                                                    <span className="text-sm">
+                                                        {institution.year_established ||
+                                                            "Not Available"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start">
+                                                <School className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                                <div>
+                                                    <span className="text-xs text-gray-500 block">
+                                                        College Conversion
+                                                    </span>
+                                                    <span className="text-sm">
+                                                        {institution.year_converted_college ||
+                                                            "Not Available"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start">
+                                                <School className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                                <div>
+                                                    <span className="text-xs text-gray-500 block">
+                                                        University Conversion
+                                                    </span>
+                                                    <span className="text-sm">
+                                                        {institution.year_converted_university ||
+                                                            "Not Available"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Leadership Card */}
-                        <InfoCard title="Leadership" icon={<PersonIcon />}>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<PersonIcon />}
-                                        label="Head Name"
-                                        value={
-                                            institution.head_name ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <InfoItem
-                                        icon={<BadgeIcon />}
-                                        label="Head Title"
-                                        value={
-                                            institution.head_title ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <InfoItem
-                                        icon={<SchoolIcon />}
-                                        label="Head Education"
-                                        value={
-                                            institution.head_education ||
-                                            "Not Available"
-                                        }
-                                    />
-                                </Grid>
-                            </Grid>
-                        </InfoCard>
-                    </Grid>
+                        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+                            <h3 className="text-sm font-medium flex items-center mb-3">
+                                <User
+                                    className="w-4 h-4 mr-1.5"
+                                    style={{ color: CHED_COLORS.red }}
+                                />
+                                Leadership
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start">
+                                    <User className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                    <div>
+                                        <span className="text-xs text-gray-500 block">
+                                            Head Name
+                                        </span>
+                                        <span className="text-sm font-medium">
+                                            {institution.head_name ||
+                                                "Not Available"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start">
+                                    <IdCard className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                    <div>
+                                        <span className="text-xs text-gray-500 block">
+                                            Head Title
+                                        </span>
+                                        <span className="text-sm">
+                                            {institution.head_title ||
+                                                "Not Available"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-start">
+                                    <School className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
+                                    <div>
+                                        <span className="text-xs text-gray-500 block">
+                                            Head Education
+                                        </span>
+                                        <span className="text-sm">
+                                            {institution.head_education ||
+                                                "Not Available"}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    {/* Management Options Card */}
-                    <Grid size={12}>
-                        <Card
-                            elevation={1}
-                            sx={{
-                                p: 2,
-                                height: "100%",
-                                borderRadius: 1,
-                                display: "flex",
-                                flexDirection: "column",
-                            }}
-                        >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mb: 1,
-                                    pb: 1,
-                                    borderBottom: "1px solid",
-                                    borderColor: "divider",
-                                }}
+                    {/* Right Column - Quick Actions */}
+                    <div className="lg:col-span-5">
+                        <div className="bg-white rounded-lg shadow-sm mb-4">
+                            <div className="px-4 py-2 border-b border-gray-200 flex items-center">
+                                <div
+                                    className="rounded-full p-1.5 mr-2"
+                                    style={{
+                                        backgroundColor: `${CHED_COLORS.yellow}15`,
+                                    }}
+                                >
+                                    <FileSpreadsheet
+                                        className="w-4 h-4"
+                                        style={{ color: CHED_COLORS.yellow }}
+                                    />
+                                </div>
+                                <h3 className="text-sm font-medium">Exports</h3>
+                            </div>
+                            <div className="p-3">
+                                <button
+                                    onClick={handleExportToFormA}
+                                    disabled={loading.exportFormA}
+                                    className="flex items-center justify-center w-full px-3 py-2 mb-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
+                                >
+                                    {loading.exportFormA ? (
+                                        <svg
+                                            className="animate-spin h-4 w-4 mr-2"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                            ></path>
+                                        </svg>
+                                    ) : (
+                                        <ArrowDownToLine className="w-4 h-4 mr-2" />
+                                    )}
+                                    Export to Form A
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-sm p-3">
+                            <h3 className="text-sm font-medium text-gray-800 flex items-center mb-2 pb-2 border-b border-gray-100">
+                                <Clipboard
+                                    className="w-4 h-4 mr-1.5"
+                                    style={{ color: CHED_COLORS.blue }}
+                                />
+                                Management Options
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() =>
+                                        handleNavigation(
+                                            `/hei-admin/institutions/campuses/${encryptId(
+                                                reportYearFilter
+                                                    ? `${institution.id}`
+                                                    : institution.id
+                                            )}`,
+                                            "viewCampuses"
+                                        )
+                                    }
+                                    disabled={loading.viewCampuses}
+                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                                    style={{ color: CHED_COLORS.blue }}
+                                >
+                                    {loading.viewCampuses ? (
+                                        <svg
+                                            className="animate-spin h-5 w-5 mb-1"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                            ></path>
+                                        </svg>
+                                    ) : (
+                                        <Building className="w-5 h-5 mb-1" />
+                                    )}
+                                    Campuses
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        handleNavigation(
+                                            `/hei-admin/institutions/faculties/${encryptId(
+                                                reportYearFilter
+                                                    ? `${institution.id}`
+                                                    : institution.id
+                                            )}`,
+                                            "faculties"
+                                        )
+                                    }
+                                    disabled={loading.faculties}
+                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                                    style={{ color: CHED_COLORS.blue }}
+                                >
+                                    {loading.faculties ? (
+                                        <svg
+                                            className="animate-spin h-5 w-5 mb-1"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                            ></path>
+                                        </svg>
+                                    ) : (
+                                        <Users className="w-5 h-5 mb-1" />
+                                    )}
+                                    Faculties
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        handleNavigation(
+                                            `/hei-admin/institutions/curricular-programs/${encryptId(
+                                                reportYearFilter
+                                                    ? `${institution.id}`
+                                                    : institution.id
+                                            )}`,
+                                            "curricularPrograms"
+                                        )
+                                    }
+                                    disabled={loading.curricularPrograms}
+                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                                    style={{ color: CHED_COLORS.blue }}
+                                >
+                                    {loading.curricularPrograms ? (
+                                        <svg
+                                            className="animate-spin h-5 w-5 mb-1"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                            ></path>
+                                        </svg>
+                                    ) : (
+                                        <BookOpen className="w-5 h-5 mb-1" />
+                                    )}
+                                    Programs
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        handleNavigation(
+                                            `/hei-admin/institutions/graduates-list/${encryptId(
+                                                reportYearFilter
+                                                    ? `${institution.id}`
+                                                    : institution.id
+                                            )}`,
+                                            "graduates"
+                                        )
+                                    }
+                                    disabled={loading.graduates}
+                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                                    style={{ color: CHED_COLORS.blue }}
+                                >
+                                    {loading.graduates ? (
+                                        <svg
+                                            className="animate-spin h-5 w-5 mb-1"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                            ></path>
+                                        </svg>
+                                    ) : (
+                                        <Award className="w-5 h-5 mb-1" />
+                                    )}
+                                    Graduates
+                                </button>
+                            </div>
+
+                            {/* Delete Institution */}
+                            <button
+                                onClick={handleConfirmDelete}
+                                disabled={loading.deleteInstitution}
+                                className="flex items-center justify-center w-full px-3 py-1.5 mt-3 border border-red-200 text-red-600 text-xs font-medium rounded hover:bg-red-50 disabled:opacity-50"
                             >
-                                <Avatar
-                                    sx={{
-                                        bgcolor: alpha(
-                                            theme.palette.primary.main,
-                                            0.1
-                                        ),
-                                        color: "primary.main",
-                                        width: 32,
-                                        height: 32,
-                                        mr: 1,
-                                    }}
-                                >
-                                    <MenuBookIcon sx={{ fontSize: "1rem" }} />
-                                </Avatar>
-                                <Typography
-                                    variant="subtitle1"
-                                    sx={{
-                                        fontWeight: 600,
-                                        color: "primary.main",
-                                    }}
-                                >
-                                    Management Options
-                                </Typography>
-                            </Box>
-                            <Grid container spacing={1} columns={12}>
-                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                                    <ActionButton
-                                        icon={
-                                            <BusinessIcon
-                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
-                                            />
-                                        }
-                                        label="Campuses"
-                                        onClick={() =>
-                                            handleNavigation(
-                                                `/hei-admin/institutions/campuses/${encryptId(
-                                                    reportYearFilter
-                                                        ? `${institution.id}`
-                                                        : institution.id
-                                                )}`,
-                                                "viewCampuses"
-                                            )
-                                        }
-                                        loading={loading.viewCampuses}
-                                        disabled={!institution?.id}
-                                    />
-                                </Grid>
-                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                                    <ActionButton
-                                        icon={
-                                            <PeopleIcon
-                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
-                                            />
-                                        }
-                                        label="Faculties"
-                                        onClick={() =>
-                                            handleNavigation(
-                                                `/hei-admin/institutions/faculties/${encryptId(
-                                                    reportYearFilter
-                                                        ? `${institution.id}`
-                                                        : institution.id
-                                                )}`,
-                                                "faculties"
-                                            )
-                                        }
-                                        loading={loading.faculties}
-                                        disabled={!institution?.id}
-                                    />
-                                </Grid>
-                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                                    <ActionButton
-                                        icon={
-                                            <LibraryBooksIcon
-                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
-                                            />
-                                        }
-                                        label="Programs"
-                                        onClick={() =>
-                                            handleNavigation(
-                                                `/hei-admin/institutions/curricular-programs/${encryptId(
-                                                    reportYearFilter
-                                                        ? `${institution.id}`
-                                                        : institution.id
-                                                )}`,
-                                                "curricularPrograms"
-                                            )
-                                        }
-                                        loading={loading.curricularPrograms}
-                                        disabled={!institution?.id}
-                                    />
-                                </Grid>
-                                <Grid sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                                    <ActionButton
-                                        icon={
-                                            <SchoolIcon
-                                                sx={{ color: theme.palette.primary.main, fontSize: "1rem" }}
-                                            />
-                                        }
-                                        label="Graduates"
-                                        onClick={() =>
-                                            handleNavigation(
-                                                `/hei-admin/institutions/graduates-list/${encryptId(
-                                                    reportYearFilter
-                                                        ? `${institution.id}`
-                                                        : institution.id
-                                                )}`,
-                                                "graduates"
-                                            )
-                                        }
-                                        loading={loading.graduates}
-                                        disabled={!institution?.id}
-                                    />
-                                </Grid>
-                            </Grid>
-                        </Card>
-                    </Grid>
-                </Grid>
+                                {loading.deleteInstitution ? (
+                                    <svg
+                                        className="animate-spin h-3.5 w-3.5 mr-1.5"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                        ></path>
+                                    </svg>
+                                ) : (
+                                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                )}
+                                Delete Institution
+                            </button>
+                        </div>
+                    </div>
+                </div>
             ) : (
-                <Paper
-                    elevation={1}
-                    sx={{
-                        p: 4,
-                        textAlign: "center",
-                        borderRadius: 2,
-                        borderStyle: "dashed",
-                        borderWidth: 1,
-                        borderColor: "divider",
-                    }}
-                >
-                    <Typography
-                        variant="h6"
-                        color="text.secondary"
-                        sx={{ mb: 2 }}
+                <div className="bg-white p-6 text-center rounded-lg shadow-sm border border-dashed border-gray-300">
+                    <div
+                        className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${CHED_COLORS.blue}15` }}
                     >
+                        <School
+                            className="w-7 h-7"
+                            style={{ color: CHED_COLORS.blue }}
+                        />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         No institution data available
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">
                         Please check your filters or try again later
-                    </Typography>
-                </Paper>
+                    </p>
+                    <button
+                        onClick={fetchInstitution}
+                        className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white"
+                        style={{ backgroundColor: CHED_COLORS.blue }}
+                    >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh Data
+                    </button>
+                </div>
             )}
 
-            {/* Existing dialogs */}
-            <Dialog
-                open={confirmDialogOpen}
-                onClose={() => setConfirmDialogOpen(false)}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">
-                    {"Confirm Deletion"}
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        Are you sure you want to delete this institution? This
-                        action cannot be undone.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={() => setConfirmDialogOpen(false)}
-                        color="primary"
-                        disabled={loading.deleteInstitution}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleConfirmDelete}
-                        color="error"
-                        variant="contained"
-                        disabled={loading.deleteInstitution}
-                        autoFocus
-                    >
-                        {loading.deleteInstitution ? (
-                            <>
-                                <CircularProgress
-                                    size={18}
-                                    sx={{ mr: 1, color: "white" }}
-                                />
-                                Deleting...
-                            </>
-                        ) : (
-                            "Delete"
-                        )}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            <ManualInstitutionDialog
-                open={openManualDialog}
-                onClose={() => setOpenManualDialog(false)}
-                getInstitutionType={getInstitutionType}
+            {/* Edit Dialog */}
+            <EditDialog
+                open={editDialogOpen}
+                onClose={() => setEditDialogOpen(false)}
+                institution={institution}
+                onEdit={handleEdit}
                 fetchInstitutions={fetchInstitution}
-                setSnackbarOpen={(open) =>
-                    setSnackbar((prev) => ({ ...prev, open }))
-                }
-                setSnackbarMessage={(message) =>
-                    setSnackbar((prev) => ({ ...prev, message }))
-                }
-                setSnackbarSeverity={(severity) =>
-                    setSnackbar((prev) => ({ ...prev, severity }))
-                }
             />
-
-            <CustomSnackbar
-                open={snackbar.open}
-                message={snackbar.message}
-                severity={snackbar.severity}
-                onClose={handleCloseSnackbar}
-                autoHideDuration={5000}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            />
-        </Container>
+        </div>
     );
 };
 

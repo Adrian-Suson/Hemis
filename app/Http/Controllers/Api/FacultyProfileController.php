@@ -31,7 +31,7 @@ class FacultyProfileController extends Controller
     {
         $validatedData = $request->validate([
             '*.institution_id' => 'nullable|exists:institutions,id',
-            '*.data_date' => 'required|date', // Added data_date
+            '*.data_date' => 'required|string|max:255', // Added data_date
             '*.faculty_group' => 'nullable|string',
             '*.name' => 'nullable|string|max:255',
             '*.generic_faculty_rank' => 'nullable|integer',
@@ -116,7 +116,7 @@ class FacultyProfileController extends Controller
     {
         $validated = $request->validate([
             'institution_id' => 'nullable|exists:institutions,id',
-            'data_date' => 'sometimes|required|date',
+            'data_date' => 'sometimes|required||string|max:255',
             'faculty_group' => 'nullable|string',
             'name' => 'nullable|string|max:255',
             'generic_faculty_rank' => 'nullable|integer',
@@ -124,7 +124,7 @@ class FacultyProfileController extends Controller
             'home_department' => 'nullable|string|max:255',
             'is_tenured' => 'nullable|integer',
             'ssl_salary_grade' => 'nullable|integer',
-            'annual_basic_salary' => 'nullable|integer',
+            'annual_basic_salary' => 'nullable|string',
             'on_leave_without_pay' => 'nullable|integer',
             'full_time_equivalent' => 'nullable|numeric',
             'gender' => 'nullable|integer',
