@@ -360,23 +360,30 @@ const DashboardPage = () => {
 
     const uploadButtons = [
         {
-            label: "Upload Curricular",
+            label: "Upload Form A",
+            color: "bg-emerald-600 hover:bg-emerald-700",
+            type: "graduates",
+            icon: <Building2 className="w-5 h-5" />,
+        },
+        {
+            label: "Upload Form B",
             color: "bg-blue-600 hover:bg-blue-700",
             type: "curricular",
             icon: <FileUp className="w-5 h-5" />,
         },
         {
-            label: "Upload Faculty",
+            label: "Upload Form E2",
             color: "bg-pink-600 hover:bg-pink-700",
             type: "faculty",
             icon: <Users className="w-5 h-5" />,
         },
         {
-            label: "Upload Graduates",
+            label: "Upload Form GH",
             color: "bg-emerald-600 hover:bg-emerald-700",
             type: "graduates",
             icon: <GraduationCap className="w-5 h-5" />,
         },
+
     ];
 
     if (stats.loading) {
