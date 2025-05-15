@@ -25,6 +25,7 @@ import config from "../../../utils/config";
 import CurricularUploadDialog from "../../../Components/CurricularUploadDialog";
 import FacultyUploadDialog from "../../../Components/FacultyUploadDialog";
 import GraduatesUploadDialog from "../../../Components/GraduatesUploadDialog";
+import InstitutionUploadDialog from "../../../Components/InstitutionUploadDialog";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -80,6 +81,8 @@ const DashboardPage = () => {
     });
 
     const [openCurricularDialog, setOpenCurricularDialog] = useState(false);
+    const [openInstitutionDialog, setOpenInstitutionDialog] = useState(false);
+
     const [openFacultyDialog, setOpenFacultyDialog] = useState(false);
     const [openGraduatesDialog, setOpenGraduatesDialog] = useState(false);
 
@@ -180,6 +183,9 @@ const DashboardPage = () => {
 
     const handleOpenDialog = (dialogType) => {
         switch (dialogType) {
+            case "institution":
+                setOpenInstitutionDialog(true);
+                break;
             case "curricular":
                 setOpenCurricularDialog(true);
                 break;
@@ -197,6 +203,9 @@ const DashboardPage = () => {
 
     const handleCloseDialog = (dialogType) => {
         switch (dialogType) {
+            case "institution":
+                setOpenInstitutionDialog(false);
+                break;
             case "curricular":
                 setOpenCurricularDialog(false);
                 break;
@@ -362,7 +371,7 @@ const DashboardPage = () => {
         {
             label: "Upload Form A",
             color: "bg-emerald-600 hover:bg-emerald-700",
-            type: "graduates",
+            type: "institution",
             icon: <Building2 className="w-5 h-5" />,
         },
         {
@@ -383,7 +392,6 @@ const DashboardPage = () => {
             type: "graduates",
             icon: <GraduationCap className="w-5 h-5" />,
         },
-
     ];
 
     if (stats.loading) {
@@ -487,6 +495,10 @@ const DashboardPage = () => {
             </div>
 
             {/* Dialogs */}
+            <InstitutionUploadDialog
+                open={openInstitutionDialog}
+                onClose={() => handleCloseDialog("institution")}
+            />
             <CurricularUploadDialog
                 open={openCurricularDialog}
                 onClose={() => handleCloseDialog("curricular")}

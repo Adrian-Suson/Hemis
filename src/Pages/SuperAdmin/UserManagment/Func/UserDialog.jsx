@@ -1,30 +1,19 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import {
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Button,
-    Typography,
-    Divider,
-    CircularProgress,
-    Box,
-} from "@mui/material";
 import config from "../../../../utils/config";
 import PropTypes from "prop-types";
 import axios from "axios";
-import FormInput from "../../../../Components/FormInput";
+import AlertComponent from "../../../../Components/AlertComponent"; // Import AlertComponent
 
-const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
+const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated, fetchUsers }) => {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("Viewer");
     const [status, setStatus] = useState("Active");
-    const [institutionId, setInstitutionId] = useState("");
+    const [institutionId, setInstitutionId] = useState(""); // Stores uuid
     const [password, setPassword] = useState("");
     const [profileImage, setProfileImage] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const [institutions, setInstitutions] = useState([]);
     const [fetchingInstitutions, setFetchingInstitutions] = useState(false);
 
@@ -40,7 +29,7 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
             setEmail(editingUser.email || "");
             setRole(editingUser.role || "Viewer");
             setStatus(editingUser.status || "Active");
-            setInstitutionId(editingUser.institution_id || "");
+            setInstitutionId(editingUser.institution_id || ""); // Expects uuid
             setProfileImage(editingUser.profile_image || "");
             setPassword("");
         } else {
@@ -56,17 +45,35 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
 
     const fetchInstitutions = async () => {
         setFetchingInstitutions(true);
-        setError("");
         const token = localStorage.getItem("token");
 
         try {
             const response = await axios.get(`${config.API_URL}/institutions`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setInstitutions(response.data || []);
+
+            const institutionsByUuid = new Map();
+            for (const inst of response.data || []) {
+                if (!institutionsByUuid.has(inst.uuid)) {
+                    institutionsByUuid.set(inst.uuid, inst);
+                }
+            }
+            const uniqueInstitutions = Array.from(institutionsByUuid.values());
+
+            if (editingUser && editingUser.institution_id) {
+                const matchingInstitution = uniqueInstitutions.find(
+                    (inst) => inst.uuid === editingUser.institution_id
+                );
+                setInstitutions(
+                    matchingInstitution ? [matchingInstitution] : []
+                );
+            } else {
+                setInstitutions(uniqueInstitutions);
+            }
         } catch (err) {
-            setError(
-                err.response?.data?.message || "Failed to fetch institutions"
+            AlertComponent.showAlert(
+                err.response?.data?.message || "Failed to fetch institutions",
+                "error"
             );
         } finally {
             setFetchingInstitutions(false);
@@ -75,21 +82,31 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
 
     const handleSave = async () => {
         setLoading(true);
-        setError("");
 
-        // Client-side password validation
         if (!editingUser && (!password || password.length < 8)) {
-            setError("Password is required and must be at least 8 characters.");
+            AlertComponent.showAlert(
+                "Password is required and must be at least 8 characters.",
+                "error"
+            );
             setLoading(false);
             return;
         }
+
+        const selectedInstitution = institutions.find(
+            (inst) => inst.uuid === institutionId
+        );
 
         const userData = {
             name,
             email,
             role,
             status,
-            institution_id: role === "Super Admin" ? null : institutionId,
+            institution_id:
+                role === "Super Admin"
+                    ? null
+                    : selectedInstitution && selectedInstitution.id
+                    ? parseInt(selectedInstitution.id, 10)
+                    : null,
             ...(password && !editingUser ? { password } : {}),
             ...(profileImage ? { profile_image: profileImage } : {}),
         };
@@ -107,14 +124,32 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             }
+            await fetchUsers();
+            AlertComponent.showAlert(
+                editingUser
+                    ? "User updated successfully!"
+                    : "User created successfully!",
+                "success"
+            );
             onUserUpdated();
             onClose();
         } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                    err.message ||
-                    "Error saving user data"
-            );
+            if (err.response?.status === 422 && err.response?.data?.errors) {
+                const errorMessages = Object.values(err.response.data.errors)
+                    .flat()
+                    .join(", ");
+                AlertComponent.showAlert(
+                    errorMessages || "Validation failed",
+                    "error"
+                );
+            } else {
+                AlertComponent.showAlert(
+                    err.response?.data?.message ||
+                        err.message ||
+                        "Error saving user data",
+                    "error"
+                );
+            }
         } finally {
             setLoading(false);
         }
@@ -128,7 +163,6 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
         setInstitutionId("");
         setPassword("");
         setProfileImage("");
-        setError("");
         setInstitutions([]);
         onClose();
     };
@@ -145,165 +179,244 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
     };
 
     return (
-        <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ pb: 1 }}>
-                <Typography variant="h6" component="div">
-                    {editingUser ? "Edit User" : "Add New User"}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    {editingUser
-                        ? "Modify user details"
-                        : "Create a new user account"}
-                </Typography>
-            </DialogTitle>
-            <Divider />
-            <DialogContent sx={{ pt: 3 }}>
-                {error && (
-                    <Typography color="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Typography>
-                )}
-                <FormInput
-                    id="name"
-                    name="name"
-                    label="Name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    errorMessage={error && !name ? "Name is required" : ""}
-                    wrapperClassName="mb-4"
-                />
-                <FormInput
-                    id="email"
-                    name="email"
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    errorMessage={error && !email ? "Email is required" : ""}
-                    wrapperClassName="mb-4"
-                />
-                {!editingUser && (
-                    <FormInput
-                        id="password"
-                        name="password"
-                        label="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        errorMessage={
-                            password && password.length < 8
-                                ? "Password must be at least 8 characters"
-                                : ""
-                        }
-                        wrapperClassName="mb-4"
-                    />
-                )}
-                <FormInput
-                    id="role"
-                    name="role"
-                    label="Role"
-                    type="select"
-                    value={role}
-                    onChange={(e) => {
-                        setRole(e.target.value);
-                        if (e.target.value === "Super Admin")
-                            setInstitutionId("");
-                    }}
-                    options={[
-                        { value: "HEI Admin", label: "HEI Admin" },
-                        { value: "HEI Staff", label: "HEI Staff" },
-                        { value: "Viewer", label: "Viewer" },
-                    ]}
-                    wrapperClassName="mb-4"
-                />
-                {role !== "Super Admin" && (
-                    <FormInput
-                        id="institution"
-                        name="institution"
-                        label="Institution"
-                        type="select"
-                        value={institutionId}
-                        onChange={(e) => setInstitutionId(e.target.value)}
-                        options={[
-                            { value: "", label: "Select Institution" },
-                            ...institutions.map((inst) => ({
-                                value: inst.id,
-                                label: inst.name,
-                            })),
-                        ]}
-                        disabled={
-                            fetchingInstitutions || institutions.length === 0
-                        }
-                        errorMessage={
-                            role !== "Super Admin" && !institutionId
-                                ? "Institution is required"
-                                : ""
-                        }
-                        wrapperClassName="mb-4"
-                    />
-                )}
-                <FormInput
-                    id="status"
-                    name="status"
-                    label="Status"
-                    type="select"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    options={[
-                        { value: "Active", label: "Active" },
-                        { value: "Inactive", label: "Inactive" },
-                        { value: "Suspended", label: "Suspended" },
-                    ]}
-                    wrapperClassName="mb-4"
-                />
-                <FormInput
-                    id="profileImage"
-                    name="profileImage"
-                    label="Profile Image"
-                    type="file"
-                    onChange={handleImageUpload}
-                    inputProps={{ accept: "image/*" }}
-                    wrapperClassName="mb-4"
-                />
-                {profileImage && (
-                    <Box sx={{ mt: 2, textAlign: "center" }}>
-                        <img
-                            src={profileImage}
-                            alt="Profile"
-                            style={{
-                                width: 100,
-                                height: 100,
-                                objectFit: "cover",
-                                borderRadius: "50%",
-                            }}
+        <div
+            className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity ${
+                openDialog ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+            aria-hidden={!openDialog}
+        >
+            <div className="bg-white rounded-lg w-full max-w-md mx-4 sm:mx-auto">
+                {/* Dialog Title */}
+                <div className="p-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        {editingUser ? "Edit User" : "Add New User"}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                        {editingUser
+                            ? "Modify user details"
+                            : "Create a new user account"}
+                    </p>
+                </div>
+
+                {/* Dialog Content */}
+                <div className="p-4">
+                    {/* Name Input */}
+                    <div className="mb-4">
+                        <label
+                            htmlFor="name"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Name
+                        </label>
+                        <input
+                            id="name"
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
-                    </Box>
-                )}
-            </DialogContent>
-            <DialogActions sx={{ p: 2.5, pt: 1.5 }}>
-                <Button onClick={handleClose} disabled={loading}>
-                    Cancel
-                </Button>
-                <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={
-                        loading ||
-                        (!editingUser && (!password || password.length < 8)) ||
-                        (role !== "Super Admin" && !institutionId)
-                    }
-                >
-                    {loading ? (
-                        <CircularProgress size={24} />
-                    ) : editingUser ? (
-                        "Save Changes"
-                    ) : (
-                        "Create User"
+                    </div>
+
+                    {/* Email Input */}
+                    <div className="mb-4">
+                        <label
+                            htmlFor="email"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Email
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+
+                    {/* Password Input (for new users) */}
+                    {!editingUser && (
+                        <div className="mb-4">
+                            <label
+                                htmlFor="password"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
                     )}
-                </Button>
-            </DialogActions>
-        </Dialog>
+
+                    {/* Role Select */}
+                    <div className="mb-4">
+                        <label
+                            htmlFor="role"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Role
+                        </label>
+                        <select
+                            id="role"
+                            value={role}
+                            onChange={(e) => {
+                                setRole(e.target.value);
+                                if (e.target.value === "Super Admin")
+                                    setInstitutionId("");
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="HEI Admin">HEI Admin</option>
+                            <option value="HEI Staff">HEI Staff</option>
+                            <option value="Viewer">Viewer</option>
+                        </select>
+                    </div>
+
+                    {/* Institution Select (hidden for Super Admin) */}
+                    {role !== "Super Admin" && (
+                        <div className="mb-4">
+                            <label
+                                htmlFor="institution"
+                                className="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                                Institution
+                            </label>
+                            <select
+                                id="institution"
+                                value={institutionId}
+                                onChange={(e) =>
+                                    setInstitutionId(e.target.value)
+                                }
+                                disabled={
+                                    fetchingInstitutions ||
+                                    (editingUser && institutions.length === 1)
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                {!editingUser && (
+                                    <option value="">Select Institution</option>
+                                )}
+                                {institutions.length === 0 ? (
+                                    <option value="">
+                                        No Institution Available
+                                    </option>
+                                ) : (
+                                    institutions.map((inst) => (
+                                        <option
+                                            key={inst.uuid}
+                                            value={inst.uuid}
+                                        >
+                                            {inst.name}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Status Select */}
+                    <div className="mb-4">
+                        <label
+                            htmlFor="status"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Status
+                        </label>
+                        <select
+                            id="status"
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Suspended">Suspended</option>
+                        </select>
+                    </div>
+
+                    {/* Profile Image Upload */}
+                    <div className="mb-4">
+                        <label
+                            htmlFor="profileImage"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Profile Image
+                        </label>
+                        <input
+                            id="profileImage"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+
+                    {/* Profile Image Preview */}
+                    {profileImage && (
+                        <div className="mt-4 flex justify-center">
+                            <img
+                                src={profileImage}
+                                alt="Profile"
+                                className="w-24 h-24 object-cover rounded-full"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Dialog Actions */}
+                <div className="p-4 border-t border-gray-200 flex justify-end space-x-2">
+                    <button
+                        onClick={handleClose}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={
+                            loading ||
+                            (!editingUser &&
+                                (!password || password.length < 8)) ||
+                            (role !== "Super Admin" && !institutionId)
+                        }
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                        {loading ? (
+                            <svg
+                                className="animate-spin h-5 w-5 mr-2 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+                                ></path>
+                            </svg>
+                        ) : editingUser ? (
+                            "Save Changes"
+                        ) : (
+                            "Create User"
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -317,9 +430,13 @@ UserDialog.propTypes = {
         email: PropTypes.string,
         role: PropTypes.string,
         status: PropTypes.string,
-        institution_id: PropTypes.number,
+        institution_id: PropTypes.oneOfType([
+            PropTypes.string,
+            PropTypes.number,
+        ]),
         profile_image: PropTypes.string,
     }),
+    fetchUsers: PropTypes.func,
 };
 
 export default UserDialog;

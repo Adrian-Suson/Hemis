@@ -1,225 +1,25 @@
+// src/components/InstitutionManagement/InstitutionManagement.jsx
 /* eslint-disable react-hooks/exhaustive-deps */
-import React from "react";
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Award, Home, School, Building, RefreshCw } from "lucide-react";
 import config from "../../../utils/config";
 import ExcelJS from "exceljs";
-import { encryptId } from "../../../utils/encryption";
 import { useLoading } from "../../../Context/LoadingContext";
-import PropTypes from "prop-types";
 import AlertComponent from "../../../Components/AlertComponent";
 import useLocationData from "../../../utils/useLocationData";
 import EditDialog from "./EditDialog";
 import CHEDButton from "../../../Components/CHEDButton";
-import {
-    BookOpen,
-    Building,
-    Calendar,
-    Clipboard,
-    Globe,
-    Home,
-    IdCard,
-    Info,
-    Mail,
-    Phone,
-    School,
-    User,
-    FileSpreadsheet,
-    RefreshCw,
-    Award,
-    Users,
-    ArrowDownToLine,
-    Trash2,
-} from "lucide-react";
+import InstitutionDetails from "./components/InstitutionDetails";
+import Leadership from "./components/Leadership";
+import QuickActions from "./components/QuickActions";
+import Filters from "./components/Filters";
+import Badge from "./components/Badge";
 
-// CHED Logo Colors
 const CHED_COLORS = {
-    blue: "#0038A8", // Deep blue from the logo
-    yellow: "#FCD116", // Bright yellow from the sunrays
-    red: "#CE1126", // Red from the triangle
-    darkBlue: "#002776", // Darker blue for hover states
-    lightYellow: "#FFED99", // Light yellow for backgrounds
-    lightRed: "#FFD6D6", // Light red for warnings or highlights
-    gray: "#6B7280", // Gray for neutral text
-    lightGray: "#F3F4F6", // Light gray for backgrounds
-};
-
-// Custom InfoCard component with CHED styling
-const InfoCard = ({
-    title,
-    icon,
-    children,
-    borderColor = CHED_COLORS.blue,
-}) => (
-    <div
-        className="bg-white shadow-md rounded-lg p-5 mb-4 border-t-4"
-        style={{ borderColor }}
-    >
-        <div className="flex items-center mb-3">
-            <div
-                className="rounded-full p-2 mr-3"
-                style={{ backgroundColor: `${borderColor}20` }}
-            >
-                {React.cloneElement(icon, { color: borderColor, size: 20 })}
-            </div>
-            <h3
-                className="text-base font-semibold"
-                style={{ color: borderColor }}
-            >
-                {title}
-            </h3>
-        </div>
-        <div className="pl-2">{children}</div>
-    </div>
-);
-
-InfoCard.propTypes = {
-    title: PropTypes.string.isRequired,
-    icon: PropTypes.node.isRequired,
-    children: PropTypes.node.isRequired,
-    borderColor: PropTypes.string,
-};
-
-// Custom InfoItem component
-const InfoItem = ({ icon, label, value }) => (
-    <div className="flex items-start mb-3">
-        <div className="text-gray-500 mt-0.5 mr-3">{icon}</div>
-        <div>
-            <p className="text-sm text-gray-700">
-                <span className="font-medium">{label}</span>
-                <br />
-                <span className="text-gray-900">{value}</span>
-            </p>
-        </div>
-    </div>
-);
-
-InfoItem.propTypes = {
-    icon: PropTypes.node.isRequired,
-    label: PropTypes.string.isRequired,
-    value: PropTypes.node.isRequired,
-};
-
-// Custom ActionButton component
-const ActionButton = ({
-    icon,
-    label,
-    onClick,
-    loading,
-    disabled,
-    variant = "primary",
-}) => {
-    const getButtonStyle = () => {
-        switch (variant) {
-            case "primary":
-                return {
-                    bgColor: CHED_COLORS.blue,
-                    hoverBgColor: CHED_COLORS.darkBlue,
-                    textColor: "white",
-                };
-            case "secondary":
-                return {
-                    bgColor: "#FFF",
-                    hoverBgColor: CHED_COLORS.lightYellow,
-                    textColor: CHED_COLORS.blue,
-                    borderColor: CHED_COLORS.blue,
-                };
-            case "warning":
-                return {
-                    bgColor: CHED_COLORS.red,
-                    hoverBgColor: "#B10000",
-                    textColor: "white",
-                };
-            default:
-                return {
-                    bgColor: CHED_COLORS.blue,
-                    hoverBgColor: CHED_COLORS.darkBlue,
-                    textColor: "white",
-                };
-        }
-    };
-
-    const style = getButtonStyle();
-
-    return (
-        <button
-            onClick={onClick}
-            disabled={disabled || loading}
-            className={`flex items-center justify-center w-full px-4 py-3 rounded-lg text-sm font-medium 
-      transition-all duration-200 mb-3 border ${
-          disabled ? "opacity-50 cursor-not-allowed" : "hover:shadow-md"
-      }`}
-            style={{
-                backgroundColor: style.bgColor,
-                color: style.textColor,
-                borderColor: style.borderColor || style.bgColor,
-            }}
-        >
-            {loading ? (
-                <>
-                    <svg
-                        className="animate-spin h-4 w-4 mr-2"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                        />
-                        <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                        />
-                    </svg>
-                    Processing...
-                </>
-            ) : (
-                <>
-                    {React.cloneElement(icon, { size: 18 })}
-                    <span className="ml-2">{label}</span>
-                </>
-            )}
-        </button>
-    );
-};
-
-ActionButton.propTypes = {
-    icon: PropTypes.node.isRequired,
-    label: PropTypes.string.isRequired,
-    onClick: PropTypes.func.isRequired,
-    loading: PropTypes.bool,
-    disabled: PropTypes.bool,
-    variant: PropTypes.oneOf(["primary", "secondary", "warning"]),
-};
-
-ActionButton.defaultProps = {
-    loading: false,
-    disabled: false,
-    variant: "primary",
-};
-
-// Badge component for status indicators
-const Badge = ({ children, color }) => (
-    <span
-        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-        style={{
-            backgroundColor: `${color}20`,
-            color: color,
-            border: `1px solid ${color}`,
-        }}
-    >
-        {children}
-    </span>
-);
-
-Badge.propTypes = {
-    children: PropTypes.node.isRequired,
-    color: PropTypes.string.isRequired,
+    blue: "#0038A8",
+    yellow: "#FCD116",
 };
 
 const InstitutionManagement = () => {
@@ -236,24 +36,12 @@ const InstitutionManagement = () => {
     const [loading, setLoading] = useState({
         viewCampuses: false,
         faculties: false,
-        academicPrograms: false,
         curricularPrograms: false,
         graduates: false,
         exportFormA: false,
         deleteInstitution: false,
     });
-    const [searchTerm, setSearchTerm] = useState(
-        localStorage.getItem("searchTerm") || ""
-    );
-    const [typeFilter, setTypeFilter] = useState(
-        localStorage.getItem("typeFilter") || ""
-    );
-    const [municipalityFilter, setMunicipalityFilter] = useState(
-        localStorage.getItem("municipalityFilter") || ""
-    );
-    const [provinceFilter, setProvinceFilter] = useState(
-        localStorage.getItem("provinceFilter") || ""
-    );
+
     const [reportYearFilter, setReportYearFilter] = useState(
         localStorage.getItem("reportYearFilter") ||
             String(new Date().getFullYear())
@@ -261,62 +49,68 @@ const InstitutionManagement = () => {
     const navigate = useNavigate();
 
     const getInstitutionType = () => {
-        const user = JSON.parse(localStorage.getItem("user"));
-        return user?.institution_type || "SUC";
+        const user = JSON.parse(localStorage.getItem("user")) || {};
+        return user.institution_type || "SUC";
     };
 
     const fetchInstitution = async () => {
         try {
             showLoading();
+
+            // Retrieve and validate stored data
             const token = localStorage.getItem("token");
-            const user = JSON.parse(localStorage.getItem("user"));
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
             const storedInstitution = JSON.parse(
-                localStorage.getItem("institution")
+                localStorage.getItem("institution") || "{}"
             );
 
-            console.log("Stored institution for filtering:", storedInstitution);
-
-            if (!user?.institution_id) {
-                AlertComponent.showAlert(
-                    "No institution associated with this user.",
-                    "warning"
-                );
-                return;
+            if (!user?.institution_id || !storedInstitution?.uuid) {
+                throw new Error("No institution associated with this user.", {
+                    cause: "warning",
+                });
             }
 
-            const url = `${config.API_URL}/institutions`;
-            const response = await axios.get(url, {
+            // Fetch institutions
+            const response = await axios.get(`${config.API_URL}/institutions`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            let institutionsData = Array.isArray(response.data)
+            // Normalize response data
+            const institutionsData = Array.isArray(response.data)
                 ? response.data
                 : [response.data];
 
-            console.log("Fetched institutions:", institutionsData);
-
-            const filteredInstitutions = institutionsData.filter(
-                (inst) => inst.name === storedInstitution.name
+            // Find matching institution
+            const selectedInstitution = institutionsData.find(
+                (inst) => inst.uuid === storedInstitution.uuid
             );
-            console.log("Filtered institutions:", filteredInstitutions);
 
-            setInstitutions(filteredInstitutions);
-            const selectedInstitution = filteredInstitutions[0] || null;
+            if (!selectedInstitution) {
+                throw new Error("Institution not found.", { cause: "error" });
+            }
+
+            // Update state
+            setInstitutions([selectedInstitution]);
             setInstitution(selectedInstitution);
 
+            // Fetch and set location data
             if (selectedInstitution) {
+                const { region_id, province_id, municipality_id } =
+                    selectedInstitution;
                 const locationData = await getLocationById(
-                    selectedInstitution.region_id,
-                    selectedInstitution.province_id,
-                    selectedInstitution.municipality_id
+                    region_id,
+                    province_id,
+                    municipality_id
                 );
                 setLocation(locationData);
             }
         } catch (error) {
             console.error("Error fetching institution:", error);
             AlertComponent.showAlert(
-                "Failed to load institution data.",
-                "error"
+                error.cause === 401
+                    ? "Unauthorized access. Please log in again."
+                    : error.message || "Failed to load institution data.",
+                error.cause || "error"
             );
         } finally {
             hideLoading();
@@ -328,52 +122,17 @@ const InstitutionManagement = () => {
     }, []);
 
     useEffect(() => {
-        localStorage.setItem("searchTerm", searchTerm);
-        localStorage.setItem("typeFilter", typeFilter);
-        localStorage.setItem("municipalityFilter", municipalityFilter);
-        localStorage.setItem("provinceFilter", provinceFilter);
         localStorage.setItem("reportYearFilter", reportYearFilter);
-    }, [
-        searchTerm,
-        typeFilter,
-        municipalityFilter,
-        provinceFilter,
-        reportYearFilter,
-    ]);
+    }, [reportYearFilter]);
 
     const filteredInstitutions = useMemo(() => {
         return institutions.filter((institution) => {
-            const matchesSearch = institution.name
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase());
-            const matchesType = typeFilter
-                ? institution.institution_type === typeFilter
-                : true;
-            const matchesMunicipality = municipalityFilter
-                ? institution.municipality === municipalityFilter
-                : true;
-            const matchesProvince = provinceFilter
-                ? institution.province === provinceFilter
-                : true;
             const matchesReportYear = reportYearFilter
                 ? String(institution.report_year) === reportYearFilter
                 : true;
-            return (
-                matchesSearch &&
-                matchesType &&
-                matchesMunicipality &&
-                matchesProvince &&
-                matchesReportYear
-            );
+            return matchesReportYear;
         });
-    }, [
-        institutions,
-        searchTerm,
-        typeFilter,
-        municipalityFilter,
-        provinceFilter,
-        reportYearFilter,
-    ]);
+    }, [institutions, reportYearFilter]);
 
     useEffect(() => {
         if (filteredInstitutions.length > 0) {
@@ -383,12 +142,41 @@ const InstitutionManagement = () => {
         }
     }, [filteredInstitutions]);
 
-    const getUniqueValues = (arr, key) => {
-        if (!Array.isArray(arr) || arr.length === 0) {
-            return [];
+    useEffect(() => {
+        if (filteredInstitutions.length > 0) {
+            const newInstitution = filteredInstitutions[0];
+            setInstitution(newInstitution);
+            // Fetch location data for the new institution
+            if (newInstitution) {
+                getLocationById(
+                    newInstitution.region_id,
+                    newInstitution.province_id,
+                    newInstitution.municipality_id
+                )
+                    .then((locationData) => {
+                        console.log("Fetched Location Data:", locationData); // Debug
+                        setLocation(locationData);
+                    })
+                    .catch((error) => {
+                        console.error("Error fetching location data:", error);
+                        AlertComponent.showAlert(
+                            "Failed to load location data.",
+                            "error"
+                        );
+                    });
+            }
+        } else {
+            setInstitution(null);
+            setLocation({ region: null, province: null, municipality: null });
         }
+    }, [filteredInstitutions, getLocationById]);
+
+    const getUniqueValues = (arr, key) => {
+        if (!Array.isArray(arr) || !arr.length) return [];
         return [
-            ...new Set(arr.map((item) => item?.[key]).filter(Boolean)),
+            ...new Set(
+                arr.map((item) => item?.[key]).filter((value) => value != null)
+            ),
         ].sort();
     };
 
@@ -400,15 +188,7 @@ const InstitutionManagement = () => {
     };
 
     const clearFilters = () => {
-        setSearchTerm("");
-        setTypeFilter("");
-        setMunicipalityFilter("");
-        setProvinceFilter("");
         setReportYearFilter("");
-        localStorage.setItem("searchTerm", "");
-        localStorage.setItem("typeFilter", "");
-        localStorage.setItem("municipalityFilter", "");
-        localStorage.setItem("provinceFilter", "");
         localStorage.setItem("reportYearFilter", "");
     };
 
@@ -457,6 +237,7 @@ const InstitutionManagement = () => {
                 sheetA1.getRow(5 + index).getCell(3).value = value;
             });
             updateProgress(50);
+
             const token = localStorage.getItem("token");
             const campusResponse = await axios.get(
                 `${config.API_URL}/campuses?institution_id=${institution.id}`,
@@ -505,9 +286,15 @@ const InstitutionManagement = () => {
             updateProgress(100);
         } catch (error) {
             console.error("Error exporting data:", error);
-            AlertComponent.showAlert("Error exporting data.", "error");
+            AlertComponent.showAlert(
+                error.message.includes("HTTP")
+                    ? "Failed to load export template."
+                    : "Error exporting data.",
+                "error"
+            );
         } finally {
             setLoading((prev) => ({ ...prev, exportFormA: false }));
+            updateProgress(0);
         }
     };
 
@@ -529,9 +316,7 @@ const InstitutionManagement = () => {
                     const token = localStorage.getItem("token");
                     await axios.delete(
                         `${config.API_URL}/institutions/${institution.id}`,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
+                        { headers: { Authorization: `Bearer ${token}` } }
                     );
                     AlertComponent.showAlert(
                         "Institution deleted successfully.",
@@ -541,7 +326,9 @@ const InstitutionManagement = () => {
                 } catch (error) {
                     console.error("Error deleting institution:", error);
                     AlertComponent.showAlert(
-                        "Failed to delete institution.",
+                        error.response?.status === 401
+                            ? "Unauthorized access. Please log in again."
+                            : "Failed to delete institution.",
                         "error"
                     );
                 } finally {
@@ -567,7 +354,7 @@ const InstitutionManagement = () => {
 
     return (
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6">
-            {/* Compact Header with CHED Branding and Breadcrumbs */}
+            {/* Header */}
             <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
                 <div className="flex items-center mb-4 sm:mb-0">
                     <div
@@ -614,12 +401,13 @@ const InstitutionManagement = () => {
                     icon={Building}
                     variant="primary"
                     size="md"
+                    disabled={!institution}
                 >
                     Edit Institution
                 </CHEDButton>
             </div>
 
-            {/* Filter and Institution Header Combined */}
+            {/* Institution Header and Filters */}
             <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border-b border-gray-200">
                     <div className="flex items-center mb-4 sm:mb-0">
@@ -657,9 +445,9 @@ const InstitutionManagement = () => {
                                                 {institution.address_street},{" "}
                                             </span>
                                         )}
-                                        {location.municipality?.name},{" "}
-                                        {location.province?.name},{" "}
-                                        {location.region?.name}
+                                        {location.municipality?.name || "N/A"},{" "}
+                                        {location.province?.name || "N/A"},{" "}
+                                        {location.region?.name || "N/A"}
                                     </p>
                                 </div>
                             </>
@@ -669,473 +457,40 @@ const InstitutionManagement = () => {
                             </p>
                         )}
                     </div>
-
-                    {/* Compact Filter */}
-                    <div className="flex items-center space-x-3">
-                        <div className="relative">
-                            <select
-                                id="reportYear"
-                                value={reportYearFilter}
-                                onChange={(e) =>
-                                    setReportYearFilter(e.target.value)
-                                }
-                                className="appearance-none pl-8 pr-10 py-2 text-base border border-gray-300 rounded-lg"
-                            >
-                                <option value="">All Years</option>
-                                {filterOptions.reportYears.map((year) => (
-                                    <option key={year} value={String(year)}>
-                                        {year}
-                                    </option>
-                                ))}
-                            </select>
-                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                        </div>
-                        <button
-                            onClick={clearFilters}
-                            className="flex items-center px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                        >
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Reset
-                        </button>
-                    </div>
+                    <Filters
+                        reportYearFilter={reportYearFilter}
+                        setReportYearFilter={setReportYearFilter}
+                        filterOptions={filterOptions}
+                        clearFilters={clearFilters}
+                    />
                 </div>
             </div>
 
             {/* Main Content */}
             {institution ? (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    {/* Left Column - Contact & Details */}
                     <div className="lg:col-span-7">
-                        {/* Compact Info Tabs */}
-                        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-4">
-                            <div className="flex border-b">
-                                <button
-                                    className="px-4 py-2 text-sm font-medium text-white flex-1 flex justify-center items-center"
-                                    style={{
-                                        backgroundColor: CHED_COLORS.blue,
-                                    }}
-                                >
-                                    <Info className="w-4 h-4 mr-1.5" />
-                                    Institution Information
-                                </button>
-                            </div>
-
-                            <div className="p-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Contact Info */}
-                                    <div>
-                                        <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                                            Contact Information
-                                        </h4>
-                                        <div className="space-y-2">
-                                            <div className="flex items-start">
-                                                <Phone className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                                <div>
-                                                    <span className="text-xs text-gray-500 block">
-                                                        Telephone
-                                                    </span>
-                                                    <span className="text-sm">
-                                                        {institution.institutional_telephone ||
-                                                            "Not Available"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start">
-                                                <Mail className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                                <div>
-                                                    <span className="text-xs text-gray-500 block">
-                                                        Email
-                                                    </span>
-                                                    <a
-                                                        href={`mailto:${institution.institutional_email}`}
-                                                        className="text-sm text-blue-600 hover:underline"
-                                                    >
-                                                        {institution.institutional_email ||
-                                                            "Not Available"}
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start">
-                                                <Globe className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                                <div>
-                                                    <span className="text-xs text-gray-500 block">
-                                                        Website
-                                                    </span>
-                                                    {institution.institutional_website ? (
-                                                        <a
-                                                            href={
-                                                                institution.institutional_website
-                                                            }
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-sm text-blue-600 hover:underline"
-                                                        >
-                                                            {
-                                                                institution.institutional_website
-                                                            }
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-sm">
-                                                            Not Available
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Institutional Details */}
-                                    <div>
-                                        <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                                            Institutional Details
-                                        </h4>
-                                        <div className="space-y-2">
-                                            <div className="flex items-start">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                                <div>
-                                                    <span className="text-xs text-gray-500 block">
-                                                        Year Established
-                                                    </span>
-                                                    <span className="text-sm">
-                                                        {institution.year_established ||
-                                                            "Not Available"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start">
-                                                <School className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                                <div>
-                                                    <span className="text-xs text-gray-500 block">
-                                                        College Conversion
-                                                    </span>
-                                                    <span className="text-sm">
-                                                        {institution.year_converted_college ||
-                                                            "Not Available"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start">
-                                                <School className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                                <div>
-                                                    <span className="text-xs text-gray-500 block">
-                                                        University Conversion
-                                                    </span>
-                                                    <span className="text-sm">
-                                                        {institution.year_converted_university ||
-                                                            "Not Available"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Leadership Card */}
-                        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-                            <h3 className="text-sm font-medium flex items-center mb-3">
-                                <User
-                                    className="w-4 h-4 mr-1.5"
-                                    style={{ color: CHED_COLORS.red }}
-                                />
-                                Leadership
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex items-start">
-                                    <User className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                    <div>
-                                        <span className="text-xs text-gray-500 block">
-                                            Head Name
-                                        </span>
-                                        <span className="text-sm font-medium">
-                                            {institution.head_name ||
-                                                "Not Available"}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex items-start">
-                                    <IdCard className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                    <div>
-                                        <span className="text-xs text-gray-500 block">
-                                            Head Title
-                                        </span>
-                                        <span className="text-sm">
-                                            {institution.head_title ||
-                                                "Not Available"}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex items-start">
-                                    <School className="w-3.5 h-3.5 text-gray-400 mt-0.5 mr-2" />
-                                    <div>
-                                        <span className="text-xs text-gray-500 block">
-                                            Head Education
-                                        </span>
-                                        <span className="text-sm">
-                                            {institution.head_education ||
-                                                "Not Available"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <InstitutionDetails
+                            institution={institution}
+                            location={location}
+                        />
+                        <Leadership institution={institution} />
                     </div>
-
-                    {/* Right Column - Quick Actions */}
                     <div className="lg:col-span-5">
-                        <div className="bg-white rounded-lg shadow-sm mb-4">
-                            <div className="px-4 py-2 border-b border-gray-200 flex items-center">
-                                <div
-                                    className="rounded-full p-1.5 mr-2"
-                                    style={{
-                                        backgroundColor: `${CHED_COLORS.yellow}15`,
-                                    }}
-                                >
-                                    <FileSpreadsheet
-                                        className="w-4 h-4"
-                                        style={{ color: CHED_COLORS.yellow }}
-                                    />
-                                </div>
-                                <h3 className="text-sm font-medium">Exports</h3>
-                            </div>
-                            <div className="p-3">
-                                <button
-                                    onClick={handleExportToFormA}
-                                    disabled={loading.exportFormA}
-                                    className="flex items-center justify-center w-full px-3 py-2 mb-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
-                                >
-                                    {loading.exportFormA ? (
-                                        <svg
-                                            className="animate-spin h-4 w-4 mr-2"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                                            ></path>
-                                        </svg>
-                                    ) : (
-                                        <ArrowDownToLine className="w-4 h-4 mr-2" />
-                                    )}
-                                    Export to Form A
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-sm p-3">
-                            <h3 className="text-sm font-medium text-gray-800 flex items-center mb-2 pb-2 border-b border-gray-100">
-                                <Clipboard
-                                    className="w-4 h-4 mr-1.5"
-                                    style={{ color: CHED_COLORS.blue }}
-                                />
-                                Management Options
-                            </h3>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() =>
-                                        handleNavigation(
-                                            `/hei-admin/institutions/campuses/${encryptId(
-                                                reportYearFilter
-                                                    ? `${institution.id}`
-                                                    : institution.id
-                                            )}`,
-                                            "viewCampuses"
-                                        )
-                                    }
-                                    disabled={loading.viewCampuses}
-                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                                    style={{ color: CHED_COLORS.blue }}
-                                >
-                                    {loading.viewCampuses ? (
-                                        <svg
-                                            className="animate-spin h-5 w-5 mb-1"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                                            ></path>
-                                        </svg>
-                                    ) : (
-                                        <Building className="w-5 h-5 mb-1" />
-                                    )}
-                                    Campuses
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        handleNavigation(
-                                            `/hei-admin/institutions/faculties/${encryptId(
-                                                reportYearFilter
-                                                    ? `${institution.id}`
-                                                    : institution.id
-                                            )}`,
-                                            "faculties"
-                                        )
-                                    }
-                                    disabled={loading.faculties}
-                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                                    style={{ color: CHED_COLORS.blue }}
-                                >
-                                    {loading.faculties ? (
-                                        <svg
-                                            className="animate-spin h-5 w-5 mb-1"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                                            ></path>
-                                        </svg>
-                                    ) : (
-                                        <Users className="w-5 h-5 mb-1" />
-                                    )}
-                                    Faculties
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        handleNavigation(
-                                            `/hei-admin/institutions/curricular-programs/${encryptId(
-                                                reportYearFilter
-                                                    ? `${institution.id}`
-                                                    : institution.id
-                                            )}`,
-                                            "curricularPrograms"
-                                        )
-                                    }
-                                    disabled={loading.curricularPrograms}
-                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                                    style={{ color: CHED_COLORS.blue }}
-                                >
-                                    {loading.curricularPrograms ? (
-                                        <svg
-                                            className="animate-spin h-5 w-5 mb-1"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                                            ></path>
-                                        </svg>
-                                    ) : (
-                                        <BookOpen className="w-5 h-5 mb-1" />
-                                    )}
-                                    Programs
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        handleNavigation(
-                                            `/hei-admin/institutions/graduates-list/${encryptId(
-                                                reportYearFilter
-                                                    ? `${institution.id}`
-                                                    : institution.id
-                                            )}`,
-                                            "graduates"
-                                        )
-                                    }
-                                    disabled={loading.graduates}
-                                    className="flex flex-col items-center justify-center p-2 text-xs text-center border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                                    style={{ color: CHED_COLORS.blue }}
-                                >
-                                    {loading.graduates ? (
-                                        <svg
-                                            className="animate-spin h-5 w-5 mb-1"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                                            ></path>
-                                        </svg>
-                                    ) : (
-                                        <Award className="w-5 h-5 mb-1" />
-                                    )}
-                                    Graduates
-                                </button>
-                            </div>
-
-                            {/* Delete Institution */}
-                            <button
-                                onClick={handleConfirmDelete}
-                                disabled={loading.deleteInstitution}
-                                className="flex items-center justify-center w-full px-3 py-1.5 mt-3 border border-red-200 text-red-600 text-xs font-medium rounded hover:bg-red-50 disabled:opacity-50"
-                            >
-                                {loading.deleteInstitution ? (
-                                    <svg
-                                        className="animate-spin h-3.5 w-3.5 mr-1.5"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            className="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            strokeWidth="4"
-                                        ></circle>
-                                        <path
-                                            className="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
-                                        ></path>
-                                    </svg>
-                                ) : (
-                                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                                )}
-                                Delete Institution
-                            </button>
-                        </div>
+                        <QuickActions
+                            institution={institution}
+                            loading={loading}
+                            handleExportToFormA={handleExportToFormA}
+                            handleNavigation={handleNavigation}
+                            handleConfirmDelete={handleConfirmDelete}
+                            reportYearFilter={reportYearFilter}
+                        />
                     </div>
                 </div>
             ) : (
                 <div className="bg-white p-6 text-center rounded-lg shadow-sm border border-dashed border-gray-300">
                     <div
-                        className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center"
+                        className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center animate-pulse"
                         style={{ backgroundColor: `${CHED_COLORS.blue}15` }}
                     >
                         <School
@@ -1149,18 +504,17 @@ const InstitutionManagement = () => {
                     <p className="text-sm text-gray-500 mb-4">
                         Please check your filters or try again later
                     </p>
-                    <button
+                    <CHEDButton
                         onClick={fetchInstitution}
-                        className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white"
-                        style={{ backgroundColor: CHED_COLORS.blue }}
+                        icon={RefreshCw}
+                        variant="primary"
+                        size="md"
                     >
-                        <RefreshCw className="w-4 h-4 mr-2" />
                         Refresh Data
-                    </button>
+                    </CHEDButton>
                 </div>
             )}
 
-            {/* Edit Dialog */}
             <EditDialog
                 open={editDialogOpen}
                 onClose={() => setEditDialogOpen(false)}
@@ -1171,5 +525,7 @@ const InstitutionManagement = () => {
         </div>
     );
 };
+
+InstitutionManagement.propTypes = {};
 
 export default InstitutionManagement;

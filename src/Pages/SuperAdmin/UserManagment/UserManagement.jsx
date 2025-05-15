@@ -16,11 +16,10 @@ import AlertComponent from "../../../Components/AlertComponent";
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("Active");
     const [openDialog, setOpenDialog] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -35,7 +34,6 @@ const UserManagement = () => {
             });
             setUsers(response.data);
         } catch {
-            setError("Failed to fetch users. Please login again.");
             AlertComponent.showAlert(
                 "Failed to fetch users. Please login again.",
                 "error"
@@ -66,61 +64,49 @@ const UserManagement = () => {
 
     const handleUserUpdated = () => {
         fetchUsers();
+        AlertComponent.showAlert("User updated successfully!", "success");
     };
 
-    const handleDeactivateUser = async (id) => {
-        const token = localStorage.getItem("token");
-        try {
-            await axios.delete(`${config.API_URL}/users/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            fetchUsers();
-        } catch {
-            setError("Failed to delete user.");
-            AlertComponent.showAlert("Failed to delete user.", "error");
-        }
+    const handleDeactivateUser = (id) => {
+        AlertComponent.showConfirmation(
+            "Are you sure you want to deactivate this user?",
+            async () => {
+                const token = localStorage.getItem("token");
+                try {
+                    await axios.delete(`${config.API_URL}/users/${id}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    fetchUsers();
+                    AlertComponent.showAlert("User deactivated successfully!", "success");
+                } catch {
+                    AlertComponent.showAlert("Failed to deactivate user.", "error");
+                }
+            }
+        );
     };
 
-    const handleReactivateUser = async (id) => {
-        const token = localStorage.getItem("token");
-        try {
-            await axios.post(
-                `${config.API_URL}/users/${id}/reactivate`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            fetchUsers();
-        } catch {
-            setError("Failed to reactivate user.");
-            AlertComponent.showAlert("Failed to reactivate user.", "error");
-        }
+    const handleReactivateUser = (id) => {
+        AlertComponent.showConfirmation(
+            "Are you sure you want to reactivate this user?",
+            async () => {
+                const token = localStorage.getItem("token");
+                try {
+                    await axios.post(
+                        `${config.API_URL}/users/${id}/reactivate`,
+                        {},
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    fetchUsers();
+                    AlertComponent.showAlert("User reactivated successfully!", "success");
+                } catch {
+                    AlertComponent.showAlert("Failed to reactivate user.", "error");
+                }
+            }
+        );
     };
 
     return (
         <div className="min-h-screen bg-gray-100 p-6">
-            {error && (
-                <div
-                    className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-                    role="alert"
-                >
-                    <span className="block sm:inline">{error}</span>
-                    <span
-                        className="absolute top-0 bottom-0 right-0 px-4 py-3"
-                        onClick={() => setError("")}
-                    >
-                        <svg
-                            className="fill-current h-6 w-6 text-red-500"
-                            role="button"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                        >
-                            <title>Close</title>
-                            <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z" />
-                        </svg>
-                    </span>
-                </div>
-            )}
-
             {/* Actions Bar */}
             <div className="mb-4 bg-white shadow-md rounded-lg p-4">
                 <div className="flex flex-wrap gap-4 items-center">
@@ -333,6 +319,7 @@ const UserManagement = () => {
                 }}
                 editingUser={editingUser}
                 onUserUpdated={handleUserUpdated}
+                fetchUsers={fetchUsers}
             />
         </div>
     );

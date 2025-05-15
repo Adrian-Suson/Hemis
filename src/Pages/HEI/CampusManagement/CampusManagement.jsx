@@ -53,14 +53,14 @@ const CampusManagement = () => {
                 className="mb-2 sm:mb-4 text-sm sm:text-base flex flex-wrap items-center"
             >
                 <RouterLink
-                    to="/Super-admin/dashboard"
+                    to="/hei-admin/dashboard"
                     className="text-gray-600 hover:text-gray-800 hover:underline"
                 >
                     Dashboard
                 </RouterLink>
                 <span className="mx-2 text-gray-500">›</span>
                 <RouterLink
-                    to="/Super-admin/institutions"
+                    to="/hei-admin/institutions"
                     className="text-gray-600 hover:text-gray-800 hover:underline"
                 >
                     Institution Management

@@ -1,23 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import axios from "axios";
-import {
-    Box,
-    Button,
-    CircularProgress,
-    Typography,
-    Snackbar,
-    Alert,
-    Breadcrumbs,
-    Link,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import config from "../../../utils/config";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -25,10 +10,9 @@ import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
 import GraduatesSkeleton from "./GraduatesSkeleton";
 import { decryptId } from "../../../utils/encryption";
-import { useTheme } from "@mui/material";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import UploadIcon from "@mui/icons-material/Upload";
-import DownloadIcon from "@mui/icons-material/Download";
+import { Download, Filter, Upload, XIcon } from "lucide-react";
+import FilterPopover from "../../../Components/FilterPopover";
+import CHEDButton from "../../../Components/CHEDButton";
 
 const Graduates = () => {
     const [graduates, setGraduates] = useState([]);
@@ -46,12 +30,10 @@ const Graduates = () => {
     const deinstitutionId = decryptId(
         decodeURIComponent(encryptedInstitutionId)
     );
-    const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+    const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
 
     useEffect(() => {
         fetchGraduates();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchGraduates = async () => {
@@ -390,152 +372,155 @@ const Graduates = () => {
         return matchesSearch && matchesSex && matchesYear;
     });
 
+    const filterOptions = {
+        sex: ["M", "F"],
+        year: uniqueYears.map(String),
+    };
+
+    const filters = {
+        sex: sexFilter,
+        year: yearFilter,
+    };
+
+    const handleFilterChange = (key, value) => {
+        if (key === "sex") setSexFilter(value);
+        if (key === "year") setYearFilter(value);
+    };
+
+    const handleClearFilters = () => {
+        setSexFilter("");
+        setYearFilter("");
+    };
+
     if (loading) {
         return <GraduatesSkeleton />;
     }
 
     return (
-        <Box
-            sx={(theme) => ({
-                p: 3,
-                borderRadius: 1,
-                display: "flex",
-                flexDirection: "column",
-                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
-                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
-                overflowX: "auto",
-                overflowY: "auto",
-                [theme.breakpoints.up("md")]: {
-                    overflowY: "hidden",
-                },
-            })}
-        >
-            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/dashboard")}
-                >
-                    Dashboard
-                </Link>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/institutions")}
-                >
-                    Institution Management
-                </Link>
-                <Typography color="textPrimary">List of Graduates</Typography>
-            </Breadcrumbs>
+        <div className="p-6 flex flex-col h-screen max-w-full sm:max-w-[95vw] md:max-w-[98vw] overflow-x-auto overflow-y-auto md:overflow-y-hidden">
+            {/* Breadcrumbs */}
+            <nav aria-label="breadcrumb" className="mb-4">
+                <ol className="flex space-x-2 text-gray-600">
+                    <li>
+                        <a
+                            href="#"
+                            onClick={() => navigate("/hei-admin/dashboard")}
+                            className="hover:underline"
+                        >
+                            Dashboard
+                        </a>
+                    </li>
+                    <li className="text-gray-400">›</li>
+                    <li>
+                        <a
+                            href="#"
+                            onClick={() =>
+                                navigate("/hei-admin/institutions")
+                            }
+                            className="hover:underline"
+                        >
+                            Institution Management
+                        </a>
+                    </li>
+                    <li className="text-gray-400">›</li>
+                    <li className="text-gray-900">List of Graduates</li>
+                </ol>
+            </nav>
 
-            <Box
-                sx={{
-                    mb: 2,
-                    display: "flex",
-                    gap: 1,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    flexShrink: 0,
-                }}
-            >
-                <Box
-                    sx={{ display: "flex", gap: 1, flex: 1, flexWrap: "wrap" }}
-                >
-                    <TextField
-                        placeholder="Search ID, Name, Program"
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4  p-2 bg-gray-50 border border-gray-200 rounded-md">
+                <h1 className="text-xl font-semibold text-gray-800">
+                    List of Graduates
+                </h1>
+                <div className="flex gap-2">
+                    {/* Upload Button */}
+                    <CHEDButton
+                        onClick={() => fileInputRef.current?.click()}
+                        icon={Upload}
+                        variant="primary"
+                        size="md"
+                        disabled={loading}
+                    >
+                        {loading ? "Uploading..." : "Upload Excel File"}
+                    </CHEDButton>
+                    <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={handleFileUpload}
+                        ref={fileInputRef}
+                        className="hidden"
+                        id="upload-excel"
+                    />
+
+                    {/* Export Button */}
+                    <CHEDButton
+                        onClick={exportToExcel}
+                        icon={Download}
+                        variant="secondary"
+                        size="md"
+                        disabled={loading || graduates.length === 0}
+                    >
+                        Export to Excel
+                    </CHEDButton>
+                </div>
+            </div>
+
+            {/* Filters and Search */}
+            <div className="flex flex-col sm:flex-row gap-2 mb-2 items-center flex-wrap">
+                <div className="flex flex-1 gap-2 flex-wrap w-full sm:w-auto">
+                    <input
+                        type="text"
+                        placeholder="Search"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        sx={{ flex: 1, minWidth: 150 }}
+                        className="min-w-[30vw] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
-                            Sex
-                        </InputLabel>
-                        <Select
-                            value={sexFilter}
-                            onChange={(e) => setSexFilter(e.target.value)}
-                            label="Sex"
-                            size="small"
+                    <div className="relative">
+                        <button
+                            onClick={() =>
+                                setIsFilterPopoverOpen(!isFilterPopoverOpen)
+                            }
+                            className="px-3 py-2 flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700"
                         >
-                            <MenuItem value="">All</MenuItem>
-                            <MenuItem value="M">Male</MenuItem>
-                            <MenuItem value="F">Female</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel size="small" sx={{ fontSize: "0.9rem" }}>
-                            Year
-                        </InputLabel>
-                        <Select
-                            value={yearFilter}
-                            onChange={(e) => setYearFilter(e.target.value)}
-                            label="Year"
-                            size="small"
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {uniqueYears.map((year) => (
-                                <MenuItem key={year} value={String(year)}>
-                                    {year}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
-                <Button
-                    variant="contained"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading}
-                    startIcon={
-                        loading ? (
-                            <CircularProgress size={20} />
-                        ) : (
-                            <UploadIcon />
-                        )
-                    }
-                >
-                    {isSmallScreen ? null : "Upload Excel File"}
-                </Button>
-                <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                    style={{ display: "none" }}
-                    id="upload-excel"
-                />
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={exportToExcel}
-                    disabled={loading || graduates.length === 0}
-                    startIcon={<DownloadIcon />}
-                >
-                    {isSmallScreen ? null : "Export to Excel"}
-                </Button>
-            </Box>
+                            <Filter size={16} />
+                            Filters
+                        </button>
+                        <FilterPopover
+                            open={isFilterPopoverOpen}
+                            onClose={() => setIsFilterPopoverOpen(false)}
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
+                            onClearFilters={handleClearFilters}
+                            filterOptions={filterOptions}
+                        />
+                    </div>
+                </div>
+            </div>
 
+            {/* Graduates Table */}
             <GraduatesTable graduates={filteredGraduates} />
 
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={6000}
-                onClose={() => setSnackbarOpen(false)}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                sx={{ zIndex: 1500 }} // Ensure Snackbar is above content
-            >
-                <Alert
-                    onClose={() => setSnackbarOpen(false)}
-                    severity={snackbarSeverity}
-                    sx={{ width: "100%" }}
-                >
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-        </Box>
+            {/* Snackbar */}
+            {snackbarOpen && (
+                <div className="fixed top-4 right-4 max-w-xs w-full bg-white shadow-lg rounded-md p-4 flex items-center justify-between z-50">
+                    <div
+                        className={`text-sm ${
+                            snackbarSeverity === "success"
+                                ? "text-green-700"
+                                : "text-red-700"
+                        }`}
+                    >
+                        {snackbarMessage}
+                    </div>
+                    <button
+                        onClick={() => setSnackbarOpen(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                    >
+                        <XIcon className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 

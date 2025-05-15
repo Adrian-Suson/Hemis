@@ -9,6 +9,8 @@ import theme from "./theme.jsx";
 import "./main.css";
 import { LoadingProvider } from "./Context/LoadingContext.jsx";
 
+// Create a QueryClient instance
+
 createRoot(document.getElementById("root")).render(
     <ThemeProvider theme={theme}>
         <CssBaseline />

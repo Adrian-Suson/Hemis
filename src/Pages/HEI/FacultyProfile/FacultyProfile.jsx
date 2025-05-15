@@ -2,36 +2,16 @@
 import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
-import {
-    Box,
-    Typography,
-    Tabs,
-    Tab,
-    Breadcrumbs,
-    Link,
-    Button,
-    Alert,
-    Toolbar,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    alpha,
-    useTheme,
-    Paper,
-    IconButton,
-    useMediaQuery,
-} from "@mui/material";
 import FacultyProfileTable from "./FacultyProfileTable";
 import { useNavigate, useParams } from "react-router-dom";
 import FacultyProfileSkeleton from "./FacultyProfileSkeleton";
 import ExcelJS from "exceljs";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import UploadIcon from "@mui/icons-material/Upload";
-import DownloadIcon from "@mui/icons-material/Download";
 import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
+import AlertComponent from "../../../Components/AlertComponent";
+import { Download, Upload, X } from "lucide-react";
+import CHEDButton from "../../../Components/CHEDButton";
 
 const facultyGroups = [
     {
@@ -101,11 +81,8 @@ const FacultyProfileUpload = () => {
     const [error, setError] = useState(null);
     const { institutionId: encryptedInstitutionId } = useParams();
     const navigate = useNavigate();
-    const [institutionName, setInstitutionName] = useState("");
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-    const theme = useTheme();
-    const isSm = useMediaQuery(theme.breakpoints.down("sm"));
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -118,15 +95,12 @@ const FacultyProfileUpload = () => {
         showLoading();
         setError(null);
 
-        // Decrypt the institutionId
         const institutionId = decryptId(
             decodeURIComponent(encryptedInstitutionId)
         );
-        console.log("Decrypted Institution ID:", institutionId);
 
-        // Validate decrypted ID
         if (!institutionId || isNaN(institutionId)) {
-            setError("Invalid institution ID.");
+            AlertComponent.showAlert("Invalid institution ID.", "error");
             setLoading(false);
             hideLoading();
             setFacultyProfiles([]);
@@ -136,7 +110,10 @@ const FacultyProfileUpload = () => {
         try {
             const token = localStorage.getItem("token");
             if (!token) {
-                setError("Authentication token is missing.");
+                AlertComponent.showAlert(
+                    "Authentication token is missing.",
+                    "error"
+                );
                 setLoading(false);
                 hideLoading();
                 return;
@@ -147,18 +124,15 @@ const FacultyProfileUpload = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            console.log("Institution ID:", institutionId);
-            console.log("API Response:", response.data);
-
             setFacultyProfiles(
                 Array.isArray(response.data) ? response.data : []
             );
-            setInstitutionName(
-                response.data[0]?.institution.name || "Unknown Institution"
-            );
         } catch (error) {
             console.error("Error fetching faculty profiles:", error);
-            setError("Failed to load faculty profiles. Please try again.");
+            AlertComponent.showAlert(
+                "Failed to load faculty profiles. Please try again.",
+                "error"
+            );
             setFacultyProfiles([]);
         } finally {
             setLoading(false);
@@ -166,13 +140,11 @@ const FacultyProfileUpload = () => {
         }
     };
 
-    const handleTabChange = (_, newValue) => {
+    const handleTabChange = (newValue) => {
         setSelectedGroup(newValue);
-        console.log("Selected Group:", newValue);
-        // No need to fetch again; filtering happens in frontend
+        AlertComponent.showAlert(`Switched to ${newValue}`, "info");
     };
 
-    // Filter faculty profiles by selected group in the frontend
     const filteredFacultyProfiles = useMemo(() => {
         return facultyProfiles.filter(
             (profile) => profile.faculty_group === selectedGroup
@@ -187,7 +159,10 @@ const FacultyProfileUpload = () => {
 
         const token = localStorage.getItem("token");
         if (!token) {
-            alert("Authentication token is missing.");
+            AlertComponent.showAlert(
+                "Authentication token is missing.",
+                "error"
+            );
             setIsUploading(false);
             return;
         }
@@ -358,17 +333,26 @@ const FacultyProfileUpload = () => {
                         }
                     );
                     console.log("Faculty profiles uploaded successfully!");
-                    // Refresh all profiles after upload
+                    AlertComponent.showAlert(
+                        "Faculty profiles uploaded successfully!",
+                        "success"
+                    );
                     await fetchFacultyProfiles();
                 } else {
-                    alert("No valid faculty data found in the uploaded file.");
+                    AlertComponent.showAlert(
+                        "No valid faculty data found in the uploaded file.",
+                        "error"
+                    );
                 }
 
                 updateProgress(100);
             };
         } catch (error) {
             console.error("Error processing the file:", error);
-            alert("Error uploading file. Please try again.");
+            AlertComponent.showAlert(
+                "Error uploading file. Please try again.",
+                "error"
+            );
         } finally {
             setIsUploading(false);
         }
@@ -376,448 +360,398 @@ const FacultyProfileUpload = () => {
 
     const handleFileUpload = () => {
         if (selectedFile) {
-            setOpenUploadDialog(false);
-            processExcelFile(selectedFile);
-            setSelectedFile(null);
-        }
-    };
-
-    // Export functionality remains the same
-    const handleExportData = async () => {
-        console.log("Faculty Profiles before export:", facultyProfiles);
-        try {
-            const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
-            if (!response.ok) {
-                throw new Error(
-                    `Failed to load template file: HTTP ${response.status}`
-                );
-            }
-            const arrayBuffer = await response.arrayBuffer();
-
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(arrayBuffer);
-
-            const dataStartRow = 7;
-
-            const profilesByGroup = facultyGroups.reduce((acc, group) => {
-                acc[group.sheetName] = facultyProfiles.filter(
-                    (profile) => profile.faculty_group === group.sheetName
-                );
-                console.log(
-                    `Sheet ${group.sheetName}: ${
-                        acc[group.sheetName].length
-                    } profiles`
-                );
-                return acc;
-            }, {});
-
-            for (
-                let sheetIndex = 0;
-                sheetIndex < Math.min(9, workbook.worksheets.length);
-                sheetIndex++
-            ) {
-                const sheetName =
-                    facultyGroups[sheetIndex]?.sheetName ||
-                    `Sheet${sheetIndex + 1}`;
-                const worksheet = workbook.getWorksheet(sheetIndex + 1);
-                if (!worksheet) {
-                    console.log(
-                        `Worksheet ${sheetName} not found, skipping...`
+            AlertComponent.showConfirmation(
+                "Do you want to upload the selected file?",
+                () => {
+                    // Confirm callback
+                    setOpenUploadDialog(false);
+                    processExcelFile(selectedFile);
+                    setSelectedFile(null);
+                },
+                () => {
+                    // Cancel callback (optional)
+                    AlertComponent.showAlert(
+                        "File upload canceled.",
+                        "question"
                     );
-                    continue;
                 }
-
-                const profilesForSheet = profilesByGroup[sheetName] || [];
-                console.log(
-                    `Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`
-                );
-
-                profilesForSheet.forEach((profile, i) => {
-                    const row = worksheet.getRow(dataStartRow + i);
-                    row.getCell(2).value = profile.name || null;
-                    row.getCell(3).value = profile.generic_faculty_rank || 0;
-                    row.getCell(4).value = profile.home_college || null;
-                    row.getCell(5).value = profile.home_department || null;
-                    row.getCell(6).value = profile.is_tenured || null;
-                    row.getCell(7).value = profile.ssl_salary_grade || 0;
-                    row.getCell(8).value = profile.annual_basic_salary || 0;
-                    row.getCell(9).value = profile.on_leave_without_pay || 0;
-                    row.getCell(10).value = profile.full_time_equivalent || 0;
-                    row.getCell(11).value = profile.gender || null;
-                    row.getCell(12).value =
-                        profile.highest_degree_attained || 0;
-                    row.getCell(13).value =
-                        profile.pursuing_next_degree || null;
-                    row.getCell(14).value =
-                        profile.discipline_teaching_load_1 || null;
-                    row.getCell(15).value =
-                        profile.discipline_teaching_load_2 || null;
-                    row.getCell(16).value =
-                        profile.discipline_bachelors || null;
-                    row.getCell(17).value = profile.discipline_masters || null;
-                    row.getCell(18).value =
-                        profile.discipline_doctorate || null;
-                    row.getCell(19).value = profile.masters_with_thesis || null;
-                    row.getCell(20).value =
-                        profile.doctorate_with_dissertation || null;
-                    row.getCell(21).value =
-                        profile.undergrad_lab_credit_units || 0;
-                    row.getCell(22).value =
-                        profile.undergrad_lecture_credit_units || 0;
-                    row.getCell(23).value =
-                        profile.undergrad_total_credit_units || 0;
-                    row.getCell(24).value =
-                        profile.undergrad_lab_hours_per_week || 0;
-                    row.getCell(25).value =
-                        profile.undergrad_lecture_hours_per_week || 0;
-                    row.getCell(26).value =
-                        profile.undergrad_total_hours_per_week || 0;
-                    row.getCell(27).value =
-                        profile.undergrad_lab_contact_hours || 0;
-                    row.getCell(28).value =
-                        profile.undergrad_lecture_contact_hours || 0;
-                    row.getCell(29).value =
-                        profile.undergrad_total_contact_hours || 0;
-                    row.getCell(30).value =
-                        profile.graduate_lab_credit_units || 0;
-                    row.getCell(31).value =
-                        profile.graduate_lecture_credit_units || 0;
-                    row.getCell(32).value =
-                        profile.graduate_total_credit_units || 0;
-                    row.getCell(33).value =
-                        profile.graduate_lab_contact_hours || 0;
-                    row.getCell(34).value =
-                        profile.graduate_lecture_contact_hours || 0;
-                    row.getCell(35).value =
-                        profile.graduate_total_contact_hours || 0;
-                    row.getCell(36).value = profile.research_load || 0;
-                    row.getCell(37).value =
-                        profile.extension_services_load || 0;
-                    row.getCell(38).value = profile.study_load || 0;
-                    row.getCell(39).value = profile.production_load || 0;
-                    row.getCell(40).value = profile.administrative_load || 0;
-                    row.getCell(41).value = profile.other_load_credits || 0;
-                    row.getCell(42).value = profile.total_work_load || 0;
-                    row.commit();
-                });
-            }
-
-            const fileName = `Form_E2_Faculty_Profiles_${
-                new Date().toISOString().split("T")[0]
-            }.xlsx`;
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error("Error exporting data:", error);
-            alert("Error exporting data. Please try again.");
+            );
+        } else {
+            AlertComponent.showAlert("No file selected for upload.", "error");
         }
     };
 
-    // Show skeleton while loading
+    const handleExportData = async () => {
+        AlertComponent.showConfirmation(
+            "Do you want to export the faculty data?",
+            async () => {
+                // Confirm callback
+                try {
+                    const response = await fetch(
+                        "/templates/Form-E2-Themeplate.xlsx"
+                    );
+                    if (!response.ok) {
+                        throw new Error(
+                            `Failed to load template file: HTTP ${response.status}`
+                        );
+                    }
+                    const arrayBuffer = await response.arrayBuffer();
+
+                    const workbook = new ExcelJS.Workbook();
+                    await workbook.xlsx.load(arrayBuffer);
+
+                    const dataStartRow = 7;
+
+                    const profilesByGroup = facultyGroups.reduce(
+                        (acc, group) => {
+                            acc[group.sheetName] = facultyProfiles.filter(
+                                (profile) =>
+                                    profile.faculty_group === group.sheetName
+                            );
+                            console.log(
+                                `Sheet ${group.sheetName}: ${
+                                    acc[group.sheetName].length
+                                } profiles`
+                            );
+                            return acc;
+                        },
+                        {}
+                    );
+
+                    for (
+                        let sheetIndex = 0;
+                        sheetIndex < Math.min(9, workbook.worksheets.length);
+                        sheetIndex++
+                    ) {
+                        const sheetName =
+                            facultyGroups[sheetIndex]?.sheetName ||
+                            `Sheet${sheetIndex + 1}`;
+                        const worksheet = workbook.getWorksheet(sheetIndex + 1);
+                        if (!worksheet) {
+                            console.log(
+                                `Worksheet ${sheetName} not found, skipping...`
+                            );
+                            continue;
+                        }
+
+                        const profilesForSheet =
+                            profilesByGroup[sheetName] || [];
+                        console.log(
+                            `Processing sheet ${sheetName}: ${profilesForSheet.length} profiles`
+                        );
+
+                        profilesForSheet.forEach((profile, i) => {
+                            const row = worksheet.getRow(dataStartRow + i);
+                            row.getCell(2).value = profile.name || null;
+                            row.getCell(3).value =
+                                profile.generic_faculty_rank || 0;
+                            row.getCell(4).value = profile.home_college || null;
+                            row.getCell(5).value =
+                                profile.home_department || null;
+                            row.getCell(6).value = profile.is_tenured || null;
+                            row.getCell(7).value =
+                                profile.ssl_salary_grade || 0;
+                            row.getCell(8).value =
+                                profile.annual_basic_salary || 0;
+                            row.getCell(9).value =
+                                profile.on_leave_without_pay || 0;
+                            row.getCell(10).value =
+                                profile.full_time_equivalent || 0;
+                            row.getCell(11).value = profile.gender || null;
+                            row.getCell(12).value =
+                                profile.highest_degree_attained || 0;
+                            row.getCell(13).value =
+                                profile.pursuing_next_degree || null;
+                            row.getCell(14).value =
+                                profile.discipline_teaching_load_1 || null;
+                            row.getCell(15).value =
+                                profile.discipline_teaching_load_2 || null;
+                            row.getCell(16).value =
+                                profile.discipline_bachelors || null;
+                            row.getCell(17).value =
+                                profile.discipline_masters || null;
+                            row.getCell(18).value =
+                                profile.discipline_doctorate || null;
+                            row.getCell(19).value =
+                                profile.masters_with_thesis || null;
+                            row.getCell(20).value =
+                                profile.doctorate_with_dissertation || null;
+                            row.getCell(21).value =
+                                profile.undergrad_lab_credit_units || 0;
+                            row.getCell(22).value =
+                                profile.undergrad_lecture_credit_units || 0;
+                            row.getCell(23).value =
+                                profile.undergrad_total_credit_units || 0;
+                            row.getCell(24).value =
+                                profile.undergrad_lab_hours_per_week || 0;
+                            row.getCell(25).value =
+                                profile.undergrad_lecture_hours_per_week || 0;
+                            row.getCell(26).value =
+                                profile.undergrad_total_hours_per_week || 0;
+                            row.getCell(27).value =
+                                profile.undergrad_lab_contact_hours || 0;
+                            row.getCell(28).value =
+                                profile.undergrad_lecture_contact_hours || 0;
+                            row.getCell(29).value =
+                                profile.undergrad_total_contact_hours || 0;
+                            row.getCell(30).value =
+                                profile.graduate_lab_credit_units || 0;
+                            row.getCell(31).value =
+                                profile.graduate_lecture_credit_units || 0;
+                            row.getCell(32).value =
+                                profile.graduate_total_credit_units || 0;
+                            row.getCell(33).value =
+                                profile.graduate_lab_contact_hours || 0;
+                            row.getCell(34).value =
+                                profile.graduate_lecture_contact_hours || 0;
+                            row.getCell(35).value =
+                                profile.graduate_total_contact_hours || 0;
+                            row.getCell(36).value = profile.research_load || 0;
+                            row.getCell(37).value =
+                                profile.extension_services_load || 0;
+                            row.getCell(38).value = profile.study_load || 0;
+                            row.getCell(39).value =
+                                profile.production_load || 0;
+                            row.getCell(40).value =
+                                profile.administrative_load || 0;
+                            row.getCell(41).value =
+                                profile.other_load_credits || 0;
+                            row.getCell(42).value =
+                                profile.total_work_load || 0;
+                            row.commit();
+                        });
+                    }
+
+                    const fileName = `Form_E2_Faculty_Profiles_${
+                        new Date().toISOString().split("T")[0]
+                    }.xlsx`;
+                    const buffer = await workbook.xlsx.writeBuffer();
+                    const blob = new Blob([buffer], {
+                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = fileName;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    AlertComponent.showAlert(
+                        "Data exported successfully!",
+                        "success"
+                    );
+                } catch (error) {
+                    console.error("Error exporting data:", error);
+                    AlertComponent.showAlert(
+                        "Error exporting data. Please try again.",
+                        "error"
+                    );
+                }
+            },
+            () => {
+                // Cancel callback
+                AlertComponent.showAlert("Export canceled.", "info");
+            }
+        );
+    };
+
     if (loading) {
         return <FacultyProfileSkeleton />;
     }
 
     return (
-        <Box
-            sx={(theme) => ({
-                p: 3,
-                borderRadius: 1,
-                display: "flex",
-                flexDirection: "column",
-                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
-                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
-                overflowX: "auto",
-                overflowY: "auto",
-                [theme.breakpoints.up("md")]: {
-                    overflowY: "hidden",
-                },
-            })}
-        >
-            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 2 }}>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/dashboard")}
-                >
-                    Dashboard
-                </Link>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/institutions")}
-                >
-                    Institution Management
-                </Link>
-                <Typography color="text.primary">
-                    {institutionName
-                        ? `${institutionName} Campuses`
-                        : "Campuses"}
-                </Typography>
-            </Breadcrumbs>
+        <div className="p-6 flex flex-col h-screen max-w-full sm:max-w-[95vw] md:max-w-[98vw] overflow-x-auto overflow-y-auto md:overflow-y-hidden">
+            {/* Breadcrumbs */}
+            <nav aria-label="breadcrumb" className="mb-4">
+                <ol className="flex space-x-2 text-gray-600">
+                    <li>
+                        <a
+                            href="#"
+                            onClick={() => navigate("/hei-admin/dashboard")}
+                            className="hover:underline"
+                        >
+                            Dashboard
+                        </a>
+                    </li>
+                    <li className="text-gray-400">›</li>
+                    <li>
+                        <a
+                            href="#"
+                            onClick={() =>
+                                navigate("/hei-admin/institutions")
+                            }
+                            className="hover:underline"
+                        >
+                            Institution Management
+                        </a>
+                    </li>
+                    <li className="text-gray-400">›</li>
+                    <li className="text-gray-900">Faculties Management</li>
+                </ol>
+            </nav>
 
-            <Toolbar
-                sx={{
-                    pl: { sm: 2 },
-                    pr: { xs: 1, sm: 1 },
-                    mb: 0.5,
-                    backgroundColor: "background.paper",
-                    justifyContent: "space-between",
-                    borderColor: "divider",
-                    display: "flex",
-                    alignItems: "center",
-                    minHeight: 56,
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0.5,
-                    }}
-                >
-                    <Typography
-                        variant="h5"
-                        component="div"
-                        sx={{ flexGrow: 1, fontWeight: "medium" }}
-                    >
-                        Faculties Managment
-                    </Typography>
-                    <Typography
-                        variant="subtitle2"
-                        color="text.secondary"
-                        sx={{
-                            display: { xs: "none", sm: "none", md: "block" },
-                        }}
-                    >
+            {/* Toolbar */}
+            <div className="flex justify-between items-center bg-white p-4 mb-2 border-b border-gray-200">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-medium">
+                        Faculties Management
+                    </h1>
+                    <p className="text-sm text-gray-500 hidden md:block">
                         {facultyGroups.find(
                             (group) => group.sheetName === selectedGroup
                         )?.description || "No description available"}
-                    </Typography>
-                </Box>
-
-                {/* File Upload and Export Buttons */}
-                <Box gap={2} sx={{ display: "flex", alignItems: "center" }}>
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        component="span"
-                        startIcon={<UploadFileIcon />}
-                        disabled={isUploading}
+                    </p>
+                </div>
+                {/* CHED-Styled Action Buttons */}
+                <div className="flex gap-4 items-center">
+                    {/* Import Button */}
+                    <CHEDButton
                         onClick={() => setOpenUploadDialog(true)}
+                        icon={Upload}
+                        variant="primary"
+                        size="md"
+                        disabled={isUploading}
                     >
-                        {isSm
-                            ? ""
-                            : isUploading
-                            ? "Uploading..."
-                            : "Import Form E2"}
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<DownloadIcon />}
+                        {isUploading ? "Uploading..." : "Import Form E2"}
+                    </CHEDButton>
+
+                    {/* Export Button */}
+                    <CHEDButton
                         onClick={handleExportData}
+                        icon={Download}
+                        variant="secondary"
+                        size="md"
                         disabled={isUploading || loading}
                     >
-                        {isSm ? "" : "Export Data"}
-                    </Button>
-                </Box>
-            </Toolbar>
+                        Export Data
+                    </CHEDButton>
+                </div>
+            </div>
 
-            {/* Upload Dialog */}
-            <Dialog
-                open={openUploadDialog}
-                onClose={() => setOpenUploadDialog(false)}
-                PaperProps={{
-                    sx: {
-                        borderRadius: 2,
-                        maxWidth: 500,
-                    },
-                }}
-            >
-                <DialogTitle
-                    sx={{
-                        bgcolor: alpha(theme.palette.primary.main, 0.05),
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        px: 3,
-                        py: 2,
-                    }}
-                >
-                    <Typography fontWeight={600}>
-                        Upload Institution Form E2
-                    </Typography>
-                </DialogTitle>
-                <DialogContent sx={{ p: 3 }}>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 3 }}
-                    >
-                        Please upload the Form E2 Excel document.
-                    </Typography>
-
-                    <Box
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            if (
-                                e.dataTransfer.files &&
-                                e.dataTransfer.files[0]
-                            ) {
-                                setSelectedFile(e.dataTransfer.files[0]);
-                            }
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        sx={{
-                            p: 1.5,
-                            border: `1px dashed ${theme.palette.primary.main}`,
-                            borderRadius: 1.5,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            cursor: "pointer",
-                            bgcolor: "background.paper",
-                        }}
-                        onClick={() =>
-                            document.getElementById("upload-input").click()
-                        }
-                    >
-                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography>
-                            Drag & drop file or click to browse
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Supported formats: .xlsx, .xls
-                        </Typography>
-                        <input
-                            id="upload-input"
-                            type="file"
-                            hidden
-                            accept=".xlsx, .xls"
-                            onChange={(e) => setSelectedFile(e.target.files[0])}
-                        />
-                    </Box>
-
-                    {selectedFile && (
-                        <Paper
-                            variant="outlined"
-                            sx={{
-                                mt: 2,
-                                p: 1.5,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                borderRadius: 1.5,
-                            }}
-                        >
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        noWrap
-                                        sx={{ maxWidth: 200 }}
-                                    >
-                                        {selectedFile.name}
-                                    </Typography>
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                    >
-                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
-                                        KB
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <IconButton
-                                size="small"
-                                onClick={() => setSelectedFile(null)}
-                                sx={{
-                                    color: theme.palette.error.main,
-                                    "&:hover": {
-                                        bgcolor: alpha(
-                                            theme.palette.error.main,
-                                            0.1
-                                        ),
-                                    },
+            {/* Upload Modal */}
+            {openUploadDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg max-w-md w-full">
+                        <div className="bg-indigo-50 border-b border-gray-200 px-6 py-4">
+                            <h2 className="text-lg font-semibold">
+                                Upload Institution Form E2
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-gray-500 mb-4">
+                                Please upload the Form E2 Excel document.
+                            </p>
+                            <div
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    if (
+                                        e.dataTransfer.files &&
+                                        e.dataTransfer.files[0]
+                                    ) {
+                                        setSelectedFile(
+                                            e.dataTransfer.files[0]
+                                        );
+                                    }
                                 }}
+                                onDragOver={(e) => e.preventDefault()}
+                                onClick={() =>
+                                    document
+                                        .getElementById("upload-input")
+                                        .click()
+                                }
+                                className="p-4 border-2 border-dashed border-indigo-600 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer bg-white"
                             >
-                                &times;
-                            </IconButton>
-                        </Paper>
-                    )}
-                </DialogContent>
-                <DialogActions
-                    sx={{
-                        px: 3,
-                        py: 2,
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                    }}
-                >
-                    <Button
-                        onClick={() => setOpenUploadDialog(false)}
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            color: theme.palette.text.primary,
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleFileUpload}
-                        variant="contained"
-                        disabled={!selectedFile || isUploading}
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            borderRadius: 1.5,
-                            px: 3,
-                        }}
-                    >
-                        Upload
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                    {error}
-                </Alert>
+                                <Upload className="w-7 h-7 text-indigo-600" />
+                                <p className="text-sm">
+                                    Drag & drop file or click to browse
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    Supported formats: .xlsx, .xls
+                                </p>
+                                <input
+                                    id="upload-input"
+                                    type="file"
+                                    hidden
+                                    accept=".xlsx, .xls"
+                                    onChange={(e) =>
+                                        setSelectedFile(e.target.files[0])
+                                    }
+                                />
+                            </div>
+                            {selectedFile && (
+                                <div className="mt-4 p-4 border border-gray-200 rounded-lg flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <Download className="w-5 h-5 text-indigo-600 mr-2" />
+                                        <div>
+                                            <p className="text-sm max-w-[200px] truncate">
+                                                {selectedFile.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {(
+                                                    selectedFile.size / 1024
+                                                ).toFixed(2)}{" "}
+                                                KB
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedFile(null)}
+                                        className="text-red-600 hover:bg-red-100 rounded-full p-1"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex justify-end gap-2 p-4 border-t border-gray-200">
+                            <button
+                                onClick={() => setOpenUploadDialog(false)}
+                                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleFileUpload}
+                                disabled={!selectedFile || isUploading}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+                            >
+                                Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
+            {/* Error Alert */}
+            {error && (
+                <div className="mt-4 p-4 bg-red-100 text-red-700 border border-red-300 rounded-md">
+                    {error}
+                </div>
+            )}
+
+            {/* Faculty Profile Table */}
             <FacultyProfileTable
                 selectedGroup={selectedGroup}
                 facultyProfiles={filteredFacultyProfiles}
             />
 
-            {/* Tabs for faculty groups */}
-            <Tabs
-                value={selectedGroup}
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-            >
+            {/* Tabs */}
+            <div className="flex overflow-x-auto border-t border-gray-200">
                 {facultyGroups.map((group) => (
-                    <Tab
+                    <button
                         key={group.sheetName}
-                        label={group.label}
-                        value={group.sheetName}
-                    />
+                        onClick={() => handleTabChange(group.sheetName)}
+                        className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                            selectedGroup === group.sheetName
+                                ? "border-indigo-600 text-indigo-600"
+                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        }`}
+                    >
+                        {group.label}
+                    </button>
                 ))}
-            </Tabs>
-        </Box>
+            </div>
+        </div>
     );
 };
 

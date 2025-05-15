@@ -1,51 +1,24 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo } from "react";
-import {
-    Typography,
-    Button,
-    Tabs,
-    Tab,
-    Box,
-    Breadcrumbs,
-    Link,
-    Tooltip,
-    useTheme,
-    Fab,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
-    IconButton,
-    Paper,
-    alpha,
-    TextField,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Grid,
-} from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import DownloadIcon from "@mui/icons-material/Download";
-import UploadIcon from "@mui/icons-material/Upload";
-import CloseIcon from "@mui/icons-material/Close";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
-import config from "../../../utils/config";
 import ProgramTables from "./ProgramTables";
-import CustomSnackbar from "../../../Components/CustomSnackbar";
 import { useNavigate, useParams } from "react-router-dom";
-import { useLoading } from "../../../Context/LoadingContext";
-import ExcelJS from "exceljs";
-import { decryptId } from "../../../utils/encryption";
 import CurricularProgramSkeleton from "./CurricularProgramSkeleton";
-import useMediaQuery from "@mui/material/useMediaQuery";
+import ExcelJS from "exceljs";
+import { useLoading } from "../../../Context/LoadingContext";
+import { decryptId } from "../../../utils/encryption";
+import config from "../../../utils/config";
+import AlertComponent from "../../../Components/AlertComponent";
+import {
+    Info,
+    Upload as UploadIcon,
+    Download,
+    Upload,
+    X,
+    Search,
+} from "lucide-react";
+import CHEDButton from "../../../Components/CHEDButton";
 
 const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -56,20 +29,9 @@ const CurricularProgram = () => {
     const [loading, setLoading] = useState(false);
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const { showLoading, hideLoading, updateProgress } = useLoading();
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: "",
-        severity: "success",
-    });
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filters, setFilters] = useState({
-        data_date: "",
-        category: "",
-    });
     const navigate = useNavigate();
-    const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
     const categories = useMemo(
         () => [
@@ -84,14 +46,14 @@ const CurricularProgram = () => {
         []
     );
 
-    const fetchPrograms = async () => {
+    const fetchPrograms = useCallback(async () => {
         try {
             const institutionId = decryptId(encryptedInstitutionId);
             showLoading();
             setLoading(true);
             const token = localStorage.getItem("token");
             if (!institutionId) {
-                console.error("No institution ID found in localStorage");
+                console.error("No institution ID found");
                 hideLoading();
                 setPrograms([]);
                 return;
@@ -103,69 +65,67 @@ const CurricularProgram = () => {
             });
             console.log("Fetched programs:", response.data);
             if (Array.isArray(response.data)) {
-                setPrograms(response.data);
+                // Normalize program_type to uppercase for consistency
+                const normalizedPrograms = response.data.map((program) => ({
+                    ...program,
+                    program_type: program.program_type?.toUpperCase().trim(),
+                }));
+                setPrograms(normalizedPrograms);
             } else {
                 console.error("Invalid data format:", response.data);
                 setPrograms([]);
             }
         } catch (error) {
-            if (error.response) {
-                console.error("Response error:", error.response.data);
-            } else if (error.request) {
-                console.error("Request error:", error.request);
-            } else {
-                console.error("General error:", error.message);
-            }
+            console.error("Error fetching programs:", error);
+            AlertComponent.showAlert(
+                "Failed to fetch programs. Please try again.",
+                "error"
+            );
             setPrograms([]);
         } finally {
             setLoading(false);
             hideLoading();
         }
-    };
+    }, [encryptedInstitutionId]);
 
     useEffect(() => {
         fetchPrograms();
-    }, []);
+    }, [fetchPrograms]);
 
     const filteredPrograms = useMemo(() => {
         let filtered = programs.filter(
-            (program) => program.program_type === categories[mainTabValue]
+            (program) =>
+                program.program_type?.toUpperCase() ===
+                categories[mainTabValue].toUpperCase()
         );
 
-        // Apply filters
-        if (filters.data_date) {
-            filtered = filtered.filter(
-                (program) => program.data_date === filters.data_date
-            );
-        }
-        if (filters.category) {
-            filtered = filtered.filter(
-                (program) => program.category === filters.category
+        if (searchTerm) {
+            filtered = filtered.filter((program) =>
+                program.program_name
+                    ?.toLowerCase()
+                    .includes(searchTerm.toLowerCase())
             );
         }
 
-        // Apply search query
-        if (searchQuery) {
-            filtered = filtered.filter((program) =>
-                Object.values(program).some((value) =>
-                    String(value)
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                )
-            );
-        }
+        console.log(
+            `Filtered programs (Category: ${categories[mainTabValue]}, Search: ${searchTerm}):`,
+            filtered.length
+        );
 
         return filtered;
-    }, [programs, mainTabValue, categories, searchQuery, filters]);
+    }, [programs, mainTabValue, categories, searchTerm]);
 
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters((prev) => ({ ...prev, [name]: value }));
-    };
+    const totalRows = useMemo(() => {
+        return programs.filter(
+            (program) =>
+                program.program_type?.toUpperCase() ===
+                categories[mainTabValue].toUpperCase()
+        ).length;
+    }, [programs, mainTabValue, categories]);
 
-    const handleFileUpload = async () => {
+    const handleCurricularUpload = async () => {
         if (!selectedFile) {
-            console.log("No file selected for upload");
+            AlertComponent.showAlert("No file selected for upload.", "warning");
             return;
         }
 
@@ -173,13 +133,12 @@ const CurricularProgram = () => {
         const institutionId = decryptId(encryptedInstitutionId);
 
         if (!institutionId || !token) {
-            setSnackbar({
-                open: true,
-                message: !institutionId
+            AlertComponent.showAlert(
+                !institutionId
                     ? "Please select an institution first."
                     : "Please log in first.",
-                severity: "warning",
-            });
+                "warning"
+            );
             setOpenUploadDialog(false);
             setSelectedFile(null);
             return;
@@ -207,13 +166,13 @@ const CurricularProgram = () => {
 
                     const sheetData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 11,
+                        range: 10,
                     });
 
                     const parsedData = sheetData
                         .map((row) => {
-                            const labUnits = row[12] || 0;
-                            const lectureUnits = row[13] || 0;
+                            const labUnits = Number(row[12]) || 0;
+                            const lectureUnits = Number(row[13]) || 0;
                             const maleTotal =
                                 Number(row[17] || 0) +
                                 Number(row[19] || 0) +
@@ -239,50 +198,57 @@ const CurricularProgram = () => {
                                 major_name: row[3] || null,
                                 major_code: row[4] || null,
                                 category: row[5] || null,
-                                serial: String(row[6] || " "),
+                                serial: String(row[6] || ""),
                                 Year: String(row[7] || ""),
                                 is_thesis_dissertation_required: row[8] || null,
-                                program_status: row[9] || null,
-                                calendar_use_code: row[10] || null,
-                                program_normal_length_in_years: row[11] || null,
+                                program_status: String(row[9] || ""),
+                                calendar_use_code: String(row[10] || ""),
+                                program_normal_length_in_years:
+                                    Number(row[11]) || null,
                                 lab_units: labUnits,
-                                lecture_unt: lectureUnits,
+                                lecture_units: lectureUnits,
                                 total_units: labUnits + lectureUnits,
-                                tuition_per_unit: row[15] || null,
-                                program_fee: row[16] || null,
+                                tuition_per_unit: Number(row[15]) || null,
+                                program_fee: Number(row[16]) || null,
                                 program_type: categories[sheetIndex],
                                 data_date: currentDate,
-                                new_students_freshmen_male: row[17] || null,
-                                new_students_freshmen_female: row[18] || null,
-                                "1st_year_male": row[19] || null,
-                                "1st_year_female": row[20] || null,
-                                "2nd_year_male": row[21] || null,
-                                "2nd_year_female": row[22] || null,
-                                "3rd_year_male": row[23] || null,
-                                "3rd_year_female": row[24] || null,
-                                "4th_year_male": row[25] || null,
-                                "4th_year_female": row[26] || null,
-                                "5th_year_male": row[27] || null,
-                                "5th_year_female": row[28] || null,
-                                "6th_year_male": row[29] || null,
-                                "6th_year_f-8th_year_female": row[30] || null,
-                                "7th_year_male": row[31] || null,
-                                "7th_year_female": row[32] || null,
+                                new_students_freshmen_male:
+                                    Number(row[17]) || null,
+                                new_students_freshmen_female:
+                                    Number(row[18]) || null,
+                                "1st_year_male": Number(row[19]) || null,
+                                "1st_year_female": Number(row[20]) || null,
+                                "2nd_year_male": Number(row[21]) || null,
+                                "2nd_year_female": Number(row[22]) || null,
+                                "3rd_year_male": Number(row[23]) || null,
+                                "3rd_year_female": Number(row[24]) || null,
+                                "4th_year_male": Number(row[25]) || null,
+                                "4th_year_female": Number(row[26]) || null,
+                                "5th_year_male": Number(row[27]) || null,
+                                "5th_year_female": Number(row[28]) || null,
+                                "6th_year_male": Number(row[29]) || null,
+                                "6th_year_female": Number(row[30]) || null,
+                                "7th_year_male": Number(row[31]) || null,
+                                "7th_year_female": Number(row[32]) || null,
                                 subtotal_male: maleTotal,
                                 subtotal_female: femaleTotal,
                                 grand_total: maleTotal + femaleTotal,
-                                lecture_units_actual: row[36] || null,
-                                laboratory_units_actual: row[37] || null,
+                                lecture_units_actual: Number(row[36]) || null,
+                                laboratory_units_actual:
+                                    Number(row[37]) || null,
                                 total_units_actual:
-                                    (row[36] || null) + (row[37] || null),
-                                graduates_males: row[39] || null,
-                                graduates_females: row[40] || null,
+                                    (Number(row[36]) || 0) +
+                                    (Number(row[37]) || 0),
+                                graduates_males: Number(row[39]) || null,
+                                graduates_females: Number(row[40]) || null,
                                 graduates_total:
-                                    (row[39] || null) + (row[40] || null),
+                                    (Number(row[39]) || 0) +
+                                    (Number(row[40]) || 0),
                                 externally_funded_merit_scholars:
-                                    row[41] || null,
-                                internally_funded_grantees: row[42] || null,
-                                suc_funded_grantees: row[43] || null,
+                                    Number(row[41]) || null,
+                                internally_funded_grantees:
+                                    Number(row[42]) || null,
+                                suc_funded_grantees: Number(row[43]) || null,
                             };
                         })
                         .filter((data) => !!data.program_name);
@@ -291,16 +257,13 @@ const CurricularProgram = () => {
                         `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
                     );
                     allParsedData = [...allParsedData, ...parsedData];
-                    console.log(`Sheet ${sheetName}: Parsed data:`, parsedData);
                 }
 
                 if (allParsedData.length === 0) {
-                    setSnackbar({
-                        open: true,
-                        message:
-                            "No valid programs with a program name found in any sheet of the Excel file.",
-                        severity: "warning",
-                    });
+                    AlertComponent.showAlert(
+                        "No valid programs with a program name found in any sheet of the Excel file.",
+                        "warning"
+                    );
                     setIsUploading(false);
                     setOpenUploadDialog(false);
                     setSelectedFile(null);
@@ -330,23 +293,19 @@ const CurricularProgram = () => {
                     setPrograms(createdPrograms);
                     updateProgress(100);
                     fetchPrograms();
-                    setSnackbar({
-                        open: true,
-                        message: "Data imported successfully!",
-                        severity: "success",
-                    });
+                    AlertComponent.showAlert(
+                        "Curricular data imported successfully!",
+                        "success"
+                    );
                 } catch (error) {
                     console.error(
-                        "Error importing data:",
+                        "Error importing curricular data:",
                         error.response?.data
                     );
-                    hideLoading();
-                    setSnackbar({
-                        open: true,
-                        message:
-                            "Error importing data. Check the console for details.",
-                        severity: "error",
-                    });
+                    AlertComponent.showAlert(
+                        "Error importing curricular data. Check the console for details.",
+                        "error"
+                    );
                 } finally {
                     setIsUploading(false);
                     setOpenUploadDialog(false);
@@ -356,12 +315,10 @@ const CurricularProgram = () => {
                 }
             } catch (error) {
                 console.error("Error processing file:", error.message);
-                setSnackbar({
-                    open: true,
-                    message:
-                        "Error processing file. Check the console for details.",
-                    severity: "error",
-                });
+                AlertComponent.showAlert(
+                    "Error processing file. Check the console for details.",
+                    "error"
+                );
                 setIsUploading(false);
                 setOpenUploadDialog(false);
                 setSelectedFile(null);
@@ -394,7 +351,9 @@ const CurricularProgram = () => {
 
             const programsByCategory = categories.reduce((acc, category) => {
                 acc[category] = programs.filter(
-                    (program) => program.program_type === category
+                    (program) =>
+                        program.program_type?.toUpperCase() ===
+                        category.toUpperCase()
                 );
                 return acc;
             }, {});
@@ -429,7 +388,7 @@ const CurricularProgram = () => {
                     row.getCell(12).value =
                         program.program_normal_length_in_years || 0;
                     row.getCell(13).value = program.lab_units || 0;
-                    row.getCell(14).value = program.lecture_unt || 0;
+                    row.getCell(14).value = program.lecture_units || 0;
                     row.getCell(15).value = program.total_units || 0;
                     row.getCell(16).value = program.tuition_per_unit || 0;
                     row.getCell(17).value = program.program_fee || 0;
@@ -484,17 +443,16 @@ const CurricularProgram = () => {
             a.click();
             window.URL.revokeObjectURL(url);
             updateProgress(100);
+            AlertComponent.showAlert("Data exported successfully!", "success");
         } catch (error) {
             console.error("Error exporting data:", error);
-            alert("Error exporting data. Please try again.");
+            AlertComponent.showAlert(
+                "Error exporting data. Please try again.",
+                "error"
+            );
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleSnackbarClose = (event, reason) => {
-        if (reason === "clickaway") return;
-        setSnackbar((prev) => ({ ...prev, open: false }));
     };
 
     const referenceData = {
@@ -526,475 +484,317 @@ const CurricularProgram = () => {
     }
 
     return (
-        <Box
-            sx={(theme) => ({
-                p: 3,
-                borderRadius: 1,
-                display: "flex",
-                flexDirection: "column",
-                height: { xs: "100vh", sm: "100vh", md: "100vh" }, // fixed height for xs and sm views
-                maxWidth: { xs: "100vw", sm: "95vw", md: "98vw" },
-                overflowX: "auto",
-                overflowY: "auto",
-                [theme.breakpoints.up("md")]: {
-                    overflowY: "hidden",
-                },
-            })}
-        >
-            <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ mb: 1 }}>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/dashboard")}
-                >
-                    Dashboard
-                </Link>
-                <Link
-                    underline="hover"
-                    color="inherit"
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => navigate("/hei-admin/institutions")}
-                >
-                    Institution Management
-                </Link>
-                <Typography color="textPrimary">Curricular Program</Typography>
-            </Breadcrumbs>
-
-            <Box
-                sx={{
-                    p: { xs: 1, md: 2 },
-                    borderBottom: 1,
-                    borderColor: "divider",
-                    bgcolor: "grey.50",
-                    mb: 1,
-                    borderRadius: 1,
-                }}
-            >
-                <Grid container spacing={2}>
-                    <Grid size={{ xs: 6, md: 4 }}>
-                        <TextField
-                            fullWidth
-                            size="small"
-                            label="Search"
-                            variant="outlined"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search..."
-                            sx={{
-                                "& .MuiInputBase-root": {
-                                    height: 40,
-                                },
-                            }}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 6, md: 2 }}>
-                        <FormControl variant="outlined" size="small" fullWidth>
-                            <InputLabel>Year</InputLabel>
-                            <Select
-                                name="data_date"
-                                value={filters.data_date}
-                                onChange={handleFilterChange}
-                                label="Year"
-                                sx={{
-                                    "& .MuiInputBase-root": {
-                                        height: 40,
-                                    },
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>All</em>
-                                </MenuItem>
-                                {[...new Set(programs.map((p) => p.data_date))]
-                                    .filter((date) => date)
-                                    .sort()
-                                    .map((date) => (
-                                        <MenuItem key={date} value={date}>
-                                            {date}
-                                        </MenuItem>
-                                    ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid size={{ xs: 6, md: 2 }}>
-                        <FormControl variant="outlined" size="small" fullWidth>
-                            <InputLabel>Category</InputLabel>
-                            <Select
-                                name="category"
-                                value={filters.category}
-                                onChange={handleFilterChange}
-                                label="Category"
-                                sx={{
-                                    "& .MuiInputBase-root": {
-                                        height: 40,
-                                    },
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>All</em>
-                                </MenuItem>
-                                {[...new Set(programs.map((p) => p.category))]
-                                    .filter((category) => category)
-                                    .sort()
-                                    .map((category) => (
-                                        <MenuItem
-                                            key={category}
-                                            value={category}
-                                        >
-                                            {category}
-                                        </MenuItem>
-                                    ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid size={{ xs: 6, md: 4 }}>
-                        <Box gap={2} display="flex" justifyContent="flex-end">
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                startIcon={<UploadFileIcon />}
-                                onClick={() => setOpenUploadDialog(true)}
-                                disabled={isUploading}
-                            >
-                                {isSmallScreen
-                                    ? null
-                                    : isUploading
-                                    ? "Uploading..."
-                                    : "Import Form B"}
-                            </Button>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<DownloadIcon />}
-                                onClick={handleExportToExcel}
-                                disabled={isUploading}
-                            >
-                                {isSmallScreen ? null : "Export to Excel"}
-                            </Button>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>
-
-            <Dialog
-                open={openUploadDialog}
-                onClose={() => setOpenUploadDialog(false)}
-                PaperProps={{
-                    sx: {
-                        borderRadius: 2,
-                        maxWidth: 500,
-                    },
-                }}
-            >
-                <DialogTitle
-                    sx={{
-                        bgcolor: alpha(theme.palette.primary.main, 0.05),
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        px: 3,
-                        py: 2,
-                    }}
-                >
-                    <Typography fontWeight={600}>
-                        Upload Institution Form B
-                    </Typography>
-                </DialogTitle>
-                <DialogContent sx={{ p: 3 }}>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 3 }}
-                    >
-                        Please upload the Form B Excel document.
-                    </Typography>
-
-                    <Box
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            if (
-                                e.dataTransfer.files &&
-                                e.dataTransfer.files[0]
-                            ) {
-                                setSelectedFile(e.dataTransfer.files[0]);
-                            }
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        sx={{
-                            p: 1.5,
-                            border: `1px dashed ${theme.palette.primary.main}`,
-                            borderRadius: 1.5,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            cursor: "pointer",
-                            bgcolor: "background.paper",
-                        }}
-                        onClick={() =>
-                            document.getElementById("upload-input").click()
-                        }
-                    >
-                        <UploadIcon color="primary" sx={{ fontSize: 28 }} />
-                        <Typography>
-                            Drag & drop file or click to browse
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                            Supported formats: .xlsx, .xls
-                        </Typography>
-                        <input
-                            id="upload-input"
-                            type="file"
-                            hidden
-                            accept=".xlsx, .xls"
-                            onChange={(e) => setSelectedFile(e.target.files[0])}
-                        />
-                    </Box>
-
-                    {selectedFile && (
-                        <Paper
-                            variant="outlined"
-                            sx={{
-                                mt: 2,
-                                p: 1.5,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                borderRadius: 1.5,
-                            }}
+        <div className="p-6 flex flex-col h-screen max-w-full sm:max-w-[95vw] md:max-w-[98vw] overflow-x-auto overflow-y-auto md:overflow-y-hidden">
+            {/* Breadcrumbs */}
+            <nav aria-label="breadcrumb" className="mb-4">
+                <ol className="flex space-x-2 text-gray-600">
+                    <li>
+                        <a
+                            href="#"
+                            onClick={() => navigate("/hei-admin/dashboard")}
+                            className="hover:underline"
                         >
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <DownloadIcon color="primary" sx={{ mr: 1 }} />
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        noWrap
-                                        sx={{ maxWidth: 200 }}
-                                    >
-                                        {selectedFile.name}
-                                    </Typography>
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                    >
-                                        {(selectedFile.size / 1024).toFixed(2)}{" "}
-                                        KB
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <IconButton
-                                size="small"
-                                onClick={() => setSelectedFile(null)}
-                                sx={{
-                                    color: theme.palette.error.main,
-                                    "&:hover": {
-                                        bgcolor: alpha(
-                                            theme.palette.error.main,
-                                            0.1
-                                        ),
-                                    },
-                                }}
-                            >
-                                ×
-                            </IconButton>
-                        </Paper>
-                    )}
-                </DialogContent>
-                <DialogActions
-                    sx={{
-                        px: 3,
-                        py: 2,
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                    }}
-                >
-                    <Button
-                        onClick={() => {
-                            setOpenUploadDialog(false);
-                            setSelectedFile(null);
-                        }}
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            color: theme.palette.text.primary,
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleFileUpload}
-                        variant="contained"
-                        disabled={!selectedFile || isUploading}
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            borderRadius: 1.5,
-                            px: 3,
-                        }}
-                    >
-                        Upload
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li className="text-gray-400">›</li>
+                    <li>
+                        <a
+                            href="#"
+                            onClick={() =>
+                                navigate("/hei-admin/institutions")
+                            }
+                            className="hover:underline"
+                        >
+                            Institution Management
+                        </a>
+                    </li>
+                    <li className="text-gray-400">›</li>
+                    <li className="text-gray-900">Curricular Program</li>
+                </ol>
+            </nav>
 
+            {/* Header Section */}
+            <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 border border-gray-200 rounded-md">
+                <h1 className="text-xl font-semibold text-gray-800">
+                    Curricular Programs
+                </h1>
+                <div className="flex space-x-2">
+                    {/* Import Button */}
+                    <CHEDButton
+                        onClick={() => setOpenUploadDialog(true)}
+                        icon={UploadIcon}
+                        variant="primary"
+                        size="md"
+                        disabled={isUploading}
+                    >
+                        {isUploading ? "Uploading..." : "Import Form B"}
+                    </CHEDButton>
+
+                    {/* Export Button */}
+                    <CHEDButton
+                        onClick={handleExportToExcel}
+                        icon={Download}
+                        variant="secondary"
+                        size="md"
+                        disabled={isUploading}
+                    >
+                        Export Data
+                    </CHEDButton>
+                </div>
+            </div>
+
+            {/* Search Box */}
+            <div className="relative w-full md:w-[60vw] lg:w-[70vw] max-w-3xl mb-4">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search size={16} className="text-gray-400" />
+                </div>
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    placeholder="Search by program name..."
+                />
+                {searchTerm && (
+                    <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                        <X
+                            size={16}
+                            className="text-gray-400 hover:text-gray-600"
+                        />
+                    </button>
+                )}
+            </div>
+
+            {/* Program Tables Component */}
             <ProgramTables
                 programs={filteredPrograms}
                 loading={loading}
                 fetchPrograms={fetchPrograms}
-            />
-            <Tabs
-                value={mainTabValue}
-                onChange={(event, newValue) => setMainTabValue(newValue)}
-                variant="scrollable"
-                scrollButtons="auto"
-                sx={{
-                    "& .MuiTab-root": {
-                        textTransform: "none",
-                        fontWeight: 500,
-                        fontSize: "0.85rem",
-                        padding: "8px 12px",
-                        minWidth: "auto",
-                        color: theme.palette.text.secondary,
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                            color: theme.palette.primary.main,
-                            backgroundColor: "rgba(0, 0, 0, 0.04)",
-                        },
-                    },
-                    "& .Mui-selected": {
-                        color: `${theme.palette.primary.main} !important`,
-                        fontWeight: 600,
-                    },
-                    "& .MuiTabs-indicator": {
-                        backgroundColor: theme.palette.primary.main,
-                        height: 3,
-                    },
-                    "& .MuiTabs-scrollButtons": {
-                        color: theme.palette.text.secondary,
-                        "&.Mui-disabled": {
-                            opacity: 0.3,
-                        },
-                    },
+                summary={{
+                    currentCount: filteredPrograms.length,
+                    totalCount: totalRows,
+                    searchTerm,
                 }}
-            >
-                {categories.map((category) => (
-                    <Tooltip
+            />
+
+            {/* Tabs */}
+            <div className="flex overflow-x-auto border-b border-gray-300 mb-4 hide-scrollbar">
+                {categories.map((category, index) => (
+                    <button
                         key={category}
+                        onClick={() => setMainTabValue(index)}
                         title={`View programs for ${category}`}
-                        arrow
+                        className={`flex-1 min-w-[120px] py-3 px-4 text-sm font-medium text-center transition-all relative ${
+                            mainTabValue === index
+                                ? "text-blue-700 bg-blue-50/50"
+                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                        }`}
+                        aria-selected={mainTabValue === index}
+                        role="tab"
+                        aria-controls={`tab-panel-${index}`}
+                        id={`tab-${index}`}
                     >
-                        <Tab label={category} />
-                    </Tooltip>
+                        {category}
+                        {mainTabValue === index && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700"></div>
+                        )}
+                    </button>
                 ))}
-            </Tabs>
+            </div>
 
-            <Fab
-                color="primary"
-                aria-label="show reference"
-                size="small"
+            {/* Info Button */}
+            <button
                 onClick={() => setOpenReferenceDialog(true)}
-                sx={{
-                    position: "fixed", // Use fixed to keep Fab in viewport
-                    bottom: 16,
-                    right: 16,
-                    zIndex: 1000, // Ensure Fab is above other content
-                }}
+                className="fixed bottom-4 right-4 z-50 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                aria-label="Show reference table"
             >
-                <InfoIcon />
-            </Fab>
+                <Info className="w-5 h-5" />
+            </button>
 
-            <Dialog
-                open={openReferenceDialog}
-                onClose={() => setOpenReferenceDialog(false)}
-                maxWidth="md"
-                fullWidth
-            >
-                <DialogTitle>
-                    Reference Table
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setOpenReferenceDialog(false)}
-                        sx={{
-                            position: "absolute",
-                            right: 8,
-                            top: 8,
-                            color: (theme) => theme.palette.grey[500],
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    Authority to Offer Program
-                                </TableCell>
-                                <TableCell>
-                                    Is Thesis/Dissertation Required?
-                                </TableCell>
-                                <TableCell>Program Status</TableCell>
-                                <TableCell>Program Calendar</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {referenceData.authority.map((item, index) => (
-                                <TableRow key={`authority-${index}`}>
-                                    <TableCell>{`${item.code} - ${item.label}`}</TableCell>
-                                    {index <
-                                    referenceData.thesisDissertation.length ? (
-                                        <TableCell>
-                                            {`${referenceData.thesisDissertation[index].code} - ${referenceData.thesisDissertation[index].label}`}
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell>-</TableCell>
-                                    )}
-                                    {index <
-                                    referenceData.programStatus.length ? (
-                                        <TableCell>
-                                            {`${referenceData.programStatus[index].code} - ${referenceData.programStatus[index].label}`}
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell>-</TableCell>
-                                    )}
-                                    {index < referenceData.calendar.length ? (
-                                        <TableCell>
-                                            {`${referenceData.calendar[index].code} - ${referenceData.calendar[index].label}`}
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell>-</TableCell>
-                                    )}
-                                </TableRow>
-                            ))}
-                            {referenceData.calendar.length >
-                                referenceData.authority.length &&
-                                referenceData.calendar
-                                    .slice(referenceData.authority.length)
-                                    .map((item, index) => (
-                                        <TableRow
-                                            key={`calendar-extra-${index}`}
-                                        >
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>{`${item.code} - ${item.label}`}</TableCell>
-                                        </TableRow>
-                                    ))}
-                        </TableBody>
-                    </Table>
-                </DialogContent>
-            </Dialog>
-            <CustomSnackbar
-                open={snackbar.open}
-                message={snackbar.message}
-                severity={snackbar.severity}
-                onClose={handleSnackbarClose}
-            />
-        </Box>
+            {/* Upload Dialog */}
+            {openUploadDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg max-w-md w-full">
+                        <div className="bg-blue-50 border-b border-gray-200 px-6 py-4">
+                            <h2 className="text-lg font-semibold">
+                                Upload Institution Form B
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-gray-500 mb-4">
+                                Please upload the Form B Excel document.
+                            </p>
+                            <div
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    if (
+                                        e.dataTransfer.files &&
+                                        e.dataTransfer.files[0]
+                                    ) {
+                                        setSelectedFile(
+                                            e.dataTransfer.files[0]
+                                        );
+                                    }
+                                }}
+                                onDragOver={(e) => e.preventDefault()}
+                                onClick={() =>
+                                    document
+                                        .getElementById("upload-input")
+                                        .click()
+                                }
+                                className="p-4 border-2 border-dashed border-blue-600 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer bg-white"
+                            >
+                                <Upload className="w-7 h-7 text-blue-600" />
+                                <p className="text-sm">
+                                    Drag & drop file or click to browse
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    Supported formats: .xlsx, .xls
+                                </p>
+                                <input
+                                    id="upload-input"
+                                    type="file"
+                                    hidden
+                                    accept=".xlsx, .xls"
+                                    onChange={(e) =>
+                                        setSelectedFile(e.target.files[0])
+                                    }
+                                />
+                            </div>
+                            {selectedFile && (
+                                <div className="mt-4 p-4 border border-gray-200 rounded-lg flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <Download className="w-5 h-5 text-blue-600 mr-2" />
+                                        <div>
+                                            <p className="text-sm max-w-[200px] truncate">
+                                                {selectedFile.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {(
+                                                    selectedFile.size / 1024
+                                                ).toFixed(2)}{" "}
+                                                KB
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedFile(null)}
+                                        className="text-red-600 hover:bg-red-100 rounded-full p-1"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex justify-end gap-2 p-4 border-t border-gray-200">
+                            <button
+                                onClick={() => setOpenUploadDialog(false)}
+                                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCurricularUpload}
+                                disabled={!selectedFile || isUploading}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                            >
+                                Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reference Dialog */}
+            {openReferenceDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center border-b border-gray-200 px-6 py-4">
+                            <h2 className="text-lg font-semibold">
+                                Reference Table
+                            </h2>
+                            <button
+                                onClick={() => setOpenReferenceDialog(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full bg-white border border-gray-200">
+                                    <thead>
+                                        <tr className="bg-gray-50">
+                                            <th className="py-2 px-4 border-b border-r border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Authority to Offer Program
+                                            </th>
+                                            <th className="py-2 px-4 border-b border-r border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Is Thesis/Dissertation Required?
+                                            </th>
+                                            <th className="py-2 px-4 border-b border-r border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Program Status
+                                            </th>
+                                            <th className="py-2 px-4 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Program Calendar
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {referenceData.authority.map(
+                                            (item, index) => (
+                                                <tr key={`authority-${index}`}>
+                                                    <td className="py-2 px-4 border-r border-gray-200 text-sm text-gray-900">
+                                                        {`${item.code} - ${item.label}`}
+                                                    </td>
+                                                    <td className="py-2 px-4 border-r border-gray-200 text-sm text-gray-900">
+                                                        {index <
+                                                        referenceData
+                                                            .thesisDissertation
+                                                            .length
+                                                            ? `${referenceData.thesisDissertation[index].code} - ${referenceData.thesisDissertation[index].label}`
+                                                            : "-"}
+                                                    </td>
+                                                    <td className="py-2 px-4 border-r border-gray-200 text-sm text-gray-900">
+                                                        {index <
+                                                        referenceData
+                                                            .programStatus
+                                                            .length
+                                                            ? `${referenceData.programStatus[index].code} - ${referenceData.programStatus[index].label}`
+                                                            : "-"}
+                                                    </td>
+                                                    <td className="py-2 px-4 text-sm text-gray-900">
+                                                        {index <
+                                                        referenceData.calendar
+                                                            .length
+                                                            ? `${referenceData.calendar[index].code} - ${referenceData.calendar[index].label}`
+                                                            : "-"}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CSS */}
+            <style>{`
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
+        </div>
     );
 };
 
