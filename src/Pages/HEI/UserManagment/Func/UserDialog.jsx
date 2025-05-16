@@ -1,24 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import {
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Button,
-    Typography,
-    Divider,
-    TextField,
-    CircularProgress,
-    Select,
-    MenuItem,
-    InputLabel,
-    FormControl,
-    InputAdornment,
-    Box,
-} from "@mui/material";
-import config from "../../../../utils/config";
 import PropTypes from "prop-types";
+import AlertComponent from "../../../../Components/AlertComponent";
+import config from "../../../../utils/config";
 import axios from "axios";
 
 const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
@@ -26,15 +9,11 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("HEI Staff");
     const [status, setStatus] = useState("Active");
-    const [institutionId, setInstitutionId] = useState("");
     const [password, setPassword] = useState("");
-    const [profileImage, setProfileImage] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Get the current user's details from localStorage
     const currentUser = JSON.parse(localStorage.getItem("user")) || {};
-    const isSuperAdmin = currentUser.role === "Super Admin";
     const heiAdminInstitutionId = currentUser.institution_id;
 
     useEffect(() => {
@@ -43,30 +22,25 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
             setEmail(editingUser.email || "");
             setRole(editingUser.role || "HEI Staff");
             setStatus(editingUser.status || "Active");
-            setInstitutionId(
-                editingUser.institution_id ||
-                    (isSuperAdmin ? "" : heiAdminInstitutionId)
-            );
-            setProfileImage(editingUser.profile_image || "");
             setPassword("");
         } else {
             setName("");
             setEmail("");
             setRole("HEI Staff");
             setStatus("Active");
-            setInstitutionId(isSuperAdmin ? "" : heiAdminInstitutionId || "");
             setPassword("");
-            setProfileImage("");
         }
-    }, [editingUser, heiAdminInstitutionId, isSuperAdmin]);
+    }, [editingUser]);
 
     const handleSave = async () => {
         setLoading(true);
         setError("");
 
-        // Client-side password validation
         if (!editingUser && (!password || password.length < 8)) {
-            setError("Password is required and must be at least 8 characters.");
+            AlertComponent.showAlert(
+                "Password is required and must be at least 8 characters.",
+                "error"
+            );
             setLoading(false);
             return;
         }
@@ -76,9 +50,8 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
             email,
             role,
             status,
-            institution_id: role === "Super Admin" ? null : institutionId,
+            institution_id: heiAdminInstitutionId,
             ...(password && !editingUser ? { password } : {}),
-            ...(profileImage ? { profile_image: profileImage } : {}),
         };
 
         try {
@@ -89,18 +62,19 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
                     userData,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                AlertComponent.showAlert("User updated successfully!", "success");
             } else {
                 await axios.post(`${config.API_URL}/users`, userData, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
+                AlertComponent.showAlert("User created successfully!", "success");
             }
             onUserUpdated();
             onClose();
         } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                    err.message ||
-                    "Error saving user data"
+            AlertComponent.showAlert(
+                err.response?.data?.message || "Error saving user data",
+                "error"
             );
         } finally {
             setLoading(false);
@@ -112,139 +86,126 @@ const UserDialog = ({ openDialog, onClose, editingUser, onUserUpdated }) => {
         setEmail("");
         setRole("HEI Staff");
         setStatus("Active");
-        setInstitutionId(isSuperAdmin ? "" : heiAdminInstitutionId || "");
         setPassword("");
-        setProfileImage("");
         setError("");
         onClose();
     };
 
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfileImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
     return (
-        <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ pb: 1 }}>
-                <Typography variant="h6" component="div">
-                    {editingUser ? "Edit User" : "Add New User"}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    {editingUser
-                        ? "Modify user details"
-                        : "Create a new user account"}
-                </Typography>
-            </DialogTitle>
-            <Divider />
-            <DialogContent sx={{ pt: 3 }}>
-                {error && (
-                    <Typography color="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Typography>
-                )}
-                <TextField
-                    label="Name"
-                    variant="outlined"
-                    fullWidth
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    sx={{ mb: 2 }}
-                />
-                <TextField
-                    label="Email"
-                    variant="outlined"
-                    fullWidth
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    sx={{ mb: 2 }}
-                />
-                {!editingUser && (
-                    <TextField
-                        label="Password"
-                        variant="outlined"
-                        fullWidth
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        sx={{ mb: 2 }}
-                        error={password && password.length < 8}
-                        helperText={
-                            password && password.length < 8
-                                ? "Password must be at least 8 characters"
-                                : ""
-                        }
-                    />
-                )}
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        label="Status"
-                    >
-                        <MenuItem value="Active">Active</MenuItem>
-                        <MenuItem value="Inactive">Inactive</MenuItem>
-                        <MenuItem value="Suspended">Suspended</MenuItem>
-                    </Select>
-                </FormControl>
-                <TextField
-                    type="file"
-                    variant="outlined"
-                    fullWidth
-                    onChange={handleImageUpload}
-                    sx={{ mb: 2 }}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">📷</InputAdornment>
-                        ),
-                    }}
-                    inputProps={{ accept: "image/*" }}
-                />
-                {profileImage && (
-                    <Box sx={{ mt: 2, textAlign: "center" }}>
-                        <img
-                            src={profileImage}
-                            alt="Profile"
-                            style={{
-                                width: 100,
-                                height: 100,
-                                objectFit: "cover",
-                                borderRadius: "50%",
-                            }}
-                        />
-                    </Box>
-                )}
-            </DialogContent>
-            <DialogActions sx={{ p: 2.5, pt: 1.5 }}>
-                <Button onClick={handleClose} disabled={loading}>
-                    Cancel
-                </Button>
-                <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={
-                        loading ||
-                        (!editingUser && (!password || password.length < 8)) ||
-                        (role !== "Super Admin" && !institutionId)
-                    }
-                >
-                    {loading ? (
-                        <CircularProgress size={24} />
-                    ) : editingUser ? (
-                        "Save Changes"
-                    ) : (
-                        "Create User"
-                    )}
-                </Button>
-            </DialogActions>
-        </Dialog>
+        <>
+            {openDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+                        {/* Header */}
+                        <div className="bg-blue-100 px-4 py-3 flex justify-between items-center">
+                            <h3 className="text-lg font-medium text-gray-900">
+                                {editingUser ? "Edit User" : "Add New User"}
+                            </h3>
+                            <button
+                                type="button"
+                                className="text-gray-500 hover:text-gray-700 focus:outline-none rounded-md"
+                                onClick={handleClose}
+                                aria-label="Close"
+                            >
+                                <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-4">
+                            {error && (
+                                <div className="text-red-500 text-sm">
+                                    {error}
+                                </div>
+                            )}
+                            <div>
+                                <label
+                                    htmlFor="name"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Name
+                                </label>
+                                <input
+                                    id="name"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="email"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Email
+                                </label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                />
+                            </div>
+                            {!editingUser && (
+                                <div>
+                                    <label
+                                        htmlFor="password"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Password
+                                    </label>
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
+                                </div>
+                            )}
+
+                           
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                            <button
+                                type="button"
+                                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                onClick={handleClose}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                onClick={handleSave}
+                                disabled={loading}
+                            >
+                                {loading ? "Saving..." : "Save"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 
@@ -258,8 +219,6 @@ UserDialog.propTypes = {
         email: PropTypes.string,
         role: PropTypes.string,
         status: PropTypes.string,
-        institution_id: PropTypes.number,
-        profile_image: PropTypes.string,
     }),
 };
 

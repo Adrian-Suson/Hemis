@@ -3,18 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes; // added import
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Campus extends Model
 {
-    use SoftDeletes; // added soft delete support
+    use SoftDeletes;
+
+    protected $table = 'campuses';
 
     protected $fillable = [
         'suc_name',
         'campus_type',
         'institutional_code',
-        'region',                   // updated field name
-        'province_municipality',    // combined field for province and municipality
+        'region',
+        'province_municipality',
         'year_first_operation',
         'land_area_hectares',
         'distance_from_main',
@@ -24,13 +26,24 @@ class Campus extends Model
         'former_name',
         'latitude_coordinates',
         'longitude_coordinates',
-        'institution_id',
         'report_year',
+        'institution_uuid',
     ];
 
-    // Relationship with Institution
+    protected $casts = [
+        'land_area_hectares' => 'decimal:2',
+        'distance_from_main' => 'decimal:2',
+        'latitude_coordinates' => 'decimal:6',
+        'longitude_coordinates' => 'decimal:6',
+    ];
+
     public function institution()
     {
-        return $this->belongsTo(Institution::class);
+        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+    }
+
+    public function reportYear()
+    {
+        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
     }
 }

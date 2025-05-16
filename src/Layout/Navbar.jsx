@@ -69,10 +69,10 @@ const Navbar = () => {
                 },
                 {
                     text: "Institutions",
-                    path: "/hei-admin/institutions",
+                    path: "/hei-staff/institutions",
                     icon: Building,
                 },
-            ],
+            ], // Added "Institutions" back for HEI Staff
         };
         return items[role] || [];
     }, [user]);
@@ -331,26 +331,28 @@ const Navbar = () => {
                                             </button>
 
                                             {/* User Management or Staff Management */}
-                                            <button
-                                                onClick={() => {
-                                                    setActiveDropdown(null);
-                                                    handleNavigation(
-                                                        user.role ===
-                                                            "HEI Admin"
-                                                            ? "/hei-admin/staff-management"
-                                                            : "/super-admin/user-management"
-                                                    );
-                                                }}
-                                                className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                                            >
-                                                <UserPlus
-                                                    size={16}
-                                                    className="mr-2 text-[#0038A8]"
-                                                />
-                                                {user.role === "HEI Admin"
-                                                    ? "Staff Management"
-                                                    : "User Management"}
-                                            </button>
+                                            {user.role !== "HEI Staff" && ( // Hide User Management for HEI Staff
+                                                <button
+                                                    onClick={() => {
+                                                        setActiveDropdown(null);
+                                                        handleNavigation(
+                                                            user.role ===
+                                                                "HEI Admin"
+                                                                ? "/hei-admin/staff-management"
+                                                                : "/super-admin/user-management"
+                                                        );
+                                                    }}
+                                                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                                                >
+                                                    <UserPlus
+                                                        size={16}
+                                                        className="mr-2 text-[#0038A8]"
+                                                    />
+                                                    {user.role === "HEI Admin"
+                                                        ? "Staff Management"
+                                                        : "User Management"}
+                                                </button>
+                                            )}
 
                                             <div className="border-t border-gray-100 mt-1 pt-1">
                                                 <button

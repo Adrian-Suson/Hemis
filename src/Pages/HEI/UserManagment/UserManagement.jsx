@@ -1,70 +1,42 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import {
-    Box,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    IconButton,
-    Button,
-    TextField,
-    Select,
-    MenuItem,
-    InputAdornment,
-    Tooltip,
-    Chip,
-    TablePagination,
-    Alert,
-    CircularProgress,
-} from "@mui/material";
-import { Edit as EditIcon } from "@mui/icons-material";
 import config from "../../../utils/config";
 import UserDialog from "./Func/UserDialog";
-import SearchIcon from "@mui/icons-material/Search";
-import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import PersonIcon from "@mui/icons-material/Person";
-import PersonOffIcon from "@mui/icons-material/PersonOff";
+import Pagination from "../../../Components/Pagination";
+import {
+    FaEdit,
+    FaUserPlus,
+    FaSync,
+    FaUser,
+    FaUserSlash,
+} from "react-icons/fa";
+import CHEDButton from "../../../Components/CHEDButton";
+import AlertComponent from "../../../Components/AlertComponent";
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("Active");
     const [openDialog, setOpenDialog] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    const currentUser = JSON.parse(localStorage.getItem("user")); // Get the current logged-in user
 
     const fetchUsers = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            const storedUser = JSON.parse(localStorage.getItem("user"));
-            const institutionId = storedUser?.institution_id;
-
-            if (!institutionId) {
-                throw new Error(
-                    "No institution ID found for the current user."
-                );
-            }
-
             const response = await axios.get(`${config.API_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` },
-                params: { institution_id: institutionId }, // Pass institution_id as query parameter
             });
             setUsers(response.data);
-            console.log("Filtered users:", response.data); // Debug to verify filtered data
-        } catch (err) {
-            console.error("Error fetching users:", err);
-            setError(
-                "Failed to fetch users. Please ensure you are logged in and try again."
+        } catch {
+            AlertComponent.showAlert(
+                "Failed to fetch users. Please login again.",
+                "error"
             );
         } finally {
             setLoading(false);
@@ -92,304 +64,251 @@ const UserManagement = () => {
 
     const handleUserUpdated = () => {
         fetchUsers();
+        AlertComponent.showAlert("User updated successfully!", "success");
     };
 
-    const handleChangePage = (event, newPage) => setPage(newPage);
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
+    const handleDeactivateUser = (id) => {
+        AlertComponent.showConfirmation(
+            "Are you sure you want to deactivate this user?",
+            async () => {
+                const token = localStorage.getItem("token");
+                try {
+                    await axios.delete(`${config.API_URL}/users/${id}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    fetchUsers();
+                    AlertComponent.showAlert("User deactivated successfully!", "success");
+                } catch {
+                    AlertComponent.showAlert("Failed to deactivate user.", "error");
+                }
+            }
+        );
     };
 
-    const handleDeactivateUser = async (id) => {
-        const token = localStorage.getItem("token");
-        try {
-            await axios.delete(`${config.API_URL}/users/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            fetchUsers();
-        } catch {
-            setError("Failed to deactivate user.");
-        }
-    };
-
-    const handleReactivateUser = async (id) => {
-        const token = localStorage.getItem("token");
-        try {
-            await axios.post(
-                `${config.API_URL}/users/${id}/reactivate`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            fetchUsers();
-        } catch {
-            setError("Failed to reactivate user.");
-        }
+    const handleReactivateUser = (id) => {
+        AlertComponent.showConfirmation(
+            "Are you sure you want to reactivate this user?",
+            async () => {
+                const token = localStorage.getItem("token");
+                try {
+                    await axios.post(
+                        `${config.API_URL}/users/${id}/reactivate`,
+                        {},
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    fetchUsers();
+                    AlertComponent.showAlert("User reactivated successfully!", "success");
+                } catch {
+                    AlertComponent.showAlert("Failed to reactivate user.", "error");
+                }
+            }
+        );
     };
 
     return (
-        <Box sx={{ p: 3, backgroundColor: "#f5f7fa", minHeight: "100vh" }}>
-            {error && (
-                <Alert
-                    severity="error"
-                    sx={{ mb: 3, borderRadius: 1 }}
-                    onClose={() => setError("")}
-                >
-                    {error}
-                </Alert>
-            )}
-
+        <div className="min-h-screen bg-gray-100 p-6">
             {/* Actions Bar */}
-            <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-                <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
-                    <TextField
+            <div className="mb-4 bg-white shadow-md rounded-lg p-4">
+                <div className="flex flex-wrap gap-4 items-center">
+                    <input
+                        type="text"
                         placeholder="Search users..."
-                        variant="outlined"
-                        size="small"
                         value={searchTerm}
                         onChange={handleSearch}
-                        sx={{
-                            minWidth: "250px",
-                            bgcolor: "white",
-                            "& .MuiOutlinedInput-root": {
-                                "&:hover fieldset": {
-                                    borderColor: "primary.main",
-                                },
-                            },
-                        }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon color="action" />
-                                </InputAdornment>
-                            ),
-                        }}
+                        className="flex-grow min-w-64 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <Select
+                    <select
                         value={statusFilter}
                         onChange={handleFilterChange}
-                        size="small"
-                        sx={{ minWidth: "150px", bgcolor: "white" }}
-                        displayEmpty
+                        className="min-w-36 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <MenuItem value="All">All Status</MenuItem>
-                        <MenuItem value="Active">Active</MenuItem>
-                        <MenuItem value="Inactive">Inactive</MenuItem>
-                    </Select>
-                    <Box sx={{ flexGrow: 1 }} />
-                    <Tooltip title="Refresh list">
-                        <IconButton onClick={fetchUsers} size="small">
-                            <RefreshIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <Button
-                        variant="contained"
-                        startIcon={<PersonAddAlt1Icon />}
+                        <option value="All">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                    <div className="flex-grow"></div>
+                    <CHEDButton
+                        onClick={fetchUsers}
+                        icon={FaSync}
+                        variant="secondary"
+                        size="md"
+                        title="Refresh list"
+                    >
+                        Refresh
+                    </CHEDButton>
+                    <CHEDButton
                         onClick={() => setOpenDialog(true)}
-                        sx={{
-                            minWidth: "150px",
-                            boxShadow: 2,
-                            "&:hover": { boxShadow: 4 },
-                        }}
+                        icon={FaUserPlus}
+                        variant="primary"
+                        size="md"
                     >
                         Add User
-                    </Button>
-                </Box>
-            </Paper>
+                    </CHEDButton>
+                </div>
+            </div>
 
             {/* Users Table */}
-            <Paper
-                sx={{
-                    borderRadius: 2,
-                    overflow: "hidden",
-                    boxShadow: (theme) => theme.shadows[2],
-                }}
-            >
-                <TableContainer sx={{ maxHeight: "calc(100vh - 300px)" }}>
-                    <Table stickyHeader size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 600,
-                                        backgroundColor: "#f8fafc",
-                                        padding: "4px 8px",
-                                    }}
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                <div className="max-h-[50vh] overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     Name
-                                </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 600,
-                                        backgroundColor: "#f8fafc",
-                                        padding: "4px 8px",
-                                    }}
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     Role
-                                </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 600,
-                                        backgroundColor: "#f8fafc",
-                                        padding: "4px 8px",
-                                    }}
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     Email
-                                </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 600,
-                                        backgroundColor: "#f8fafc",
-                                        padding: "4px 8px",
-                                    }}
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     Institution
-                                </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 600,
-                                        backgroundColor: "#f8fafc",
-                                        padding: "4px 8px",
-                                    }}
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     Status
-                                </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: 600,
-                                        backgroundColor: "#f8fafc",
-                                        textAlign: "center",
-                                        padding: "4px 8px",
-                                    }}
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     Actions
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
                             {filteredUsers
                                 .slice(
                                     page * rowsPerPage,
                                     page * rowsPerPage + rowsPerPage
                                 )
                                 .map((user) => (
-                                    <TableRow key={user.id} hover>
-                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                    <tr
+                                        key={user.id}
+                                        className="hover:bg-gray-50"
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             {user.name}
-                                        </TableCell>
-                                        <TableCell sx={{ padding: "4px 8px" }}>
-                                            <Chip
-                                                label={user.role}
-                                                size="small"
-                                                color={
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                                     user.role === "Super Admin"
-                                                        ? "primary"
-                                                        : "default"
-                                                }
-                                                variant="outlined"
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-gray-100 text-gray-800"
+                                                }`}
+                                            >
+                                                {user.role}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             {user.email}
-                                        </TableCell>
-                                        <TableCell sx={{ padding: "4px 8px" }}>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             {user.institution
                                                 ? user.institution.name
                                                 : "N/A"}
-                                        </TableCell>
-                                        <TableCell sx={{ padding: "4px 8px" }}>
-                                            <Chip
-                                                label={user.status}
-                                                size="small"
-                                                color={
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                                     user.status === "Active"
-                                                        ? "success"
-                                                        : "error"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-red-100 text-red-800"
+                                                }`}
+                                            >
+                                                {user.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <button
+                                                onClick={() =>
+                                                    handleEditUser(user)
                                                 }
-                                            />
-                                        </TableCell>
-                                        <TableCell
-                                            align="center"
-                                            sx={{ padding: "4px 8px" }}
-                                        >
-                                            <Tooltip title="Edit user">
-                                                <Button
-                                                    size="small"
-                                                    color="primary"
-                                                    variant="contained"
-                                                    onClick={() =>
-                                                        handleEditUser(user)
-                                                    }
-                                                    sx={{ mr: 1 }}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </Button>
-                                            </Tooltip>
-                                            {user.status === "Active" ? (
-                                                <Tooltip title="Deactivate user">
-                                                    <Button
-                                                        size="small"
-                                                        color="error"
-                                                        variant="contained"
+                                                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mr-2"
+                                                title="Edit user"
+                                            >
+                                                <FaEdit />
+                                            </button>
+                                            {user.status === "Active" &&
+                                                currentUser.id !== user.id && (
+                                                    <button
                                                         onClick={() =>
                                                             handleDeactivateUser(
                                                                 user.id
                                                             )
                                                         }
+                                                        className="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                                        title="Deactivate user"
                                                     >
-                                                        <PersonOffIcon fontSize="small" />
-                                                    </Button>
-                                                </Tooltip>
-                                            ) : (
-                                                <Tooltip title="Reactivate user">
-                                                    <Button
-                                                        size="small"
-                                                        color="success"
-                                                        variant="contained"
-                                                        onClick={() =>
-                                                            handleReactivateUser(
-                                                                user.id
-                                                            )
-                                                        }
-                                                    >
-                                                        <PersonIcon fontSize="small" />
-                                                    </Button>
-                                                </Tooltip>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
+                                                        <FaUserSlash />
+                                                    </button>
+                                                )}
+                                            {user.status === "Inactive" && (
+                                                <button
+                                                    onClick={() =>
+                                                        handleReactivateUser(
+                                                            user.id
+                                                        )
+                                                    }
+                                                    className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                    title="Reactivate user"
+                                                >
+                                                        <FaUser />
+                                                    </button>
+                                                )}
+                                        </td>
+                                    </tr>
                                 ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                        </tbody>
+                    </table>
+                </div>
 
                 {filteredUsers.length === 0 && !loading && (
-                    <Box p={3} textAlign="center">
-                        <Typography color="text.secondary">
-                            No users found
-                        </Typography>
-                    </Box>
+                    <div className="p-4 text-center text-gray-500">
+                        No users found
+                    </div>
                 )}
 
-                <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
-                    component="div"
-                    count={filteredUsers.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                />
-            </Paper>
+                {/* Pagination */}
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+                    <Pagination
+                        currentPage={page + 1}
+                        totalPages={Math.ceil(
+                            filteredUsers.length / rowsPerPage
+                        )}
+                        onPageChange={(newPage) => setPage(newPage - 1)}
+                        pageSize={rowsPerPage}
+                        onPageSizeChange={(newSize) => {
+                            setRowsPerPage(newSize);
+                            setPage(0);
+                        }}
+                        pageSizeOptions={[5, 10, 25]}
+                        showFirstLast={true}
+                        showPageSize={true}
+                    />
+                </div>
+            </div>
 
             {loading && (
-                <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight="200px"
-                >
-                    <CircularProgress />
-                </Box>
+                <div className="flex justify-center items-center h-48">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
             )}
 
             <UserDialog
@@ -400,8 +319,9 @@ const UserManagement = () => {
                 }}
                 editingUser={editingUser}
                 onUserUpdated={handleUserUpdated}
+                fetchUsers={fetchUsers}
             />
-        </Box>
+        </div>
     );
 };
 

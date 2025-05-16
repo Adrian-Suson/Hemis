@@ -16,6 +16,7 @@ import Leadership from "./components/Leadership";
 import QuickActions from "./components/QuickActions";
 import Filters from "./components/Filters";
 import Badge from "./components/Badge";
+import InstitutionManagementSkeleton from "./InstitutionManagementSkeleton";
 
 const CHED_COLORS = {
     blue: "#0038A8",
@@ -33,6 +34,7 @@ const InstitutionManagement = () => {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const { getLocationById } = useLocationData();
+        const [isLoading, setIsLoading] = useState(true); // Add this state to track initial loading
     const [loading, setLoading] = useState({
         viewCampuses: false,
         faculties: false,
@@ -55,9 +57,9 @@ const InstitutionManagement = () => {
 
     const fetchInstitution = async () => {
         try {
+            setIsLoading(true); // Set loading state to true
             showLoading();
 
-            // Retrieve and validate stored data
             const token = localStorage.getItem("token");
             const user = JSON.parse(localStorage.getItem("user") || "{}");
             const storedInstitution = JSON.parse(
@@ -70,42 +72,29 @@ const InstitutionManagement = () => {
                 });
             }
 
-            // Fetch institutions
-            const response = await axios.get(`${config.API_URL}/institutions`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            // Normalize response data
-            const institutionsData = Array.isArray(response.data)
-                ? response.data
-                : [response.data];
-
-            // Find matching institution
-            const selectedInstitution = institutionsData.find(
-                (inst) => inst.uuid === storedInstitution.uuid
+            // Use the new API endpoint
+            const response = await axios.get(
+                `${config.API_URL}/institution-management-data`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        institution_uuid: storedInstitution.uuid,
+                        report_year: reportYearFilter,
+                    },
+                }
             );
 
-            if (!selectedInstitution) {
+            const { institution, location } = response.data;
+
+            if (!institution) {
                 throw new Error("Institution not found.", { cause: "error" });
             }
 
-            // Update state
-            setInstitutions([selectedInstitution]);
-            setInstitution(selectedInstitution);
-
-            // Fetch and set location data
-            if (selectedInstitution) {
-                const { region_id, province_id, municipality_id } =
-                    selectedInstitution;
-                const locationData = await getLocationById(
-                    region_id,
-                    province_id,
-                    municipality_id
-                );
-                setLocation(locationData);
-            }
+            setInstitutions([institution]);
+            setInstitution(institution);
+            setLocation(location);
         } catch (error) {
-            console.error("Error fetching institution:", error);
+            console.error("Error fetching institution data:", error);
             AlertComponent.showAlert(
                 error.cause === 401
                     ? "Unauthorized access. Please log in again."
@@ -113,7 +102,9 @@ const InstitutionManagement = () => {
                 error.cause || "error"
             );
         } finally {
+            setIsLoading(false);
             hideLoading();
+
         }
     };
 
@@ -197,105 +188,114 @@ const InstitutionManagement = () => {
             AlertComponent.showAlert("No data available to export.", "warning");
             return;
         }
-        updateProgress(10);
-        setLoading((prev) => ({ ...prev, exportFormA: true }));
-        try {
-            const response = await fetch("/templates/Form-A-Themeplate.xlsx");
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const arrayBuffer = await response.arrayBuffer();
 
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(arrayBuffer);
+        AlertComponent.showConfirmation(
+            "Are you sure you want to export Form A data?",
+            async () => {
+                updateProgress(10);
+                setLoading((prev) => ({ ...prev, exportFormA: true }));
+                try {
+                    const response = await fetch("/templates/Form-A-Themeplate.xlsx");
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const arrayBuffer = await response.arrayBuffer();
 
-            const sheetA1 = workbook.getWorksheet("FORM A1");
-            const sheetA2 = workbook.getWorksheet("FORM A2");
+                    const workbook = new ExcelJS.Workbook();
+                    await workbook.xlsx.load(arrayBuffer);
 
-            const a1Data = [
-                institution.name || "N/A",
-                "", // ADDRESS header
-                "",
-                institution.address_street || "N/A",
-                institution.municipality_city || "N/A",
-                institution.province || "N/A",
-                institution.region || "N/A",
-                institution.postal_code || "N/A",
-                institution.institutional_telephone || "N/A",
-                institution.institutional_fax || "N/A",
-                institution.head_telephone || "N/A",
-                institution.institutional_email || "N/A",
-                institution.institutional_website || "N/A",
-                institution.year_established || "N/A",
-                institution.sec_registration || "N/A",
-                institution.year_granted_approved || "N/A",
-                institution.year_converted_college || "N/A",
-                institution.year_converted_university || "N/A",
-                institution.head_name || "N/A",
-                institution.head_title || "N/A",
-                institution.head_education || "N/A",
-            ];
-            a1Data.forEach((value, index) => {
-                sheetA1.getRow(5 + index).getCell(3).value = value;
-            });
-            updateProgress(50);
+                    const sheetA1 = workbook.getWorksheet("FORM A1");
+                    const sheetA2 = workbook.getWorksheet("FORM A2");
 
-            const token = localStorage.getItem("token");
-            const campusResponse = await axios.get(
-                `${config.API_URL}/campuses?institution_id=${institution.id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const campuses = Array.isArray(campusResponse.data.campuses)
-                ? campusResponse.data.campuses
-                : [];
+                    const a1Data = [
+                        institution.name || "N/A",
+                        "", // ADDRESS header
+                        "",
+                        institution.address_street || "N/A",
+                        institution.municipality_city || "N/A",
+                        institution.province || "N/A",
+                        institution.region || "N/A",
+                        institution.postal_code || "N/A",
+                        institution.institutional_telephone || "N/A",
+                        institution.institutional_fax || "N/A",
+                        institution.head_telephone || "N/A",
+                        institution.institutional_email || "N/A",
+                        institution.institutional_website || "N/A",
+                        institution.year_established || "N/A",
+                        institution.sec_registration || "N/A",
+                        institution.year_granted_approved || "N/A",
+                        institution.year_converted_college || "N/A",
+                        institution.year_converted_university || "N/A",
+                        institution.head_name || "N/A",
+                        institution.head_title || "N/A",
+                        institution.head_education || "N/A",
+                    ];
+                    a1Data.forEach((value, index) => {
+                        sheetA1.getRow(5 + index).getCell(3).value = value;
+                    });
+                    updateProgress(50);
 
-            campuses.forEach((campus, index) => {
-                const row = sheetA2.getRow(14 + index);
-                row.values = [
-                    index + 1,
-                    campus.suc_name || "N/A",
-                    campus.campus_type || "N/A",
-                    campus.institutional_code || "N/A",
-                    campus.region || "N/A",
-                    campus.municipality_city_province || "N/A",
-                    campus.year_first_operation || "N/A",
-                    campus.land_area_hectares || "0.0",
-                    campus.distance_from_main || "0.0",
-                    campus.autonomous_code || "N/A",
-                    campus.position_title || "N/A",
-                    campus.head_full_name || "N/A",
-                    campus.former_name || "N/A",
-                    campus.latitude_coordinates || "0.0",
-                    campus.longitude_coordinates || "0.0",
-                ];
-            });
+                    const token = localStorage.getItem("token");
+                    const campusResponse = await axios.get(
+                        `${config.API_URL}/campuses?institution_id=${institution.id}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    const campuses = Array.isArray(campusResponse.data.campuses)
+                        ? campusResponse.data.campuses
+                        : [];
 
-            const fileName = `Form_A_${getInstitutionType()}_${
-                new Date().toISOString().split("T")[0]
-            }.xlsx`;
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], {
-                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fileName;
-            a.click();
-            window.URL.revokeObjectURL(url);
+                    campuses.forEach((campus, index) => {
+                        const row = sheetA2.getRow(14 + index);
+                        row.values = [
+                            index + 1,
+                            campus.suc_name || "N/A",
+                            campus.campus_type || "N/A",
+                            campus.institutional_code || "N/A",
+                            campus.region || "N/A",
+                            campus.municipality_city_province || "N/A",
+                            campus.year_first_operation || "N/A",
+                            campus.land_area_hectares || "0.0",
+                            campus.distance_from_main || "0.0",
+                            campus.autonomous_code || "N/A",
+                            campus.position_title || "N/A",
+                            campus.head_full_name || "N/A",
+                            campus.former_name || "N/A",
+                            campus.latitude_coordinates || "0.0",
+                            campus.longitude_coordinates || "0.0",
+                        ];
+                    });
 
-            AlertComponent.showAlert("Data exported successfully!", "success");
-            updateProgress(100);
-        } catch (error) {
-            console.error("Error exporting data:", error);
-            AlertComponent.showAlert(
-                error.message.includes("HTTP")
-                    ? "Failed to load export template."
-                    : "Error exporting data.",
-                "error"
-            );
-        } finally {
-            setLoading((prev) => ({ ...prev, exportFormA: false }));
-            updateProgress(0);
-        }
+                    const fileName = `Form_A_${getInstitutionType()}_${
+                        new Date().toISOString().split("T")[0]
+                    }.xlsx`;
+                    const buffer = await workbook.xlsx.writeBuffer();
+                    const blob = new Blob([buffer], {
+                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = fileName;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    AlertComponent.showAlert("Data exported successfully!", "success");
+                    updateProgress(100);
+                } catch (error) {
+                    console.error("Error exporting data:", error);
+                    AlertComponent.showAlert(
+                        error.message.includes("HTTP")
+                            ? "Failed to load export template."
+                            : "Error exporting data.",
+                        "error"
+                    );
+                } finally {
+                    setLoading((prev) => ({ ...prev, exportFormA: false }));
+                    updateProgress(0);
+                }
+            },
+            () => {
+                console.log("Export cancelled");
+            }
+        );
     };
 
     const handleNavigation = async (path, key) => {
@@ -306,6 +306,10 @@ const InstitutionManagement = () => {
             setLoading((prev) => ({ ...prev, [key]: false }));
         }
     };
+
+    if (isLoading) {
+        return <InstitutionManagementSkeleton />;
+    }
 
     const handleConfirmDelete = () => {
         AlertComponent.showConfirmation(

@@ -24,8 +24,16 @@ class CreateCampusesTable extends Migration
             $table->string('former_name', 255)->nullable();
             $table->decimal('latitude_coordinates', 9, 6)->nullable();
             $table->decimal('longitude_coordinates', 9, 6)->nullable();
-            $table->integer('report_year')->nullable(); // added column for yearly report
-            $table->foreignId('institution_id')->constrained()->onDelete('cascade');
+            $table->integer('report_year')->nullable(); // Updated to reference report_years.year
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('set null');
+            $table->string('institution_uuid', 255); // Changed to string to reference uuid
+            $table->foreign('institution_uuid')
+                ->references('uuid')
+                ->on('institutions')
+                ->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes(); // added soft delete support
         });

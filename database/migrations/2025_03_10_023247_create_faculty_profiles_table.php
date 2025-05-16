@@ -11,10 +11,12 @@ class CreateFacultyProfilesTable extends Migration
         // Create faculty_profiles table with institution relationship
         Schema::create('faculty_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('institution_id')
-                ->constrained('institutions')
-                ->onDelete('cascade')
-                ->nullable(); // Links to institutions table
+            $table->string('institution_uuid', 255)
+                ->nullable(); // Changed to string to reference uuid
+            $table->foreign('institution_uuid')
+                ->references('uuid')
+                ->on('institutions')
+                ->onDelete('cascade'); // Links to institutions table
 
             $table->string('data_date'); // Added date column to track when data was recorded
             $table->string('faculty_group')->nullable(); // New column for faculty groups (A1, A2, A3, B, C1, C2, C3, D, E)
@@ -68,7 +70,11 @@ class CreateFacultyProfilesTable extends Migration
             $table->float('other_load_credits')->nullable(); // OTHER OFFICIAL LOAD CREDITS (E6)
             $table->float('total_work_load')->nullable(); // TOTAL WORK LOAD (E7)
 
-            $table->integer('report_year')->nullable(); // added column for yearly report
+            $table->integer('report_year')->nullable(); // Updated to reference report_years.year
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('set null');
             $table->timestamps();
             $table->softDeletes(); // added soft delete support
         });

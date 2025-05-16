@@ -7,7 +7,7 @@ use App\Models\Graduate;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator; // Add this import
+use Illuminate\Support\Facades\Validator;
 
 class GraduateController extends Controller
 {
@@ -16,20 +16,41 @@ class GraduateController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Graduate::query();
+        $query = Graduate::query()->with('institution', 'reportYear');
 
         if ($search = $request->input('search')) {
             $query->where('student_id', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%")
-                  ->orWhere('program_name', 'like', "%{$search}%");
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('first_name', 'like', "%{$search}%")
+                ->orWhere('middle_name', 'like', "%{$search}%")
+                ->orWhere('program_name', 'like', "%{$search}%");
         }
 
         $graduates = $query->paginate(10);
 
+        $transformed = $graduates->map(function ($graduate) {
+            return [
+                'id' => $graduate->id,
+                'institution' => $graduate->institution ? $graduate->institution->name : null,
+                'student_id' => $graduate->student_id,
+                'date_of_birth' => $graduate->date_of_birth->toDateString(),
+                'last_name' => $graduate->last_name,
+                'first_name' => $graduate->first_name,
+                'middle_name' => $graduate->middle_name,
+                'sex' => $graduate->sex,
+                'date_graduated' => $graduate->date_graduated ? $graduate->date_graduated->toDateString() : null,
+                'program_name' => $graduate->program_name,
+                'program_major' => $graduate->program_major,
+                'program_authority_to_operate_graduate' => $graduate->program_authority_to_operate_graduate,
+                'year_granted' => $graduate->year_granted,
+                'report_year' => $graduate->reportYear ? $graduate->reportYear->year : null,
+                'created_at' => $graduate->created_at,
+                'updated_at' => $graduate->updated_at,
+            ];
+        });
+
         return response()->json([
-            'data' => $graduates->items(),
+            'data' => $transformed->items(),
             'pagination' => [
                 'total' => $graduates->total(),
                 'per_page' => $graduates->perPage(),
@@ -46,10 +67,8 @@ class GraduateController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        // Log the incoming request for debugging
         Log::info('Graduate store request received', ['data' => $request->all()]);
 
-        // Check if the request contains data
         $data = $request->all();
         if (empty($data)) {
             return response()->json([
@@ -57,11 +76,10 @@ class GraduateController extends Controller
             ], 422);
         }
 
-        // Validate the request expecting an array of graduates
         $validator = Validator::make($data, [
-            '*.institution_id' => 'required|integer|exists:institutions,id',
+            '*.institution_uuid' => 'required|string|exists:institutions,uuid',
             '*.student_id' => 'required|string|max:50|unique:graduates_list,student_id',
-            '*.date_of_birth' => 'required|date|before:today',
+            '*.date_of_birth' => 'required|date|before_or_equal:today',
             '*.last_name' => 'required|string|max:255',
             '*.first_name' => 'required|string|max:255',
             '*.middle_name' => 'nullable|string|max:255',
@@ -71,6 +89,7 @@ class GraduateController extends Controller
             '*.program_major' => 'nullable|string|max:255',
             '*.program_authority_to_operate_graduate' => 'nullable|string|max:255',
             '*.year_granted' => 'nullable|integer|min:1900|max:' . date('Y'),
+            '*.report_year' => 'required|integer|exists:report_years,year',
         ]);
 
         if ($validator->fails()) {
@@ -81,10 +100,8 @@ class GraduateController extends Controller
         }
 
         try {
-            // Get validated data
             $validatedData = $validator->validated();
 
-            // Add timestamps to each record
             $currentTime = now();
             $validatedData = array_map(function ($graduate) use ($currentTime) {
                 $graduate['created_at'] = $currentTime;
@@ -92,10 +109,8 @@ class GraduateController extends Controller
                 return $graduate;
             }, $validatedData);
 
-            // Bulk insert graduates
             Graduate::insert($validatedData);
 
-            // Log success
             Log::info('Graduates inserted successfully', ['count' => count($validatedData)]);
 
             return response()->json([
@@ -103,7 +118,6 @@ class GraduateController extends Controller
                 'count' => count($validatedData),
             ], 201);
         } catch (\Exception $e) {
-            // Log the error
             Log::error('Failed to create graduates', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -121,8 +135,27 @@ class GraduateController extends Controller
      */
     public function show(Graduate $graduate): JsonResponse
     {
+        $graduate->load('institution', 'reportYear');
+
         return response()->json([
-            'data' => $graduate,
+            'data' => [
+                'id' => $graduate->id,
+                'institution' => $graduate->institution ? $graduate->institution->name : null,
+                'student_id' => $graduate->student_id,
+                'date_of_birth' => $graduate->date_of_birth->toDateString(),
+                'last_name' => $graduate->last_name,
+                'first_name' => $graduate->first_name,
+                'middle_name' => $graduate->middle_name,
+                'sex' => $graduate->sex,
+                'date_graduated' => $graduate->date_graduated ? $graduate->date_graduated->toDateString() : null,
+                'program_name' => $graduate->program_name,
+                'program_major' => $graduate->program_major,
+                'program_authority_to_operate_graduate' => $graduate->program_authority_to_operate_graduate,
+                'year_granted' => $graduate->year_granted,
+                'report_year' => $graduate->reportYear ? $graduate->reportYear->year : null,
+                'created_at' => $graduate->created_at,
+                'updated_at' => $graduate->updated_at,
+            ],
         ], 200);
     }
 
@@ -132,25 +165,46 @@ class GraduateController extends Controller
     public function update(Request $request, Graduate $graduate): JsonResponse
     {
         $validated = $request->validate([
-            'student_id' => 'required|string|unique:graduates_list,student_id,' . $graduate->id,
-            'date_of_birth' => 'required|date',
+            'institution_uuid' => 'required|string|exists:institutions,uuid',
+            'student_id' => 'required|string|max:50|unique:graduates_list,student_id,' . $graduate->id,
+            'date_of_birth' => 'required|date|before_or_equal:today',
             'last_name' => 'required|string|max:255',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'sex' => 'required|in:M,F',
-            'date_graduated' => 'nullable|date',
+            'date_graduated' => 'nullable|date|before_or_equal:today',
             'program_name' => 'required|string|max:255',
             'program_major' => 'nullable|string|max:255',
             'program_authority_to_operate_graduate' => 'nullable|string|max:255',
             'year_granted' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'report_year' => 'required|integer|exists:report_years,year',
         ]);
 
         try {
             $graduate->update($validated);
 
+            $graduate->load('institution', 'reportYear');
+
             return response()->json([
                 'message' => 'Graduate updated successfully!',
-                'data' => $graduate,
+                'data' => [
+                    'id' => $graduate->id,
+                    'institution' => $graduate->institution ? $graduate->institution->name : null,
+                    'student_id' => $graduate->student_id,
+                    'date_of_birth' => $graduate->date_of_birth->toDateString(),
+                    'last_name' => $graduate->last_name,
+                    'first_name' => $graduate->first_name,
+                    'middle_name' => $graduate->middle_name,
+                    'sex' => $graduate->sex,
+                    'date_graduated' => $graduate->date_graduated ? $graduate->date_graduated->toDateString() : null,
+                    'program_name' => $graduate->program_name,
+                    'program_major' => $graduate->program_major,
+                    'program_authority_to_operate_graduate' => $graduate->program_authority_to_operate_graduate,
+                    'year_granted' => $graduate->year_granted,
+                    'report_year' => $graduate->reportYear ? $graduate->reportYear->year : null,
+                    'created_at' => $graduate->created_at,
+                    'updated_at' => $graduate->updated_at,
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

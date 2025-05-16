@@ -1,59 +1,34 @@
 <?php
 
-// app/Models/User.php
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class User extends Authenticatable
+class User extends Model
 {
-    use HasApiTokens, Notifiable;
+    use SoftDeletes;
+
+    protected $table = 'users';
 
     protected $fillable = [
+        'profile_image',
         'name',
         'email',
+        'email_verified_at',
         'password',
         'role',
         'status',
-        'institution_id',
-        'profile_image',
-        'email_verified_at',
-    ];
-
-    protected $hidden = [
-        'password',
+        'institution_uuid',
         'remember_token',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'role' => 'string',
-        'status' => 'string',
     ];
 
-    /**
-     * Get the institution this user belongs to.
-     */
     public function institution()
     {
-        return $this->belongsTo(\App\Models\Institution::class);
-    }
-
-    /**
-     * New relation: one user can own many institutions.
-     */
-    public function institutions()
-    {
-        return $this->hasMany(\App\Models\Institution::class, 'user_id', 'id');
-    }
-
-    /**
-     * Check if the user is a Super Admin.
-     */
-    public function isSuperAdmin()
-    {
-        return $this->role === 'Super Admin';
+        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
     }
 }

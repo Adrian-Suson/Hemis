@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('curricular_programs', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('institution_id');
+            $table->string('institution_uuid', 255); // Changed to string to reference uuid
             $table->date('data_date');
             $table->string('program_name', 255)->notNullable();
             $table->integer('program_code')->nullable();
@@ -61,8 +61,12 @@ return new class extends Migration {
             $table->integer('internally_funded_grantees')->nullable();
             $table->integer('suc_funded_grantees')->nullable();
 
-            $table->foreign('institution_id')->references('id')->on('institutions')->onDelete('cascade');
-            $table->integer('report_year')->nullable(); // added column for yearly report
+            $table->foreign('institution_uuid')->references('uuid')->on('institutions')->onDelete('cascade');
+            $table->integer('report_year')->nullable(); // Updated to reference report_years.year
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('set null');
             $table->timestamps();
             $table->softDeletes(); // added soft delete support
         });

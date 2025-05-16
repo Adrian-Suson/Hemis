@@ -2,17 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Program extends Model
+class CurricularProgram extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'curricular_programs';
 
     protected $fillable = [
-        'institution_id',
+        'institution_uuid',
+        'data_date',
         'program_name',
         'program_code',
         'major_name',
@@ -30,7 +31,6 @@ class Program extends Model
         'tuition_per_unit',
         'program_fee',
         'program_type',
-        'data_date',
         'new_students_freshmen_male',
         'new_students_freshmen_female',
         '1st_year_male',
@@ -59,10 +59,22 @@ class Program extends Model
         'externally_funded_merit_scholars',
         'internally_funded_grantees',
         'suc_funded_grantees',
+        'report_year',
+    ];
+
+    protected $casts = [
+        'data_date' => 'date',
+        'tuition_per_unit' => 'decimal:2',
+        'program_fee' => 'decimal:2',
     ];
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class);
+        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+    }
+
+    public function reportYear()
+    {
+        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
     }
 }

@@ -19,7 +19,12 @@ return new class extends Migration {
             $table->string('password');
             $table->enum('role', ['Super Admin', 'HEI Admin', 'HEI Staff', 'Viewer'])->default('Viewer');
             $table->enum('status', ['Active', 'Inactive', 'Suspended'])->default('Active');
-            $table->foreignId('institution_id')->nullable()->constrained('institutions')->onDelete('set null'); // Added foreign key
+            $table->string('institution_uuid', 255)
+                ->nullable(); // Changed to string to reference uuid
+            $table->foreign('institution_uuid')
+                ->references('uuid')
+                ->on('institutions')
+                ->onDelete('set null'); // Added foreign key
             $table->rememberToken();
             $table->timestamps();
         });

@@ -1,9 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { X, Upload } from "lucide-react";
-import moment from "moment";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import config from "../utils/config";
@@ -12,7 +10,6 @@ const GraduatesUploadDialog = ({ open, onClose }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [fileError, setFileError] = useState("");
     const [validationTriggered, setValidationTriggered] = useState(false);
-    const [selectedYear, setSelectedYear] = useState(moment().year());
     const [institutionId, setInstitutionId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
@@ -175,7 +172,6 @@ const GraduatesUploadDialog = ({ open, onClose }) => {
                                 year_granted: isNaN(yearGranted)
                                     ? null
                                     : yearGranted,
-                                graduation_year: selectedYear,
                             };
                         });
 
@@ -282,27 +278,7 @@ const GraduatesUploadDialog = ({ open, onClose }) => {
 
                 {/* Dialog Content */}
                 <div className="p-4 space-y-4">
-                    {/* Year Picker */}
-                    <div>
-                        <label
-                            htmlFor="year"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                            Graduation Year
-                        </label>
-                        <input
-                            id="year"
-                            type="number"
-                            value={selectedYear}
-                            onChange={(e) =>
-                                setSelectedYear(Number(e.target.value))
-                            }
-                            min="1900"
-                            max={new Date().getFullYear()}
-                            disabled={isUploading}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        />
-                    </div>
+
 
                     {/* File Upload */}
                     <div>
@@ -372,17 +348,28 @@ const GraduatesUploadDialog = ({ open, onClose }) => {
                     )}
 
                     {/* Expected File Format Information */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                        <h3 className="text-sm font-medium text-blue-800 mb-1">
-                            Expected File Format
-                        </h3>
-                        <p className="text-xs text-blue-700">
-                            Your Excel file should contain columns in this
-                            order: Student ID, Last Name, First Name, Middle
-                            Name, Sex (M/F), Date of Birth, Date Graduated,
-                            Program Name, Program Major, Program Authority, Year
-                            Granted.
-                        </p>
+                    <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Upload Guidelines:
+                        </h4>
+                        <ul className="list-disc pl-5 text-xs text-gray-600 space-y-1">
+                            <li>
+                                File must be in Excel format (.xlsx, .xls)
+                            </li>
+                            <li>
+                                Ensure the file contains valid graduate data
+                                with no empty rows.
+                            </li>
+                            <li>
+                                Required columns (in order): Student ID, Last
+                                Name, First Name, Middle Name, Sex (M/F), Date
+                                of Birth, Date Graduated, Program Name, Program
+                                Major, Program Authority, Year Granted.
+                            </li>
+                            <li>
+                                File size must not exceed 10MB.
+                            </li>
+                        </ul>
                     </div>
                 </div>
 

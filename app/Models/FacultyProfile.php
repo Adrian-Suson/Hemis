@@ -3,14 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FacultyProfile extends Model
 {
-    use HasFactory;
+    use SoftDeletes;
+
+    protected $table = 'faculty_profiles';
 
     protected $fillable = [
-        'institution_id',
+        'institution_uuid',
+        'data_date',
         'faculty_group',
         'name',
         'generic_faculty_rank',
@@ -53,11 +56,16 @@ class FacultyProfile extends Model
         'administrative_load',
         'other_load_credits',
         'total_work_load',
-        'data_date',
+        'report_year',
     ];
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class);
+        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+    }
+
+    public function reportYear()
+    {
+        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
     }
 }

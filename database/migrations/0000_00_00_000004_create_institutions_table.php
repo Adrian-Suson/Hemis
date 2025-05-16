@@ -31,7 +31,11 @@ return new class extends Migration {
             $table->string('head_title', 255)->nullable();
             $table->string('head_education', 255)->nullable();
             $table->string('institution_type', 255)->nullable();
-            $table->integer('report_year')->nullable(); // added column for yearly report
+            $table->integer('report_year')->nullable(); // Updated to reference report_years.year
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
         });

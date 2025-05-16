@@ -15,19 +15,18 @@ class InstitutionController extends Controller
         $data['region'] = $institution->region ? $institution->region->name : null;
         $data['province'] = $institution->province ? $institution->province->name : null;
         $data['municipality'] = $institution->municipality ? $institution->municipality->name : null;
-        $data['report_year'] = $institution->report_year;
+        $data['report_year'] = $institution->reportYear ? $institution->reportYear->year : null;
         return $data;
     }
 
     public function index(Request $request): JsonResponse
     {
-        if ($request->has('type')) {
-            $institutions = Institution::where('institution_type', $request->type)
-                ->with('region', 'province', 'municipality')
-                ->get();
-        } else {
-            $institutions = Institution::with('region', 'province', 'municipality')->get();
-        }
+        $institutions = Institution::query()
+            ->when($request->has('type'), function ($query) use ($request) {
+                return $query->where('institution_type', $request->type);
+            })
+            ->with('region', 'province', 'municipality', 'reportYear')
+            ->get();
 
         $transformed = $institutions->map(function ($inst) {
             return $this->transformInstitution($inst);
@@ -39,14 +38,14 @@ class InstitutionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'uuid' => 'required|string|max:255', // Removed foreign key constraint
+            'uuid' => 'required|string|max:255|unique:institutions,uuid',
             'name' => 'required|string|max:255',
             'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
             'municipality_id' => 'nullable|integer|exists:municipalities,id',
             'province_id' => 'nullable|integer|exists:provinces,id',
             'postal_code' => 'nullable|string|max:10',
-            'institutional_telephone' => 'nullable|string|max:20',
+            'institutional_Telephone' => 'nullable|string|max:20',
             'institutional_fax' => 'nullable|string|max:20',
             'head_telephone' => 'nullable|string|max:20',
             'institutional_email' => 'nullable|string|max:255',
@@ -60,18 +59,18 @@ class InstitutionController extends Controller
             'head_title' => 'nullable|string|max:255',
             'head_education' => 'nullable|string|max:255',
             'institution_type' => 'nullable|string|max:255',
-            'report_year' => 'nullable|integer'
+            'report_year' => 'nullable|integer|exists:report_years,year',
         ]);
 
         $institution = Institution::create($validated);
-        $institution->load('region', 'province', 'municipality');
+        $institution->load('region', 'province', 'municipality', 'reportYear');
 
         return response()->json($this->transformInstitution($institution), 201);
     }
 
     public function show(Institution $institution): JsonResponse
     {
-        $institution->load('region', 'province', 'municipality');
+        $institution->load('region', 'province', 'municipality', 'reportYear');
 
         return response()->json($this->transformInstitution($institution));
     }
@@ -79,7 +78,7 @@ class InstitutionController extends Controller
     public function update(Request $request, Institution $institution): JsonResponse
     {
         $validated = $request->validate([
-            'uuid' => 'required|string|max:255', // Removed foreign key constraint
+            'uuid' => 'required|string|max:255|unique:institutions,uuid,' . $institution->id,
             'name' => 'required|string|max:255',
             'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
@@ -100,11 +99,11 @@ class InstitutionController extends Controller
             'head_title' => 'nullable|string|max:255',
             'head_education' => 'nullable|string|max:255',
             'institution_type' => 'nullable|string|max:255',
-            'report_year' => 'nullable|integer'
+            'report_year' => 'nullable|integer|exists:report_years,year',
         ]);
 
         $institution->update($validated);
-        $institution->load('region', 'province', 'municipality');
+        $institution->load('region', 'province', 'municipality', 'reportYear');
 
         return response()->json($this->transformInstitution($institution));
     }

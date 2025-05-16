@@ -147,23 +147,40 @@ function App() {
                     >
                         <Route
                             path="/hei-staff/dashboard"
-                            element={<DashboardPage />}
+                            element={<HEIDashboardPage />}
+                        />
+                        <Route
+                            path="/hei-staff/institutions"
+                            element={<HEIInstitutionManagement />}
+                        />
+                        <Route
+                            path="/hei-staff/institutions/campuses/:institutionId"
+                            element={<HEICampusManagement />}
+                        />
+                        <Route
+                            path="/hei-staff/institutions/curricular-programs/:institutionId"
+                            element={<HEICurricularProgram />}
+                        />
+                        <Route
+                            path="/hei-staff/institutions/faculties/:institutionId"
+                            element={<HEIFacultyProfile />}
+                        />
+                        <Route
+                            path="/hei-staff/institutions/graduates-list/:institutionId"
+                            element={<HEiGraduates />}
+                        />
+                        <Route
+                            path="/hei-staff/staff-management"
+                            element={<HEIUserManagement />}
                         />
                     </Route>
 
-                    {/* Viewer Routes under /hei-staff/* (assuming shared access) */}
-                    <Route
-                        element={<ProtectedRoute allowedRoles={["Viewer"]} />}
-                    >
-                        <Route
-                            path="/hei-staff/dashboard"
-                            element={<DashboardPage />}
-                        />
-                    </Route>
+
 
                     {/* Catch all route for 404 */}
-                    <Route path="*" element={<NotFound />} />
+
                 </Route>
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </Router>
     );

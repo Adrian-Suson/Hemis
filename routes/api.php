@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CurricularProgramController;
 use App\Http\Controllers\Api\GraduateController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\InstitutionManagementController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -19,7 +21,7 @@ Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 // Protected routes - Require Authentication
 Route::middleware('auth:sanctum')->group(function () {
     // User Routes
-    Route::apiResource('users', UserController::class); // Maps to index, show, store, update, destroy
+    Route::apiResource('users', UserController::class);
     Route::post('users/{user}/reactivate', [UserController::class, 'reactivate']);
 
     // Authenticated User Routes
@@ -36,17 +38,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('programs', CurricularProgramController::class);
     Route::get('programs/export/{category}', [CurricularProgramController::class, 'export']);
 
-    // Enrollment Routes
-
-
     // Faculty Profile Routes
     Route::apiResource('faculty-profiles', FacultyProfileController::class);
 
-    //graduate list
+    // Graduate List Routes
     Route::apiResource('graduates', GraduateController::class);
 
-
-    //Activity Log Routes
+    // Activity Log Routes
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::post('/activity-logs', [ActivityLogController::class, 'store']);
 
@@ -54,4 +52,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('regions', \App\Http\Controllers\Api\RegionController::class);
     Route::apiResource('provinces', \App\Http\Controllers\Api\ProvinceController::class);
     Route::apiResource('municipalities', \App\Http\Controllers\Api\MunicipalityController::class);
+
+    // Dashboard Data Route
+    Route::get('dashboard-data', [DashboardController::class, 'getDashboardData']); // Updated to handle report_year
+
+    // Institution Management Data Route
+    Route::get('institution-management-data', [InstitutionManagementController::class, 'getInstitutionData']);
 });

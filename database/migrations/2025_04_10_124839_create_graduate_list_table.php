@@ -9,7 +9,11 @@ return new class extends Migration {
     {
         Schema::create('graduates_list', function (Blueprint $table) {
             $table->id(); // Auto-incrementing primary key
-            $table->foreignId('institution_id')->constrained('institutions')->onDelete('cascade'); // Foreign key to institutions table
+            $table->string('institution_uuid', 255); // Changed to string to reference uuid
+            $table->foreign('institution_uuid')
+                ->references('uuid')
+                ->on('institutions')
+                ->onDelete('cascade'); // Foreign key to institutions table
             $table->string('student_id')->unique(); // Unique student ID
             $table->date('date_of_birth'); // Date of birth
             $table->string('last_name'); // Last name
@@ -21,7 +25,11 @@ return new class extends Migration {
             $table->string('program_major')->nullable(); // Program major (optional)
             $table->string('program_authority_to_operate_graduate')->nullable(); // Program authority (optional)
             $table->integer('year_granted')->nullable(); // Year granted (optional)
-            $table->integer('report_year')->nullable(); // added column for yearly report
+            $table->integer('report_year'); // Changed to integer to reference report_years.year
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('cascade'); // Foreign key to report_years table
             $table->timestamps(); // Created_at and updated_at timestamps
             $table->softDeletes(); // added soft delete support
         });

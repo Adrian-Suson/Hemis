@@ -2,17 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Institution extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
-    protected $primaryKey = 'id';
-    public $incrementing = true;
-    protected $keyType = 'string';
+    protected $table = 'institutions';
 
     protected $fillable = [
         'uuid',
@@ -39,42 +36,48 @@ class Institution extends Model
         'report_year',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($institution) {
-            if (self::where('uuid', $institution->uuid)
-                ->where('report_year', $institution->report_year)
-                ->exists()
-            ) {
-                throw new \Exception('An institution with the same UUID and report year already exists.');
-            }
-        });
-
-        static::updating(function ($institution) {
-            if (self::where('uuid', $institution->uuid)
-                ->where('report_year', $institution->report_year)
-                ->where('id', '!=', $institution->id)
-                ->exists()
-            ) {
-                throw new \Exception('An institution with the same UUID and report year already exists.');
-            }
-        });
-    }
-
     public function region()
     {
-        return $this->belongsTo(Region::class);
+        return $this->belongsTo(Region::class, 'region_id');
     }
 
     public function province()
     {
-        return $this->belongsTo(Province::class);
+        return $this->belongsTo(Province::class, 'province_id');
     }
 
     public function municipality()
     {
-        return $this->belongsTo(Municipality::class);
+        return $this->belongsTo(Municipality::class, 'municipality_id');
+    }
+
+    public function reportYear()
+    {
+        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
+    }
+
+    public function facultyProfiles()
+    {
+        return $this->hasMany(FacultyProfile::class, 'institution_uuid', 'uuid');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'institution_uuid', 'uuid');
+    }
+
+    public function curricularPrograms()
+    {
+        return $this->hasMany(CurricularProgram::class, 'institution_uuid', 'uuid');
+    }
+
+    public function graduates()
+    {
+        return $this->hasMany(Graduate::class, 'institution_uuid', 'uuid');
+    }
+
+    public function campuses()
+    {
+        return $this->hasMany(Campus::class, 'institution_uuid', 'uuid');
     }
 }

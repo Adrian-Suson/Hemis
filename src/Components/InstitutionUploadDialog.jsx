@@ -37,8 +37,6 @@ const InstitutionUploadDialog = ({ open, onClose }) => {
         }
     }, []);
 
-
-
     useEffect(() => {
         const fetchRegions = async () => {
             try {
@@ -126,13 +124,11 @@ const InstitutionUploadDialog = ({ open, onClose }) => {
         if (validationTriggered) setValidationTriggered(false);
     };
 
-
     const validateInputs = () => {
         const errors = [];
 
         if (!selectedInstitutionType) {
             setTypeError("Please select an institution type.");
-            errors.pu;
             errors.push("Institution type is required.");
         } else {
             setTypeError("");
@@ -177,8 +173,6 @@ const InstitutionUploadDialog = ({ open, onClose }) => {
 
         const hei = JSON.parse(localStorage.getItem("institution"));
         console.log("User:", hei.uuid);
-
-
 
         setIsUploading(true);
 
@@ -632,6 +626,31 @@ const InstitutionUploadDialog = ({ open, onClose }) => {
                                 ref={fileInputRef}
                             />
                         </div>
+                    </div>
+
+                    {/* Upload Guidelines */}
+                    <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Upload Guidelines:
+                        </h4>
+                        <ul className="list-disc pl-5 text-xs text-gray-600 space-y-1">
+                            <li>
+                                File must be in Excel format (.xlsx, .xls)
+                            </li>
+                            <li>
+                                Ensure the file contains valid institution data
+                                with no empty rows.
+                            </li>
+                            <li>
+                                Required columns (in order): Institution Name,
+                                Region, Province, Municipality, Address, Postal
+                                Code, Telephone, Fax, Email, Website, Year
+                                Established, and other relevant details.
+                            </li>
+                            <li>
+                                File size must not exceed 10MB.
+                            </li>
+                        </ul>
                     </div>
 
                     {/* Selected File Preview */}

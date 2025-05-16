@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import PropTypes from "prop-types";
+import { useLoading } from "../../../Context/LoadingContext";
 import {
     Chart as ChartJS,
     ArcElement,
@@ -20,12 +22,15 @@ import {
     BarChart2,
     TrendingUp,
     AlertCircle,
+    Upload,
+    LayoutDashboardIcon,
 } from "lucide-react";
 import config from "../../../utils/config";
 import CurricularUploadDialog from "../../../Components/CurricularUploadDialog";
 import FacultyUploadDialog from "../../../Components/FacultyUploadDialog";
 import GraduatesUploadDialog from "../../../Components/GraduatesUploadDialog";
 import InstitutionUploadDialog from "../../../Components/InstitutionUploadDialog";
+import DashboardSkeleton from "./DashboardSkeleton";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -56,20 +61,6 @@ const CHART_OPTIONS = {
     },
 };
 
-// Card animation variants
-const CARD_VARIANTS = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i) => ({
-        opacity: 1,
-        y: 0,
-        transition: {
-            duration: 0.5,
-            delay: i * 0.1,
-        },
-    }),
-    hover: { scale: 1.03, boxShadow: "0 12px 24px rgba(0,0,0,0.15)" },
-};
-
 const DashboardPage = () => {
     const [stats, setStats] = useState({
         users: [],
@@ -80,9 +71,9 @@ const DashboardPage = () => {
         error: null,
     });
 
+    const { showLoading, hideLoading } = useLoading();
     const [openCurricularDialog, setOpenCurricularDialog] = useState(false);
     const [openInstitutionDialog, setOpenInstitutionDialog] = useState(false);
-
     const [openFacultyDialog, setOpenFacultyDialog] = useState(false);
     const [openGraduatesDialog, setOpenGraduatesDialog] = useState(false);
 
@@ -97,89 +88,75 @@ const DashboardPage = () => {
             return;
         }
 
-        let institutionId = null;
-        const userData = localStorage.getItem("user");
-        if (userData) {
-            try {
-                const user = JSON.parse(userData);
-                institutionId = user.institution_id || null;
-            } catch (error) {
-                console.error(
-                    "Failed to parse user data from localStorage:",
-                    error
-                );
-            }
-        }
+        showLoading();
 
-        if (!institutionId) {
-            try {
+        try {
+            const userData = localStorage.getItem("user");
+            let institutionId = null;
+
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    institutionId = user.institution_id || null;
+                } catch (error) {
+                    console.error("Failed to parse user data:", error);
+                }
+            }
+
+            if (!institutionId) {
                 const userResponse = await axios.get(`${config.API_URL}/user`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 institutionId = userResponse.data.institution_id || null;
-            } catch (error) {
-                console.error("Failed to fetch user data from API:", error);
             }
-        }
 
-        if (!institutionId) {
-            setStats((prev) => ({
-                ...prev,
-                error: "No institution ID found",
-                loading: false,
-            }));
-            return;
-        }
+            if (!institutionId) {
+                setStats((prev) => ({
+                    ...prev,
+                    error: "No institution ID found",
+                    loading: false,
+                }));
+                hideLoading();
+                return;
+            }
 
-        try {
-            const [users, faculty, programs, institutions] = await Promise.all([
-                axios.get(
-                    `${config.API_URL}/users?institution_id=${institutionId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                ),
-                axios.get(
-                    `${config.API_URL}/faculty-profiles?institution_id=${institutionId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                ),
-                axios.get(
-                    `${config.API_URL}/programs?institution_id=${institutionId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                ),
-                axios.get(
-                    `${config.API_URL}/institutions?institution_id=${institutionId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                ),
-            ]);
+            // Always fetch fresh data from the API
+            const response = await axios.get(
+                `${config.API_URL}/dashboard-data?institution_id=${institutionId}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
-            setStats({
-                users: users.data,
-                facultyProfiles: faculty.data,
-                programs: programs.data,
-                institutions: institutions.data,
+            const { users, facultyProfiles, programs, institutions } =
+                response.data;
+
+            const newStats = {
+                users,
+                facultyProfiles,
+                programs,
+                institutions,
                 institutionId,
                 loading: false,
                 error: null,
-            });
+            };
+
+            setStats(newStats);
         } catch (error) {
+            console.error("Error fetching dashboard data:", error);
             setStats((prev) => ({
                 ...prev,
                 error: `Failed to load statistics: ${error.message}`,
                 loading: false,
             }));
+        } finally {
+            hideLoading();
         }
-    }, []);
+    }, [showLoading, hideLoading]);
 
     useEffect(() => {
         fetchStats();
-    }, [fetchStats]);
+    }, []);
 
     const handleOpenDialog = (dialogType) => {
         switch (dialogType) {
@@ -394,12 +371,8 @@ const DashboardPage = () => {
         },
     ];
 
-    if (stats.loading) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-gray-100 p-4 sm:p-6">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        );
+     if (stats.loading) {
+        return <DashboardSkeleton />;
     }
 
     if (stats.error) {
@@ -461,128 +434,269 @@ const DashboardPage = () => {
     ];
 
     return (
-        <div className="bg-gray-100 overflow-y-auto h-screen w-full p-4 sm:p-6 box-border">
-            {/* Header for Mobile */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center shadow-lg mb-6 p-4 sm:p-6 rounded-lg sm:hidden">
-                <h1 className="text-xl font-bold mb-1">Statistics Dashboard</h1>
-                <p className="text-sm opacity-90">
-                    Insights into Users, Faculty, Programs, and More
-                </p>
-            </div>
-
-            {/* Upload Buttons Section */}
-            <div className="mb-6 py-5 px-4 bg-white rounded-lg shadow border border-gray-200">
-                <h2 className="text-lg font-medium text-gray-800 mb-4">
-                    Data Upload
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {uploadButtons.map((button, index) => (
-                        <button
-                            key={index}
-                            className={`flex items-center justify-center py-3 px-4 rounded-md text-white shadow-md transition-all ${button.color} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                            onClick={() => handleOpenDialog(button.type)}
-                        >
-                            {button.icon}
-                            <span className="ml-2 font-medium">
-                                {button.label}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-                <p className="mt-3 text-xs text-gray-500">
-                    Supported formats: Excel (.xlsx, .xls)
-                </p>
-            </div>
-
-            {/* Dialogs */}
-            <InstitutionUploadDialog
-                open={openInstitutionDialog}
-                onClose={() => handleCloseDialog("institution")}
-            />
-            <CurricularUploadDialog
-                open={openCurricularDialog}
-                onClose={() => handleCloseDialog("curricular")}
-            />
-            <FacultyUploadDialog
-                open={openFacultyDialog}
-                onClose={() => handleCloseDialog("faculty")}
-            />
-            <GraduatesUploadDialog
-                open={openGraduatesDialog}
-                onClose={() => handleCloseDialog("graduates")}
-            />
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {statCards.map((stat, index) => (
-                    <motion.div
-                        key={index}
-                        custom={index}
-                        variants={CARD_VARIANTS}
-                        initial="hidden"
-                        animate="visible"
-                        whileHover="hover"
-                        className={`bg-white rounded-lg shadow border ${stat.borderColor} border-l-4 border-t-0 border-r-0 border-b-0 hover:shadow-lg transition-shadow`}
-                    >
-                        <div className="p-4 flex items-center">
-                            <div
-                                className={`p-2 rounded-full ${stat.bgColor} ${stat.color} mr-4`}
-                            >
-                                {stat.icon}
-                            </div>
-                            <div>
-                                <p
-                                    className={`text-xl font-semibold ${stat.color}`}
-                                >
-                                    {stat.value}
-                                </p>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">
-                                    {stat.label}
-                                </p>
-                            </div>
+        <div className="bg-gray-50 min-h-screen font-sans">
+            <div className="container mx-auto px-4 py-4">
+                {/* Data Upload Section - Lighter and more minimal */}
+                <div className="mb-5 bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+                    <div className="bg-gray-50 border-b border-gray-100 px-4 py-2">
+                        <div className="flex items-center">
+                            <LayoutDashboardIcon className="w-4 h-4 mr-2 text-gray-500" />
+                            <h2 className="text-base font-medium text-gray-700">
+                                Dashboard
+                            </h2>
                         </div>
-                    </motion.div>
-                ))}
-            </div>
+                    </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {chartData.map((chart, index) => (
-                    <motion.div
-                        key={index}
-                        custom={index + 4}
-                        variants={CARD_VARIANTS}
-                        initial="hidden"
-                        animate="visible"
-                        whileHover="hover"
-                        className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
-                    >
-                        <div className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-base font-medium text-gray-800">
-                                    {chart.title}
-                                </h3>
-                                <div className="p-2 bg-gray-100 rounded-full text-gray-600">
-                                    <BarChart2 className="w-4 h-4" />
+                    <div className="p-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {uploadButtons.map((button, index) => {
+                                // Light color palette
+                                const bgColors = [
+                                    "bg-blue-50",
+                                    "bg-rose-50",
+                                    "bg-amber-50",
+                                    "bg-emerald-50",
+                                ];
+                                const textColors = [
+                                    "text-blue-600",
+                                    "text-rose-600",
+                                    "text-amber-600",
+                                    "text-emerald-600",
+                                ];
+                                const borderColors = [
+                                    "border-blue-100",
+                                    "border-rose-100",
+                                    "border-amber-100",
+                                    "border-emerald-100",
+                                ];
+                                const iconBgColors = [
+                                    "bg-blue-100",
+                                    "bg-rose-100",
+                                    "bg-amber-100",
+                                    "bg-emerald-100",
+                                ];
+                                const buttonBgColors = [
+                                    "bg-blue-100",
+                                    "bg-rose-100",
+                                    "bg-amber-100",
+                                    "bg-emerald-100",
+                                ];
+                                const buttonTextColors = [
+                                    "text-blue-600",
+                                    "text-rose-600",
+                                    "text-amber-600",
+                                    "text-emerald-600",
+                                ];
+                                const buttonHoverBgColors = [
+                                    "hover:bg-blue-200",
+                                    "hover:bg-rose-200",
+                                    "hover:bg-amber-200",
+                                    "hover:bg-emerald-200",
+                                ];
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`bg-white border ${borderColors[index]} rounded-md shadow-sm hover:shadow-md transition-all overflow-hidden`}
+                                    >
+                                        <div
+                                            className={`${bgColors[index]} p-2 flex justify-between items-center`}
+                                        >
+                                            <span
+                                                className={`${textColors[index]} text-sm font-medium`}
+                                            >
+                                                {button.label}
+                                            </span>
+                                            {button.icon && (
+                                                <div
+                                                    className={`${iconBgColors[index]} ${textColors[index]} p-1 rounded-full`}
+                                                >
+                                                    {button.icon}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="p-3">
+                                            <button
+                                                onClick={() =>
+                                                    handleOpenDialog(
+                                                        button.type
+                                                    )
+                                                }
+                                                className={`w-full flex items-center justify-center py-1.5 px-3 rounded ${buttonBgColors[index]} ${buttonTextColors[index]} ${buttonHoverBgColors[index]} transition-all focus:outline-none focus:ring-1 focus:ring-offset-1`}
+                                            >
+                                                <Upload className="w-3 h-3 mr-1" />
+                                                <span className="text-xs">
+                                                    Upload
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500 flex items-center">
+                            <AlertCircle className="w-3 h-3 mr-1 text-gray-400" />
+                            Supported formats: Excel (.xlsx, .xls)
+                        </p>
+                    </div>
+                </div>
+
+                {/* Dialogs - Keep as is */}
+                <InstitutionUploadDialog
+                    open={openInstitutionDialog}
+                    onClose={() => handleCloseDialog("institution")}
+                />
+                <CurricularUploadDialog
+                    open={openCurricularDialog}
+                    onClose={() => handleCloseDialog("curricular")}
+                />
+                <FacultyUploadDialog
+                    open={openFacultyDialog}
+                    onClose={() => handleCloseDialog("faculty")}
+                />
+                <GraduatesUploadDialog
+                    open={openGraduatesDialog}
+                    onClose={() => handleCloseDialog("graduates")}
+                />
+
+                {/* Stats Cards - Lighter and more minimal */}
+                <h2 className="text-base font-medium text-gray-700 mb-3 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-1.5 text-gray-500" />
+                    Key Statistics
+                </h2>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    {statCards.map((stat, index) => {
+                        // Light colors
+                        const bgColors = [
+                            "bg-blue-50",
+                            "bg-rose-50",
+                            "bg-emerald-50",
+                            "bg-amber-50",
+                        ];
+                        const textColors = [
+                            "text-blue-600",
+                            "text-rose-600",
+                            "text-emerald-600",
+                            "text-amber-600",
+                        ];
+
+                        return (
+                            <div
+                                key={index}
+                                className="bg-white rounded-md shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all"
+                            >
+                                <div className="p-3">
+                                    <div className="flex items-center">
+                                        <div
+                                            className={`p-2 rounded-md ${bgColors[index]} ${textColors[index]} mr-3`}
+                                        >
+                                            {stat.icon}
+                                        </div>
+                                        <div>
+                                            <p
+                                                className={`text-lg font-medium ${textColors[index]}`}
+                                            >
+                                                {stat.value}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {stat.label}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <hr className="border-gray-200 mb-4" />
-                            <div className="h-48 relative">
-                                <Pie
-                                    data={chart.data}
-                                    options={CHART_OPTIONS}
-                                />
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
+                        );
+                    })}
+                </div>
 
-            {/* Last updated indicator */}
-            <div className="mt-6 flex justify-center">
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    Last updated: {new Date().toLocaleDateString()}
+                {/* Charts - Lighter and more minimal */}
+                <h2 className="text-base font-medium text-gray-700 mb-3 flex items-center">
+                    <BarChart2 className="w-4 h-4 mr-1.5 text-gray-500" />
+                    Visual Insights
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
+                    {chartData.map((chart, index) => {
+                        // Update chart colors to lighter palette
+                        chart.data.datasets[0].backgroundColor = [
+                            "rgba(59, 130, 246, 0.7)", // blue
+                            "rgba(236, 72, 153, 0.7)", // rose
+                            "rgba(245, 158, 11, 0.7)", // amber
+                            "rgba(16, 185, 129, 0.7)", // emerald
+                            "rgba(139, 92, 246, 0.7)", // purple
+                            "rgba(107, 114, 128, 0.7)", // gray
+                            "rgba(239, 68, 68, 0.7)", // red
+                            "rgba(14, 165, 233, 0.7)", // sky
+                        ].slice(0, chart.data.labels.length);
+
+                        chart.data.datasets[0].borderColor = Array(
+                            chart.data.labels.length
+                        ).fill("#fff");
+                        chart.data.datasets[0].borderWidth = 1;
+
+                        return (
+                            <div
+                                key={index}
+                                className="bg-white rounded-md shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all"
+                            >
+                                <div className="p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-sm font-medium text-gray-700">
+                                            {chart.title}
+                                        </h3>
+                                        <div className="p-1 bg-gray-50 rounded-full text-gray-400">
+                                            <BarChart2 className="w-3 h-3" />
+                                        </div>
+                                    </div>
+                                    <div className="h-56 relative">
+                                        <Pie
+                                            data={chart.data}
+                                            options={{
+                                                ...CHART_OPTIONS,
+                                                plugins: {
+                                                    ...CHART_OPTIONS.plugins,
+                                                    legend: {
+                                                        ...CHART_OPTIONS
+                                                            .plugins.legend,
+                                                        labels: {
+                                                            ...CHART_OPTIONS
+                                                                .plugins.legend
+                                                                .labels,
+                                                            color: "#6B7280",
+                                                            boxWidth: 8,
+                                                            padding: 4,
+                                                            font: {
+                                                                size: 10,
+                                                            },
+                                                        },
+                                                    },
+                                                    tooltip: {
+                                                        ...CHART_OPTIONS
+                                                            .plugins.tooltip,
+                                                        backgroundColor:
+                                                            "rgba(255, 255, 255, 0.9)",
+                                                        titleColor: "#374151",
+                                                        bodyColor: "#374151",
+                                                        borderColor: "#E5E7EB",
+                                                        borderWidth: 1,
+                                                        padding: 8,
+                                                        bodyFont: {
+                                                            size: 11,
+                                                        },
+                                                        titleFont: {
+                                                            size: 11,
+                                                            weight: "normal",
+                                                        },
+                                                    },
+                                                },
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

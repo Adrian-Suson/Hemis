@@ -6,7 +6,7 @@ const ProfessionalLoadingScreen = ({
     progress = 0,
     mode = "spinner",
     theme = "ched",
-    message = "Loading...",
+    message = "Loading",
     showPercentage = true,
     isVisible = true,
     onComplete = () => {},
@@ -14,15 +14,17 @@ const ProfessionalLoadingScreen = ({
     const [animatedProgress, setAnimatedProgress] = useState(0);
     const [isCompleting, setIsCompleting] = useState(false);
 
-    // Animate progress value smoothly
+    // Optimize progress animation with fewer updates
     useEffect(() => {
         if (mode === "progress" && !isCompleting) {
-            const animationDuration = 350; // ms
-            const interval = 16; // ms - 60fps
+            // Reduce animation frequency for better performance
+            const animationDuration = 300; // ms - slightly faster
+            const interval = 30; // ms - reduced update frequency (33fps instead of 60fps)
             const steps = animationDuration / interval;
             const increment = (progress - animatedProgress) / steps;
 
-            if (Math.abs(progress - animatedProgress) < 0.1) {
+            // Skip tiny changes to reduce unnecessary renders
+            if (Math.abs(progress - animatedProgress) < 0.5) {
                 setAnimatedProgress(progress);
                 return;
             }
@@ -30,7 +32,8 @@ const ProfessionalLoadingScreen = ({
             const timer = setTimeout(() => {
                 setAnimatedProgress((prev) => {
                     const newValue = prev + increment;
-                    return Number(newValue.toFixed(1));
+                    // Round to single decimal to reduce state updates
+                    return Math.round(newValue * 10) / 10;
                 });
             }, interval);
 
@@ -44,7 +47,7 @@ const ProfessionalLoadingScreen = ({
             setIsCompleting(true);
             const timer = setTimeout(() => {
                 onComplete();
-            }, 700);
+            }, 500); // Reduced from 700ms to 500ms
             return () => clearTimeout(timer);
         }
     }, [progress, onComplete, isCompleting]);
@@ -54,48 +57,40 @@ const ProfessionalLoadingScreen = ({
     // Theme configurations
     const themes = {
         premium: {
-            background: "bg-gray-50",
-            progressBg: "bg-gray-200",
+            background: "bg-gray-50/50",
+            progressBg: "bg-gray-200/50",
             progressFill: "bg-blue-500",
-            progressTrail: "bg-blue-200",
             textColor: "text-gray-600",
             headingColor: "text-gray-800",
             accentColor: "text-blue-600",
             circleColor: "border-blue-500",
-            shadowColor: "rgba(37, 99, 235, 0.1)",
         },
         executive: {
-            background: "bg-gray-100",
-            progressBg: "bg-gray-200",
+            background: "bg-gray-100/50",
+            progressBg: "bg-gray-200/50",
             progressFill: "bg-indigo-600",
-            progressTrail: "bg-indigo-200",
             textColor: "text-gray-600",
             headingColor: "text-gray-800",
             accentColor: "text-indigo-700",
             circleColor: "border-indigo-600",
-            shadowColor: "rgba(79, 70, 229, 0.1)",
         },
         ched: {
-            background: "bg-white",
-            progressBg: "bg-gray-200",
+            background: "bg-white/50",
+            progressBg: "bg-gray-200/50",
             progressFill: "bg-blue-700",
-            progressTrail: "bg-blue-100",
             textColor: "text-gray-700",
             headingColor: "text-blue-800",
             accentColor: "text-blue-700",
             circleColor: "border-blue-700",
-            shadowColor: "rgba(29, 78, 216, 0.15)",
         },
         nightMode: {
-            background: "bg-gray-900",
-            progressBg: "bg-gray-700",
+            background: "bg-gray-900/50",
+            progressBg: "bg-gray-700/50",
             progressFill: "bg-blue-500",
-            progressTrail: "bg-blue-900",
             textColor: "text-gray-300",
             headingColor: "text-white",
             accentColor: "text-blue-400",
             circleColor: "border-blue-500",
-            shadowColor: "rgba(29, 78, 216, 0.2)",
         },
     };
 
@@ -106,88 +101,66 @@ const ProfessionalLoadingScreen = ({
         <div
             className={`fixed inset-0 w-screen h-screen ${currentTheme.background} flex flex-col justify-center items-center z-50 transition-all duration-300`}
         >
-            <div className="flex flex-col items-center justify-center">
-                {/* Logo with circling animation */}
+            <div className="flex flex-col items-center justify-center z-10">
+                {/* Logo with pulsing effect */}
                 <div className="relative mb-8 w-40 h-40">
-                    {/* Circling elements */}
+                    {/* Outer ring that pulses */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 opacity-30 animate-pulse-subtle"></div>
+
+                    {/* Rotating circle around logo */}
                     <div
-                        className={`absolute w-full h-full rounded-full border-4 ${currentTheme.circleColor} border-dashed animate-spin-slow opacity-60`}
-                    ></div>
-                    <div
-                        className={`absolute w-full h-full rounded-full border-4 ${currentTheme.circleColor} border-dotted animate-spin-reverse opacity-40`}
-                        style={{ animationDuration: "8s" }}
+                        className="absolute w-full h-full rounded-full border-4 border-yellow-400 border-dashed opacity-60"
+                        style={{ animation: "spin 10s linear infinite" }}
                     ></div>
 
                     {/* The Logo Image */}
-                    <div className="absolute inset-4 flex items-center justify-center">
+                    <div className="absolute inset-4 flex items-center justify-center bg-blue-900 bg-opacity-50 rounded-full">
                         <img
                             src={logoSrc}
-                            alt="Logo"
-                            className="rounded-full w-32 h-32 object-contain"
+                            alt="CHED Logo"
+                            className="w-32 h-32 object-contain filter drop-shadow-lg"
+                            loading="eager"
                         />
                     </div>
                 </div>
 
-                {/* Message */}
-                <p
-                    className={`${currentTheme.headingColor} text-xl font-medium mb-6`}
-                >
+                {/* Message with text gradient */}
+                <p className={`text-xl font-medium mb-6 text-transparent bg-clip-text bg-gradient-to-r ${currentTheme.progressFill}`}>
                     {message}
-                    <span className="inline-block animate-pulse-dot ml-1">
-                        .
-                    </span>
-                    <span
-                        className="inline-block animate-pulse-dot ml-0.5"
-                        style={{ animationDelay: "0.2s" }}
-                    >
-                        .
-                    </span>
-                    <span
-                        className="inline-block animate-pulse-dot ml-0.5"
-                        style={{ animationDelay: "0.4s" }}
-                    >
-                        .
-                    </span>
+                    <span className="loading-dots">...</span>
                 </p>
 
                 {showProgressBar && (
                     <div className="flex flex-col items-center w-full mt-2">
-                        {/* Progress bar */}
+                        {/* Enhanced progress bar with gradient and shine effect */}
                         <div
                             className={`relative w-64 sm:w-80 h-2.5 ${currentTheme.progressBg} rounded-full mb-2 overflow-hidden`}
                         >
-                            {/* Progress trail */}
                             <div
-                                className={`absolute top-0 left-0 h-full ${currentTheme.progressTrail} rounded-full transition-all duration-500 ease-out`}
-                                style={{
-                                    width: `${Math.min(
-                                        100,
-                                        animatedProgress + 5
-                                    )}%`,
-                                }}
-                            />
-
-                            {/* Main progress fill */}
-                            <div
-                                className={`absolute top-0 left-0 h-full ${currentTheme.progressFill} rounded-full transition-all duration-300 ease-out`}
+                                className={`absolute top-0 left-0 h-full bg-gradient-to-r ${currentTheme.progressFill} rounded-full transition-all duration-300 ease-out`}
                                 style={{ width: `${animatedProgress}%` }}
                             >
-                                {/* Shine effect */}
+                                {/* Enhanced shine effect */}
                                 <div
-                                    className="absolute top-0 right-0 h-full w-5 bg-white opacity-30"
+                                    className="absolute top-0 right-0 h-full w-8 bg-white opacity-30"
                                     style={{
-                                        transform:
-                                            "skewX(-20deg) translateX(50%)",
-                                        filter: "blur(2px)",
+                                        transform: "skewX(-20deg) translateX(10px)",
+                                        filter: "blur(5px)",
+                                    }}
+                                />
+                                <div
+                                    className="absolute top-0 right-0 h-full w-4 bg-white opacity-40"
+                                    style={{
+                                        transform: "skewX(-20deg) translateX(10px)",
                                     }}
                                 />
                             </div>
                         </div>
 
-                        {/* Percentage */}
+                        {/* Percentage with subtle pulse animation */}
                         {showPercentage && (
                             <p
-                                className={`${currentTheme.accentColor} text-base font-bold`}
+                                className={`${currentTheme.accentColor} text-lg font-bold animate-pulse-subtle`}
                             >
                                 {Math.round(animatedProgress)}%
                             </p>
@@ -196,41 +169,25 @@ const ProfessionalLoadingScreen = ({
                 )}
             </div>
 
-            {/* Custom CSS animations */}
+            {/* Simplified CSS animations */}
             <style>{`
-        .animate-spin-slow {
-          animation: spin 6s linear infinite;
-        }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
 
-        .animate-spin-reverse {
-          animation: spin 10s linear infinite reverse;
-        }
+                .loading-dots {
+                    display: inline-block;
+                    width: 24px;
+                    text-align: left;
+                    animation: loadingDots 1.5s infinite;
+                }
 
-        .animate-pulse-dot {
-          animation: pulseDot 1.5s infinite;
-          opacity: 0.7;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        @keyframes pulseDot {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.3); }
-        }
-
-        @keyframes orbit {
-          0% { transform: rotate(0deg) translateY(-70px) rotate(0deg); }
-          100% { transform: rotate(360deg) translateY(-70px) rotate(-360deg); }
-        }
-      `}</style>
+                @keyframes loadingDots {
+                    0%, 100% { opacity: 0.3; }
+                    50% { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
@@ -241,9 +198,7 @@ ProfessionalLoadingScreen.propTypes = {
     theme: PropTypes.oneOf(["premium", "executive", "ched", "nightMode"]),
     message: PropTypes.string,
     showPercentage: PropTypes.bool,
-    animationStyle: PropTypes.oneOf(["dynamic", "gradient", "pulse"]),
     isVisible: PropTypes.bool,
-    logoSrc: PropTypes.string,
     onComplete: PropTypes.func,
 };
 
