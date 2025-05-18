@@ -9,9 +9,9 @@ return new class extends Migration {
     {
         Schema::create('graduates_list', function (Blueprint $table) {
             $table->id(); // Auto-incrementing primary key
-            $table->string('institution_uuid', 255); // Changed to string to reference uuid
-            $table->foreign('institution_uuid')
-                ->references('uuid')
+            $table->unsignedBigInteger('institution_id'); // Changed to reference institution id
+            $table->foreign('institution_id')
+                ->references('id')
                 ->on('institutions')
                 ->onDelete('cascade'); // Foreign key to institutions table
             $table->string('student_id')->unique(); // Unique student ID

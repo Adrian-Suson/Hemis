@@ -129,7 +129,7 @@ const InstitutionTable = ({
             await axios.delete(
                 `${config.API_URL}/institutions/${institutionId}`,
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}` },  
                 }
             );
 

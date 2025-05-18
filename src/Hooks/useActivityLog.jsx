@@ -44,12 +44,12 @@ const useActivityLog = () => {
         setLoading(true);
         setError(null);
         try {
+            const userId = JSON.parse(localStorage.getItem('user'));
             const response = await axios.post(`${config.API_URL}/activity-logs`, {
+                user_id: userId.id,
                 action: logData.action,
                 description: logData.description,
-                model_type: logData.modelType,
-                model_id: logData.modelId,
-                properties: logData.properties
+
             }, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`

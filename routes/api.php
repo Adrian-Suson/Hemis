@@ -3,13 +3,14 @@
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\InstitutionController;
 use App\Http\Controllers\Api\FacultyProfileController;
-use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CurricularProgramController;
 use App\Http\Controllers\Api\GraduateController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InstitutionManagementController;
+use App\Http\Controllers\Api\ReportYearController; // Add this line
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -35,14 +36,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('campuses', CampusController::class);
 
     // Program Routes
-    Route::apiResource('programs', CurricularProgramController::class);
-    Route::get('programs/export/{category}', [CurricularProgramController::class, 'export']);
+    Route::apiResource('curricular_programs', CurricularProgramController::class);
 
     // Faculty Profile Routes
     Route::apiResource('faculty-profiles', FacultyProfileController::class);
 
     // Graduate List Routes
     Route::apiResource('graduates', GraduateController::class);
+
+    // Report Year Routes
+    Route::apiResource('report-years', ReportYearController::class); // Add this line
 
     // Activity Log Routes
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);

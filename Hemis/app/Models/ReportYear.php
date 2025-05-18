@@ -3,16 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ReportYear extends Model
 {
-
     protected $table = 'report_years';
 
     protected $fillable = [
         'year',
     ];
 
-    // No relationships defined, as this table is referenced by others
+    public $timestamps = false;
+
+    public function institutions()
+    {
+        return $this->hasMany(Institution::class, 'report_year', 'year');
+    }
 }

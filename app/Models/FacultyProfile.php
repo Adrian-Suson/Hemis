@@ -12,8 +12,7 @@ class FacultyProfile extends Model
     protected $table = 'faculty_profiles';
 
     protected $fillable = [
-        'institution_uuid',
-        'data_date',
+        'institution_id', // Updated to institution_id
         'faculty_group',
         'name',
         'generic_faculty_rank',
@@ -61,7 +60,7 @@ class FacultyProfile extends Model
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function reportYear()

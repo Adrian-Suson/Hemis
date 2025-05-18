@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Model
 {
-    use SoftDeletes;
-
-    protected $table = 'users';
+    use HasApiTokens;
+    use Notifiable;
 
     protected $fillable = [
         'profile_image',
@@ -19,7 +20,7 @@ class User extends Model
         'password',
         'role',
         'status',
-        'institution_uuid',
+        'institution_id',
         'remember_token',
     ];
 
@@ -29,6 +30,6 @@ class User extends Model
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 }

@@ -29,9 +29,9 @@ class CreateCampusesTable extends Migration
                 ->references('year')
                 ->on('report_years')
                 ->onDelete('set null');
-            $table->string('institution_uuid', 255); // Changed to string to reference uuid
-            $table->foreign('institution_uuid')
-                ->references('uuid')
+            $table->unsignedBigInteger('institution_id'); // Changed to reference institution id
+            $table->foreign('institution_id')
+                ->references('id')
                 ->on('institutions')
                 ->onDelete('cascade');
             $table->timestamps();

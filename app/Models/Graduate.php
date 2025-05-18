@@ -12,7 +12,7 @@ class Graduate extends Model
     protected $table = 'graduates_list';
 
     protected $fillable = [
-        'institution_uuid',
+        'institution_id', // Updated to institution_id
         'student_id',
         'date_of_birth',
         'last_name',
@@ -35,7 +35,7 @@ class Graduate extends Model
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function reportYear()

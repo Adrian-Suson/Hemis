@@ -61,12 +61,20 @@ const InstitutionManagement = () => {
     };
 
     // Filter options for dropdowns
-    const filterOptions = {
-        types: getUniqueValues(institutions, "institution_type"),
-        municipalities: getUniqueValues(institutions, "municipality"),
-        provinces: getUniqueValues(institutions, "province"),
-        reportYears: getUniqueValues(institutions, "report_year"),
-    };
+    const filterOptions = useMemo(() => {
+        const filteredInstitutions = institutions.filter(
+            (institution) =>
+                !reportYearFilter ||
+                String(institution.report_year) === reportYearFilter
+        );
+
+        return {
+            types: getUniqueValues(filteredInstitutions, "institution_type"),
+            municipalities: getUniqueValues(filteredInstitutions, "municipality"),
+            provinces: getUniqueValues(filteredInstitutions, "province"),
+            reportYears: getUniqueValues(institutions, "report_year"), // Always show all years
+        };
+    }, [institutions, reportYearFilter]);
 
     // Persist filters to localStorage
     useEffect(() => {
@@ -220,9 +228,7 @@ const InstitutionManagement = () => {
                 await createLog({
                     action: "uploaded_institution",
                     description: `Uploaded institution: ${extractedInstitution.name}`,
-                    modelType: "App\\Models\\Institution",
-                    modelId: institutionResponse.data.id,
-                    properties: extractedInstitution,
+
                 });
 
                 AlertComponent.showAlert(
@@ -338,24 +344,14 @@ const InstitutionManagement = () => {
                 );
                 updateProgress(100);
             } catch (error) {
-                console.error("Error sending data to backend:", error);
-                const errorMessage =
-                    error.response?.data?.message ||
-                    "Error uploading institution or campus data.";
-                const validationErrors = error.response?.data?.errors || {};
-                console.log("Validation errors:", validationErrors);
+                console.error("Error sending data to backend:", error.response.data.error);
+                const errorMessage = error.response?.data?.error || "An error occurred";
+                AlertComponent.showAlert(
+                    `${errorMessage}`,
+                    "error"
+                );
 
-                if (
-                    error.response?.status === 422 &&
-                    errorMessage.includes("UUID and report year")
-                ) {
-                    AlertComponent.showAlert(
-                        "An institution with the same UUID and report year already exists.",
-                        "error"
-                    );
-                } else {
-                    AlertComponent.showAlert(`${errorMessage}`, "error");
-                }
+
             } finally {
                 hideLoading();
                 setOpenUploadDialog(false);
@@ -449,6 +445,10 @@ const InstitutionManagement = () => {
                 break;
             case "reportYearFilter":
                 setReportYearFilter(value);
+                // Reset dependent filters when the report year changes
+                setTypeFilter("");
+                setMunicipalityFilter("");
+                setProvinceFilter("");
                 break;
             default:
                 break;
@@ -527,9 +527,7 @@ const InstitutionManagement = () => {
                                     </button>
                                     <FilterPopover
                                         open={openFilterPopover}
-                                        onClose={() =>
-                                            setOpenFilterPopover(false)
-                                        }
+                                        onClose={() => setOpenFilterPopover(false)}
                                         filters={filters}
                                         onFilterChange={handleFilterChange}
                                         onClearFilters={clearFilters}

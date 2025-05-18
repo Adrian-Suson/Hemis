@@ -12,8 +12,7 @@ class CurricularProgram extends Model
     protected $table = 'curricular_programs';
 
     protected $fillable = [
-        'institution_uuid',
-        'data_date',
+        'institution_id', // Updated to institution_id
         'program_name',
         'program_code',
         'major_name',
@@ -63,14 +62,13 @@ class CurricularProgram extends Model
     ];
 
     protected $casts = [
-        'data_date' => 'date',
         'tuition_per_unit' => 'decimal:2',
         'program_fee' => 'decimal:2',
     ];
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function reportYear()

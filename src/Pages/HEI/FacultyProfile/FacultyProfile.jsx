@@ -142,7 +142,6 @@ const FacultyProfileUpload = () => {
 
     const handleTabChange = (newValue) => {
         setSelectedGroup(newValue);
-        AlertComponent.showAlert(`Switched to ${newValue}`, "info");
     };
 
     const filteredFacultyProfiles = useMemo(() => {
@@ -577,9 +576,7 @@ const FacultyProfileUpload = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() =>
-                                navigate("/hei-admin/institutions")
-                            }
+                            onClick={() => navigate("/hei-admin/institutions")}
                             className="hover:underline"
                         >
                             Institution Management

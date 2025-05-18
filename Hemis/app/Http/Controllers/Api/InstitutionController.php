@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Institution;
+use App\Models\ReportYear; // Import the ReportYear model
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -38,7 +39,7 @@ class InstitutionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'uuid' => 'required|string|max:255',
+            'uuid' => 'required|string|max:255|unique:institutions,uuid',
             'name' => 'required|string|max:255',
             'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
@@ -62,17 +63,6 @@ class InstitutionController extends Controller
             'report_year' => 'nullable|integer|exists:report_years,year',
         ]);
 
-        // Check if an institution with the same UUID and report year already exists
-        $existingInstitution = Institution::where('uuid', $validated['uuid'])
-            ->where('report_year', $validated['report_year'])
-            ->first();
-
-        if ($existingInstitution) {
-            return response()->json([
-                'error' => 'An institution with the same UUID and report year already exists.',
-            ], 422);
-        }
-
         $institution = Institution::create($validated);
         $institution->load('region', 'province', 'municipality', 'reportYear');
 
@@ -89,7 +79,7 @@ class InstitutionController extends Controller
     public function update(Request $request, Institution $institution): JsonResponse
     {
         $validated = $request->validate([
-            'uuid' => 'required|string|max:255' . $institution->id,
+            'uuid' => 'required|string|max:255|unique:institutions,uuid,' . $institution->id,
             'name' => 'required|string|max:255',
             'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',

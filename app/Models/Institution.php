@@ -58,26 +58,26 @@ class Institution extends Model
 
     public function facultyProfiles()
     {
-        return $this->hasMany(FacultyProfile::class, 'institution_uuid', 'uuid');
+        return $this->hasMany(FacultyProfile::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function users()
     {
-        return $this->hasMany(User::class, 'institution_uuid', 'uuid');
+        return $this->hasMany(User::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function curricularPrograms()
     {
-        return $this->hasMany(CurricularProgram::class, 'institution_uuid', 'uuid');
+        return $this->hasMany(CurricularProgram::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function graduates()
     {
-        return $this->hasMany(Graduate::class, 'institution_uuid', 'uuid');
+        return $this->hasMany(Graduate::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function campuses()
     {
-        return $this->hasMany(Campus::class, 'institution_uuid', 'uuid');
+        return $this->hasMany(Campus::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 }

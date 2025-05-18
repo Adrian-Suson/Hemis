@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
-
 class FacultyProfileController extends Controller
 {
     /**
@@ -21,8 +20,8 @@ class FacultyProfileController extends Controller
     {
         $query = FacultyProfile::query()->with('institution', 'reportYear');
 
-        if ($request->has('institution_uuid')) {
-            $query->where('institution_uuid', $request->institution_uuid);
+        if ($request->has('institution_id')) {
+            $query->where('institution_id', $request->institution_id);
         }
 
         if ($request->has('faculty_group')) {
@@ -39,7 +38,6 @@ class FacultyProfileController extends Controller
             return [
                 'id' => $profile->id,
                 'institution' => $profile->institution ? $profile->institution->name : null,
-                'data_date' => $profile->data_date,
                 'faculty_group' => $profile->faculty_group,
                 'name' => $profile->name,
                 'generic_faculty_rank' => $profile->generic_faculty_rank,
@@ -104,14 +102,13 @@ class FacultyProfileController extends Controller
         }
 
         $validator = Validator::make($data, [
-            '*.institution_uuid' => 'nullable|string|exists:institutions,uuid',
-            '*.data_date' => 'required|date',
+            '*.institution_id' => 'nullable|integer|exists:institutions,id',
             '*.faculty_group' => 'nullable|string',
             '*.name' => 'nullable|string|max:255',
             '*.generic_faculty_rank' => 'nullable|integer',
             '*.home_college' => 'nullable|string|max:255',
             '*.home_department' => 'nullable|string|max:255',
-            '*.is_tenured' => 'nullable|boolean',
+            '*.is_tenured' => 'nullable|string|max:255',
             '*.ssl_salary_grade' => 'nullable|integer',
             '*.annual_basic_salary' => 'nullable|integer',
             '*.on_leave_without_pay' => 'nullable|integer',
@@ -216,7 +213,6 @@ class FacultyProfileController extends Controller
         return response()->json([
             'id' => $facultyProfile->id,
             'institution' => $facultyProfile->institution ? $facultyProfile->institution->name : null,
-            'data_date' => $facultyProfile->data_date,
             'faculty_group' => $facultyProfile->faculty_group,
             'name' => $facultyProfile->name,
             'generic_faculty_rank' => $facultyProfile->generic_faculty_rank,
@@ -271,14 +267,13 @@ class FacultyProfileController extends Controller
     public function update(Request $request, FacultyProfile $facultyProfile): JsonResponse
     {
         $validated = $request->validate([
-            'institution_uuid' => 'nullable|string|exists:institutions,uuid',
-            'data_date' => 'sometimes|required|date',
+            'institution_id' => 'nullable|integer|exists:institutions,id',
             'faculty_group' => 'nullable|string',
             'name' => 'nullable|string|max:255',
             'generic_faculty_rank' => 'nullable|integer',
             'home_college' => 'nullable|string|max:255',
             'home_department' => 'nullable|string|max:255',
-            'is_tenured' => 'nullable|boolean',
+            'is_tenured' => 'nullable|string|max:255',
             'ssl_salary_grade' => 'nullable|integer',
             'annual_basic_salary' => 'nullable|integer',
             'on_leave_without_pay' => 'nullable|integer',
@@ -327,7 +322,6 @@ class FacultyProfileController extends Controller
                 'data' => [
                     'id' => $facultyProfile->id,
                     'institution' => $facultyProfile->institution ? $facultyProfile->institution->name : null,
-                    'data_date' => $facultyProfile->data_date,
                     'faculty_group' => $facultyProfile->faculty_group,
                     'name' => $facultyProfile->name,
                     'generic_faculty_rank' => $facultyProfile->generic_faculty_rank,

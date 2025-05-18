@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { X, Upload } from "lucide-react";
-import moment from "moment";
 import config from "../../../utils/config";
 import axios from "axios";
 
@@ -29,7 +28,8 @@ const UploadDialog = ({
     const [regions, setRegions] = useState([]);
     const [provinces, setProvinces] = useState([]);
     const [municipalities, setMunicipalities] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(moment());
+    const [reportYears, setReportYears] = useState([]); // New state for report years
+    const [selectedYear, setSelectedYear] = useState(""); // New state for selected year
     const [uuid, setUuid] = useState("");
     const [existingUuids, setExistingUuids] = useState([]);
     const [filteredUuids, setFilteredUuids] = useState([]);
@@ -53,6 +53,35 @@ const UploadDialog = ({
         setExistingUuids(storedUuids);
         setFilteredUuids(storedUuids);
     }, []);
+
+    // Fetch report years
+    useEffect(() => {
+        const fetchReportYears = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const res = await axios.get(`${config.API_URL}/report-years`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const reversedYears = res.data.reverse(); // Reverse the order of the years
+                setReportYears(reversedYears);
+                // Set default year to the last one in the reversed array
+                if (reversedYears.length > 0) {
+                    setSelectedYear(reversedYears[reversedYears.length - 1].year);
+                }
+            } catch (error) {
+                console.error("Error fetching report years:", error);
+                setReportYears([]);
+                Swal.fire({
+                    title: "Error",
+                    text: "Failed to fetch report years.",
+                    icon: "error",
+                    confirmButtonColor: "#d33",
+                });
+            }
+        };
+        fetchReportYears();
+    }, []);
+
     useEffect(() => {
         const fetchRegions = async () => {
             try {
@@ -125,6 +154,7 @@ const UploadDialog = ({
         setUuidError("");
         setValidationTriggered(false);
         setShowUuidSuggestions(false);
+        setSelectedYear(""); // Reset selected year
     };
 
     const handleFileChange = (event) => {
@@ -192,6 +222,10 @@ const UploadDialog = ({
             setUuidError("");
         }
 
+        if (!selectedYear) {
+            errors.push("Please select a year.");
+        }
+
         if (!selectedFile) {
             setFileError("Please choose a file.");
             errors.push("A file is required.");
@@ -234,10 +268,10 @@ const UploadDialog = ({
             const updatedUuids = [...existingUuids, uuid];
             setExistingUuids(updatedUuids);
             setFilteredUuids(updatedUuids);
-            localStorage.setItem("uuids", JSON.stringify(updatedUuids)); // Save to local storage
+            localStorage.setItem("uuids", JSON.stringify(updatedUuids));
         }
 
-        handleFileUpload(selectedDate.year(), uuid);
+        handleFileUpload(selectedYear, uuid); // Pass selectedYear instead of selectedDate.year()
     };
 
     if (!openUploadDialog) return null;
@@ -336,7 +370,7 @@ const UploadDialog = ({
                             </div>
                         </div>
 
-                        {/* Year Picker */}
+                        {/* Year Dropdown */}
                         <div>
                             <label
                                 htmlFor="year"
@@ -344,19 +378,28 @@ const UploadDialog = ({
                             >
                                 Select Year
                             </label>
-                            <input
+                            <select
                                 id="year"
-                                type="number"
-                                value={selectedDate.year()}
+                                value={selectedYear}
                                 onChange={(e) =>
-                                    setSelectedDate(
-                                        moment().year(Number(e.target.value))
-                                    )
+                                    setSelectedYear(e.target.value)
                                 }
-                                min="1900"
-                                max={new Date().getFullYear()}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            />
+                                className={`w-full px-3 py-2 border ${
+                                    !selectedYear && validationTriggered
+                                        ? "border-red-500"
+                                        : "border-gray-300"
+                                } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                            >
+                                <option value="">Select Year</option>
+                                {reportYears.map((reportYear) => (
+                                    <option
+                                        key={reportYear.id}
+                                        value={reportYear.year}
+                                    >
+                                        {reportYear.year}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* Region */}

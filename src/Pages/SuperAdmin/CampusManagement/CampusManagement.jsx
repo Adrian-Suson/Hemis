@@ -19,6 +19,7 @@ const CampusManagement = () => {
             const institutionId = decryptId(encryptedInstitutionId);
             setLoading(true);
             showLoading();
+            console.log("Institution ID:", institutionId);
             const token = localStorage.getItem("token");
 
             const response = await axios.get(
@@ -28,7 +29,7 @@ const CampusManagement = () => {
 
             console.log("Fetched Campuses Data:", response.data);
             setCampuses(response.data.campuses || []);
-            
+
         } catch (error) {
             console.error("Error fetching campuses:", error);
             setCampuses([]);

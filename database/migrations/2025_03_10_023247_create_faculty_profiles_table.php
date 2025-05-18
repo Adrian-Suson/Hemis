@@ -11,20 +11,18 @@ class CreateFacultyProfilesTable extends Migration
         // Create faculty_profiles table with institution relationship
         Schema::create('faculty_profiles', function (Blueprint $table) {
             $table->id();
-            $table->string('institution_uuid', 255)
-                ->nullable(); // Changed to string to reference uuid
-            $table->foreign('institution_uuid')
-                ->references('uuid')
+            $table->unsignedBigInteger('institution_id')->nullable(); // Ensure this column exists
+            $table->foreign('institution_id')
+                ->references('id')
                 ->on('institutions')
-                ->onDelete('cascade'); // Links to institutions table
+                ->onDelete('cascade'); // Add foreign key constraint
 
-            $table->string('data_date'); // Added date column to track when data was recorded
             $table->string('faculty_group')->nullable(); // New column for faculty groups (A1, A2, A3, B, C1, C2, C3, D, E)
             $table->string('name')->nullable(); // NAME OF FACULTY (A2)
             $table->integer('generic_faculty_rank')->nullable(); // GENERIC FACULTY RANK (A3)
             $table->string('home_college')->nullable(); // HOME COLLEGE (A4)
             $table->string('home_department')->nullable(); // HOME DEPT (A5)
-            $table->boolean('is_tenured')->nullable(); // IS FACULTY MEMBER TENURED? (A6)
+            $table->string('is_tenured')->nullable(); // IS FACULTY MEMBER TENURED? (A6)
             $table->integer('ssl_salary_grade')->nullable(); // SSL SALARY GRADE (A7)
             $table->integer('annual_basic_salary')->nullable(); // ANNUAL BASIC SALARY (A8)
             $table->integer('on_leave_without_pay')->nullable(); // ON LEAVE WITHOUT PAY? (A9)

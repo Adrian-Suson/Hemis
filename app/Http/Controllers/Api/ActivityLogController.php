@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class ActivityLogController extends Controller
@@ -19,10 +18,6 @@ class ActivityLogController extends Controller
 
         if ($request->has('action')) {
             $query->where('action', $request->action);
-        }
-
-        if ($request->has('model_type')) {
-            $query->where('model_type', $request->model_type);
         }
 
         $logs = $query->paginate($request->get('per_page', 20));
@@ -40,9 +35,7 @@ class ActivityLogController extends Controller
         $validator = Validator::make($request->all(), [
             'action' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'model_type' => 'nullable|string',
-            'model_id' => 'nullable|integer',
-            'properties' => 'nullable|array'
+
         ]);
 
         if ($validator->fails()) {
@@ -52,12 +45,10 @@ class ActivityLogController extends Controller
         }
 
         $log = ActivityLog::create([
-            'user_id' => Auth::id(),
+            'user_id' => $request->user()->id,
             'action' => $request->action,
             'description' => $request->description,
-            'model_type' => $request->model_type,
-            'model_id' => $request->model_id,
-            'properties' => $request->properties
+
         ]);
 
         return response()->json([

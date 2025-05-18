@@ -76,25 +76,25 @@ const CHART_OPTIONS = {
             boxPadding: 4,
             usePointStyle: true,
             callbacks: {
-                label: function(context) {
-                    const label = context.label || '';
+                label: function (context) {
+                    const label = context.label || "";
                     const value = context.raw || 0;
                     return `${label}: ${value.toLocaleString()}`;
-                }
-            }
+                },
+            },
         },
     },
-    cutout: '70%',
+    cutout: "70%",
     elements: {
         arc: {
-            borderWidth: 0
-        }
+            borderWidth: 0,
+        },
     },
     animation: {
         animateScale: true,
         animateRotate: true,
-        duration: 800
-    }
+        duration: 800,
+    },
 };
 
 const DashboardPage = () => {
@@ -105,6 +105,13 @@ const DashboardPage = () => {
         institutions: [],
         loading: true,
         error: null,
+    });
+
+    const [originalStats, setOriginalStats] = useState({
+        users: [],
+        facultyProfiles: [],
+        programs: [],
+        institutions: [],
     });
 
     const [refreshing, setRefreshing] = useState(false);
@@ -118,9 +125,9 @@ const DashboardPage = () => {
     const { showLoading, hideLoading } = useLoading();
 
     const toggleSection = (section) => {
-        setExpandedSections(prev => ({
+        setExpandedSections((prev) => ({
             ...prev,
-            [section]: !prev[section]
+            [section]: !prev[section],
         }));
     };
 
@@ -130,7 +137,7 @@ const DashboardPage = () => {
             setStats((prev) => ({
                 ...prev,
                 error: "No authentication token",
-                loading: false,
+                loading: false, // Ensure loading is turned off
             }));
             return;
         }
@@ -140,49 +147,41 @@ const DashboardPage = () => {
 
         try {
             console.log("Fetching dashboard data...");
-            // Include report_year in the API call if selected
-            const url = selectedYear
-                ? `${config.API_URL}/dashboard-data?report_year=${selectedYear}`
-                : `${config.API_URL}/dashboard-data`;
+            const url = `${config.API_URL}/dashboard-data`; // Fetch all data
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            if (response.headers["content-type"]?.includes("application/json")) {
+            if (
+                response.headers["content-type"]?.includes("application/json")
+            ) {
                 console.log("API Response:", response.data);
 
-                let { users, facultyProfiles, programs, institutions } = response.data;
+                const { users, facultyProfiles, programs, institutions } =
+                    response.data;
 
-                // Client-side filtering to ensure related data matches institutions
-                if (selectedYear) {
-                    const validInstitutionIds = new Set(
-                        institutions
-                            .filter(inst => inst.report_year === parseInt(selectedYear))
-                            .map(inst => inst.id)
-                    );
-
-                    users = users.filter(user => validInstitutionIds.has(user.institution_id));
-                    facultyProfiles = facultyProfiles.filter(profile => validInstitutionIds.has(profile.institution_id));
-                    programs = programs.filter(program => validInstitutionIds.has(program.institution_id));
-                    institutions = institutions.filter(inst => inst.report_year === parseInt(selectedYear));
-                }
-
-                const newStats = {
+                setOriginalStats({
                     users,
                     facultyProfiles,
                     programs,
                     institutions,
-                    loading: false,
-                    error: null,
-                };
+                });
 
-                setStats(newStats);
+                setStats({
+                    users,
+                    facultyProfiles,
+                    programs,
+                    institutions,
+                    loading: false, // Turn off loading
+                    error: null,
+                });
+                console.log("API Response Structure:", response.data);
             } else {
                 console.error("Unexpected response format:", response.data);
                 setStats((prev) => ({
                     ...prev,
                     error: "Unexpected response format from the server.",
-                    loading: false,
+                    loading: false, // Turn off loading
                 }));
             }
         } catch (error) {
@@ -190,23 +189,21 @@ const DashboardPage = () => {
             setStats((prev) => ({
                 ...prev,
                 error: `Failed to load statistics: ${error.message}`,
-                loading: false,
+                loading: false, // Turn off loading
             }));
         } finally {
             hideLoading();
             setRefreshing(false);
         }
-    }, [showLoading, hideLoading, selectedYear]);
-
-    useEffect(() => {
-        fetchStats();
-    }, [selectedYear]);
+    }, [showLoading, hideLoading]);
 
     // Get unique report years from institutions
     const availableYears = useMemo(() => {
-        const years = new Set(stats.institutions.map(inst => inst.report_year));
+        const years = new Set(
+            originalStats.institutions.map((inst) => inst.report_year)
+        );
         return ["", ...Array.from(years).sort((a, b) => b - a)]; // Include empty option for "All Years"
-    }, [stats.institutions]);
+    }, [originalStats.institutions]);
 
     const aggregations = useMemo(() => {
         const totals = {
@@ -226,14 +223,13 @@ const DashboardPage = () => {
                 ) || 0,
         };
 
-        const genderBreakdown =
-            stats.programs?.reduce(
-                (acc, program) => ({
-                    male: acc.male + (program.subtotal_male || 0),
-                    female: acc.female + (program.subtotal_female || 0),
-                }),
-                { male: 0, female: 0 }
-            ) || { male: 0, female: 0 };
+        const genderBreakdown = stats.programs?.reduce(
+            (acc, program) => ({
+                male: acc.male + (program.subtotal_male || 0),
+                female: acc.female + (program.subtotal_female || 0),
+            }),
+            { male: 0, female: 0 }
+        ) || { male: 0, female: 0 };
 
         const enrollmentByYearLevel =
             stats.programs?.reduce((acc, program) => {
@@ -260,20 +256,25 @@ const DashboardPage = () => {
         // Calculate gender percentages
         const totalStudents = genderBreakdown.male + genderBreakdown.female;
         const genderPercentage = {
-            male: totalStudents ? Math.round((genderBreakdown.male / totalStudents) * 100) : 0,
-            female: totalStudents ? Math.round((genderBreakdown.female / totalStudents) * 100) : 0,
+            male: totalStudents
+                ? Math.round((genderBreakdown.male / totalStudents) * 100)
+                : 0,
+            female: totalStudents
+                ? Math.round((genderBreakdown.female / totalStudents) * 100)
+                : 0,
         };
 
         // Graduates vs Enrollments percentages
-        const graduationRate = totals.enrollments ?
-            Math.round((totals.graduates / totals.enrollments) * 100) : 0;
+        const graduationRate = totals.enrollments
+            ? Math.round((totals.graduates / totals.enrollments) * 100)
+            : 0;
 
         return {
             totals,
             genderBreakdown,
             genderPercentage,
             enrollmentByYearLevel,
-            graduationRate
+            graduationRate,
         };
     }, [stats]);
 
@@ -281,15 +282,24 @@ const DashboardPage = () => {
         const yearLevelKeys = Object.keys(aggregations.enrollmentByYearLevel);
 
         // Calculate percentage for each year level
-        const totalEnrollments = Object.values(aggregations.enrollmentByYearLevel).reduce((a, b) => a + b, 0);
+        const totalEnrollments = Object.values(
+            aggregations.enrollmentByYearLevel
+        ).reduce((a, b) => a + b, 0);
         const yearLevelPercentages = {};
-        Object.entries(aggregations.enrollmentByYearLevel).forEach(([level, count]) => {
-            yearLevelPercentages[level] = totalEnrollments ? Math.round((count / totalEnrollments) * 100) : 0;
-        });
+        Object.entries(aggregations.enrollmentByYearLevel).forEach(
+            ([level, count]) => {
+                yearLevelPercentages[level] = totalEnrollments
+                    ? Math.round((count / totalEnrollments) * 100)
+                    : 0;
+            }
+        );
 
         // Find highest year level
-        const maxYearLevel = Object.entries(aggregations.enrollmentByYearLevel).reduce(
-            (max, [level, count]) => count > (max.count || 0) ? {level, count} : max,
+        const maxYearLevel = Object.entries(
+            aggregations.enrollmentByYearLevel
+        ).reduce(
+            (max, [level, count]) =>
+                count > (max.count || 0) ? { level, count } : max,
             {}
         );
 
@@ -319,15 +329,15 @@ const DashboardPage = () => {
                         label: "Male",
                         value: aggregations.genderBreakdown.male.toLocaleString(),
                         percentage: aggregations.genderPercentage.male + "%",
-                        color: CHART_COLORS.primary
+                        color: CHART_COLORS.primary,
                     },
                     {
                         label: "Female",
                         value: aggregations.genderBreakdown.female.toLocaleString(),
                         percentage: aggregations.genderPercentage.female + "%",
-                        color: CHART_COLORS.secondary
-                    }
-                ]
+                        color: CHART_COLORS.secondary,
+                    },
+                ],
             },
             {
                 title: "Institution Overview",
@@ -355,19 +365,19 @@ const DashboardPage = () => {
                     {
                         label: "Programs",
                         value: aggregations.totals.programs.toLocaleString(),
-                        color: CHART_COLORS.teal
+                        color: CHART_COLORS.teal,
                     },
                     {
                         label: "Faculty",
                         value: aggregations.totals.faculty.toLocaleString(),
-                        color: CHART_COLORS.purple
+                        color: CHART_COLORS.purple,
                     },
                     {
                         label: "Institutions",
                         value: aggregations.totals.institutions.toLocaleString(),
-                        color: CHART_COLORS.orange
-                    }
-                ]
+                        color: CHART_COLORS.orange,
+                    },
+                ],
             },
             {
                 title: "Student Status",
@@ -393,19 +403,19 @@ const DashboardPage = () => {
                     {
                         label: "Enrolled",
                         value: aggregations.totals.enrollments.toLocaleString(),
-                        color: CHART_COLORS.blue
+                        color: CHART_COLORS.blue,
                     },
                     {
                         label: "Graduates",
                         value: aggregations.totals.graduates.toLocaleString(),
-                        color: CHART_COLORS.green
+                        color: CHART_COLORS.green,
                     },
                     {
                         label: "Graduation Rate",
                         value: aggregations.graduationRate + "%",
-                        color: CHART_COLORS.green
-                    }
-                ]
+                        color: CHART_COLORS.green,
+                    },
+                ],
             },
             {
                 title: "Year Level Distribution",
@@ -436,23 +446,68 @@ const DashboardPage = () => {
                     {
                         label: "Total Students",
                         value: totalEnrollments.toLocaleString(),
-                        color: CHART_COLORS.grey
+                        color: CHART_COLORS.grey,
                     },
                     {
                         label: "Largest Year",
                         value: maxYearLevel.level,
-                        percentage: maxYearLevel.count ? maxYearLevel.count.toLocaleString() + " students" : "0 students",
-                        color: CHART_COLORS.primary
+                        percentage: maxYearLevel.count
+                            ? maxYearLevel.count.toLocaleString() + " students"
+                            : "0 students",
+                        color: CHART_COLORS.primary,
                     },
                     {
                         label: "Average per Year",
-                        value: yearLevelKeys.length ? Math.round(totalEnrollments / yearLevelKeys.length).toLocaleString() : "0",
-                        color: CHART_COLORS.purple
-                    }
-                ]
+                        value: yearLevelKeys.length
+                            ? Math.round(
+                                  totalEnrollments / yearLevelKeys.length
+                              ).toLocaleString()
+                            : "0",
+                        color: CHART_COLORS.purple,
+                    },
+                ],
             },
         ];
     }, [aggregations]);
+
+    useEffect(() => {
+        fetchStats();
+    }, []);
+
+    useEffect(() => {
+        if (selectedYear) {
+            const filteredInstitutions = originalStats.institutions.filter(
+                (inst) => inst.report_year === parseInt(selectedYear)
+            );
+
+            const validInstitutionIds = new Set(
+                filteredInstitutions.map((inst) => inst.id)
+            );
+
+            const filteredStats = {
+                users: originalStats.users.filter((user) =>
+                    validInstitutionIds.has(user.institution_id)
+                ),
+                facultyProfiles: originalStats.facultyProfiles.filter(
+                    (profile) => validInstitutionIds.has(profile.institution_id)
+                ),
+                programs: originalStats.programs.filter((program) =>
+                    validInstitutionIds.has(program.institution_id)
+                ),
+                institutions: filteredInstitutions,
+            };
+
+            setStats((prev) => ({
+                ...prev,
+                ...filteredStats,
+            }));
+        } else {
+            setStats((prev) => ({
+                ...prev,
+                ...originalStats,
+            }));
+        }
+    }, [selectedYear, originalStats]);
 
     if (stats.loading) {
         return <DashboardSkeleton />;
@@ -475,12 +530,15 @@ const DashboardPage = () => {
                             <h2 className="text-base font-semibold text-gray-800 mb-1">
                                 Error Loading Dashboard
                             </h2>
-                            <p className="text-sm text-gray-600 mb-2">{stats.error}</p>
+                            <p className="text-sm text-gray-600 mb-2">
+                                {stats.error}
+                            </p>
                             <button
                                 onClick={fetchStats}
                                 className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-medium transition-colors flex items-center"
                             >
-                                <RefreshCw className="w-3 h-3 mr-1.5" /> Try Again
+                                <RefreshCw className="w-3 h-3 mr-1.5" /> Try
+                                Again
                             </button>
                         </div>
                     </div>
@@ -530,8 +588,12 @@ const DashboardPage = () => {
                 {/* Header */}
                 <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-baseline">
-                        <h1 className="text-lg font-bold text-gray-800">Educational Dashboard</h1>
-                        <span className="ml-2 text-xs text-gray-500">Overview</span>
+                        <h1 className="text-lg font-bold text-gray-800">
+                            Educational Dashboard
+                        </h1>
+                        <span className="ml-2 text-xs text-gray-500">
+                            Overview
+                        </span>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -539,15 +601,19 @@ const DashboardPage = () => {
                         <div className="relative">
                             <select
                                 value={selectedYear}
-                                onChange={(e) => setSelectedYear(e.target.value)}
+                                onChange={(e) =>
+                                    setSelectedYear(e.target.value)
+                                }
                                 className="appearance-none bg-white border border-gray-200 rounded-md pl-8 pr-6 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             >
                                 <option value="">All Years</option>
-                                {availableYears.filter(year => year).map((year) => (
-                                    <option key={year} value={year}>
-                                        {year}
-                                    </option>
-                                ))}
+                                {availableYears
+                                    .filter((year) => year)
+                                    .map((year) => (
+                                        <option key={year} value={year}>
+                                            {year}
+                                        </option>
+                                    ))}
                             </select>
                             <Calendar className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                         </div>
@@ -555,13 +621,21 @@ const DashboardPage = () => {
                         <div className="flex items-center bg-white rounded-md border border-gray-200 shadow-sm overflow-hidden">
                             <button
                                 onClick={() => setViewMode("grid")}
-                                className={`p-1.5 ${viewMode === "grid" ? "bg-indigo-500 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                className={`p-1.5 ${
+                                    viewMode === "grid"
+                                        ? "bg-indigo-500 text-white"
+                                        : "bg-white text-gray-600 hover:bg-gray-50"
+                                }`}
                             >
                                 <Grid className="w-3.5 h-3.5" />
                             </button>
                             <button
                                 onClick={() => setViewMode("compact")}
-                                className={`p-1.5 ${viewMode === "compact" ? "bg-indigo-500 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                                className={`p-1.5 ${
+                                    viewMode === "compact"
+                                        ? "bg-indigo-500 text-white"
+                                        : "bg-white text-gray-600 hover:bg-gray-50"
+                                }`}
                             >
                                 <List className="w-3.5 h-3.5" />
                             </button>
@@ -570,12 +644,17 @@ const DashboardPage = () => {
                         <button
                             onClick={fetchStats}
                             disabled={refreshing}
-                            className={`p-1.5 rounded-md border shadow-sm ${refreshing
-                                ? "bg-gray-100 text-gray-400 border-gray-200"
-                                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                            className={`p-1.5 rounded-md border shadow-sm ${
+                                refreshing
+                                    ? "bg-gray-100 text-gray-400 border-gray-200"
+                                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
                             }`}
                         >
-                            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+                            <RefreshCw
+                                className={`w-3.5 h-3.5 ${
+                                    refreshing ? "animate-spin" : ""
+                                }`}
+                            />
                         </button>
 
                         <button className="p-1.5 rounded-md border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50">
@@ -592,10 +671,14 @@ const DashboardPage = () => {
                             Key Statistics
                         </h2>
                         <button
-                            onClick={() => toggleSection('stats')}
+                            onClick={() => toggleSection("stats")}
                             className="p-1 rounded-md hover:bg-gray-100"
                         >
-                            {expandedSections.stats ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            {expandedSections.stats ? (
+                                <ChevronUp size={14} />
+                            ) : (
+                                <ChevronDown size={14} />
+                            )}
                         </button>
                     </div>
 
@@ -615,13 +698,20 @@ const DashboardPage = () => {
                                                     key={index}
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
-                                                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                                                    transition={{
+                                                        duration: 0.2,
+                                                        delay: index * 0.05,
+                                                    }}
                                                     className={`${stat.bgColor} rounded-lg p-2 text-center`}
                                                 >
-                                                    <div className={`${stat.iconBg} text-white p-1.5 rounded-full mx-auto mb-1.5 w-7 h-7 flex items-center justify-center`}>
+                                                    <div
+                                                        className={`${stat.iconBg} text-white p-1.5 rounded-full mx-auto mb-1.5 w-7 h-7 flex items-center justify-center`}
+                                                    >
                                                         {stat.icon}
                                                     </div>
-                                                    <p className={`text-base font-bold ${stat.color}`}>
+                                                    <p
+                                                        className={`text-base font-bold ${stat.color}`}
+                                                    >
                                                         {stat.value}
                                                     </p>
                                                     <p className="text-xs text-gray-500 mt-0.5">
@@ -638,16 +728,23 @@ const DashboardPage = () => {
                                                 key={index}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.2, delay: index * 0.05 }}
+                                                transition={{
+                                                    duration: 0.2,
+                                                    delay: index * 0.05,
+                                                }}
                                                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
                                             >
                                                 <div className="p-3">
                                                     <div className="flex items-center">
-                                                        <div className={`${stat.iconBg} text-white p-2 rounded-lg mr-3`}>
+                                                        <div
+                                                            className={`${stat.iconBg} text-white p-2 rounded-lg mr-3`}
+                                                        >
                                                             {stat.icon}
                                                         </div>
                                                         <div>
-                                                            <p className={`text-lg font-bold ${stat.color}`}>
+                                                            <p
+                                                                className={`text-lg font-bold ${stat.color}`}
+                                                            >
                                                                 {stat.value}
                                                             </p>
                                                             <p className="text-xs text-gray-500">
@@ -673,10 +770,14 @@ const DashboardPage = () => {
                             Visual Insights
                         </h2>
                         <button
-                            onClick={() => toggleSection('charts')}
+                            onClick={() => toggleSection("charts")}
                             className="p-1 rounded-md hover:bg-gray-100"
                         >
-                            {expandedSections.charts ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            {expandedSections.charts ? (
+                                <ChevronUp size={14} />
+                            ) : (
+                                <ChevronDown size={14} />
+                            )}
                         </button>
                     </div>
 
@@ -696,7 +797,10 @@ const DashboardPage = () => {
                                                     key={index}
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
-                                                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                                                    transition={{
+                                                        duration: 0.2,
+                                                        delay: index * 0.05,
+                                                    }}
                                                     className="bg-gray-50 rounded-lg p-2"
                                                 >
                                                     <div className="flex items-center justify-between mb-1">
@@ -705,31 +809,36 @@ const DashboardPage = () => {
                                                         </h3>
                                                     </div>
                                                     <div className="h-32 relative">
-                                                        {chart.type === "doughnut" ? (
+                                                        {chart.type ===
+                                                        "doughnut" ? (
                                                             <Doughnut
-                                                                data={chart.data}
+                                                                data={
+                                                                    chart.data
+                                                                }
                                                                 options={{
                                                                     ...CHART_OPTIONS,
                                                                     plugins: {
                                                                         ...CHART_OPTIONS.plugins,
                                                                         legend: {
-                                                                            display: false
-                                                                        }
-                                                                    }
+                                                                            display: false,
+                                                                        },
+                                                                    },
                                                                 }}
                                                             />
                                                         ) : (
                                                             <Pie
-                                                                data={chart.data}
+                                                                data={
+                                                                    chart.data
+                                                                }
                                                                 options={{
                                                                     ...CHART_OPTIONS,
-                                                                    cutout: '0%',
+                                                                    cutout: "0%",
                                                                     plugins: {
                                                                         ...CHART_OPTIONS.plugins,
                                                                         legend: {
-                                                                            display: false
-                                                                        }
-                                                                    }
+                                                                            display: false,
+                                                                        },
+                                                                    },
                                                                 }}
                                                             />
                                                         )}
@@ -745,7 +854,10 @@ const DashboardPage = () => {
                                                 key={index}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.2, delay: index * 0.05 }}
+                                                transition={{
+                                                    duration: 0.2,
+                                                    delay: index * 0.05,
+                                                }}
                                                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
                                             >
                                                 <div className="p-4">
@@ -757,46 +869,67 @@ const DashboardPage = () => {
 
                                                     <div className="flex flex-col sm:flex-row">
                                                         <div className="h-48 sm:h-52 w-full sm:w-1/2 relative">
-                                                            {chart.type === "doughnut" ? (
+                                                            {chart.type ===
+                                                            "doughnut" ? (
                                                                 <Doughnut
-                                                                    data={chart.data}
-                                                                    options={CHART_OPTIONS}
+                                                                    data={
+                                                                        chart.data
+                                                                    }
+                                                                    options={
+                                                                        CHART_OPTIONS
+                                                                    }
                                                                 />
                                                             ) : (
                                                                 <Pie
-                                                                    data={chart.data}
+                                                                    data={
+                                                                        chart.data
+                                                                    }
                                                                     options={{
                                                                         ...CHART_OPTIONS,
-                                                                        cutout: '0%',
+                                                                        cutout: "0%",
                                                                     }}
                                                                 />
                                                             )}
                                                         </div>
 
                                                         <div className="mt-3 sm:mt-0 sm:ml-4 sm:w-1/2 flex flex-col justify-center">
-                                                            {chart.info.map((item, i) => (
-                                                                <div key={i} className="mb-2">
-                                                                    <div className="flex items-center">
-                                                                        <div
-                                                                            className="w-2.5 h-2.5 rounded-full mr-2"
-                                                                            style={{ backgroundColor: item.color }}
-                                                                        ></div>
-                                                                        <span className="text-xs font-medium text-gray-700">
-                                                                            {item.label}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="ml-4.5 mt-0.5">
-                                                                        <div className="text-base font-bold text-gray-800">
-                                                                            {item.value}
+                                                            {chart.info.map(
+                                                                (item, i) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        className="mb-2"
+                                                                    >
+                                                                        <div className="flex items-center">
+                                                                            <div
+                                                                                className="w-2.5 h-2.5 rounded-full mr-2"
+                                                                                style={{
+                                                                                    backgroundColor:
+                                                                                        item.color,
+                                                                                }}
+                                                                            ></div>
+                                                                            <span className="text-xs font-medium text-gray-700">
+                                                                                {
+                                                                                    item.label
+                                                                                }
+                                                                            </span>
                                                                         </div>
-                                                                        {item.percentage && (
-                                                                            <div className="text-xs text-gray-500">
-                                                                                {item.percentage}
+                                                                        <div className="ml-4.5 mt-0.5">
+                                                                            <div className="text-base font-bold text-gray-800">
+                                                                                {
+                                                                                    item.value
+                                                                                }
                                                                             </div>
-                                                                        )}
+                                                                            {item.percentage && (
+                                                                                <div className="text-xs text-gray-500">
+                                                                                    {
+                                                                                        item.percentage
+                                                                                    }
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
+                                                                )
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RegionSeeder::class,
             ProvinceSeeder::class,
             MunicipalitySeeder::class,
+            ReportYearsSeeder::class,
         ]);
     }
 }

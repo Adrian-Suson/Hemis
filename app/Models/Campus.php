@@ -27,7 +27,7 @@ class Campus extends Model
         'latitude_coordinates',
         'longitude_coordinates',
         'report_year',
-        'institution_uuid',
+        'institution_id', // Updated to institution_id
     ];
 
     protected $casts = [
@@ -39,7 +39,7 @@ class Campus extends Model
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class, 'institution_uuid', 'uuid');
+        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
     }
 
     public function reportYear()

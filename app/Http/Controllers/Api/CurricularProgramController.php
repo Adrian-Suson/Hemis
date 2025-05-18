@@ -19,8 +19,8 @@ class CurricularProgramController extends Controller
         try {
             $query = CurricularProgram::query()->with('institution', 'reportYear');
 
-            if ($request->has('institution_uuid')) {
-                $query->where('institution_uuid', $request->query('institution_uuid'));
+            if ($request->has('institution_id')) {
+                $query->where('institution_id', $request->query('institution_id'));
             }
 
             if ($request->has('program_type')) {
@@ -33,63 +33,9 @@ class CurricularProgramController extends Controller
 
             $programs = $query->get();
 
-            $transformed = $programs->map(function ($program) {
-                return [
-                    'id' => $program->id,
-                    'institution' => $program->institution ? $program->institution->name : null,
-                    'data_date' => $program->data_date->toDateString(),
-                    'program_name' => $program->program_name,
-                    'program_code' => $program->program_code,
-                    'major_name' => $program->major_name,
-                    'major_code' => $program->major_code,
-                    'category' => $program->category,
-                    'serial' => $program->serial,
-                    'year' => $program->year,
-                    'is_thesis_dissertation_required' => $program->is_thesis_dissertation_required,
-                    'program_status' => $program->program_status,
-                    'calendar_use_code' => $program->calendar_use_code,
-                    'program_normal_length_in_years' => $program->program_normal_length_in_years,
-                    'lab_units' => $program->lab_units,
-                    'lecture_units' => $program->lecture_units,
-                    'total_units' => $program->total_units,
-                    'tuition_per_unit' => $program->tuition_per_unit,
-                    'program_fee' => $program->program_fee,
-                    'program_type' => $program->program_type,
-                    'new_students_freshmen_male' => $program->new_students_freshmen_male,
-                    'new_students_freshmen_female' => $program->new_students_freshmen_female,
-                    '1st_year_male' => $program->{'1st_year_male'},
-                    '1st_year_female' => $program->{'1st_year_female'},
-                    '2nd_year_male' => $program->{'2nd_year_male'},
-                    '2nd_year_female' => $program->{'2nd_year_female'},
-                    '3rd_year_male' => $program->{'3rd_year_male'},
-                    '3rd_year_female' => $program->{'3rd_year_female'},
-                    '4th_year_male' => $program->{'4th_year_male'},
-                    '4th_year_female' => $program->{'4th_year_female'},
-                    '5th_year_male' => $program->{'5th_year_male'},
-                    '5th_year_female' => $program->{'5th_year_female'},
-                    '6th_year_male' => $program->{'6th_year_male'},
-                    '6th_year_female' => $program->{'6th_year_female'},
-                    '7th_year_male' => $program->{'7th_year_male'},
-                    '7th_year_female' => $program->{'7th_year_female'},
-                    'subtotal_male' => $program->subtotal_male,
-                    'subtotal_female' => $program->subtotal_female,
-                    'grand_total' => $program->grand_total,
-                    'lecture_units_actual' => $program->lecture_units_actual,
-                    'laboratory_units_actual' => $program->laboratory_units_actual,
-                    'total_units_actual' => $program->total_units_actual,
-                    'graduates_males' => $program->graduates_males,
-                    'graduates_females' => $program->graduates_females,
-                    'graduates_total' => $program->graduates_total,
-                    'externally_funded_merit_scholars' => $program->externally_funded_merit_scholars,
-                    'internally_funded_grantees' => $program->internally_funded_grantees,
-                    'suc_funded_grantees' => $program->suc_funded_grantees,
-                    'report_year' => $program->reportYear ? $program->reportYear->year : null,
-                    'created_at' => $program->created_at,
-                    'updated_at' => $program->updated_at,
-                ];
-            });
 
-            return response()->json($transformed, Response::HTTP_OK);
+
+            return response()->json($programs, Response::HTTP_OK);
         } catch (\Exception $e) {
             Log::error("Error fetching programs: {$e->getMessage()}", [
                 'request' => $request->all(),
@@ -106,8 +52,7 @@ class CurricularProgramController extends Controller
     {
         try {
             $validated = $request->validate([
-                'institution_uuid' => 'required|string|exists:institutions,uuid',
-                'data_date' => 'required|date',
+                'institution_id' => 'required|integer|exists:institutions,id',
                 'program_name' => 'required|string|max:255',
                 'program_code' => 'nullable|string|max:255',
                 'major_name' => 'nullable|string|max:255',
@@ -115,7 +60,7 @@ class CurricularProgramController extends Controller
                 'category' => 'nullable|string|max:255',
                 'serial' => 'nullable|string|max:255',
                 'year' => 'nullable|string|max:255',
-                'is_thesis_dissertation_required' => 'nullable|boolean',
+                'is_thesis_dissertation_required' => 'nullable|string|max:255',
                 'program_status' => 'nullable|string|max:255',
                 'calendar_use_code' => 'nullable|string|max:255',
                 'program_normal_length_in_years' => 'nullable|integer|min:0',
@@ -192,59 +137,7 @@ class CurricularProgramController extends Controller
 
             return response()->json([
                 'message' => 'Curricular program created successfully!',
-                'data' => [
-                    'id' => $program->id,
-                    'institution' => $program->institution ? $program->institution->name : null,
-                    'data_date' => $program->data_date->toDateString(),
-                    'program_name' => $program->program_name,
-                    'program_code' => $program->program_code,
-                    'major_name' => $program->major_name,
-                    'major_code' => $program->major_code,
-                    'category' => $program->category,
-                    'serial' => $program->serial,
-                    'year' => $program->year,
-                    'is_thesis_dissertation_required' => $program->is_thesis_dissertation_required,
-                    'program_status' => $program->program_status,
-                    'calendar_use_code' => $program->calendar_use_code,
-                    'program_normal_length_in_years' => $program->program_normal_length_in_years,
-                    'lab_units' => $program->lab_units,
-                    'lecture_units' => $program->lecture_units,
-                    'total_units' => $program->total_units,
-                    'tuition_per_unit' => $program->tuition_per_unit,
-                    'program_fee' => $program->program_fee,
-                    'program_type' => $program->program_type,
-                    'new_students_freshmen_male' => $program->new_students_freshmen_male,
-                    'new_students_freshmen_female' => $program->new_students_freshmen_female,
-                    '1st_year_male' => $program->{'1st_year_male'},
-                    '1st_year_female' => $program->{'1st_year_female'},
-                    '2nd_year_male' => $program->{'2nd_year_male'},
-                    '2nd_year_female' => $program->{'2nd_year_female'},
-                    '3rd_year_male' => $program->{'3rd_year_male'},
-                    '3rd_year_female' => $program->{'3rd_year_female'},
-                    '4th_year_male' => $program->{'4th_year_male'},
-                    '4th_year_female' => $program->{'4th_year_female'},
-                    '5th_year_male' => $program->{'5th_year_male'},
-                    '5th_year_female' => $program->{'5th_year_female'},
-                    '6th_year_male' => $program->{'6th_year_male'},
-                    '6th_year_female' => $program->{'6th_year_female'},
-                    '7th_year_male' => $program->{'7th_year_male'},
-                    '7th_year_female' => $program->{'7th_year_female'},
-                    'subtotal_male' => $program->subtotal_male,
-                    'subtotal_female' => $program->subtotal_female,
-                    'grand_total' => $program->grand_total,
-                    'lecture_units_actual' => $program->lecture_units_actual,
-                    'laboratory_units_actual' => $program->laboratory_units_actual,
-                    'total_units_actual' => $program->total_units_actual,
-                    'graduates_males' => $program->graduates_males,
-                    'graduates_females' => $program->graduates_females,
-                    'graduates_total' => $program->graduates_total,
-                    'externally_funded_merit_scholars' => $program->externally_funded_merit_scholars,
-                    'internally_funded_grantees' => $program->internally_funded_grantees,
-                    'suc_funded_grantees' => $program->suc_funded_grantees,
-                    'report_year' => $program->reportYear ? $program->reportYear->year : null,
-                    'created_at' => $program->created_at,
-                    'updated_at' => $program->updated_at,
-                ],
+                'data' => $program,
             ], Response::HTTP_CREATED);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error("Validation error storing program: {$e->getMessage()}", [
@@ -272,7 +165,6 @@ class CurricularProgramController extends Controller
             'data' => [
                 'id' => $program->id,
                 'institution' => $program->institution ? $program->institution->name : null,
-                'data_date' => $program->data_date->toDateString(),
                 'program_name' => $program->program_name,
                 'program_code' => $program->program_code,
                 'major_name' => $program->major_name,
@@ -332,8 +224,7 @@ class CurricularProgramController extends Controller
     {
         try {
             $validated = $request->validate([
-                'institution_uuid' => 'required|string|exists:institutions,uuid',
-                'data_date' => 'required|date',
+                'institution_id' => 'required|integer|exists:institutions,id',
                 'program_name' => 'required|string|max:255',
                 'program_code' => 'nullable|string|max:255',
                 'major_name' => 'nullable|string|max:255',
@@ -341,7 +232,7 @@ class CurricularProgramController extends Controller
                 'category' => 'nullable|string|max:255',
                 'serial' => 'nullable|string|max:255',
                 'year' => 'nullable|string|max:255',
-                'is_thesis_dissertation_required' => 'nullable|boolean',
+                'is_thesis_dissertation_required' => 'nullable|string|max:255',
                 'program_status' => 'nullable|string|max:255',
                 'calendar_use_code' => 'nullable|string|max:255',
                 'program_normal_length_in_years' => 'nullable|integer|min:0',
@@ -421,7 +312,6 @@ class CurricularProgramController extends Controller
                 'data' => [
                     'id' => $program->id,
                     'institution' => $program->institution ? $program->institution->name : null,
-                    'data_date' => $program->data_date->toDateString(),
                     'program_name' => $program->program_name,
                     'program_code' => $program->program_code,
                     'major_name' => $program->major_name,
