@@ -34,7 +34,7 @@ const InstitutionManagement = () => {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const { getLocationById } = useLocationData();
-        const [isLoading, setIsLoading] = useState(true); // Add this state to track initial loading
+    const [isLoading, setIsLoading] = useState(true); // Add this state to track initial loading
     const [loading, setLoading] = useState({
         viewCampuses: false,
         faculties: false,
@@ -72,27 +72,21 @@ const InstitutionManagement = () => {
                 });
             }
 
-            // Use the new API endpoint
+            // Fetch all institution data without filtering by UUID or report year
             const response = await axios.get(
                 `${config.API_URL}/institution-management-data`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: {
-                        institution_uuid: storedInstitution.uuid,
-                        report_year: reportYearFilter,
-                    },
                 }
             );
 
-            const { institution, location } = response.data;
+            const { institutions } = response.data;
 
-            if (!institution) {
-                throw new Error("Institution not found.", { cause: "error" });
+            if (!institutions || institutions.length === 0) {
+                throw new Error("No institutions found.", { cause: "error" });
             }
 
-            setInstitutions([institution]);
-            setInstitution(institution);
-            setLocation(location);
+            setInstitutions(institutions); // Store all institutions for frontend filtering
         } catch (error) {
             console.error("Error fetching institution data:", error);
             AlertComponent.showAlert(
@@ -104,13 +98,51 @@ const InstitutionManagement = () => {
         } finally {
             setIsLoading(false);
             hideLoading();
-
         }
     };
 
     useEffect(() => {
         fetchInstitution();
-    }, []);
+    }, []); // Fetch data only once on component mount
+
+    // Apply frontend filtering based on institution UUID and report year
+    useEffect(() => {
+        const storedInstitution = JSON.parse(
+            localStorage.getItem("institution") || "{}"
+        );
+
+        if (!institutions || institutions.length === 0) return;
+
+        const filtered = institutions.filter((inst) => {
+            const matchesUuid = inst.uuid === storedInstitution.uuid;
+            const matchesReportYear = reportYearFilter
+                ? String(inst.report_year) === reportYearFilter
+                : true;
+            return matchesUuid && matchesReportYear;
+        });
+
+        if (filtered.length > 0) {
+            setInstitution(filtered[0]);
+            getLocationById(
+                filtered[0].region_id,
+                filtered[0].province_id,
+                filtered[0].municipality_id
+            )
+                .then((locationData) => {
+                    setLocation(locationData);
+                })
+                .catch((error) => {
+                    console.error("Error fetching location data:", error);
+                    AlertComponent.showAlert(
+                        "Failed to load location data.",
+                        "error"
+                    );
+                });
+        } else {
+            setInstitution(null);
+            setLocation({ region: null, province: null, municipality: null });
+        }
+    }, [institutions, reportYearFilter, getLocationById]);
 
     useEffect(() => {
         localStorage.setItem("reportYearFilter", reportYearFilter);
@@ -132,35 +164,6 @@ const InstitutionManagement = () => {
             setInstitution(null);
         }
     }, [filteredInstitutions]);
-
-    useEffect(() => {
-        if (filteredInstitutions.length > 0) {
-            const newInstitution = filteredInstitutions[0];
-            setInstitution(newInstitution);
-            // Fetch location data for the new institution
-            if (newInstitution) {
-                getLocationById(
-                    newInstitution.region_id,
-                    newInstitution.province_id,
-                    newInstitution.municipality_id
-                )
-                    .then((locationData) => {
-                        console.log("Fetched Location Data:", locationData); // Debug
-                        setLocation(locationData);
-                    })
-                    .catch((error) => {
-                        console.error("Error fetching location data:", error);
-                        AlertComponent.showAlert(
-                            "Failed to load location data.",
-                            "error"
-                        );
-                    });
-            }
-        } else {
-            setInstitution(null);
-            setLocation({ region: null, province: null, municipality: null });
-        }
-    }, [filteredInstitutions, getLocationById]);
 
     const getUniqueValues = (arr, key) => {
         if (!Array.isArray(arr) || !arr.length) return [];

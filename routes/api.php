@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CurricularProgramController;
 use App\Http\Controllers\Api\GraduateController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\HEIDashboardController;
 use App\Http\Controllers\Api\InstitutionManagementController;
 use App\Http\Controllers\Api\ReportYearController; // Add this line
 use App\Http\Controllers\Api\UserController;
@@ -58,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard Data Route
     Route::get('dashboard-data', [DashboardController::class, 'getDashboardData']); // Updated to handle report_year
+    Route::get('hei-dashboard-data', [HEIDashboardController::class, 'getDashboardData']); // Updated to handle report_year
 
     // Institution Management Data Route
     Route::get('institution-management-data', [InstitutionManagementController::class, 'getInstitutionData']);

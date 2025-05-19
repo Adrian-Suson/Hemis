@@ -153,7 +153,7 @@ class FacultyProfileController extends Controller
             return response()->json([
                 'message' => 'Validation failed.',
                 'errors' => $validator->errors(),
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            ], Response::HTTP_UNPROCESSABLE_ENTITY); 
         }
 
         try {
