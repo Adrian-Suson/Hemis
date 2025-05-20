@@ -1,5 +1,6 @@
+// Initial data loading
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import axios from "axios";
 import { useLoading } from "../../../Context/LoadingContext";
 import {
@@ -113,7 +114,21 @@ const DashboardPage = () => {
         institutions: [],
     });
 
-    const [uuid, setUuid] = useState(null);
+    // Safely get UUID from localStorage with error handling
+    const [uuid] = useState(() => {
+        try {
+            const institutionData = localStorage.getItem("institution");
+            if (institutionData) {
+                const parsed = JSON.parse(institutionData);
+                return parsed?.uuid || null;
+            }
+            return null;
+        } catch (error) {
+            console.error("Error parsing institution data:", error);
+            return null;
+        }
+    });
+
     const [refreshing, setRefreshing] = useState(false);
     const [viewMode, setViewMode] = useState("grid"); // "compact" or "grid"
     const [expandedSections, setExpandedSections] = useState({
@@ -123,6 +138,7 @@ const DashboardPage = () => {
     const [selectedYear, setSelectedYear] = useState(""); // Selected report year
 
     const { showLoading, hideLoading } = useLoading();
+    const isMounted = useRef(true);
 
     const toggleSection = (section) => {
         setExpandedSections((prev) => ({
@@ -131,151 +147,145 @@ const DashboardPage = () => {
         }));
     };
 
-    // Fetch UUID from institution based on user data
-    useEffect(() => {
-        const fetchUuid = async () => {
+    const fetchStats = useCallback(
+        async () => {
             const token = localStorage.getItem("token");
             if (!token) {
-                setStats((prev) => ({
-                    ...prev,
-                    error: "No authentication token",
-                    loading: false,
-                }));
+                if (isMounted.current) {
+                    setStats((prev) => ({
+                        ...prev,
+                        error: "No authentication token",
+                        loading: false,
+                    }));
+                }
                 return;
             }
 
-            try {
-                const userdata = JSON.parse(localStorage.getItem("user"));
-                if (!userdata || !userdata.institution_id) {
+            if (!uuid) {
+                if (isMounted.current) {
                     setStats((prev) => ({
                         ...prev,
-                        error: "No institution ID found in user data",
+                        error: "No institution UUID found. Please log out and log in again.",
                         loading: false,
                     }));
-                    return;
                 }
+                return;
+            }
 
-                const heiId = userdata.institution_id;
-                console.log(`Fetching UUID for institution ID: ${heiId}...`);
-                const res = await axios.get(
-                    `${config.API_URL}/institutions/${heiId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
+            showLoading();
+            if (!stats.loading) setRefreshing(true);
+
+            try {
+                console.log(`Fetching dashboard data for UUID: ${uuid}...`);
+                const url = `${config.API_URL}/dashboard-data?uuid=${uuid}`;
+                const response = await axios.get(url, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                // Match super admin dashboard validation
+                if (response.headers["content-type"]?.includes("application/json")) {
+                    console.log("API Response:", response.data);
+
+                    const { users, facultyProfiles, programs, institutions } = response.data;
+
+                    // Filter data for this specific institution UUID
+                    const filteredInstitutions = institutions.filter(
+                        (inst) => inst.uuid === uuid
+                    );
+
+                    if (filteredInstitutions.length === 0) {
+                        if (isMounted.current) {
+                            setStats((prev) => ({
+                                ...prev,
+                                error: `No institutions found with UUID: ${uuid}`,
+                                loading: false,
+                            }));
+                        }
+                        return;
                     }
-                );
 
-                if (res.data && res.data.uuid) {
-                    setUuid(res.data.uuid);
+                    const validInstitutionIds = new Set(
+                        filteredInstitutions.map((inst) => inst.id)
+                    );
+
+                    const filteredStats = {
+                        users: users.filter((user) =>
+                            validInstitutionIds.has(user.institution_id)
+                        ),
+                        facultyProfiles: facultyProfiles.filter((profile) =>
+                            validInstitutionIds.has(profile.institution_id)
+                        ),
+                        programs: programs.filter((program) =>
+                            validInstitutionIds.has(program.institution_id)
+                        ),
+                        institutions: filteredInstitutions,
+                    };
+
+                    if (isMounted.current) {
+                        // Store original filtered stats (matching super admin approach)
+                        setOriginalStats(filteredStats);
+
+                        // Set current stats
+                        setStats({
+                            ...filteredStats,
+                            loading: false,
+                            error: null,
+                        });
+
+                        console.log("Filtered Stats:", filteredStats);
+                    }
                 } else {
-                    setStats((prev) => ({
-                        ...prev,
-                        error: "No UUID found for the institution",
-                        loading: false,
-                    }));
+                    console.error("Unexpected response format:", response.data);
+                    if (isMounted.current) {
+                        setStats((prev) => ({
+                            ...prev,
+                            error: "Unexpected response format from the server.",
+                            loading: false,
+                        }));
+                    }
                 }
             } catch (error) {
-                console.error("Error fetching UUID:", error);
-                setStats((prev) => ({
-                    ...prev,
-                    error: `Failed to fetch institution UUID: ${error.message}`,
-                    loading: false,
-                }));
-            }
-        };
+                console.error(
+                    "Error fetching dashboard data:",
+                    error.response || error
+                );
 
-        fetchUuid();
+                // More detailed error message based on error type
+                const errorMessage = error.response?.data?.message ||
+                                    error.message ||
+                                    "Unknown error occurred";
+
+                if (isMounted.current) {
+                    setStats((prev) => ({
+                        ...prev,
+                        error: `Failed to load statistics: ${errorMessage}`,
+                        loading: false,
+                    }));
+                }
+            } finally {
+                if (isMounted.current) {
+                    hideLoading();
+                    setRefreshing(false);
+                }
+            }
+        },
+        [uuid, showLoading, hideLoading]
+    );
+
+    useEffect(() => {
+        isMounted.current = true;
+        fetchStats();
+
+        return () => {
+            isMounted.current = false;
+        };
     }, []);
 
-    const fetchStats = useCallback(async () => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            setStats((prev) => ({
-                ...prev,
-                error: "No authentication token",
-                loading: false,
-            }));
-            return;
-        }
-
-        if (!uuid) {
-            // UUID not yet fetched, wait
-            return;
-        }
-
-        showLoading();
-        if (!stats.loading) setRefreshing(true);
-
-        try {
-            console.log(`Fetching dashboard data for UUID: ${uuid}...`);
-            const url = `${config.API_URL}/dashboard-data?uuid=${uuid}`;
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (response.headers["content-type"]?.includes("application/json")) {
-                console.log("API Response:", response.data);
-
-                const { users, facultyProfiles, programs, institutions } = response.data;
-
-                setOriginalStats({
-                    users,
-                    facultyProfiles,
-                    programs,
-                    institutions,
-                });
-
-                setStats({
-                    users,
-                    facultyProfiles,
-                    programs,
-                    institutions,
-                    loading: false,
-                    error: null,
-                });
-                console.log("API Response Structure:", response.data);
-            } else {
-                console.error("Unexpected response format:", response.data);
-                setStats((prev) => ({
-                    ...prev,
-                    error: "Unexpected response format from the server.",
-                    loading: false,
-                }));
-            }
-        } catch (error) {
-            console.error("Error fetching dashboard data:", error);
-            setStats((prev) => ({
-                ...prev,
-                error: `Failed to load statistics: ${error.message}`,
-                loading: false,
-            }));
-        } finally {
-            hideLoading();
-            setRefreshing(false);
-        }
-    }, [showLoading, hideLoading, uuid]);
-
-    // Fetch stats once UUID is set
+    // Implement the year filtering effect similar to super admin dashboard
     useEffect(() => {
-        if (uuid) {
-            fetchStats();
-        }
-    }, [uuid, fetchStats]);
-
-    // Filter stats by selected year
-    useEffect(() => {
-        if (selectedYear) {
+        if (selectedYear && originalStats.institutions.length > 0) {
             const filteredInstitutions = originalStats.institutions.filter(
                 (inst) => inst.report_year === parseInt(selectedYear)
             );
-
-            if (filteredInstitutions.length > 1) {
-                setStats((prev) => ({
-                    ...prev,
-                    error: "Multiple institutions found for the selected year",
-                    loading: false,
-                }));
-                return;
-            }
 
             const validInstitutionIds = new Set(
                 filteredInstitutions.map((inst) => inst.id)
@@ -297,26 +307,43 @@ const DashboardPage = () => {
             setStats((prev) => ({
                 ...prev,
                 ...filteredStats,
+                error: filteredInstitutions.length === 0 ? `No data found for year ${selectedYear}` : null,
                 loading: false,
-                error: filteredInstitutions.length === 0 ? "No institution found for the selected year" : null,
             }));
-        } else {
+        } else if (originalStats.institutions.length > 0) {
             setStats((prev) => ({
                 ...prev,
                 ...originalStats,
                 loading: false,
-                error: null,
             }));
         }
     }, [selectedYear, originalStats]);
 
-    // Get unique report years from institutions
+    // Get unique report years from institutions for the specific UUID
     const availableYears = useMemo(() => {
+        if (!originalStats.institutions || originalStats.institutions.length === 0) {
+            return [""];
+        }
+
         const years = new Set(
-            originalStats.institutions.map((inst) => inst.report_year)
+            originalStats.institutions
+                .filter((inst) => inst.uuid === uuid)
+                .map((inst) => inst.report_year)
+                .filter(year => year !== null && year !== undefined)
         );
-        return ["", ...Array.from(years).sort((a, b) => b - a)]; // Include empty option for "All Years"
-    }, [originalStats.institutions]);
+
+        const sortedYears = ["", ...Array.from(years).sort((a, b) => b - a)];
+
+        if (sortedYears.length === 1 && isMounted.current) {
+            // Only empty string, meaning no years available
+            setStats((prev) => ({
+                ...prev,
+                error: prev.error || `No report years available for UUID ${uuid}`,
+                loading: false,
+            }));
+        }
+        return sortedYears;
+    }, [originalStats.institutions, uuid]);
 
     const aggregations = useMemo(() => {
         const totals = {
@@ -608,7 +635,7 @@ const DashboardPage = () => {
                                 {stats.error}
                             </p>
                             <button
-                                onClick={() => window.location.reload()}
+                                onClick={() => fetchStats()}
                                 className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-medium transition-colors flex items-center"
                             >
                                 <RefreshCw className="w-3 h-3 mr-1.5" /> Try
@@ -679,6 +706,7 @@ const DashboardPage = () => {
                                     setSelectedYear(e.target.value)
                                 }
                                 className="appearance-none bg-white border border-gray-200 rounded-md pl-8 pr-6 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                disabled={availableYears.length <= 1}
                             >
                                 <option value="">All Years</option>
                                 {availableYears
@@ -716,7 +744,7 @@ const DashboardPage = () => {
                         </div>
 
                         <button
-                            onClick={fetchStats}
+                            onClick={() => fetchStats(localStorage.getItem("token"))}
                             disabled={refreshing || !uuid}
                             className={`p-1.5 rounded-md border shadow-sm ${
                                 refreshing || !uuid
@@ -1019,7 +1047,5 @@ const DashboardPage = () => {
         </div>
     );
 };
-
-DashboardPage.propTypes = {};
 
 export default DashboardPage;

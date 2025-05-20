@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CurricularProgram;
-use App\Models\User;
-use App\Models\FacultyProfile;
 use App\Models\Institution;
 use Illuminate\Http\Request;
 
@@ -16,33 +13,37 @@ class HeiDashboardController extends Controller
         $uuid = $request->query('uuid');
 
         try {
+            // Validate UUID
             if (!$uuid) {
                 return response()->json(['error' => 'UUID parameter is required'], 400);
             }
 
             // Fetch institutions with the specified UUID
-            $institutions = Institution::where('uuid', $uuid)->get();
+            $institutions = Institution::where('uuid', $uuid)
+                ->with(['users', 'facultyProfiles', 'programs'])
+                ->get();
 
+            // Check if institutions exist
             if ($institutions->isEmpty()) {
                 return response()->json(['error' => 'No institutions found for the provided UUID'], 404);
             }
 
-            // Get institution IDs for filtering related data
-            $institutionIds = $institutions->pluck('id')->toArray();
+            // Transform data to nest related models under each institution
+            $response = $institutions->map(function ($institution) {
+                return [
+                    'institution' => $institution->toArray(),
+                    'users' => $institution->users->toArray(),
+                    'facultyProfiles' => $institution->facultyProfiles->toArray(),
+                    'programs' => $institution->programs->toArray(),
+                ];
+            })->toArray();
 
-            // Fetch related data for institutions with the matching UUID
-            $users = User::whereIn('institution_id', $institutionIds)->get();
-            $facultyProfiles = FacultyProfile::whereIn('institution_id', $institutionIds)->get();
-            $programs = CurricularProgram::whereIn('institution_id', $institutionIds)->get();
-
-            return response()->json([
-                'users' => $users,
-                'facultyProfiles' => $facultyProfiles,
-                'programs' => $programs,
-                'institutions' => $institutions,
-            ]);
+            return response()->json($response);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to fetch dashboard data', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Failed to fetch dashboard data',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

@@ -175,6 +175,26 @@ const FacultyProfileUpload = () => {
                 }
 
                 try {
+                    const institutionId = decryptId(encryptedInstitutionId);
+
+                    // Fetch the institution's report year
+                    const institutionResponse = await axios.get(
+                        `${config.API_URL}/institutions/${institutionId}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    const institutionReportYear =
+                        institutionResponse.data?.report_year || null;
+
+                    if (!institutionReportYear) {
+                        AlertComponent.showAlert(
+                            "Failed to fetch the institution's report year.",
+                            "error"
+                        );
+                        setIsUploading(false);
+                        setLoading(false);
+                        updateProgress(0);
+                        return;
+                    }
                     const reader = new FileReader();
                     reader.readAsArrayBuffer(selectedFile); // Use readAsArrayBuffer
 
@@ -214,7 +234,6 @@ const FacultyProfileUpload = () => {
                             const institutionId = decryptId(
                                 decodeURIComponent(encryptedInstitutionId)
                             );
-                            updateProgress(20 + sheetIndex * 10);
 
                             const processedFacultyProfiles = validRows.map(
                                 (row) => ({
@@ -339,10 +358,7 @@ const FacultyProfileUpload = () => {
                                     total_work_load: row[41]
                                         ? parseFloat(row[41])
                                         : null,
-                                    data_date: new Date().toLocaleDateString(
-                                        "en-CA",
-                                        { timeZone: "Asia/Manila" }
-                                    ),
+                                    repor_year: institutionReportYear,
                                 })
                             );
 
@@ -359,34 +375,48 @@ const FacultyProfileUpload = () => {
                             "Final Processed Faculty Data:",
                             allFacultyProfiles
                         );
-                        updateProgress(80);
 
                         if (allFacultyProfiles.length > 0) {
-                            await axios.post(
-                                `${config.API_URL}/faculty-profiles`,
-                                allFacultyProfiles,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                }
-                            );
-                            console.log(
-                                "Faculty profiles uploaded successfully!"
-                            );
-                            updateProgress(100);
-                            AlertComponent.showAlert(
-                                "Faculty profiles uploaded successfully!",
-                                "success"
-                            );
-                            await fetchFacultyProfiles();
+                            try {
+                                await axios.post(
+                                    `${config.API_URL}/faculty-profiles`,
+                                    allFacultyProfiles,
+                                    {
+                                        headers: {
+                                            Authorization: `Bearer ${token}`,
+                                        },
+                                    }
+                                );
+                                console.log(
+                                    "Faculty profiles uploaded successfully!"
+                                );
+                                AlertComponent.showAlert(
+                                    "Faculty profiles uploaded successfully!",
+                                    "success"
+                                );
+                                await fetchFacultyProfiles();
+                                // Only update to 100% after all operations are complete
+                                updateProgress(100);
+                            } catch (uploadError) {
+                                console.error(
+                                    "Error uploading profiles:",
+                                    uploadError
+                                );
+                                AlertComponent.showAlert(
+                                    "Error uploading faculty profiles. Please try again.",
+                                    "error"
+                                );
+                                updateProgress(0); // Reset progress on error
+                            }
                         } else {
                             AlertComponent.showAlert(
                                 "No valid faculty data found in the uploaded file.",
                                 "error"
                             );
-                            updateProgress(100);
+                            updateProgress(0); // Reset progress when no data found
                         }
+                        await fetchFacultyProfiles();
+                        updateProgress(100);
                     };
                 } catch (error) {
                     console.error("Error processing the file:", error);

@@ -150,234 +150,290 @@ const FacultyProfileUpload = () => {
         );
     }, [facultyProfiles, selectedGroup]);
 
-    const processExcelFile = async (file) => {
-        if (!file) return;
-
-        setIsUploading(true);
-        updateProgress(5);
-
-        const token = localStorage.getItem("token");
-        if (!token) {
-            AlertComponent.showAlert(
-                "Authentication token is missing.",
-                "error"
-            );
-            setIsUploading(false);
+    const handleExcelFileUpload = async () => {
+        if (!selectedFile) {
+            AlertComponent.showAlert("No file selected for upload.", "error");
             return;
         }
 
-        try {
-            const reader = new FileReader();
-            reader.readAsBinaryString(file);
+        AlertComponent.showConfirmation(
+            "Do you want to upload the selected file?",
+            async () => {
+                setOpenUploadDialog(false);
+                setIsUploading(true);
+                updateProgress(5); // Initial progress update
 
-            reader.onload = async (event) => {
-                const data = event.target.result;
-                const workbook = XLSX.read(data, { type: "binary" });
-
-                let allFacultyProfiles = [];
-                const seenProfiles = new Set();
-
-                for (let sheetIndex = 0; sheetIndex < 9; sheetIndex++) {
-                    const sheetName = workbook.SheetNames[sheetIndex];
-                    const sheet = workbook.Sheets[sheetName];
-
-                    updateProgress(10 + sheetIndex * 10);
-
-                    const jsonData = XLSX.utils.sheet_to_json(sheet, {
-                        header: 1,
-                        range: 6,
-                    });
-
-                    const validRows = jsonData.filter(
-                        (row) =>
-                            row.some(
-                                (cell) => cell !== undefined && cell !== null
-                            ) && row[1]
-                    );
-
-                    if (validRows.length === 0) {
-                        console.log(`Skipping empty sheet: ${sheetName}`);
-                        continue;
-                    }
-                    const institutionId = decryptId(
-                        decodeURIComponent(encryptedInstitutionId)
-                    );
-                    updateProgress(20 + sheetIndex * 10);
-                    const processedFacultyProfiles = validRows.map((row) => ({
-                        institution_id: institutionId,
-                        faculty_group: sheetName,
-                        name: row[1] ? String(row[1]) : null,
-                        generic_faculty_rank: row[2]
-                            ? parseInt(row[2], 10)
-                            : null,
-                        home_college: row[3] ? String(row[3]) : null,
-                        home_department: row[4] ? String(row[4]) : null,
-                        is_tenured: row[5] ? parseInt(row[5]) : null,
-                        ssl_salary_grade: row[6] ? parseInt(row[6], 10) : null,
-                        annual_basic_salary: row[7]
-                            ? parseInt(row[7], 10)
-                            : null,
-                        on_leave_without_pay: row[8]
-                            ? parseInt(row[8], 10)
-                            : null,
-                        full_time_equivalent: row[9]
-                            ? parseFloat(row[9])
-                            : null,
-                        gender: row[10] ? parseInt(row[10], 10) : null,
-                        highest_degree_attained: row[11]
-                            ? parseInt(row[11], 10)
-                            : null,
-                        pursuing_next_degree: row[12]
-                            ? parseInt(row[12], 10)
-                            : null,
-                        discipline_teaching_load_1: row[13]
-                            ? String(row[13])
-                            : null,
-                        discipline_teaching_load_2: row[14]
-                            ? String(row[14])
-                            : null,
-                        discipline_bachelors: row[15] ? String(row[15]) : null,
-                        discipline_masters: row[16] ? String(row[16]) : null,
-                        discipline_doctorate: row[17] ? String(row[17]) : null,
-                        masters_with_thesis: row[18]
-                            ? parseInt(row[18], 10)
-                            : null,
-                        doctorate_with_dissertation: row[19]
-                            ? parseInt(row[19], 10)
-                            : null,
-                        undergrad_lab_credit_units: row[20]
-                            ? parseFloat(row[20])
-                            : null,
-                        undergrad_lecture_credit_units: row[21]
-                            ? parseFloat(row[21])
-                            : null,
-                        undergrad_total_credit_units: row[22]
-                            ? parseFloat(row[22])
-                            : null,
-                        undergrad_lab_hours_per_week: row[23]
-                            ? parseFloat(row[23])
-                            : null,
-                        undergrad_lecture_hours_per_week: row[24]
-                            ? parseFloat(row[24])
-                            : null,
-                        undergrad_total_hours_per_week: row[25]
-                            ? parseFloat(row[25])
-                            : null,
-                        undergrad_lab_contact_hours: row[26]
-                            ? parseFloat(row[26])
-                            : null,
-                        undergrad_lecture_contact_hours: row[27]
-                            ? parseFloat(row[27])
-                            : null,
-                        undergrad_total_contact_hours: row[28]
-                            ? parseFloat(row[28])
-                            : null,
-                        graduate_lab_credit_units: row[29]
-                            ? parseFloat(row[29])
-                            : null,
-                        graduate_lecture_credit_units: row[30]
-                            ? parseFloat(row[30])
-                            : null,
-                        graduate_total_credit_units: row[31]
-                            ? parseFloat(row[31])
-                            : null,
-                        graduate_lab_contact_hours: row[32]
-                            ? parseFloat(row[32])
-                            : null,
-                        graduate_lecture_contact_hours: row[33]
-                            ? parseFloat(row[33])
-                            : null,
-                        graduate_total_contact_hours: row[34]
-                            ? parseFloat(row[34])
-                            : null,
-                        research_load: row[35] ? parseFloat(row[35]) : null,
-                        extension_services_load: row[36]
-                            ? parseFloat(row[36])
-                            : null,
-                        study_load: row[37] ? parseFloat(row[37]) : null,
-                        production_load: row[38] ? parseFloat(row[38]) : null,
-                        administrative_load: row[39]
-                            ? parseFloat(row[39])
-                            : null,
-                        other_load_credits: row[40]
-                            ? parseFloat(row[40])
-                            : null,
-                        total_work_load: row[41] ? parseFloat(row[41]) : null,
-                        data_date: new Date().toLocaleDateString("en-CA", {
-                            timeZone: "Asia/Manila",
-                        }),
-                    }));
-
-                    processedFacultyProfiles.forEach((profile) => {
-                        const profileString = JSON.stringify(profile);
-                        if (!seenProfiles.has(profileString)) {
-                            seenProfiles.add(profileString);
-                            allFacultyProfiles.push(profile);
-                        }
-                    });
-                }
-
-                console.log(
-                    "Final Processed Faculty Data:",
-                    allFacultyProfiles
-                );
-                updateProgress(80);
-
-                if (allFacultyProfiles.length > 0) {
-                    await axios.post(
-                        `${config.API_URL}/faculty-profiles`,
-                        allFacultyProfiles,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
-                    );
-                    console.log("Faculty profiles uploaded successfully!");
+                const token = localStorage.getItem("token");
+                if (!token) {
                     AlertComponent.showAlert(
-                        "Faculty profiles uploaded successfully!",
-                        "success"
-                    );
-                    await fetchFacultyProfiles();
-                } else {
-                    AlertComponent.showAlert(
-                        "No valid faculty data found in the uploaded file.",
+                        "Authentication token is missing.",
                         "error"
                     );
+                    setIsUploading(false);
+                    updateProgress(0);
+                    return;
                 }
 
-                updateProgress(100);
-            };
-        } catch (error) {
-            console.error("Error processing the file:", error);
-            AlertComponent.showAlert(
-                "Error uploading file. Please try again.",
-                "error"
-            );
-        } finally {
-            setIsUploading(false);
-        }
-    };
+                try {
+                    const institutionId = decryptId(encryptedInstitutionId);
 
-    const handleFileUpload = () => {
-        if (selectedFile) {
-            AlertComponent.showConfirmation(
-                "Do you want to upload the selected file?",
-                () => {
-                    // Confirm callback
-                    setOpenUploadDialog(false);
-                    processExcelFile(selectedFile);
-                    setSelectedFile(null);
-                },
-                () => {
-                    // Cancel callback (optional)
-                    AlertComponent.showAlert(
-                        "File upload canceled.",
-                        "question"
+                    // Fetch the institution's report year
+                    const institutionResponse = await axios.get(
+                        `${config.API_URL}/institutions/${institutionId}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
                     );
+                    const institutionReportYear =
+                        institutionResponse.data?.report_year || null;
+
+                    if (!institutionReportYear) {
+                        AlertComponent.showAlert(
+                            "Failed to fetch the institution's report year.",
+                            "error"
+                        );
+                        setIsUploading(false);
+                        setLoading(false);
+                        updateProgress(0);
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.readAsArrayBuffer(selectedFile); // Use readAsArrayBuffer
+
+                    reader.onload = async (event) => {
+                        const data = new Uint8Array(event.target.result); // Convert to Uint8Array
+                        const workbook = XLSX.read(data, { type: "array" });
+
+                        let allFacultyProfiles = [];
+                        const seenProfiles = new Set();
+
+                        for (let sheetIndex = 0; sheetIndex < 9; sheetIndex++) {
+                            const sheetName = workbook.SheetNames[sheetIndex];
+                            const sheet = workbook.Sheets[sheetName];
+
+                            updateProgress(10 + sheetIndex * 10);
+
+                            const jsonData = XLSX.utils.sheet_to_json(sheet, {
+                                header: 1,
+                                range: 6,
+                            });
+
+                            const validRows = jsonData.filter(
+                                (row) =>
+                                    row.some(
+                                        (cell) =>
+                                            cell !== undefined && cell !== null
+                                    ) && row[1]
+                            );
+
+                            if (validRows.length === 0) {
+                                console.log(
+                                    `Skipping empty sheet: ${sheetName}`
+                                );
+                                continue;
+                            }
+
+                            const institutionId = decryptId(
+                                decodeURIComponent(encryptedInstitutionId)
+                            );
+
+                            const processedFacultyProfiles = validRows.map(
+                                (row) => ({
+                                    institution_id: institutionId,
+                                    faculty_group: sheetName,
+                                    name: row[1] ? String(row[1]) : null,
+                                    generic_faculty_rank: row[2]
+                                        ? parseInt(row[2], 10)
+                                        : null,
+                                    home_college: row[3]
+                                        ? String(row[3])
+                                        : null,
+                                    home_department: row[4]
+                                        ? String(row[4])
+                                        : null,
+                                    is_tenured: row[5] ? String(row[5]) : null,
+                                    ssl_salary_grade: row[6]
+                                        ? parseInt(row[6], 10)
+                                        : null,
+                                    annual_basic_salary: row[7]
+                                        ? parseInt(row[7], 10)
+                                        : null,
+                                    on_leave_without_pay: row[8]
+                                        ? parseInt(row[8], 10)
+                                        : null,
+                                    full_time_equivalent: row[9]
+                                        ? parseFloat(row[9])
+                                        : null,
+                                    gender: row[10]
+                                        ? parseInt(row[10], 10)
+                                        : null,
+                                    highest_degree_attained: row[11]
+                                        ? parseInt(row[11], 10)
+                                        : null,
+                                    pursuing_next_degree: row[12]
+                                        ? parseInt(row[12], 10)
+                                        : null,
+                                    discipline_teaching_load_1: row[13]
+                                        ? String(row[13])
+                                        : null,
+                                    discipline_teaching_load_2: row[14]
+                                        ? String(row[14])
+                                        : null,
+                                    discipline_bachelors: row[15]
+                                        ? String(row[15])
+                                        : null,
+                                    discipline_masters: row[16]
+                                        ? String(row[16])
+                                        : null,
+                                    discipline_doctorate: row[17]
+                                        ? String(row[17])
+                                        : null,
+                                    masters_with_thesis: row[18]
+                                        ? parseInt(row[18], 10)
+                                        : null,
+                                    doctorate_with_dissertation: row[19]
+                                        ? parseInt(row[19], 10)
+                                        : null,
+                                    undergrad_lab_credit_units: row[20]
+                                        ? parseFloat(row[20])
+                                        : null,
+                                    undergrad_lecture_credit_units: row[21]
+                                        ? parseFloat(row[21])
+                                        : null,
+                                    undergrad_total_credit_units: row[22]
+                                        ? parseFloat(row[22])
+                                        : null,
+                                    undergrad_lab_hours_per_week: row[23]
+                                        ? parseFloat(row[23])
+                                        : null,
+                                    undergrad_lecture_hours_per_week: row[24]
+                                        ? parseFloat(row[24])
+                                        : null,
+                                    undergrad_total_hours_per_week: row[25]
+                                        ? parseFloat(row[25])
+                                        : null,
+                                    undergrad_lab_contact_hours: row[26]
+                                        ? parseFloat(row[26])
+                                        : null,
+                                    undergrad_lecture_contact_hours: row[27]
+                                        ? parseFloat(row[27])
+                                        : null,
+                                    undergrad_total_contact_hours: row[28]
+                                        ? parseFloat(row[28])
+                                        : null,
+                                    graduate_lab_credit_units: row[29]
+                                        ? parseFloat(row[29])
+                                        : null,
+                                    graduate_lecture_credit_units: row[30]
+                                        ? parseFloat(row[30])
+                                        : null,
+                                    graduate_total_credit_units: row[31]
+                                        ? parseFloat(row[31])
+                                        : null,
+                                    graduate_lab_contact_hours: row[32]
+                                        ? parseFloat(row[32])
+                                        : null,
+                                    graduate_lecture_contact_hours: row[33]
+                                        ? parseFloat(row[33])
+                                        : null,
+                                    graduate_total_contact_hours: row[34]
+                                        ? parseFloat(row[34])
+                                        : null,
+                                    research_load: row[35]
+                                        ? parseFloat(row[35])
+                                        : null,
+                                    extension_services_load: row[36]
+                                        ? parseFloat(row[36])
+                                        : null,
+                                    study_load: row[37]
+                                        ? parseFloat(row[37])
+                                        : null,
+                                    production_load: row[38]
+                                        ? parseFloat(row[38])
+                                        : null,
+                                    administrative_load: row[39]
+                                        ? parseFloat(row[39])
+                                        : null,
+                                    other_load_credits: row[40]
+                                        ? parseFloat(row[40])
+                                        : null,
+                                    total_work_load: row[41]
+                                        ? parseFloat(row[41])
+                                        : null,
+                                    repor_year: institutionReportYear,
+                                })
+                            );
+
+                            processedFacultyProfiles.forEach((profile) => {
+                                const profileString = JSON.stringify(profile);
+                                if (!seenProfiles.has(profileString)) {
+                                    seenProfiles.add(profileString);
+                                    allFacultyProfiles.push(profile);
+                                }
+                            });
+                        }
+
+                        console.log(
+                            "Final Processed Faculty Data:",
+                            allFacultyProfiles
+                        );
+
+                        if (allFacultyProfiles.length > 0) {
+                            try {
+                                await axios.post(
+                                    `${config.API_URL}/faculty-profiles`,
+                                    allFacultyProfiles,
+                                    {
+                                        headers: {
+                                            Authorization: `Bearer ${token}`,
+                                        },
+                                    }
+                                );
+                                console.log(
+                                    "Faculty profiles uploaded successfully!"
+                                );
+                                AlertComponent.showAlert(
+                                    "Faculty profiles uploaded successfully!",
+                                    "success"
+                                );
+                                await fetchFacultyProfiles();
+                                // Only update to 100% after all operations are complete
+                                updateProgress(100);
+                            } catch (uploadError) {
+                                console.error(
+                                    "Error uploading profiles:",
+                                    uploadError
+                                );
+                                AlertComponent.showAlert(
+                                    "Error uploading faculty profiles. Please try again.",
+                                    "error"
+                                );
+                                updateProgress(0); // Reset progress on error
+                            }
+                        } else {
+                            AlertComponent.showAlert(
+                                "No valid faculty data found in the uploaded file.",
+                                "error"
+                            );
+                            updateProgress(0); // Reset progress when no data found
+                        }
+                        await fetchFacultyProfiles();
+                        updateProgress(100);
+                    };
+                } catch (error) {
+                    console.error("Error processing the file:", error);
+                    AlertComponent.showAlert(
+                        "Error uploading file. Please try again.",
+                        "error"
+                    );
+                    updateProgress(0);
+                } finally {
+                    setIsUploading(false);
+                    setSelectedFile(null);
                 }
-            );
-        } else {
-            AlertComponent.showAlert("No file selected for upload.", "error");
-        }
+            },
+            () => {
+                AlertComponent.showAlert("File upload canceled.", "question");
+            }
+        );
     };
 
     const handleExportData = async () => {
@@ -566,7 +622,7 @@ const FacultyProfileUpload = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate("/hei-admin/dashboard")}
+                            onClick={() => navigate("/super-admin/dashboard")}
                             className="hover:underline"
                         >
                             Dashboard
@@ -576,7 +632,9 @@ const FacultyProfileUpload = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate("/hei-admin/institutions")}
+                            onClick={() =>
+                                navigate("/super-admin/institutions")
+                            }
                             className="hover:underline"
                         >
                             Institution Management
@@ -708,7 +766,7 @@ const FacultyProfileUpload = () => {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleFileUpload}
+                                onClick={handleExcelFileUpload}
                                 disabled={!selectedFile || isUploading}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
                             >
