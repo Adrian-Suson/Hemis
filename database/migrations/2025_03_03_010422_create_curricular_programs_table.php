@@ -18,9 +18,9 @@ return new class extends Migration {
             $table->integer('program_code')->nullable();
             $table->string('major_name', 255)->nullable();
             $table->integer('major_code')->nullable();
-            $table->string('category', 100)->nullable();
-            $table->string('serial', 255)->nullable();
-            $table->string('Year', 255)->nullable();
+            $table->string('aop_category', 100)->nullable();
+            $table->string('aop_serial', 255)->nullable();
+            $table->string('aop_year', 255)->nullable();
             $table->string('is_thesis_dissertation_required', 255)->nullable();
             $table->string('program_status', 255)->nullable();
             $table->string('calendar_use_code', 255)->nullable();

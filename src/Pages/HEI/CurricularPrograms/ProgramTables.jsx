@@ -1,19 +1,14 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import PropTypes from "prop-types";
-import axios from "axios";
-import config from "../../../utils/config";
-import { X } from "lucide-react";
 import AlertComponent from "../../../Components/AlertComponent";
 import Pagination from "../../../Components/Pagination";
 
-const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
-    const { currentCount, totalCount, searchTerm } = summary || {};
+const ProgramTables = ({ programs, loading, summary }) => {
+    const { totalCount } = summary || {};
     const [subTabValue, setSubTabValue] = useState(0);
     const [error, setError] = useState(null);
     const [pageSize, setPageSize] = useState(25);
     const [currentPage, setCurrentPage] = useState(1);
-    const [editingCell, setEditingCell] = useState(null);
-    const [editValue, setEditValue] = useState("");
 
     useEffect(() => {
         const savedTab = localStorage.getItem("selectedSubTab");
@@ -21,8 +16,6 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
             setSubTabValue(Number(savedTab));
         }
     }, []);
-
-    // Data validation function aligned with backend
 
     const columnConfigs = useMemo(
         () => ({
@@ -33,81 +26,81 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         field: "program_name",
                         headerName: "Program Name",
                         minWidth: 300,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "program_code",
                         headerName: "Program Code",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "major_name",
                         headerName: "Major Name",
                         minWidth: 300,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "major_code",
                         headerName: "Major Code",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "category",
                         headerName: "Category",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "serial",
                         headerName: "Serial",
                         minWidth: 120,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "Year",
                         headerName: "Year",
                         minWidth: 120,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "is_thesis_dissertation_required",
                         headerName: "Thesis/Dissertation Required",
                         minWidth: 220,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "program_status",
                         headerName: "Program Status",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "calendar_use_code",
                         headerName: "Calendar Use Code",
                         minWidth: 160,
-                        editable: true,
+                        editable: false,
                     },
                     {
                         field: "program_normal_length_in_years",
                         headerName: "Program Length (Years)",
                         minWidth: 180,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "lab_units",
                         headerName: "Laboratory Units",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "lecture_units",
                         headerName: "Lecture Units",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
@@ -121,14 +114,14 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         field: "tuition_per_unit",
                         headerName: "Tuition Per Unit",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "program_fee",
                         headerName: "Program Fee",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                 ],
@@ -184,59 +177,58 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         field: "new_students_freshmen_male",
                         headerName: "Freshmen Male",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "new_students_freshmen_female",
                         headerName: "Freshmen Female",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "1st_year_male",
                         headerName: "1st Year Male",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "1st_year_female",
                         headerName: "1st Year Female",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "2nd_year_male",
                         headerName: "2nd Year Male",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "2nd_year_female",
                         headerName: "2nd Year Female",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "3rd_year_male",
                         headerName: "3rd Year Male",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
                     {
                         field: "3rd_year_female",
                         headerName: "3rd Year Female",
                         minWidth: 150,
-                        editable: true,
+                        editable: false,
                         type: "number",
                     },
-                    // Additional enrollment columns would be included here
                     {
                         field: "subtotal_male",
                         headerName: "Subtotal Male",
@@ -251,30 +243,22 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         editable: false,
                         type: "number",
                     },
-                    {
-                        field: "grand_total",
-                        headerName: "Grand Total",
-                        minWidth: 150,
-                        editable: false,
-                        type: "number",
-                    },
                 ],
-                // Column groupings
                 columnGroups: [
                     {
-                        id: "name",
-                        headerName: "Program Name",
+                        id: "program",
+                        headerName: "Program",
                         columns: ["program_name"],
+                    },
+                    {
+                        id: "freshmen",
+                        headerName: "Freshmen",
+                        columns: ["new_students_freshmen_male", "new_students_freshmen_female"],
                     },
                     {
                         id: "first_year",
                         headerName: "First Year",
-                        columns: [
-                            "new_students_freshmen_male",
-                            "new_students_freshmen_female",
-                            "1st_year_male",
-                            "1st_year_female",
-                        ],
+                        columns: ["1st_year_male", "1st_year_female"],
                     },
                     {
                         id: "second_year",
@@ -286,15 +270,10 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         headerName: "Third Year",
                         columns: ["3rd_year_male", "3rd_year_female"],
                     },
-                    // Additional groupings would be included here
                     {
-                        id: "totals",
-                        headerName: "Totals",
-                        columns: [
-                            "subtotal_male",
-                            "subtotal_female",
-                            "grand_total",
-                        ],
+                        id: "subtotal",
+                        headerName: "Subtotal",
+                        columns: ["subtotal_male", "subtotal_female"],
                     },
                 ],
             },
@@ -411,79 +390,65 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
         []
     );
 
-    const handleCellEdit = useCallback(
-        async (id, field, value) => {
-            if (!editingCell) return;
-            setEditingCell(null);
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+    };
 
-            const token = localStorage.getItem("token");
-            if (!token) {
-                AlertComponent.showAlert(
-                    "Authentication token is missing. Please log in again.",
-                    "error"
-                );
-                return;
-            }
+    const handlePageSizeChange = (event) => {
+        setPageSize(Number(event.target.value));
+        setCurrentPage(1);
+    };
 
-            const updatedPrograms = [...programs];
-            const programIndex = updatedPrograms.findIndex((p) => p.id === id);
-            if (programIndex === -1) {
-                AlertComponent.showAlert(
-                    `Program with id ${id} not found.`,
-                    "error"
-                );
-                return;
-            }
+    const renderCell = (row, column) => {
+        const value = row[column.field];
+        return (
+            <div className="px-4 py-2">
+                {column.type === "number" ? (
+                    <span className="text-right block">{value}</span>
+                ) : (
+                    <span>{value}</span>
+                )}
+            </div>
+        );
+    };
 
-            updatedPrograms[programIndex][field] = value;
+    const renderTable = () => {
+        const config = columnConfigs[subTabValue];
+        if (!config) return null;
 
-            try {
-                await axios.put(
-                    `${config.API_URL}/programs/${id}`,
-                    updatedPrograms[programIndex],
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                fetchPrograms();
-                AlertComponent.showAlert(
-                    "Program updated successfully",
-                    "success"
-                );
-            } catch (error) {
-                console.error("Error updating program:", error);
-                AlertComponent.showAlert(
-                    error.response?.data?.error ||
-                        "Failed to update program. Changes have been reverted.",
-                    "error"
-                );
-            }
-        },
-        [programs, fetchPrograms, editingCell]
-    );
-
-    // Get current page of data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return programs.slice(startIndex, endIndex);
-    }, [programs, currentPage, pageSize]);
-
-    // Total pages calculation
-    const totalPages = Math.ceil(programs.length / pageSize);
-
-    // Get current columns and groups based on active tab
-    const currentConfig = columnConfigs[subTabValue] || columnConfigs[0];
-
-    // Get all column fields from current column groups
-    const getColumnFieldsFromGroups = () => {
-        const fields = [];
-        currentConfig.columnGroups.forEach((group) => {
-            fields.push(...group.columns);
-        });
-        return fields;
+        return (
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            {config.columns.map((column) => (
+                                <th
+                                    key={column.field}
+                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    style={{ minWidth: column.minWidth }}
+                                >
+                                    {column.headerName}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {programs.map((row, rowIndex) => (
+                            <tr key={rowIndex} className="hover:bg-gray-50">
+                                {config.columns.map((column) => (
+                                    <td
+                                        key={column.field}
+                                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                    >
+                                        {renderCell(row, column)}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
     };
 
     if (loading) {
@@ -495,341 +460,47 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
     }
 
     return (
-        <div className="mt-4 relative">
-            {/* Error Alert */}
+        <div className="bg-white rounded-lg shadow">
             {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md flex justify-between items-center">
-                    <p className="text-red-700 text-sm">{error}</p>
-                    <button
-                        onClick={() => setError(null)}
-                        className="text-red-500 hover:text-red-700"
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
-                </div>
-            )}
-
-            {/* Tabs */}
-            <div className="flex border-b border-gray-300 mb-4 bg-white rounded-t-md overflow-hidden">
-                {["Programs", "Enrollments", "Statistics"].map((tab, index) => (
-                    <button
-                        key={tab}
-                        onClick={() => {
-                            setSubTabValue(index);
-                            localStorage.setItem("selectedSubTab", index);
-                        }}
-                        className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
-                            subTabValue === index
-                                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50/50"
-                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                        }`}
-                        aria-selected={subTabValue === index}
-                        role="tab"
-                    >
-                        {tab}
-                    </button>
-                ))}
-            </div>
-
-            {/* Summary */}
-            <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-                <p className="text-xs text-gray-600">
-                    <span className="font-medium">{currentCount}</span> of{" "}
-                    <span className="font-medium">{totalCount}</span> programs
-                    {searchTerm && (
-                        <span className="hidden sm:inline">
-                            {" matching "}
-                            <strong>&#34;{searchTerm}&#34;</strong>
-                        </span>
-                    )}
-                </p>
-            </div>
-
-            {/* Table Container */}
-            <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-3 max-h-[45vh] overflow-y-auto">
-                <div className="overflow-x-auto max-h-[40vh] h-[40vh] relative">
-                    {/* Column Group Headers */}
-                    <div className="sticky top-0 z-20 bg-white shadow-sm">
-                        <div className="flex border-b border-gray-200">
-                            {currentConfig.columnGroups.map((group) => {
-                                const groupWidth = group.columns.reduce(
-                                    (acc, field) => {
-                                        const col = currentConfig.columns.find(
-                                            (c) => c.field === field
-                                        );
-                                        return acc + (col?.minWidth || 100);
-                                    },
-                                    0
-                                );
-
-                                return (
-                                    <div
-                                        key={group.id}
-                                        className="px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-100/80 text-center flex items-center justify-center"
-                                        style={{
-                                            minWidth: groupWidth,
-                                            width: groupWidth,
-                                        }}
-                                        title={group.headerName}
-                                        role="columnheader"
-                                    >
-                                        <span className="truncate">
-                                            {group.headerName}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Column Headers */}
-                        <div className="flex bg-gray-50 border-b border-gray-200 shadow-sm">
-                            {getColumnFieldsFromGroups().map((field) => {
-                                const column = currentConfig.columns.find(
-                                    (col) => col.field === field
-                                );
-                                const isNumeric = column?.type === "number";
-
-                                return (
-                                    <div
-                                        key={field}
-                                        className={`px-3 py-2 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-50 ${
-                                            isNumeric
-                                                ? "text-right"
-                                                : "text-left"
-                                        }`}
-                                        style={{
-                                            width: column?.minWidth || 100,
-                                            minWidth: column?.minWidth || 100,
-                                        }}
-                                        title={column?.headerName || field}
-                                        role="columnheader"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span className="truncate">
-                                                {column?.headerName || field}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Table Body */}
-                    <div className="bg-white" role="rowgroup">
-                        {paginatedData.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500 bg-gray-50/50 max-h-[46vh] h-[46vh] italic">
-                                No programs found matching your criteria
-                            </div>
-                        ) : (
-                            paginatedData.map((row, rowIndex) => (
-                                <div
-                                    key={row.id}
-                                    className={`flex border-b border-gray-200 ${
-                                        rowIndex % 2 === 0
-                                            ? "bg-white"
-                                            : "bg-gray-50/50"
-                                    } hover:bg-blue-50/40 transition-colors duration-150`}
-                                    role="row"
-                                >
-                                    {getColumnFieldsFromGroups().map(
-                                        (field) => {
-                                            const column =
-                                                currentConfig.columns.find(
-                                                    (col) => col.field === field
-                                                );
-                                            const isEditing =
-                                                editingCell?.id === row.id &&
-                                                editingCell?.field === field;
-                                            const cellValue =
-                                                row[field] !== undefined &&
-                                                row[field] !== null
-                                                    ? row[field]
-                                                    : "-";
-                                            const isNumeric =
-                                                column?.type === "number";
-                                            const isEditable = column?.editable;
-
-                                            return (
-                                                <div
-                                                    key={`${row.id}-${field}`}
-                                                    className={`px-3 py-2 text-sm border-r border-gray-200 ${
-                                                        isNumeric
-                                                            ? "text-right"
-                                                            : "text-left"
-                                                    } ${
-                                                        isEditable
-                                                            ? "cursor-pointer group relative"
-                                                            : ""
-                                                    }`}
-                                                    style={{
-                                                        width:
-                                                            column?.minWidth ||
-                                                            100,
-                                                        minWidth:
-                                                            column?.minWidth ||
-                                                            100,
-                                                    }}
-                                                    onClick={() => {
-                                                        if (isEditable) {
-                                                            setEditingCell({
-                                                                id: row.id,
-                                                                field,
-                                                            });
-                                                            setEditValue(
-                                                                row[field] !==
-                                                                    null
-                                                                    ? String(
-                                                                          row[
-                                                                              field
-                                                                          ]
-                                                                      )
-                                                                    : ""
-                                                            );
-                                                        }
-                                                    }}
-                                                    role="cell"
-                                                    aria-colindex={
-                                                        getColumnFieldsFromGroups().indexOf(
-                                                            field
-                                                        ) + 1
-                                                    }
-                                                    title={
-                                                        isEditable
-                                                            ? `Click to edit ${column?.headerName}`
-                                                            : undefined
-                                                    }
-                                                >
-                                                    {isEditing ? (
-                                                        <div className="flex items-center">
-                                                            <input
-                                                                type={
-                                                                    isNumeric
-                                                                        ? "number"
-                                                                        : "text"
-                                                                }
-                                                                value={
-                                                                    editValue
-                                                                }
-                                                                onChange={(e) =>
-                                                                    setEditValue(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                                onBlur={() =>
-                                                                    handleCellEdit(
-                                                                        row.id,
-                                                                        field,
-                                                                        isNumeric
-                                                                            ? Number(
-                                                                                  editValue
-                                                                              )
-                                                                            : editValue
-                                                                    )
-                                                                }
-                                                                onKeyDown={(
-                                                                    e
-                                                                ) => {
-                                                                    if (
-                                                                        e.key ===
-                                                                        "Enter"
-                                                                    ) {
-                                                                        handleCellEdit(
-                                                                            row.id,
-                                                                            field,
-                                                                            isNumeric
-                                                                                ? Number(
-                                                                                      editValue
-                                                                                  )
-                                                                                : editValue
-                                                                        );
-                                                                    } else if (
-                                                                        e.key ===
-                                                                        "Escape"
-                                                                    ) {
-                                                                        setEditingCell(
-                                                                            null
-                                                                        );
-                                                                    }
-                                                                }}
-                                                                className="w-full px-2 py-1 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                                autoFocus
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div
-                                                            className={`truncate ${
-                                                                isEditable
-                                                                    ? "group-hover:bg-blue-100/60 group-hover:rounded px-1 py-0.5 transition-colors duration-150"
-                                                                    : ""
-                                                            }`}
-                                                        >
-                                                            {isNumeric &&
-                                                            cellValue !== "-"
-                                                                ? Number(
-                                                                      cellValue
-                                                                  ).toLocaleString()
-                                                                : cellValue}
-
-                                                            {isEditable && (
-                                                                <span className="text-blue-500 opacity-0 group-hover:opacity-100 ml-1 inline-flex">
-                                                                    <svg
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        className="h-3.5 w-3.5"
-                                                                        viewBox="0 0 20 20"
-                                                                        fill="currentColor"
-                                                                    >
-                                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                                                    </svg>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        }
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    {/* Add a shadow at the bottom if there's more content to scroll */}
-                    <div className="sticky bottom-0 h-1 w-full bg-gradient-to-t from-gray-200/80 to-transparent pointer-events-none"></div>
-                </div>
-            </div>
-            {/* Pagination Controls */}
-            <div className="flex justify-end my-4">
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    pageSize={pageSize}
-                    onPageSizeChange={setPageSize}
-                    pageSizeOptions={[10, 25, 50, 100]}
-                    showFirstLast={true}
-                    showPageSize={true}
+                <AlertComponent
+                    type="error"
+                    message={error}
+                    onClose={() => setError(null)}
                 />
+            )}
+            <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center space-x-4">
+                        <select
+                            value={pageSize}
+                            onChange={handlePageSizeChange}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value={10}>10 per page</option>
+                            <option value={25}>25 per page</option>
+                            <option value={50}>50 per page</option>
+                            <option value={100}>100 per page</option>
+                        </select>
+                    </div>
+                </div>
+                {renderTable()}
+                <div className="mt-4">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(totalCount / pageSize)}
+                        onPageChange={handlePageChange}
+                    />
+                </div>
             </div>
         </div>
     );
 };
 
 ProgramTables.propTypes = {
-    programs: PropTypes.arrayOf(
-        PropTypes.shape({
-            id: PropTypes.number.isRequired,
-            program_name: PropTypes.string.isRequired,
-            // Other prop types omitted for brevity
-        })
-    ).isRequired,
-    loading: PropTypes.bool.isRequired,
-    fetchPrograms: PropTypes.func,
+    programs: PropTypes.arrayOf(PropTypes.object).isRequired,
+    loading: PropTypes.bool,
     summary: PropTypes.shape({
-        currentCount: PropTypes.number,
         totalCount: PropTypes.number,
-        searchTerm: PropTypes.string,
     }),
 };
 

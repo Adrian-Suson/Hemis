@@ -17,20 +17,24 @@ import {
     Users,
     GraduationCap,
     BookOpen,
-    Building2,
     BarChart2,
     TrendingUp,
     AlertCircle,
     ChevronUp,
     ChevronDown,
     RefreshCw,
-    Filter,
     Grid,
     List,
     Calendar,
+    Upload,
 } from "lucide-react";
 import config from "../../../utils/config";
 import DashboardSkeleton from "./DashboardSkeleton";
+import FacultyUploadDialog from "../../../Components/FacultyUploadDialog";
+import GraduatesUploadDialog from "../../../Components/GraduatesUploadDialog";
+import InstitutionUploadDialog from "../../../Components/InstitutionUploadDialog";
+import CurricularUploadDialog from "../../../Components/CurricularUploadDialog";
+import CHEDButton from "../../../Components/CHEDButton";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -136,6 +140,10 @@ const DashboardPage = () => {
         charts: true,
     });
     const [selectedYear, setSelectedYear] = useState(""); // Selected report year
+    const [openFacultyDialog, setOpenFacultyDialog] = useState(false);
+    const [openGraduatesDialog, setOpenGraduatesDialog] = useState(false);
+    const [openInstitutionDialog, setOpenInstitutionDialog] = useState(false);
+    const [openCurricularDialog, setOpenCurricularDialog] = useState(false);
 
     const { showLoading, hideLoading } = useLoading();
     const isMounted = useRef(true);
@@ -346,11 +354,20 @@ const DashboardPage = () => {
     }, [originalStats.institutions, uuid]);
 
     const aggregations = useMemo(() => {
+        // Get unique institutions by UUID
+        const uniqueInstitutions = stats.institutions?.reduce((acc, inst) => {
+            if (!acc.has(inst.uuid)) {
+                acc.set(inst.uuid, inst);
+            }
+            return acc;
+        }, new Map());
+
         const totals = {
             users: stats.users?.length || 0,
             faculty: stats.facultyProfiles?.length || 0,
             programs: stats.programs?.length || 0,
-            institutions: stats.institutions?.length || 0,
+            // Count unique institutions by UUID
+            institutions: uniqueInstitutions?.size || 0,
             enrollments:
                 stats.programs?.reduce(
                     (sum, program) => sum + (program.grand_total || 0),
@@ -416,7 +433,7 @@ const DashboardPage = () => {
             enrollmentByYearLevel,
             graduationRate,
         };
-    }, [stats]);
+    }, [stats, uuid]);
 
     const chartData = useMemo(() => {
         const yearLevelKeys = Object.keys(aggregations.enrollmentByYearLevel);
@@ -446,7 +463,7 @@ const DashboardPage = () => {
         return [
             {
                 title: "Gender Distribution",
-                type: "doughnut",
+                type: "pie",
                 data: {
                     labels: ["Male", "Female"],
                     datasets: [
@@ -481,9 +498,9 @@ const DashboardPage = () => {
             },
             {
                 title: "Institution Overview",
-                type: "doughnut",
+                type: "pie",
                 data: {
-                    labels: ["Programs", "Faculty", "Institutions"],
+                    labels: ["Programs", "Faculty", "Unique Institutions"],
                     datasets: [
                         {
                             data: [
@@ -513,7 +530,7 @@ const DashboardPage = () => {
                         color: CHART_COLORS.purple,
                     },
                     {
-                        label: "Institutions",
+                        label: "Unique Institutions",
                         value: aggregations.totals.institutions.toLocaleString(),
                         color: CHART_COLORS.orange,
                     },
@@ -521,7 +538,7 @@ const DashboardPage = () => {
             },
             {
                 title: "Student Status",
-                type: "doughnut",
+                type: "pie",
                 data: {
                     labels: ["Enrolled", "Graduates"],
                     datasets: [
@@ -666,14 +683,6 @@ const DashboardPage = () => {
             iconBg: "bg-violet-500",
         },
         {
-            label: "Institutions",
-            value: aggregations.totals.institutions.toLocaleString(),
-            color: "text-amber-600",
-            bgColor: "bg-amber-50",
-            icon: <Building2 className="w-4 h-4" />,
-            iconBg: "bg-amber-500",
-        },
-        {
             label: "Enrollments",
             value: aggregations.totals.enrollments.toLocaleString(),
             color: "text-blue-600",
@@ -697,14 +706,12 @@ const DashboardPage = () => {
                         </span>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                         {/* Year Filter Dropdown */}
                         <div className="relative">
                             <select
                                 value={selectedYear}
-                                onChange={(e) =>
-                                    setSelectedYear(e.target.value)
-                                }
+                                onChange={(e) => setSelectedYear(e.target.value)}
                                 className="appearance-none bg-white border border-gray-200 rounded-md pl-8 pr-6 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 disabled={availableYears.length <= 1}
                             >
@@ -759,9 +766,41 @@ const DashboardPage = () => {
                             />
                         </button>
 
-                        <button className="p-1.5 rounded-md border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50">
-                            <Filter className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Upload Buttons */}
+                        <div className="flex items-center gap-2">
+                            <CHEDButton
+                                onClick={() => setOpenFacultyDialog(true)}
+                                icon={Upload}
+                                variant="primary"
+                                size="sm"
+                            >
+                                Faculty
+                            </CHEDButton>
+                            <CHEDButton
+                                onClick={() => setOpenGraduatesDialog(true)}
+                                icon={Upload}
+                                variant="primary"
+                                size="sm"
+                            >
+                                Graduates
+                            </CHEDButton>
+                            <CHEDButton
+                                onClick={() => setOpenInstitutionDialog(true)}
+                                icon={Upload}
+                                variant="primary"
+                                size="sm"
+                            >
+                                Institution
+                            </CHEDButton>
+                            <CHEDButton
+                                onClick={() => setOpenCurricularDialog(true)}
+                                icon={Upload}
+                                variant="primary"
+                                size="sm"
+                            >
+                                Curricular
+                            </CHEDButton>
+                        </div>
                     </div>
                 </div>
 
@@ -794,7 +833,7 @@ const DashboardPage = () => {
                             >
                                 {viewMode === "compact" ? (
                                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-                                        <div className="grid grid-cols-4 gap-3">
+                                        <div className="grid grid-cols-3 gap-2">
                                             {statCards.map((stat, index) => (
                                                 <motion.div
                                                     key={index}
@@ -824,7 +863,7 @@ const DashboardPage = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                         {statCards.map((stat, index) => (
                                             <motion.div
                                                 key={index}
@@ -1044,6 +1083,25 @@ const DashboardPage = () => {
                     </AnimatePresence>
                 </div>
             </div>
+
+            {/* Dialog Components */}
+            <FacultyUploadDialog
+                open={openFacultyDialog}
+                onClose={() => setOpenFacultyDialog(false)}
+                fetchFacultyProfiles={fetchStats}
+            />
+            <GraduatesUploadDialog
+                open={openGraduatesDialog}
+                onClose={() => setOpenGraduatesDialog(false)}
+            />
+            <InstitutionUploadDialog
+                open={openInstitutionDialog}
+                onClose={() => setOpenInstitutionDialog(false)}
+            />
+            <CurricularUploadDialog
+                open={openCurricularDialog}
+                onClose={() => setOpenCurricularDialog(false)}
+            />
         </div>
     );
 };

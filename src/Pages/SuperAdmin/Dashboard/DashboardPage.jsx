@@ -206,11 +206,20 @@ const DashboardPage = () => {
     }, [originalStats.institutions]);
 
     const aggregations = useMemo(() => {
+        // Get unique institutions by UUID
+        const uniqueInstitutions = stats.institutions?.reduce((acc, inst) => {
+            if (!acc.has(inst.uuid)) {
+                acc.set(inst.uuid, inst);
+            }
+            return acc;
+        }, new Map());
+
         const totals = {
             users: stats.users?.length || 0,
             faculty: stats.facultyProfiles?.length || 0,
             programs: stats.programs?.length || 0,
-            institutions: stats.institutions?.length || 0,
+            // Count unique institutions by UUID
+            institutions: uniqueInstitutions?.size || 0,
             enrollments:
                 stats.programs?.reduce(
                     (sum, program) => sum + (program.grand_total || 0),
@@ -306,7 +315,7 @@ const DashboardPage = () => {
         return [
             {
                 title: "Gender Distribution",
-                type: "doughnut",
+                type: "pie",
                 data: {
                     labels: ["Male", "Female"],
                     datasets: [
@@ -341,9 +350,9 @@ const DashboardPage = () => {
             },
             {
                 title: "Institution Overview",
-                type: "doughnut",
+                type: "pie",
                 data: {
-                    labels: ["Programs", "Faculty", "Institutions"],
+                    labels: ["Programs", "Faculty", "Unique Institutions"],
                     datasets: [
                         {
                             data: [
@@ -373,7 +382,7 @@ const DashboardPage = () => {
                         color: CHART_COLORS.purple,
                     },
                     {
-                        label: "Institutions",
+                        label: "Unique Institutions",
                         value: aggregations.totals.institutions.toLocaleString(),
                         color: CHART_COLORS.orange,
                     },
@@ -381,7 +390,7 @@ const DashboardPage = () => {
             },
             {
                 title: "Student Status",
-                type: "doughnut",
+                type: "pie",
                 data: {
                     labels: ["Enrolled", "Graduates"],
                     datasets: [

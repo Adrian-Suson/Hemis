@@ -9,17 +9,16 @@ class CurricularProgram extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'curricular_programs';
 
     protected $fillable = [
-        'institution_id', // Updated to institution_id
+        'institution_id',
         'program_name',
         'program_code',
         'major_name',
         'major_code',
         'category',
         'serial',
-        'Year',
+        'year',
         'is_thesis_dissertation_required',
         'program_status',
         'calendar_use_code',

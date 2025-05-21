@@ -19,6 +19,7 @@ import {
     Search,
 } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
+import ProgramInputDialog from "./ProgramInputDialog";
 
 const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -32,6 +33,8 @@ const CurricularProgram = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const navigate = useNavigate();
+    const [openProgramDialog, setOpenProgramDialog] = useState(false);
+    const [selectedProgram, setSelectedProgram] = useState(null);
 
     const categories = useMemo(
         () => [
@@ -272,7 +275,7 @@ const CurricularProgram = () => {
                                         Number(row[42]) || null,
                                     suc_funded_grantees:
                                         Number(row[43]) || null,
-                                    report_year: institutionReportYear, // Use institution's report year
+                                    report_year: institutionReportYear,
                                 };
                             })
                             .filter((data) => !!data.program_name);
@@ -518,6 +521,66 @@ const CurricularProgram = () => {
         ],
     };
 
+    const handleProgramSubmit = async (formData) => {
+        try {
+            const token = localStorage.getItem("token");
+            const institutionId = decryptId(encryptedInstitutionId);
+
+            if (!institutionId || !token) {
+                AlertComponent.showAlert(
+                    !institutionId
+                        ? "Please select an institution first."
+                        : "Please log in first.",
+                    "warning"
+                );
+                return;
+            }
+
+            // Add institution_id and program_type to the form data
+            const programData = {
+                ...formData,
+                institution_id: institutionId,
+                program_type: categories[mainTabValue],
+            };
+
+
+            console.log("programDAtta",programData)
+
+            if (selectedProgram) {
+                // Update existing program
+                await axios.put(
+                    `${config.API_URL}/curricular_programs/${selectedProgram.id}`,
+                    programData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                AlertComponent.showAlert("Program updated successfully!", "success");
+            } else {
+                // Create new program
+                await axios.post(
+                    `${config.API_URL}/curricular_programs`,
+                    programData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                AlertComponent.showAlert("Program added successfully!", "success");
+            }
+
+            setOpenProgramDialog(false);
+            setSelectedProgram(null);
+            fetchPrograms();
+        } catch (error) {
+            console.error("Error saving program:", error);
+            AlertComponent.showAlert(
+                error.response?.data?.message || "Failed to save program. Please try again.",
+                "error"
+            );
+        }
+    };
+
+
     if (loading) {
         return <CurricularProgramSkeleton />;
     }
@@ -559,6 +622,19 @@ const CurricularProgram = () => {
                     Curricular Programs
                 </h1>
                 <div className="flex space-x-2">
+                    {/* Add New Program Button */}
+                    <CHEDButton
+                        onClick={() => {
+                            setSelectedProgram(null);
+                            setOpenProgramDialog(true);
+                        }}
+                        icon={UploadIcon}
+                        variant="primary"
+                        size="md"
+                    >
+                        Add New Program
+                    </CHEDButton>
+
                     {/* Import Button */}
                     <CHEDButton
                         onClick={() => setOpenUploadDialog(true)}
@@ -618,6 +694,7 @@ const CurricularProgram = () => {
                     totalCount: totalRows,
                     searchTerm,
                 }}
+                onSubmit={handleProgramSubmit}
             />
 
             {/* Tabs */}
@@ -822,6 +899,17 @@ const CurricularProgram = () => {
                     </div>
                 </div>
             )}
+
+            {/* Program Input Dialog */}
+            <ProgramInputDialog
+                open={openProgramDialog}
+                onClose={() => {
+                    setOpenProgramDialog(false);
+                    setSelectedProgram(null);
+                }}
+                onSubmit={handleProgramSubmit}
+                program={selectedProgram}
+            />
 
             {/* CSS */}
             <style>{`

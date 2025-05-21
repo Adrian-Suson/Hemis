@@ -66,7 +66,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         editable: true,
                     },
                     {
-                        field: "Year",
+                        field: "year",
                         headerName: "Year",
                         minWidth: 120,
                         editable: true,
@@ -436,10 +436,10 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
             }
 
             updatedPrograms[programIndex][field] = value;
-
+            console.log(updatedPrograms[programIndex])
             try {
                 await axios.put(
-                    `${config.API_URL}/programs/${id}`,
+                    `${config.API_URL}/curricular_programs/${id}`,
                     updatedPrograms[programIndex],
                     {
                         headers: {

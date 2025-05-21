@@ -1,4 +1,3 @@
-// Refined secondary variant without the red corner accent
 import PropTypes from "prop-types";
 
 /**
@@ -45,7 +44,7 @@ const CHEDButton = ({
         lg: "p-1.5",
     };
 
-    // Variant styles (primary and secondary inspired by CHED logo)
+    // Variant styles (four different variants inspired by CHED logo)
     const variants = {
         // Sunburst animation variant (blue background with animated rays)
         primary: {
@@ -59,6 +58,20 @@ const CHEDButton = ({
             base: "bg-white border-2 border-[#0038A8] text-[#0038A8] hover:border-[#002d85] focus:ring-2 focus:ring-[#0038A8] focus:ring-offset-1",
             disabled: "bg-gray-100 border-gray-300 text-gray-400",
             iconContainer: "bg-[#FCD116] rounded-full text-[#0038A8]",
+            effects: true,
+        },
+        // Glassmorphic variant - translucent with backdrop blur
+        glass: {
+            base: "bg-white/15 backdrop-blur-md border border-white/30 text-white hover:bg-white/25 hover:border-white/50 focus:ring-2 focus:ring-white/30 focus:ring-offset-1 shadow-lg",
+            disabled: "bg-gray-700/30 backdrop-blur-md border border-white/10 text-gray-400/70 shadow-none",
+            iconContainer: "bg-[#FCD116]/90 backdrop-blur-md rounded-full text-[#0038A8] shadow-[0_0_8px_rgba(252,209,22,0.4)]",
+            effects: true,
+        },
+        // Accent/action variant - red-themed for calls to action
+        accent: {
+            base: "bg-[#CD0000] text-white shadow-md hover:shadow-lg hover:bg-[#b80000] focus:ring-2 focus:ring-[#CD0000] focus:ring-offset-2",
+            disabled: "bg-gray-400 text-white shadow-none",
+            iconContainer: "bg-white rounded-full text-[#CD0000]",
             effects: true,
         },
     };
@@ -102,7 +115,7 @@ const CHEDButton = ({
                 </>
             )}
 
-            {/* Sunshine Burst Animation (Secondary Variant) - Without Red Corner */}
+            {/* Sunshine Burst Animation (Secondary Variant) */}
             {variant === "secondary" && !disabled && (
                 <>
                     {/* Yellow dot that expands */}
@@ -138,26 +151,106 @@ const CHEDButton = ({
                 </>
             )}
 
-            {/* Icon with special effect for secondary */}
+            {/* Glassmorphic Animation Effect (Glass Variant) */}
+            {variant === "glass" && !disabled && (
+                <>
+                    {/* Shimmering light effect */}
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute -inset-[400%] opacity-0 group-hover:opacity-40 bg-gradient-to-r from-transparent via-white to-transparent skew-x-[-20deg] transition-opacity duration-1000 transform group-hover:-translate-x-[500%] ease-out"></div>
+                    </div>
+
+                    {/* Subtle pulse rings */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-full h-full rounded-md border border-white/0 group-hover:border-white/30 transform scale-90 group-hover:scale-110 opacity-0 group-hover:opacity-100 transition-all duration-1000"></div>
+                    </div>
+
+                    {/* Glowing dots in corners */}
+                    <div className="absolute top-0 left-0 w-1 h-1 rounded-full bg-[#FCD116]/0 group-hover:bg-[#FCD116]/60 transform group-hover:scale-[2] transition-all duration-700 group-hover:shadow-[0_0_5px_2px_rgba(252,209,22,0.3)]"></div>
+                    <div className="absolute bottom-0 right-0 w-1 h-1 rounded-full bg-[#FCD116]/0 group-hover:bg-[#FCD116]/60 transform group-hover:scale-[2] transition-all duration-700 delay-200 group-hover:shadow-[0_0_5px_2px_rgba(252,209,22,0.3)]"></div>
+                </>
+            )}
+
+            {/* Accent Animation Effect (Accent Variant) */}
+            {variant === "accent" && !disabled && (
+                <>
+                    {/* Rising particles effect */}
+                    <div className="absolute inset-0 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        {[...Array(8)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="absolute bottom-0 bg-white/50 rounded-full w-1 h-1 transition-all duration-1000 ease-out"
+                                style={{
+                                    left: `${10 + (i * 10)}%`,
+                                    transitionDelay: `${i * 100}ms`,
+                                }}
+                            ></div>
+                        ))}
+                        {/* Animate particles upward on hover */}
+                        <style>{`
+                            .group:hover div[style*="transitionDelay"] {
+                                transform: translateY(-150%);
+                                opacity: 0;
+                            }
+                        `}</style>
+                    </div>
+
+                    {/* Pulsing border effect */}
+                    <div className="absolute inset-0 rounded-md border border-[#0038A8]/0 group-hover:border-[#0038A8]/50 transform scale-[0.97] group-hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+
+                    {/* Wavelike bottom animation */}
+                    <div className="absolute -bottom-3 left-0 right-0 h-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden">
+                        <div className="absolute inset-0 bg-white/20 animate-wave"></div>
+                    </div>
+                </>
+            )}
+
+            {/* Icon with special effects for each variant */}
             {Icon && (
                 <div
                     className={`${iconContainerClasses} ${
-                        variant === "secondary" && !disabled
-                            ? "relative transition-transform duration-300 group-hover:scale-110 group-hover:shadow-[0_0_10px_rgba(252,209,22,0.6)]"
+                        !disabled
+                            ? "relative transition-transform duration-300 group-hover:scale-110"
+                            : ""
+                    } ${
+                        variant === "glass" && !disabled
+                            ? "group-hover:shadow-[0_0_12px_rgba(252,209,22,0.7)]"
+                            : variant === "accent" && !disabled
+                            ? "group-hover:shadow-[0_0_12px_rgba(255,255,255,0.7)]"
+                            : variant === "secondary" && !disabled
+                            ? "group-hover:shadow-[0_0_10px_rgba(252,209,22,0.6)]"
                             : ""
                     }`}
                 >
                     <Icon className={iconClasses} />
 
-                    {/* Pulse ring for secondary */}
-                    {variant === "secondary" && !disabled && (
-                        <div className="absolute inset-0 rounded-full border-2 border-[#FCD116]/0 group-hover:border-[#FCD116]/40 transform scale-100 group-hover:scale-150 opacity-0 group-hover:opacity-100 transition-all duration-1000"></div>
+                    {/* Pulse ring for icons */}
+                    {!disabled && (
+                        <div
+                            className={`absolute inset-0 rounded-full transform scale-100 group-hover:scale-150 opacity-0 group-hover:opacity-100 transition-all duration-1000 ${
+                                variant === "glass"
+                                    ? "border-2 border-white/40"
+                                    : variant === "accent"
+                                    ? "border-2 border-[#0038A8]/40"
+                                    : "border-2 border-[#FCD116]/40"
+                            }`}
+                        ></div>
                     )}
                 </div>
             )}
 
             {/* Button Text */}
             <span className={baseStyles.text}>{children}</span>
+
+            {/* Wave animation for accent button */}
+            <style>{`
+                @keyframes wave {
+                    0% { transform: translateX(-100%) skewX(50deg); }
+                    100% { transform: translateX(100%) skewX(50deg); }
+                }
+                .animate-wave {
+                    animation: wave 2s infinite;
+                }
+            `}</style>
         </button>
     );
 };
@@ -166,7 +259,7 @@ CHEDButton.propTypes = {
     children: PropTypes.node.isRequired,
     onClick: PropTypes.func,
     icon: PropTypes.elementType,
-    variant: PropTypes.oneOf(["primary", "secondary"]),
+    variant: PropTypes.oneOf(["primary", "secondary", "glass", "accent"]),
     size: PropTypes.oneOf(["sm", "md", "lg"]),
     disabled: PropTypes.bool,
     fullWidth: PropTypes.bool,
