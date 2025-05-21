@@ -10,17 +10,15 @@ import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
 import GraduatesSkeleton from "./GraduatesSkeleton";
 import { decryptId } from "../../../utils/encryption";
-import { Download, Filter, Upload, XIcon } from "lucide-react";
+import { Download, Filter, Upload } from "lucide-react";
 import FilterPopover from "../../../Components/FilterPopover";
 import CHEDButton from "../../../Components/CHEDButton";
+import AlertComponent from "../../../Components/AlertComponent";
 
 const Graduates = () => {
     const [graduates, setGraduates] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
-    const [snackbarMessage, setSnackbarMessage] = useState("");
-    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
     const [searchTerm, setSearchTerm] = useState("");
     const [sexFilter, setSexFilter] = useState("");
     const [yearFilter, setYearFilter] = useState("");
@@ -54,9 +52,7 @@ const Graduates = () => {
             setGraduates(formattedData);
         } catch (error) {
             console.error("Error fetching graduates:", error);
-            setSnackbarMessage(`Failed to fetch graduates: ${error.message}`);
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
+            AlertComponent.showAlert(`Failed to fetch graduates: ${error.message}`, "error");
         } finally {
             hideLoading();
             setLoading(false);
@@ -88,24 +84,40 @@ const Graduates = () => {
         const token = localStorage.getItem("token");
 
         if (!token) {
-            setSnackbarMessage("Authentication token is missing.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
+            AlertComponent.showAlert("Authentication token is missing.", "error");
             hideLoading();
             setLoading(false);
             return;
         }
 
         if (!institutionId) {
-            setSnackbarMessage("Institution ID is missing.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
+            AlertComponent.showAlert("Institution ID is missing.", "error");
             hideLoading();
             setLoading(false);
             return;
         }
 
         try {
+            const institutionId = decryptId(encryptedInstitutionId);
+
+            // Fetch the institution's report year
+            const institutionResponse = await axios.get(
+                `${config.API_URL}/institutions/${institutionId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const institutionReportYear =
+                institutionResponse.data?.report_year || null;
+
+            if (!institutionReportYear) {
+                AlertComponent.showAlert(
+                    "Failed to fetch the institution's report year.",
+                    "error"
+                );
+                setLoading(false);
+                updateProgress(0);
+                return;
+            }
+
             updateProgress(0);
             const reader = new FileReader();
             reader.readAsBinaryString(file);
@@ -172,7 +184,7 @@ const Graduates = () => {
                             : null;
 
                         return {
-                            institution_id: parseInt(institutionId, 10),
+                            institution_id: institutionId,
                             student_id: row[0] ? String(row[0]) : null,
                             last_name: row[1] ? String(row[1]) : null,
                             first_name: row[2] ? String(row[2]) : null,
@@ -188,6 +200,7 @@ const Graduates = () => {
                             year_granted: isNaN(yearGranted)
                                 ? null
                                 : yearGranted,
+                            report_year: institutionReportYear,
                         };
                     });
 
@@ -217,11 +230,10 @@ const Graduates = () => {
                 console.log("Final processed graduates:", allGraduates);
 
                 if (allGraduates.length === 0) {
-                    setSnackbarMessage(
-                        "No valid graduate data found in the file."
+                    AlertComponent.showAlert(
+                        "No valid graduate data found in the file.",
+                        "error"
                     );
-                    setSnackbarSeverity("error");
-                    setSnackbarOpen(true);
                     hideLoading();
                     setLoading(false);
                     return;
@@ -232,22 +244,20 @@ const Graduates = () => {
 
             reader.onerror = (error) => {
                 console.error("Error reading Excel file:", error);
-                setSnackbarMessage(
-                    `Failed to read Excel file: ${error.message}`
+                AlertComponent.showAlert(
+                    `Failed to read Excel file: ${error.message}`,
+                    "error"
                 );
-                setSnackbarSeverity("error");
-                setSnackbarOpen(true);
                 hideLoading();
                 setLoading(false);
             };
             updateProgress(80);
         } catch (error) {
             console.error("Error processing Excel file:", error);
-            setSnackbarMessage(
-                `Failed to process Excel file: ${error.message}`
+            AlertComponent.showAlert(
+                `Failed to process Excel file: ${error.message}`,
+                "error"
             );
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
             hideLoading();
             setLoading(false);
         }
@@ -269,11 +279,10 @@ const Graduates = () => {
                 }
             );
 
-            setSnackbarMessage(
-                response.data.message || "Graduates uploaded successfully!"
+            AlertComponent.showAlert(
+                response.data.message || "Graduates uploaded successfully!",
+                "success"
             );
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
             updateProgress(100);
             fetchGraduates();
         } catch (error) {
@@ -291,9 +300,7 @@ const Graduates = () => {
                     error.response?.data?.message || error.message
                 }`;
             }
-            setSnackbarMessage(errorMessage);
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
+            AlertComponent.showAlert(errorMessage, "error");
             hideLoading();
             setLoading(false);
             if (fileInputRef.current) {
@@ -499,27 +506,6 @@ const Graduates = () => {
 
             {/* Graduates Table */}
             <GraduatesTable graduates={filteredGraduates} />
-
-            {/* Snackbar */}
-            {snackbarOpen && (
-                <div className="fixed top-4 right-4 max-w-xs w-full bg-white shadow-lg rounded-md p-4 flex items-center justify-between z-50">
-                    <div
-                        className={`text-sm ${
-                            snackbarSeverity === "success"
-                                ? "text-green-700"
-                                : "text-red-700"
-                        }`}
-                    >
-                        {snackbarMessage}
-                    </div>
-                    <button
-                        onClick={() => setSnackbarOpen(false)}
-                        className="text-gray-500 hover:text-gray-700"
-                    >
-                        <XIcon className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
         </div>
     );
 };

@@ -29,6 +29,7 @@ import DP from "../assets/Profile.png";
 import axios from "axios";
 import config from "../utils/config";
 import { MdAdminPanelSettings } from "react-icons/md";
+import BarChartIcon from "@mui/icons-material/BarChart";
 
 // Define navigation items based on user role
 const getNavItems = (role) => {
@@ -43,6 +44,11 @@ const getNavItems = (role) => {
                 text: "Institutions",
                 icon: <StorageIcon />,
                 path: "/super-admin/institutions",
+            },
+            {
+                text: "Statistics",
+                icon: <BarChartIcon />,
+                path: "/super-admin/statistics",
             },
         ],
         "HEI Admin": [
@@ -66,7 +72,7 @@ const getNavItems = (role) => {
             {
                 text: "Institutions",
                 icon: <StorageIcon />,
-                path: "/hei-admin/institutions",
+                path: "/hei-staff/institutions",
             },
         ],
     };

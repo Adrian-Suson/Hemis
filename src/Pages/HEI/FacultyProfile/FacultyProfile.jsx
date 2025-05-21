@@ -83,6 +83,8 @@ const FacultyProfileUpload = () => {
     const navigate = useNavigate();
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const user = JSON.parse(localStorage.getItem("user"));
+    const basePath = user?.role === "HEI Staff" ? "/hei-staff" : "/hei-admin";
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -622,7 +624,7 @@ const FacultyProfileUpload = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate("/super-admin/dashboard")}
+                            onClick={() => navigate(`${basePath}/dashboard`)}
                             className="hover:underline"
                         >
                             Dashboard
@@ -632,9 +634,7 @@ const FacultyProfileUpload = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() =>
-                                navigate("/super-admin/institutions")
-                            }
+                            onClick={() => navigate(`${basePath}/institutions`)}
                             className="hover:underline"
                         >
                             Institution Management

@@ -50,7 +50,7 @@ class GraduateController extends Controller
         });
 
         return response()->json([
-            'data' => $transformed->items(),
+            'data' => $transformed, // Remove items() here
             'pagination' => [
                 'total' => $graduates->total(),
                 'per_page' => $graduates->perPage(),
@@ -77,7 +77,7 @@ class GraduateController extends Controller
         }
 
         $validator = Validator::make($data, [
-            '*.institution_uuid' => 'required|string|exists:institutions,uuid',
+            '*.institution_id' => 'required|string|exists:institutions,id',
             '*.student_id' => 'required|string|max:50|unique:graduates_list,student_id',
             '*.date_of_birth' => 'required|date|before_or_equal:today',
             '*.last_name' => 'required|string|max:255',

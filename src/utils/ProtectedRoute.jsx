@@ -2,17 +2,21 @@ import { Navigate, Outlet } from "react-router-dom";
 import PropTypes from "prop-types";
 
 const ProtectedRoute = ({ allowedRoles }) => {
-    // Get user data from localStorage (you can also use a global state like Redux or Context API)
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
 
-    // If no user, redirect to login
-    if (!user) {
+    if (!token || !user) {
         return <Navigate to="/login" replace />;
     }
 
-    // Check if the user has the correct role
     if (!allowedRoles.includes(user.role)) {
-        return <Navigate to="/" replace />;
+        // Redirect to appropriate dashboard based on role
+        const dashboardPaths = {
+            "Super Admin": "/super-admin/dashboard",
+            "HEI Admin": "/hei-admin/dashboard",
+            "HEI Staff": "/hei-staff/dashboard",
+        };
+        return <Navigate to={dashboardPaths[user.role] || "/login"} replace />;
     }
 
     return <Outlet />;

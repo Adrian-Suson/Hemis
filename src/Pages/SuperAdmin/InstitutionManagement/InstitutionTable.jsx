@@ -129,7 +129,7 @@ const InstitutionTable = ({
             await axios.delete(
                 `${config.API_URL}/institutions/${institutionId}`,
                 {
-                    headers: { Authorization: `Bearer ${token}` },  
+                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
 
@@ -273,7 +273,7 @@ const InstitutionTable = ({
                         });
                         updateProgress(50);
                         const fileName = `${
-                            institution.institution_code || "0000"
+                            institution.uuid || "0000"
                         }_${institution.name || "Unknown"}_${
                             institution.institution_type || "Unknown"
                         }_${new Date().toISOString().split("T")[0]}.xlsx`;

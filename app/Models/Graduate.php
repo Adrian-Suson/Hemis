@@ -12,7 +12,7 @@ class Graduate extends Model
     protected $table = 'graduates_list';
 
     protected $fillable = [
-        'institution_id', // Updated to institution_id
+        'institution_id',
         'student_id',
         'date_of_birth',
         'last_name',

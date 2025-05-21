@@ -50,6 +50,8 @@ function App() {
             <Routes>
                 {/* Redirect from "/" to "/login" */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
+
+
                 <Route
                     path="/egg"
                     element={
@@ -96,7 +98,6 @@ function App() {
                             path="/super-admin/institutions/graduates-list/:institutionId"
                             element={<Graduates />}
                         />
-
                         <Route
                             path="/super-admin/statistics"
                             element={<Statistics />}
@@ -169,18 +170,11 @@ function App() {
                             path="/hei-staff/institutions/graduates-list/:institutionId"
                             element={<HEiGraduates />}
                         />
-                        <Route
-                            path="/hei-staff/staff-management"
-                            element={<HEIUserManagement />}
-                        />
                     </Route>
 
-
-
                     {/* Catch all route for 404 */}
-
+                    <Route path="*" element={<NotFound />} />
                 </Route>
-                <Route path="*" element={<NotFound />} />
             </Routes>
         </Router>
     );

@@ -13,6 +13,7 @@ const CampusManagement = () => {
     const [campuses, setCampuses] = useState([]);
     const { showLoading, hideLoading } = useLoading();
     const [loading, setLoading] = useState(true);
+    const user = JSON.parse(localStorage.getItem("user"));
 
     const fetchCampuses = async () => {
         try {
@@ -53,14 +54,14 @@ const CampusManagement = () => {
                 className="mb-2 sm:mb-4 text-sm sm:text-base flex flex-wrap items-center"
             >
                 <RouterLink
-                    to="/hei-admin/dashboard"
+                    to={user?.role === "HEI Staff" ? "/hei-staff/dashboard" : "/hei-admin/dashboard"}
                     className="text-gray-600 hover:text-gray-800 hover:underline"
                 >
                     Dashboard
                 </RouterLink>
                 <span className="mx-2 text-gray-500">›</span>
                 <RouterLink
-                    to="/hei-admin/institutions"
+                    to={user?.role === "HEI Staff" ? "/hei-staff/institutions" : "/hei-admin/institutions"}
                     className="text-gray-600 hover:text-gray-800 hover:underline"
                 >
                     Institution Management

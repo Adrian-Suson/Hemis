@@ -49,6 +49,8 @@ const InstitutionManagement = () => {
             String(new Date().getFullYear())
     );
     const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem("user"));
+    const basePath = user?.role === "HEI Staff" ? "/hei-staff" : "/hei-admin";
 
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user")) || {};
@@ -383,9 +385,7 @@ const InstitutionManagement = () => {
                                 <li>
                                     <a
                                         href="#"
-                                        onClick={() =>
-                                            navigate("/hei-admin/dashboard")
-                                        }
+                                        onClick={() => navigate(`${basePath}/dashboard`)}
                                         className="hover:text-blue-600 transition-colors flex items-center"
                                     >
                                         <Home className="w-4 h-4 mr-2" />
