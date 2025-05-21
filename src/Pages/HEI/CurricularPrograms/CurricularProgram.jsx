@@ -19,6 +19,7 @@ import {
     Search,
 } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
+import ProgramInputDialog from "./ProgramInputDialog";
 
 const CurricularProgram = () => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -32,8 +33,8 @@ const CurricularProgram = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
-    const basePath = user?.role === "HEI Staff" ? "/hei-staff" : "/hei-admin";
+    const [openProgramDialog, setOpenProgramDialog] = useState(false);
+    const [selectedProgram, setSelectedProgram] = useState(null);
 
     const categories = useMemo(
         () => [
@@ -54,6 +55,7 @@ const CurricularProgram = () => {
             showLoading();
             setLoading(true);
             const token = localStorage.getItem("token");
+
             if (!institutionId) {
                 console.error("No institution ID found");
                 hideLoading();
@@ -61,10 +63,13 @@ const CurricularProgram = () => {
                 return;
             }
 
-            const response = await axios.get(`${config.API_URL}/programs`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { institution_id: institutionId },
-            });
+            const response = await axios.get(
+                `${config.API_URL}/curricular_programs`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: { institution_id: institutionId },
+                }
+            );
             console.log("Fetched programs:", response.data);
             if (Array.isArray(response.data)) {
                 // Normalize program_type to uppercase for consistency
@@ -145,191 +150,255 @@ const CurricularProgram = () => {
             setSelectedFile(null);
             return;
         }
+
         updateProgress(10);
         setIsUploading(true);
         setLoading(true);
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: "array" });
+        try {
+            // Fetch the institution's report year
+            const institutionResponse = await axios.get(
+                `${config.API_URL}/institutions/${institutionId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const institutionReportYear =
+                institutionResponse.data?.report_year || null;
 
-                let allParsedData = [];
-                const currentDate = new Date().toLocaleDateString("en-CA", {
-                    timeZone: "Asia/Manila",
-                });
-
-                for (let sheetIndex = 0; sheetIndex <= 6; sheetIndex++) {
-                    if (!workbook.SheetNames[sheetIndex]) continue;
-
-                    const sheetName = workbook.SheetNames[sheetIndex];
-                    const sheet = workbook.Sheets[sheetName];
-
-                    const sheetData = XLSX.utils.sheet_to_json(sheet, {
-                        header: 1,
-                        range: 10,
-                    });
-
-                    const parsedData = sheetData
-                        .map((row) => {
-                            const labUnits = Number(row[12]) || 0;
-                            const lectureUnits = Number(row[13]) || 0;
-                            const maleTotal =
-                                Number(row[17] || 0) +
-                                Number(row[19] || 0) +
-                                Number(row[21] || 0) +
-                                Number(row[23] || 0) +
-                                Number(row[25] || 0) +
-                                Number(row[27] || 0) +
-                                Number(row[29] || 0) +
-                                Number(row[31] || 0);
-                            const femaleTotal =
-                                Number(row[18] || 0) +
-                                Number(row[20] || 0) +
-                                Number(row[22] || 0) +
-                                Number(row[24] || 0) +
-                                Number(row[26] || 0) +
-                                Number(row[28] || 0) +
-                                Number(row[30] || 0) +
-                                Number(row[32] || 0);
-                            return {
-                                institution_id: institutionId,
-                                program_name: row[1] || null,
-                                program_code: row[2] || null,
-                                major_name: row[3] || null,
-                                major_code: row[4] || null,
-                                category: row[5] || null,
-                                serial: String(row[6] || ""),
-                                Year: String(row[7] || ""),
-                                is_thesis_dissertation_required: row[8] || null,
-                                program_status: String(row[9] || ""),
-                                calendar_use_code: String(row[10] || ""),
-                                program_normal_length_in_years:
-                                    Number(row[11]) || null,
-                                lab_units: labUnits,
-                                lecture_units: lectureUnits,
-                                total_units: labUnits + lectureUnits,
-                                tuition_per_unit: Number(row[15]) || null,
-                                program_fee: Number(row[16]) || null,
-                                program_type: categories[sheetIndex],
-                                data_date: currentDate,
-                                new_students_freshmen_male:
-                                    Number(row[17]) || null,
-                                new_students_freshmen_female:
-                                    Number(row[18]) || null,
-                                "1st_year_male": Number(row[19]) || null,
-                                "1st_year_female": Number(row[20]) || null,
-                                "2nd_year_male": Number(row[21]) || null,
-                                "2nd_year_female": Number(row[22]) || null,
-                                "3rd_year_male": Number(row[23]) || null,
-                                "3rd_year_female": Number(row[24]) || null,
-                                "4th_year_male": Number(row[25]) || null,
-                                "4th_year_female": Number(row[26]) || null,
-                                "5th_year_male": Number(row[27]) || null,
-                                "5th_year_female": Number(row[28]) || null,
-                                "6th_year_male": Number(row[29]) || null,
-                                "6th_year_female": Number(row[30]) || null,
-                                "7th_year_male": Number(row[31]) || null,
-                                "7th_year_female": Number(row[32]) || null,
-                                subtotal_male: maleTotal,
-                                subtotal_female: femaleTotal,
-                                grand_total: maleTotal + femaleTotal,
-                                lecture_units_actual: Number(row[36]) || null,
-                                laboratory_units_actual:
-                                    Number(row[37]) || null,
-                                total_units_actual:
-                                    (Number(row[36]) || 0) +
-                                    (Number(row[37]) || 0),
-                                graduates_males: Number(row[39]) || null,
-                                graduates_females: Number(row[40]) || null,
-                                graduates_total:
-                                    (Number(row[39]) || 0) +
-                                    (Number(row[40]) || 0),
-                                externally_funded_merit_scholars:
-                                    Number(row[41]) || null,
-                                internally_funded_grantees:
-                                    Number(row[42]) || null,
-                                suc_funded_grantees: Number(row[43]) || null,
-                            };
-                        })
-                        .filter((data) => !!data.program_name);
-
-                    console.log(
-                        `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
-                    );
-                    allParsedData = [...allParsedData, ...parsedData];
-                }
-
-                if (allParsedData.length === 0) {
-                    AlertComponent.showAlert(
-                        "No valid programs with a program name found in any sheet of the Excel file.",
-                        "warning"
-                    );
-                    setIsUploading(false);
-                    setOpenUploadDialog(false);
-                    setSelectedFile(null);
-                    updateProgress();
-                    setLoading(false);
-                    return;
-                }
-
-                try {
-                    const createdPrograms = [];
-                    const totalRows = allParsedData.length;
-                    let processedRows = 0;
-
-                    for (const data of allParsedData) {
-                        const programResponse = await axios.post(
-                            `${config.API_URL}/programs`,
-                            data,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        createdPrograms.push(programResponse.data);
-                        processedRows += 1;
-                        updateProgress(
-                            50 + Math.round((50 * processedRows) / totalRows)
-                        );
-                    }
-
-                    setPrograms(createdPrograms);
-                    updateProgress(100);
-                    fetchPrograms();
-                    AlertComponent.showAlert(
-                        "Curricular data imported successfully!",
-                        "success"
-                    );
-                } catch (error) {
-                    console.error(
-                        "Error importing curricular data:",
-                        error.response?.data
-                    );
-                    AlertComponent.showAlert(
-                        "Error importing curricular data. Check the console for details.",
-                        "error"
-                    );
-                } finally {
-                    setIsUploading(false);
-                    setOpenUploadDialog(false);
-                    setSelectedFile(null);
-                    updateProgress();
-                    setLoading(false);
-                }
-            } catch (error) {
-                console.error("Error processing file:", error.message);
+            if (!institutionReportYear) {
                 AlertComponent.showAlert(
-                    "Error processing file. Check the console for details.",
+                    "Failed to fetch the institution's report year.",
                     "error"
                 );
                 setIsUploading(false);
-                setOpenUploadDialog(false);
-                setSelectedFile(null);
-                updateProgress();
                 setLoading(false);
+                updateProgress(0);
+                return;
             }
-        };
 
-        reader.readAsArrayBuffer(selectedFile);
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: "array" });
+
+                    let allParsedData = [];
+
+                    for (let sheetIndex = 0; sheetIndex <= 6; sheetIndex++) {
+                        if (!workbook.SheetNames[sheetIndex]) continue;
+
+                        const sheetName = workbook.SheetNames[sheetIndex];
+                        const sheet = workbook.Sheets[sheetName];
+
+                        const sheetData = XLSX.utils.sheet_to_json(sheet, {
+                            header: 1,
+                            range: 10,
+                        });
+
+                        const parsedData = sheetData
+                            .map((row, rowIndex) => {
+                                const aopYearRaw = row[7];
+                                console.log(
+                                    `Sheet ${sheetName}, Row ${
+                                        rowIndex + 11
+                                    }: Raw aop_year = ${aopYearRaw}`
+                                );
+                                const aopYear =
+                                    aopYearRaw !== undefined &&
+                                    aopYearRaw !== null &&
+                                    !isNaN(aopYearRaw)
+                                        ? String(aopYearRaw)
+                                        : "N/A";
+                                console.log(
+                                    `Sheet ${sheetName}, Row ${
+                                        rowIndex + 11
+                                    }: Processed aop_year = ${aopYear}`
+                                );
+
+                                const labUnits = Number(row[12]) || 0;
+                                const lectureUnits = Number(row[13]) || 0;
+                                const maleTotal =
+                                    Number(row[17] || 0) +
+                                    Number(row[19] || 0) +
+                                    Number(row[21] || 0) +
+                                    Number(row[23] || 0) +
+                                    Number(row[25] || 0) +
+                                    Number(row[27] || 0) +
+                                    Number(row[29] || 0) +
+                                    Number(row[31] || 0);
+                                const femaleTotal =
+                                    Number(row[18] || 0) +
+                                    Number(row[20] || 0) +
+                                    Number(row[22] || 0) +
+                                    Number(row[24] || 0) +
+                                    Number(row[26] || 0) +
+                                    Number(row[28] || 0) +
+                                    Number(row[30] || 0) +
+                                    Number(row[32] || 0);
+
+                                return {
+                                    institution_id: institutionId,
+                                    program_name: row[1] || null,
+                                    program_code: String(row[2] || ""),
+                                    major_name: row[3] || null,
+                                    major_code: String(row[4] || ""),
+                                    aop_category: row[5] || null,
+                                    aop_serial: String(row[6] || ""),
+                                    aop_year: aopYear,
+                                    is_thesis_dissertation_required:
+                                        String(row[8]) || null,
+                                    program_status: String(row[9] || ""),
+                                    calendar_use_code: String(row[10] || ""),
+                                    program_normal_length_in_years:
+                                        Number(row[11]) || null,
+                                    lab_units: labUnits,
+                                    lecture_units: lectureUnits,
+                                    total_units: labUnits + lectureUnits,
+                                    tuition_per_unit: Number(row[15]) || null,
+                                    program_fee: Number(row[16]) || null,
+                                    program_type: categories[sheetIndex],
+                                    new_students_freshmen_male:
+                                        Number(row[17]) || null,
+                                    new_students_freshmen_female:
+                                        Number(row[18]) || null,
+                                    "1st_year_male": Number(row[19]) || null,
+                                    "1st_year_female": Number(row[20]) || null,
+                                    "2nd_year_male": Number(row[21]) || null,
+                                    "2nd_year_female": Number(row[22]) || null,
+                                    "3rd_year_male": Number(row[23]) || null,
+                                    "3rd_year_female": Number(row[24]) || null,
+                                    "4th_year_male": Number(row[25]) || null,
+                                    "4th_year_female": Number(row[26]) || null,
+                                    "5th_year_male": Number(row[27]) || null,
+                                    "5th_year_female": Number(row[28]) || null,
+                                    "6th_year_male": Number(row[29]) || null,
+                                    "6th_year_female": Number(row[30]) || null,
+                                    "7th_year_male": Number(row[31]) || null,
+                                    "7th_year_female": Number(row[32]) || null,
+                                    subtotal_male: maleTotal,
+                                    subtotal_female: femaleTotal,
+                                    grand_total: maleTotal + femaleTotal,
+                                    lecture_units_actual:
+                                        Number(row[36]) || null,
+                                    laboratory_units_actual:
+                                        Number(row[37]) || null,
+                                    total_units_actual:
+                                        (Number(row[36]) || 0) +
+                                        (Number(row[37]) || 0),
+                                    graduates_males: Number(row[39]) || null,
+                                    graduates_females: Number(row[40]) || null,
+                                    graduates_total:
+                                        (Number(row[39]) || 0) +
+                                        (Number(row[40]) || 0),
+                                    externally_funded_merit_scholars:
+                                        Number(row[41]) || null,
+                                    internally_funded_grantees:
+                                        Number(row[42]) || null,
+                                    suc_funded_grantees:
+                                        Number(row[43]) || null,
+                                    report_year: institutionReportYear,
+                                };
+                            })
+                            .filter(
+                                (data) =>
+                                    !!data.program_name &&
+                                    data.aop_year !== "N/A"
+                            );
+
+                        console.log(
+                            `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
+                        );
+
+                        console.log(
+                            `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
+                        );
+                        allParsedData = [...allParsedData, ...parsedData];
+                    }
+
+                    if (allParsedData.length === 0) {
+                        AlertComponent.showAlert(
+                            "No valid programs with a program name found in any sheet of the Excel file.",
+                            "warning"
+                        );
+                        setIsUploading(false);
+                        setOpenUploadDialog(false);
+                        setSelectedFile(null);
+                        updateProgress();
+                        setLoading(false);
+                        return;
+                    }
+
+                    try {
+                        const createdPrograms = [];
+                        const totalRows = allParsedData.length;
+                        let processedRows = 0;
+
+                        for (const data of allParsedData) {
+                            console.log("Uploading program data:", data);
+                            const programResponse = await axios.post(
+                                `${config.API_URL}/curricular_programs`,
+                                data,
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                    },
+                                }
+                            );
+                            createdPrograms.push(programResponse.data);
+                            processedRows += 1;
+                            updateProgress(
+                                50 +
+                                    Math.round((50 * processedRows) / totalRows)
+                            );
+                        }
+
+                        setPrograms(createdPrograms);
+                        updateProgress(100);
+                        fetchPrograms();
+                        AlertComponent.showAlert(
+                            "Curricular data imported successfully!",
+                            "success"
+                        );
+                    } catch (error) {
+                        console.error(
+                            "Error importing curricular data:",
+                            error.response?.data
+                        );
+                        AlertComponent.showAlert(
+                            "Error importing curricular data. Check the console for details.",
+                            "error"
+                        );
+                    } finally {
+                        setIsUploading(false);
+                        setOpenUploadDialog(false);
+                        setSelectedFile(null);
+                        updateProgress();
+                        setLoading(false);
+                    }
+                } catch (error) {
+                    console.error("Error processing file:", error.message);
+                    AlertComponent.showAlert(
+                        "Error processing file. Check the console for details.",
+                        "error"
+                    );
+                    setIsUploading(false);
+                    setOpenUploadDialog(false);
+                    setSelectedFile(null);
+                    updateProgress();
+                    setLoading(false);
+                }
+            };
+
+            reader.readAsArrayBuffer(selectedFile);
+        } catch (error) {
+            console.error("Error fetching institution report year:", error);
+            AlertComponent.showAlert(
+                "Error fetching institution report year. Please try again.",
+                "error"
+            );
+            setIsUploading(false);
+            setLoading(false);
+            updateProgress(0);
+        }
     };
 
     const handleExportToExcel = async () => {
@@ -481,6 +550,71 @@ const CurricularProgram = () => {
         ],
     };
 
+    const handleProgramSubmit = async (formData) => {
+        try {
+            const token = localStorage.getItem("token");
+            const institutionId = decryptId(encryptedInstitutionId);
+
+            if (!institutionId || !token) {
+                AlertComponent.showAlert(
+                    !institutionId
+                        ? "Please select an institution first."
+                        : "Please log in first.",
+                    "warning"
+                );
+                return;
+            }
+
+            // Add institution_id and program_type to the form data
+            const programData = {
+                ...formData,
+                institution_id: institutionId,
+                program_type: categories[mainTabValue],
+            };
+
+            console.log("programDAtta", programData);
+
+            if (selectedProgram) {
+                // Update existing program
+                await axios.put(
+                    `${config.API_URL}/curricular_programs/${selectedProgram.id}`,
+                    programData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                AlertComponent.showAlert(
+                    "Program updated successfully!",
+                    "success"
+                );
+            } else {
+                // Create new program
+                await axios.post(
+                    `${config.API_URL}/curricular_programs`,
+                    programData,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                AlertComponent.showAlert(
+                    "Program added successfully!",
+                    "success"
+                );
+            }
+
+            setOpenProgramDialog(false);
+            setSelectedProgram(null);
+            fetchPrograms();
+        } catch (error) {
+            console.error("Error saving program:", error);
+            AlertComponent.showAlert(
+                error.response?.data?.message ||
+                    "Failed to save program. Please try again.",
+                "error"
+            );
+        }
+    };
+
     if (loading) {
         return <CurricularProgramSkeleton />;
     }
@@ -493,7 +627,7 @@ const CurricularProgram = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate(`${basePath}/dashboard`)}
+                            onClick={() => navigate("/super-admin/dashboard")}
                             className="hover:underline"
                         >
                             Dashboard
@@ -503,7 +637,9 @@ const CurricularProgram = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate(`${basePath}/institutions`)}
+                            onClick={() =>
+                                navigate("/super-admin/institutions")
+                            }
                             className="hover:underline"
                         >
                             Institution Management
@@ -520,6 +656,19 @@ const CurricularProgram = () => {
                     Curricular Programs
                 </h1>
                 <div className="flex space-x-2">
+                    {/* Add New Program Button */}
+                    <CHEDButton
+                        onClick={() => {
+                            setSelectedProgram(null);
+                            setOpenProgramDialog(true);
+                        }}
+                        icon={UploadIcon}
+                        variant="primary"
+                        size="md"
+                    >
+                        Add New Program
+                    </CHEDButton>
+
                     {/* Import Button */}
                     <CHEDButton
                         onClick={() => setOpenUploadDialog(true)}
@@ -545,7 +694,7 @@ const CurricularProgram = () => {
             </div>
 
             {/* Search Box */}
-            <div className="relative w-full md:w-[60vw] lg:w-[70vw] max-w-3xl mb-4">
+            <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search size={16} className="text-gray-400" />
                 </div>
@@ -579,6 +728,7 @@ const CurricularProgram = () => {
                     totalCount: totalRows,
                     searchTerm,
                 }}
+                onSubmit={handleProgramSubmit}
             />
 
             {/* Tabs */}
@@ -783,6 +933,17 @@ const CurricularProgram = () => {
                     </div>
                 </div>
             )}
+
+            {/* Program Input Dialog */}
+            <ProgramInputDialog
+                open={openProgramDialog}
+                onClose={() => {
+                    setOpenProgramDialog(false);
+                    setSelectedProgram(null);
+                }}
+                onSubmit={handleProgramSubmit}
+                program={selectedProgram}
+            />
 
             {/* CSS */}
             <style>{`

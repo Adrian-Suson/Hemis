@@ -16,9 +16,9 @@ class CurricularProgram extends Model
         'program_code',
         'major_name',
         'major_code',
-        'category',
-        'serial',
-        'year',
+        'aop_category', // Updated to match migration
+        'aop_serial',   // Updated to match migration
+        'aop_year',     // Updated to match migration
         'is_thesis_dissertation_required',
         'program_status',
         'calendar_use_code',

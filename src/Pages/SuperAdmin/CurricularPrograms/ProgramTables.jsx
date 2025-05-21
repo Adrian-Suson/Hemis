@@ -54,19 +54,19 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                         editable: true,
                     },
                     {
-                        field: "category",
+                        field: "aop_category",
                         headerName: "Category",
                         minWidth: 150,
                         editable: true,
                     },
                     {
-                        field: "serial",
+                        field: "aop_serial",
                         headerName: "Serial",
                         minWidth: 120,
                         editable: true,
                     },
                     {
-                        field: "year",
+                        field: "aop_year",
                         headerName: "Year",
                         minWidth: 120,
                         editable: true,
@@ -147,7 +147,7 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                     {
                         id: "authority",
                         headerName: "Authority to Offer Program",
-                        columns: ["category", "serial", "Year"],
+                        columns: ["aop_category", "aop_serial", "aop_year"],
                     },
                     {
                         id: "status",
@@ -435,12 +435,14 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                 return;
             }
 
+            // Update the local program data
             updatedPrograms[programIndex][field] = value;
-            console.log(updatedPrograms[programIndex])
+
             try {
+                console.log("Payload being sent:", { [field]: value });
                 await axios.put(
                     `${config.API_URL}/curricular_programs/${id}`,
-                    updatedPrograms[programIndex],
+                    { [field]: value }, // Send only the updated field
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -546,259 +548,282 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
             </div>
 
             {/* Table Container */}
-            <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden mb-3 max-h-[45vh] overflow-y-auto">
-                <div className="overflow-x-auto max-h-[40vh] h-[40vh] relative">
-                    {/* Column Group Headers */}
-                    <div className="sticky top-0 z-20 bg-white shadow-sm">
-                        <div className="flex border-b border-gray-200">
-                            {currentConfig.columnGroups.map((group) => {
-                                const groupWidth = group.columns.reduce(
-                                    (acc, field) => {
-                                        const col = currentConfig.columns.find(
-                                            (c) => c.field === field
-                                        );
-                                        return acc + (col?.minWidth || 100);
-                                    },
-                                    0
+<div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden mb-4">
+    {/* Main scroll container for both horizontal and vertical scrolling */}
+    <div className="overflow-auto" style={{ maxHeight: "45vh" }}>
+        {/* Table content wrapper that maintains width for horizontal scrolling */}
+        <div className="inline-block min-w-full">
+            {/* Fixed Header Container that stays at top during vertical scroll */}
+            <div className="sticky top-0 z-30">
+                {/* Column Group Headers */}
+                <div className="flex border-b border-gray-300 bg-gray-50">
+                    {currentConfig.columnGroups.map((group) => {
+                        const groupWidth = group.columns.reduce(
+                            (acc, field) => {
+                                const col = currentConfig.columns.find(
+                                    (c) => c.field === field
                                 );
+                                return acc + (col?.minWidth || 100);
+                            },
+                            0
+                        );
 
-                                return (
-                                    <div
-                                        key={group.id}
-                                        className="px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-100/80 text-center flex items-center justify-center"
-                                        style={{
-                                            minWidth: groupWidth,
-                                            width: groupWidth,
-                                        }}
-                                        title={group.headerName}
-                                        role="columnheader"
-                                    >
-                                        <span className="truncate">
-                                            {group.headerName}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                        return (
+                            <div
+                                key={group.id}
+                                className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300 bg-gray-100 text-center flex items-center justify-center shadow-sm"
+                                style={{
+                                    minWidth: groupWidth,
+                                    width: groupWidth,
+                                }}
+                                title={group.headerName}
+                                role="columnheader"
+                            >
+                                <span className="truncate">
+                                    {group.headerName}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Column Headers */}
+                <div className="flex bg-white border-b border-gray-300 shadow-sm">
+                    {getColumnFieldsFromGroups().map((field) => {
+                        const column = currentConfig.columns.find(
+                            (col) => col.field === field
+                        );
+                        const isNumeric = column?.type === "number";
+
+                        return (
+                            <div
+                                key={field}
+                                className={`px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-300 bg-gray-50 ${
+                                    isNumeric ? "text-right" : "text-left"
+                                }`}
+                                style={{
+                                    width: column?.minWidth || 100,
+                                    minWidth: column?.minWidth || 100,
+                                }}
+                                title={column?.headerName || field}
+                                role="columnheader"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="truncate">
+                                        {column?.headerName || field}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Table Body */}
+            <div role="rowgroup">
+                {paginatedData.length === 0 ? (
+                    <div className="text-center py-16 text-gray-500 bg-gray-50/50 w-full" style={{ minHeight: "300px" }}>
+                        <div className="flex flex-col items-center justify-center h-full">
+                            <svg
+                                className="mx-auto h-12 w-12 text-gray-400 mb-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.5"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                />
+                            </svg>
+                            <p className="text-sm font-medium">No programs found matching your criteria</p>
                         </div>
-
-                        {/* Column Headers */}
-                        <div className="flex bg-gray-50 border-b border-gray-200 shadow-sm">
-                            {getColumnFieldsFromGroups().map((field) => {
-                                const column = currentConfig.columns.find(
-                                    (col) => col.field === field
-                                );
-                                const isNumeric = column?.type === "number";
+                    </div>
+                ) : (
+                paginatedData.map((row, rowIndex) => (
+                    <div
+                        key={row.id}
+                        className={`flex border-b border-gray-200 ${
+                            rowIndex % 2 === 0
+                                ? "bg-white"
+                                : "bg-gray-50/50"
+                        } hover:bg-blue-50/40 transition-colors duration-150`}
+                        role="row"
+                    >
+                        {getColumnFieldsFromGroups().map(
+                            (field) => {
+                                const column =
+                                    currentConfig.columns.find(
+                                        (col) => col.field === field
+                                    );
+                                const isEditing =
+                                    editingCell?.id === row.id &&
+                                    editingCell?.field === field;
+                                const cellValue =
+                                    row[field] !== undefined &&
+                                    row[field] !== null
+                                        ? row[field]
+                                        : "-";
+                                const isNumeric =
+                                    column?.type === "number";
+                                const isEditable = column?.editable;
 
                                 return (
                                     <div
-                                        key={field}
-                                        className={`px-3 py-2 text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-50 ${
+                                        key={`${row.id}-${field}`}
+                                        className={`px-4 py-3 text-sm border-r border-gray-200 ${
                                             isNumeric
                                                 ? "text-right"
                                                 : "text-left"
+                                        } ${
+                                            isEditable
+                                                ? "cursor-pointer group relative"
+                                                : ""
                                         }`}
                                         style={{
-                                            width: column?.minWidth || 100,
-                                            minWidth: column?.minWidth || 100,
+                                            width:
+                                                column?.minWidth ||
+                                                100,
+                                            minWidth:
+                                                column?.minWidth ||
+                                                100,
+                                            position: "relative", // Ensure positioning context for border fix
                                         }}
-                                        title={column?.headerName || field}
-                                        role="columnheader"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span className="truncate">
-                                                {column?.headerName || field}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Table Body */}
-                    <div className="bg-white" role="rowgroup">
-                        {paginatedData.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500 bg-gray-50/50 max-h-[46vh] h-[46vh] italic">
-                                No programs found matching your criteria
-                            </div>
-                        ) : (
-                            paginatedData.map((row, rowIndex) => (
-                                <div
-                                    key={row.id}
-                                    className={`flex border-b border-gray-200 ${
-                                        rowIndex % 2 === 0
-                                            ? "bg-white"
-                                            : "bg-gray-50/50"
-                                    } hover:bg-blue-50/40 transition-colors duration-150`}
-                                    role="row"
-                                >
-                                    {getColumnFieldsFromGroups().map(
-                                        (field) => {
-                                            const column =
-                                                currentConfig.columns.find(
-                                                    (col) => col.field === field
+                                        onClick={() => {
+                                            if (isEditable) {
+                                                setEditingCell({
+                                                    id: row.id,
+                                                    field,
+                                                });
+                                                setEditValue(
+                                                    row[field] !==
+                                                        null
+                                                        ? String(
+                                                              row[
+                                                                  field
+                                                              ]
+                                                          )
+                                                        : ""
                                                 );
-                                            const isEditing =
-                                                editingCell?.id === row.id &&
-                                                editingCell?.field === field;
-                                            const cellValue =
-                                                row[field] !== undefined &&
-                                                row[field] !== null
-                                                    ? row[field]
-                                                    : "-";
-                                            const isNumeric =
-                                                column?.type === "number";
-                                            const isEditable = column?.editable;
+                                            }
+                                        }}
+                                        role="cell"
+                                        aria-colindex={
+                                            getColumnFieldsFromGroups().indexOf(
+                                                field
+                                            ) + 1
+                                        }
+                                        title={
+                                            isEditable
+                                                ? `Click to edit ${column?.headerName}`
+                                                : undefined
+                                        }
+                                    >
+                                        {/* Add pseudo-element to ensure border visibility during scroll */}
+                                        <div className="absolute inset-0 pointer-events-none border-r border-gray-200 border-b"
+                                             style={{zIndex: 1}}></div>
 
-                                            return (
-                                                <div
-                                                    key={`${row.id}-${field}`}
-                                                    className={`px-3 py-2 text-sm border-r border-gray-200 ${
+                                        {isEditing ? (
+                                            <div className="flex items-center relative z-10">
+                                                <input
+                                                    type={
                                                         isNumeric
-                                                            ? "text-right"
-                                                            : "text-left"
-                                                    } ${
-                                                        isEditable
-                                                            ? "cursor-pointer group relative"
-                                                            : ""
-                                                    }`}
-                                                    style={{
-                                                        width:
-                                                            column?.minWidth ||
-                                                            100,
-                                                        minWidth:
-                                                            column?.minWidth ||
-                                                            100,
-                                                    }}
-                                                    onClick={() => {
-                                                        if (isEditable) {
-                                                            setEditingCell({
-                                                                id: row.id,
+                                                            ? "number"
+                                                            : "text"
+                                                    }
+                                                    value={
+                                                        editValue
+                                                    }
+                                                    onChange={(e) =>
+                                                        setEditValue(
+                                                            e.target
+                                                                .value
+                                                        )
+                                                    }
+                                                    onBlur={() =>
+                                                        handleCellEdit(
+                                                            row.id,
+                                                            field,
+                                                            isNumeric
+                                                                ? Number(
+                                                                      editValue
+                                                                  )
+                                                                : editValue
+                                                        )
+                                                    }
+                                                    onKeyDown={(
+                                                        e
+                                                    ) => {
+                                                        if (
+                                                            e.key ===
+                                                            "Enter"
+                                                        ) {
+                                                            handleCellEdit(
+                                                                row.id,
                                                                 field,
-                                                            });
-                                                            setEditValue(
-                                                                row[field] !==
-                                                                    null
-                                                                    ? String(
-                                                                          row[
-                                                                              field
-                                                                          ]
+                                                                isNumeric
+                                                                    ? Number(
+                                                                          editValue
                                                                       )
-                                                                    : ""
+                                                                    : editValue
+                                                            );
+                                                        } else if (
+                                                            e.key ===
+                                                            "Escape"
+                                                        ) {
+                                                            setEditingCell(
+                                                                null
                                                             );
                                                         }
                                                     }}
-                                                    role="cell"
-                                                    aria-colindex={
-                                                        getColumnFieldsFromGroups().indexOf(
-                                                            field
-                                                        ) + 1
-                                                    }
-                                                    title={
-                                                        isEditable
-                                                            ? `Click to edit ${column?.headerName}`
-                                                            : undefined
-                                                    }
-                                                >
-                                                    {isEditing ? (
-                                                        <div className="flex items-center">
-                                                            <input
-                                                                type={
-                                                                    isNumeric
-                                                                        ? "number"
-                                                                        : "text"
-                                                                }
-                                                                value={
-                                                                    editValue
-                                                                }
-                                                                onChange={(e) =>
-                                                                    setEditValue(
-                                                                        e.target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                                onBlur={() =>
-                                                                    handleCellEdit(
-                                                                        row.id,
-                                                                        field,
-                                                                        isNumeric
-                                                                            ? Number(
-                                                                                  editValue
-                                                                              )
-                                                                            : editValue
-                                                                    )
-                                                                }
-                                                                onKeyDown={(
-                                                                    e
-                                                                ) => {
-                                                                    if (
-                                                                        e.key ===
-                                                                        "Enter"
-                                                                    ) {
-                                                                        handleCellEdit(
-                                                                            row.id,
-                                                                            field,
-                                                                            isNumeric
-                                                                                ? Number(
-                                                                                      editValue
-                                                                                  )
-                                                                                : editValue
-                                                                        );
-                                                                    } else if (
-                                                                        e.key ===
-                                                                        "Escape"
-                                                                    ) {
-                                                                        setEditingCell(
-                                                                            null
-                                                                        );
-                                                                    }
-                                                                }}
-                                                                className="w-full px-2 py-1 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                                autoFocus
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div
-                                                            className={`truncate ${
-                                                                isEditable
-                                                                    ? "group-hover:bg-blue-100/60 group-hover:rounded px-1 py-0.5 transition-colors duration-150"
-                                                                    : ""
-                                                            }`}
-                                                        >
-                                                            {isNumeric &&
-                                                            cellValue !== "-"
-                                                                ? Number(
-                                                                      cellValue
-                                                                  ).toLocaleString()
-                                                                : cellValue}
+                                                    className="w-full px-3 py-1.5 text-sm border-2 border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm"
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className={`relative z-10 truncate ${
+                                                    isEditable
+                                                        ? "group-hover:bg-blue-100/70 group-hover:rounded-md px-2 py-0.5 transition-colors duration-150"
+                                                        : ""
+                                                }`}
+                                            >
+                                                {isNumeric &&
+                                                cellValue !== "-"
+                                                    ? Number(
+                                                          cellValue
+                                                      ).toLocaleString()
+                                                    : cellValue}
 
-                                                            {isEditable && (
-                                                                <span className="text-blue-500 opacity-0 group-hover:opacity-100 ml-1 inline-flex">
-                                                                    <svg
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        className="h-3.5 w-3.5"
-                                                                        viewBox="0 0 20 20"
-                                                                        fill="currentColor"
-                                                                    >
-                                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                                                    </svg>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        }
-                                    )}
-                                </div>
-                            ))
+                                                {isEditable && (
+                                                    <span className="text-blue-500 opacity-0 group-hover:opacity-100 ml-1.5 inline-flex items-center">
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            className="h-3.5 w-3.5"
+                                                            viewBox="0 0 20 20"
+                                                            fill="currentColor"
+                                                        >
+                                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                        </svg>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
                         )}
                     </div>
-
-                    {/* Add a shadow at the bottom if there's more content to scroll */}
-                    <div className="sticky bottom-0 h-1 w-full bg-gradient-to-t from-gray-200/80 to-transparent pointer-events-none"></div>
-                </div>
+                ))
+            )}
             </div>
+        </div>
+    </div>
+
+
+</div>
             {/* Pagination Controls */}
             <div className="flex justify-end my-4">
                 <Pagination

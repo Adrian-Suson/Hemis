@@ -10,8 +10,9 @@ import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
 import AlertComponent from "../../../Components/AlertComponent";
-import { Download, Upload, X } from "lucide-react";
+import { Download, Upload, X, Plus } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
+import AddFacultyDialog from "./AddFacultyDialog";
 
 const facultyGroups = [
     {
@@ -83,6 +84,7 @@ const FacultyProfileUpload = () => {
     const navigate = useNavigate();
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [openAddDialog, setOpenAddDialog] = useState(false);
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -659,6 +661,16 @@ const FacultyProfileUpload = () => {
                 </div>
                 {/* CHED-Styled Action Buttons */}
                 <div className="flex gap-4 items-center">
+                    {/* Add Faculty Button */}
+                    <CHEDButton
+                        onClick={() => setOpenAddDialog(true)}
+                        icon={Plus}
+                        variant="primary"
+                        size="md"
+                        disabled={isUploading}
+                    >
+                        Add Faculty
+                    </CHEDButton>
                     {/* Import Button */}
                     <CHEDButton
                         onClick={() => setOpenUploadDialog(true)}
@@ -669,7 +681,6 @@ const FacultyProfileUpload = () => {
                     >
                         {isUploading ? "Uploading..." : "Import Form E2"}
                     </CHEDButton>
-
                     {/* Export Button */}
                     <CHEDButton
                         onClick={handleExportData}
@@ -682,6 +693,15 @@ const FacultyProfileUpload = () => {
                     </CHEDButton>
                 </div>
             </div>
+
+            {/* Add Faculty Dialog */}
+            <AddFacultyDialog
+                open={openAddDialog}
+                onClose={() => setOpenAddDialog(false)}
+                facultyGroups={facultyGroups}
+                institutionId={decryptId(decodeURIComponent(encryptedInstitutionId))}
+                onFacultyAdded={fetchFacultyProfiles}
+            />
 
             {/* Upload Modal */}
             {openUploadDialog && (

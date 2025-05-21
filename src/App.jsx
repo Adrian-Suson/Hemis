@@ -33,7 +33,6 @@ import HEiGraduates from "./Pages/HEI/Graduates/Graduates";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
-import Statistics from "./Pages/SuperAdmin/Statistics/Statistics";
 
 function ExternalRedirect({ to }) {
     window.location.href = to;
@@ -50,7 +49,6 @@ function App() {
             <Routes>
                 {/* Redirect from "/" to "/login" */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
-
 
                 <Route
                     path="/egg"
@@ -97,10 +95,6 @@ function App() {
                         <Route
                             path="/super-admin/institutions/graduates-list/:institutionId"
                             element={<Graduates />}
-                        />
-                        <Route
-                            path="/super-admin/statistics"
-                            element={<Statistics />}
                         />
                     </Route>
 

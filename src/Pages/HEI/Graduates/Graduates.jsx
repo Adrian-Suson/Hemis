@@ -52,7 +52,10 @@ const Graduates = () => {
             setGraduates(formattedData);
         } catch (error) {
             console.error("Error fetching graduates:", error);
-            AlertComponent.showAlert(`Failed to fetch graduates: ${error.message}`, "error");
+            AlertComponent.showAlert(
+                `Failed to fetch graduates: ${error.message}`,
+                "error"
+            );
         } finally {
             hideLoading();
             setLoading(false);
@@ -84,7 +87,10 @@ const Graduates = () => {
         const token = localStorage.getItem("token");
 
         if (!token) {
-            AlertComponent.showAlert("Authentication token is missing.", "error");
+            AlertComponent.showAlert(
+                "Authentication token is missing.",
+                "error"
+            );
             hideLoading();
             setLoading(false);
             return;
@@ -139,7 +145,7 @@ const Graduates = () => {
 
                     const jsonData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 1,
+                        range: 6,
                     });
 
                     console.log(
@@ -179,18 +185,15 @@ const Graduates = () => {
                         const yearGranted = row[10]
                             ? parseInt(row[10], 10)
                             : null;
-                        const sex = row[4]
-                            ? String(row[4]).toUpperCase()
-                            : null;
 
                         return {
                             institution_id: institutionId,
                             student_id: row[0] ? String(row[0]) : null,
-                            last_name: row[1] ? String(row[1]) : null,
-                            first_name: row[2] ? String(row[2]) : null,
-                            middle_name: row[3] ? String(row[3]) : null,
-                            sex: sex === "M" || sex === "F" ? sex : null,
-                            date_of_birth: formatDate(row[5]),
+                            date_of_birth: formatDate(row[1]),
+                            last_name: row[2] ? String(row[2]) : null,
+                            first_name: row[3] ? String(row[3]) : null,
+                            middle_name: row[4] ? String(row[4]) : null,
+                            sex: row[5] ? String(row[5]) : null,
                             date_graduated: formatDate(row[6]),
                             program_name: row[7] ? String(row[7]) : null,
                             program_major: row[8] ? String(row[8]) : null,

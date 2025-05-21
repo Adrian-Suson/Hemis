@@ -55,6 +55,7 @@ const CurricularProgram = () => {
             showLoading();
             setLoading(true);
             const token = localStorage.getItem("token");
+
             if (!institutionId) {
                 console.error("No institution ID found");
                 hideLoading();
@@ -194,7 +195,25 @@ const CurricularProgram = () => {
                         });
 
                         const parsedData = sheetData
-                            .map((row) => {
+                            .map((row, rowIndex) => {
+                                const aopYearRaw = row[7];
+                                console.log(
+                                    `Sheet ${sheetName}, Row ${
+                                        rowIndex + 11
+                                    }: Raw aop_year = ${aopYearRaw}`
+                                );
+                                const aopYear =
+                                    aopYearRaw !== undefined &&
+                                    aopYearRaw !== null &&
+                                    !isNaN(aopYearRaw)
+                                        ? String(aopYearRaw)
+                                        : "N/A";
+                                console.log(
+                                    `Sheet ${sheetName}, Row ${
+                                        rowIndex + 11
+                                    }: Processed aop_year = ${aopYear}`
+                                );
+
                                 const labUnits = Number(row[12]) || 0;
                                 const lectureUnits = Number(row[13]) || 0;
                                 const maleTotal =
@@ -215,15 +234,16 @@ const CurricularProgram = () => {
                                     Number(row[28] || 0) +
                                     Number(row[30] || 0) +
                                     Number(row[32] || 0);
+
                                 return {
                                     institution_id: institutionId,
                                     program_name: row[1] || null,
-                                    program_code: String(row[2] || ""), // Ensure string
+                                    program_code: String(row[2] || ""),
                                     major_name: row[3] || null,
-                                    major_code: String(row[4] || ""), // Ensure string
-                                    category: row[5] || null,
-                                    serial: String(row[6] || ""),
-                                    Year: String(row[7] || ""),
+                                    major_code: String(row[4] || ""),
+                                    aop_category: row[5] || null,
+                                    aop_serial: String(row[6] || ""),
+                                    aop_year: aopYear,
                                     is_thesis_dissertation_required:
                                         String(row[8]) || null,
                                     program_status: String(row[9] || ""),
@@ -278,7 +298,15 @@ const CurricularProgram = () => {
                                     report_year: institutionReportYear,
                                 };
                             })
-                            .filter((data) => !!data.program_name);
+                            .filter(
+                                (data) =>
+                                    !!data.program_name &&
+                                    data.aop_year !== "N/A"
+                            );
+
+                        console.log(
+                            `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
+                        );
 
                         console.log(
                             `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
@@ -305,6 +333,7 @@ const CurricularProgram = () => {
                         let processedRows = 0;
 
                         for (const data of allParsedData) {
+                            console.log("Uploading program data:", data);
                             const programResponse = await axios.post(
                                 `${config.API_URL}/curricular_programs`,
                                 data,
@@ -543,8 +572,7 @@ const CurricularProgram = () => {
                 program_type: categories[mainTabValue],
             };
 
-
-            console.log("programDAtta",programData)
+            console.log("programDAtta", programData);
 
             if (selectedProgram) {
                 // Update existing program
@@ -555,7 +583,10 @@ const CurricularProgram = () => {
                         headers: { Authorization: `Bearer ${token}` },
                     }
                 );
-                AlertComponent.showAlert("Program updated successfully!", "success");
+                AlertComponent.showAlert(
+                    "Program updated successfully!",
+                    "success"
+                );
             } else {
                 // Create new program
                 await axios.post(
@@ -565,7 +596,10 @@ const CurricularProgram = () => {
                         headers: { Authorization: `Bearer ${token}` },
                     }
                 );
-                AlertComponent.showAlert("Program added successfully!", "success");
+                AlertComponent.showAlert(
+                    "Program added successfully!",
+                    "success"
+                );
             }
 
             setOpenProgramDialog(false);
@@ -574,12 +608,12 @@ const CurricularProgram = () => {
         } catch (error) {
             console.error("Error saving program:", error);
             AlertComponent.showAlert(
-                error.response?.data?.message || "Failed to save program. Please try again.",
+                error.response?.data?.message ||
+                    "Failed to save program. Please try again.",
                 "error"
             );
         }
     };
-
 
     if (loading) {
         return <CurricularProgramSkeleton />;
@@ -660,7 +694,7 @@ const CurricularProgram = () => {
             </div>
 
             {/* Search Box */}
-            <div className="relative w-full md:w-[60vw] lg:w-[70vw] max-w-3xl mb-4">
+            <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search size={16} className="text-gray-400" />
                 </div>
