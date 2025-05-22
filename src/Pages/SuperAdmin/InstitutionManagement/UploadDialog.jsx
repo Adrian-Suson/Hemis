@@ -28,8 +28,8 @@ const UploadDialog = ({
     const [regions, setRegions] = useState([]);
     const [provinces, setProvinces] = useState([]);
     const [municipalities, setMunicipalities] = useState([]);
-    const [reportYears, setReportYears] = useState([]); // New state for report years
-    const [selectedYear, setSelectedYear] = useState(""); // New state for selected year
+    const [reportYears, setReportYears] = useState([]);
+    const [selectedYear, setSelectedYear] = useState("");
     const [uuid, setUuid] = useState("");
     const [existingUuids, setExistingUuids] = useState([]);
     const [filteredUuids, setFilteredUuids] = useState([]);
@@ -62,11 +62,12 @@ const UploadDialog = ({
                 const res = await axios.get(`${config.API_URL}/report-years`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                const reversedYears = res.data.reverse(); // Reverse the order of the years
-                setReportYears(reversedYears);
-                // Set default year to the last one in the reversed array
-                if (reversedYears.length > 0) {
-                    setSelectedYear(reversedYears[reversedYears.length - 1].year);
+                // Sort years in descending order (newest first)
+                const sortedYears = res.data.sort((a, b) => b.year - a.year);
+                setReportYears(sortedYears);
+                // Set default year to the newest (first in sorted array)
+                if (sortedYears.length > 0) {
+                    setSelectedYear(sortedYears[0].year);
                 }
             } catch (error) {
                 console.error("Error fetching report years:", error);
@@ -271,7 +272,7 @@ const UploadDialog = ({
             localStorage.setItem("uuids", JSON.stringify(updatedUuids));
         }
 
-        handleFileUpload(selectedYear, uuid); // Pass selectedYear instead of selectedDate.year()
+        handleFileUpload(selectedYear, uuid);
     };
 
     if (!openUploadDialog) return null;
@@ -345,7 +346,7 @@ const UploadDialog = ({
                                         uuidError && validationTriggered
                                             ? "border-red-500"
                                             : "border-gray-300"
-                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                                        } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                                 />
                                 {showUuidSuggestions &&
                                     filteredUuids.length > 0 && (

@@ -195,24 +195,16 @@ const CurricularProgram = () => {
                         });
 
                         const parsedData = sheetData
-                            .map((row, rowIndex) => {
-                                const aopYearRaw = row[7];
+                            .map((row,) => {
                                 console.log(
-                                    `Sheet ${sheetName}, Row ${
-                                        rowIndex + 11
-                                    }: Raw aop_year = ${aopYearRaw}`
-                                );
+                                    `Sheet ${sheetName}`, row)
+                                const aopYearRaw = row[7];
                                 const aopYear =
                                     aopYearRaw !== undefined &&
                                     aopYearRaw !== null &&
                                     !isNaN(aopYearRaw)
                                         ? String(aopYearRaw)
                                         : "N/A";
-                                console.log(
-                                    `Sheet ${sheetName}, Row ${
-                                        rowIndex + 11
-                                    }: Processed aop_year = ${aopYear}`
-                                );
 
                                 const labUnits = Number(row[12]) || 0;
                                 const lectureUnits = Number(row[13]) || 0;
@@ -300,9 +292,7 @@ const CurricularProgram = () => {
                             })
                             .filter(
                                 (data) =>
-                                    !!data.program_name &&
-                                    data.aop_year !== "N/A"
-                            );
+                                    !!data.program_name                            );
 
                         console.log(
                             `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
@@ -324,6 +314,7 @@ const CurricularProgram = () => {
                         setSelectedFile(null);
                         updateProgress();
                         setLoading(false);
+                         hideLoading();
                         return;
                     }
 
@@ -500,7 +491,7 @@ const CurricularProgram = () => {
                 });
             }
             updateProgress(50);
-            const fileName = `Curricular_Programs_${
+            const fileName = `Form_B_Curricular_Programs_${
                 new Date().toISOString().split("T")[0]
             }.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();

@@ -271,7 +271,7 @@ const InstitutionTable = ({
                             ];
                             row.commit();
                         });
-                        updateProgress(50);
+                        updateProgress(100);
                         const fileName = `${
                             institution.uuid || "0000"
                         }_${institution.name || "Unknown"}_${
@@ -289,12 +289,11 @@ const InstitutionTable = ({
                         a.click();
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
-
                         setSnackbarMessage(
                             `Form A exported successfully for ${institution.name}!`
                         );
                         setSnackbarSeverity("success");
-                        updateProgress(100);
+
                         setSnackbarOpen(true);
                     } catch (error) {
                         console.error("Error exporting Form A:", error);

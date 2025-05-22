@@ -10,10 +10,11 @@ import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
 import GraduatesSkeleton from "./GraduatesSkeleton";
 import { decryptId } from "../../../utils/encryption";
-import { Download, Filter, Upload } from "lucide-react";
+import { Download, Filter, Upload, Plus } from "lucide-react";
 import FilterPopover from "../../../Components/FilterPopover";
 import CHEDButton from "../../../Components/CHEDButton";
 import AlertComponent from "../../../Components/AlertComponent";
+import ManualGraduateDialog from "./ManualGraduateDialog";
 
 const Graduates = () => {
     const [graduates, setGraduates] = useState([]);
@@ -22,6 +23,8 @@ const Graduates = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sexFilter, setSexFilter] = useState("");
     const [yearFilter, setYearFilter] = useState("");
+    const [openManualDialog, setOpenManualDialog] = useState(false);
+    const [reportYear, setReportYear] = useState(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -32,6 +35,7 @@ const Graduates = () => {
 
     useEffect(() => {
         fetchGraduates();
+        fetchInstitutionReportYear();
     }, []);
 
     const fetchGraduates = async () => {
@@ -59,6 +63,26 @@ const Graduates = () => {
         } finally {
             hideLoading();
             setLoading(false);
+        }
+    };
+
+    const fetchInstitutionReportYear = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `${config.API_URL}/institutions/${deinstitutionId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setReportYear(response.data?.report_year || null);
+        } catch (error) {
+            console.error(
+                "Error fetching institution report year:",
+                error
+            );
+            AlertComponent.showAlert(
+                "Failed to fetch institution report year.",
+                "error"
+            );
         }
     };
 
@@ -438,11 +462,22 @@ const Graduates = () => {
             </nav>
 
             {/* Header */}
-            <div className="flex justify-between items-center mb-4  p-2 bg-gray-50 border border-gray-200 rounded-md">
+            <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 border border-gray-200 rounded-md">
                 <h1 className="text-xl font-semibold text-gray-800">
                     List of Graduates
                 </h1>
                 <div className="flex gap-2">
+                    {/* Add Manual Graduate Button */}
+                    <CHEDButton
+                        onClick={() => setOpenManualDialog(true)}
+                        icon={Plus}
+                        variant="primary"
+                        size="md"
+                        disabled={loading || !reportYear}
+                    >
+                        Add Graduate
+                    </CHEDButton>
+
                     {/* Upload Button */}
                     <CHEDButton
                         onClick={() => fileInputRef.current?.click()}
@@ -508,7 +543,17 @@ const Graduates = () => {
             </div>
 
             {/* Graduates Table */}
-            <GraduatesTable graduates={filteredGraduates} />
+            <GraduatesTable graduates={filteredGraduates} institutionId={deinstitutionId}
+                reportYear={reportYear} onSuccess={fetchGraduates} />
+
+            {/* Manual Graduate Dialog */}
+            <ManualGraduateDialog
+                open={openManualDialog}
+                onClose={() => setOpenManualDialog(false)}
+                institutionId={deinstitutionId}
+                reportYear={reportYear}
+                onSuccess={fetchGraduates}
+            />
         </div>
     );
 };

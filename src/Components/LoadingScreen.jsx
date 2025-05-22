@@ -12,7 +12,6 @@ const EnhancedLoadingScreen = ({
 }) => {
     const [animatedProgress, setAnimatedProgress] = useState(0);
     const [isCompleting, setIsCompleting] = useState(false);
-    const [step, setStep] = useState(0);
 
     // Randomize inspirational messages
 
@@ -33,9 +32,6 @@ const EnhancedLoadingScreen = ({
                 setAnimatedProgress((prev) => {
                     const newValue = prev + increment;
                     // Trigger step changes for animation variety
-                    if (Math.floor(newValue / 20) > Math.floor(prev / 20)) {
-                        setStep(Math.floor(newValue / 20));
-                    }
                     return Math.round(newValue * 10) / 10;
                 });
             }, interval);
@@ -156,32 +152,7 @@ const EnhancedLoadingScreen = ({
                         }}
                     ></div>
 
-                    {/* Badge marker showing progress steps */}
-                    {mode === "progress" && (
-                        <>
-                            {[0, 1, 2, 3, 4].map((markerStep) => (
-                                <div
-                                    key={`step-${markerStep}`}
-                                    className={`absolute w-3 h-3 rounded-full transition-all duration-300 ${
-                                        step > markerStep
-                                            ? "bg-green-500"
-                                            : "bg-gray-300"
-                                    }`}
-                                    style={{
-                                        top: "50%",
-                                        left: "50%",
-                                        transform: `rotate(${
-                                            markerStep * 72
-                                        }deg) translate(80px, 0) translate(-50%, -50%)`,
-                                        boxShadow:
-                                            step > markerStep
-                                                ? "0 0 8px rgba(34, 197, 94, 0.6)"
-                                                : "none",
-                                    }}
-                                />
-                            ))}
-                        </>
-                    )}
+
 
                     {/* The Logo Image with enhanced presentation */}
                     <div

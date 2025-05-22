@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 import { Search, Upload, Plus, Filter } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import config from "../../../utils/config";
-import AlertComponent from "../../../Components/AlertComponent"; // Import AlertComponent
+import AlertComponent from "../../../Components/AlertComponent";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import { useLoading } from "../../../Context/LoadingContext";
 import useActivityLog from "../../../Hooks/useActivityLog";
@@ -41,9 +41,8 @@ const InstitutionManagement = () => {
     const [provinceFilter, setProvinceFilter] = useState(
         localStorage.getItem("provinceFilter") || ""
     );
-    const currentYear = new Date().getFullYear().toString();
     const [reportYearFilter, setReportYearFilter] = useState(
-        localStorage.getItem("reportYearFilter") || currentYear
+        localStorage.getItem("reportYearFilter") || ""
     );
 
     // Get unique values for filter options
@@ -57,7 +56,7 @@ const InstitutionManagement = () => {
                     .map((item) => item?.[key])
                     .filter((value) => value !== null && value !== undefined)
             ),
-        ].sort((a, b) => a - b); // Ensure numeric sorting for years
+        ].sort((a, b) => b - a); // Sort years in descending order (newest first)
     };
 
     // Filter options for dropdowns
@@ -68,11 +67,19 @@ const InstitutionManagement = () => {
                 String(institution.report_year) === reportYearFilter
         );
 
+        const reportYears = getUniqueValues(institutions, "report_year");
+
+        // Set reportYearFilter to the newest year if not set
+        if (!reportYearFilter && reportYears.length > 0) {
+            setReportYearFilter(String(reportYears[0]));
+            localStorage.setItem("reportYearFilter", String(reportYears[0]));
+        }
+
         return {
             types: getUniqueValues(filteredInstitutions, "institution_type"),
             municipalities: getUniqueValues(filteredInstitutions, "municipality"),
             provinces: getUniqueValues(filteredInstitutions, "province"),
-            reportYears: getUniqueValues(institutions, "report_year"), // Always show all years
+            reportYears,
         };
     }, [institutions, reportYearFilter]);
 
@@ -97,12 +104,17 @@ const InstitutionManagement = () => {
         setTypeFilter("");
         setMunicipalityFilter("");
         setProvinceFilter("");
-        setReportYearFilter(currentYear);
+        // Set to the newest year from filterOptions
+        const newestYear =
+            filterOptions.reportYears.length > 0
+                ? String(filterOptions.reportYears[0])
+                : "";
+        setReportYearFilter(newestYear);
         localStorage.setItem("searchTerm", "");
         localStorage.setItem("typeFilter", "");
         localStorage.setItem("municipalityFilter", "");
         localStorage.setItem("provinceFilter", "");
-        localStorage.setItem("reportYearFilter", currentYear);
+        localStorage.setItem("reportYearFilter", newestYear);
     };
 
     // Get institution type from user
@@ -228,7 +240,6 @@ const InstitutionManagement = () => {
                 await createLog({
                     action: "uploaded_institution",
                     description: `Uploaded institution: ${extractedInstitution.name}`,
-
                 });
 
                 AlertComponent.showAlert(
@@ -350,8 +361,6 @@ const InstitutionManagement = () => {
                     `${errorMessage}`,
                     "error"
                 );
-
-
             } finally {
                 hideLoading();
                 setOpenUploadDialog(false);

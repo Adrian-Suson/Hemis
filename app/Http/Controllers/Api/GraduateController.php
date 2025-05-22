@@ -165,25 +165,58 @@ class GraduateController extends Controller
     public function update(Request $request, Graduate $graduate): JsonResponse
     {
         $validated = $request->validate([
-            'institution_uuid' => 'required|string|exists:institutions,uuid',
-            'student_id' => 'required|string|max:50|unique:graduates_list,student_id,' . $graduate->id,
-            'date_of_birth' => 'required|date|before_or_equal:today',
-            'last_name' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
+            'institution_id' => 'sometimes|required|string|exists:institutions,id',
+            'student_id' => 'sometimes|required|string|max:50|unique:graduates_list,student_id,' . $graduate->id,
+            'date_of_birth' => 'sometimes|required|date|before_or_equal:today',
+            'last_name' => 'sometimes|required|string|max:255',
+            'first_name' => 'sometimes|required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'sex' => 'required|in:M,F',
+            'sex' => 'sometimes|required|in:M,F',
             'date_graduated' => 'nullable|date|before_or_equal:today',
-            'program_name' => 'required|string|max:255',
+            'program_name' => 'sometimes|required|string|max:255',
             'program_major' => 'nullable|string|max:255',
             'program_authority_to_operate_graduate' => 'nullable|string|max:255',
             'year_granted' => 'nullable|integer|min:1900|max:' . date('Y'),
-            'report_year' => 'required|integer|exists:report_years,year',
+            'report_year' => 'sometimes|required|integer|exists:report_years,year',
         ]);
 
         try {
-            $graduate->update($validated);
+            $updated = $graduate->update($validated);
+
+            if (!$updated) {
+                Log::warning('Graduate update had no effect', [
+                    'graduate_id' => $graduate->id,
+                    'payload' => $validated,
+                ]);
+                return response()->json([
+                    'message' => 'No changes made to graduate.',
+                    'data' => [
+                        'id' => $graduate->id,
+                        'institution' => $graduate->institution ? $graduate->institution->name : null,
+                        'student_id' => $graduate->student_id,
+                        'date_of_birth' => $graduate->date_of_birth->toDateString(),
+                        'last_name' => $graduate->last_name,
+                        'first_name' => $graduate->first_name,
+                        'middle_name' => $graduate->middle_name,
+                        'sex' => $graduate->sex,
+                        'date_graduated' => $graduate->date_graduated ? $graduate->date_graduated->toDateString() : null,
+                        'program_name' => $graduate->program_name,
+                        'program_major' => $graduate->program_major,
+                        'program_authority_to_operate_graduate' => $graduate->program_authority_to_operate_graduate,
+                        'year_granted' => $graduate->year_granted,
+                        'report_year' => $graduate->reportYear ? $graduate->reportYear->year : null,
+                        'created_at' => $graduate->created_at,
+                        'updated_at' => $graduate->updated_at,
+                    ],
+                ], 200);
+            }
 
             $graduate->load('institution', 'reportYear');
+
+            Log::info('Graduate updated successfully', [
+                'graduate_id' => $graduate->id,
+                'payload' => $validated,
+            ]);
 
             return response()->json([
                 'message' => 'Graduate updated successfully!',
@@ -207,6 +240,12 @@ class GraduateController extends Controller
                 ],
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Failed to update graduate', [
+                'graduate_id' => $graduate->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'message' => 'Failed to update graduate.',
                 'error' => $e->getMessage(),
