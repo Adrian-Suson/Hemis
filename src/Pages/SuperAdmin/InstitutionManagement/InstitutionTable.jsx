@@ -43,9 +43,6 @@ const useClickOutside = (ref, callback) => {
 const InstitutionTable = ({
     institutions = [],
     fetchInstitutions,
-    setSnackbarMessage,
-    setSnackbarSeverity,
-    setSnackbarOpen,
     searchTerm = "",
     typeFilter = "",
     municipalityFilter = "",
@@ -146,18 +143,9 @@ const InstitutionTable = ({
 
             fetchInstitutions();
 
-            setSnackbarMessage(
-                `Institution ${institution.name} deleted successfully!`
-            );
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
+
         } catch (error) {
             console.error("Error deleting institution:", error);
-            setSnackbarMessage(
-                `Failed to delete institution: ${error.message}`
-            );
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
         } finally {
             setLoading((prev) => ({ ...prev, deleteInstitution: false }));
         }
@@ -293,19 +281,9 @@ const InstitutionTable = ({
                             description: `Exported Form A for institution: ${institution.name}`,
                         });
 
-                        setSnackbarMessage(
-                            `Form A exported successfully for ${institution.name}!`
-                        );
-                        setSnackbarSeverity("success");
-
-                        setSnackbarOpen(true);
                     } catch (error) {
                         console.error("Error exporting Form A:", error);
-                        setSnackbarMessage(
-                            `Failed to export Form A: ${error.message}`
-                        );
-                        setSnackbarSeverity("error");
-                        setSnackbarOpen(true);
+
                     } finally {
                         setLoading((prev) => ({ ...prev, exportFormA: false }));
                     }
@@ -314,9 +292,6 @@ const InstitutionTable = ({
             handleMenuClose();
         },
         [
-            setSnackbarMessage,
-            setSnackbarSeverity,
-            setSnackbarOpen,
             updateProgress,
         ]
     );
@@ -654,9 +629,6 @@ const InstitutionTable = ({
                     institution={selectedInstitution}
                     onEdit={handleEditInstitution}
                     fetchInstitutions={fetchInstitutions}
-                    setSnackbarOpen={setSnackbarOpen}
-                    setSnackbarMessage={setSnackbarMessage}
-                    setSnackbarSeverity={setSnackbarSeverity}
                 />
             )}
         </div>

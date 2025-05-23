@@ -54,10 +54,6 @@ const InstitutionManagement = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     const userRole = user?.role || "";
 
-    const getInstitutionType = () => {
-        const user = JSON.parse(localStorage.getItem("user")) || {};
-        return user.institution_type || "SUC";
-    };
 
     const fetchInstitution = async () => {
         try {
@@ -270,9 +266,11 @@ const InstitutionManagement = () => {
                         ];
                     });
 
-                    const fileName = `Form_A_${getInstitutionType()}_${
-                        new Date().toISOString().split("T")[0]
-                    }.xlsx`;
+                     const fileName = `${
+                            institution.uuid || "0000"
+                        }_${institution.name || "Unknown"}_${
+                            institution.institution_type || "Unknown"
+                        }_${new Date().toISOString().split("T")[0]}.xlsx`;
                     const buffer = await workbook.xlsx.writeBuffer();
                     const blob = new Blob([buffer], {
                         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
