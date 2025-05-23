@@ -10,8 +10,10 @@ import { useLoading } from "../../../Context/LoadingContext";
 import { decryptId } from "../../../utils/encryption";
 import config from "../../../utils/config";
 import AlertComponent from "../../../Components/AlertComponent";
-import { Download, Upload, X } from "lucide-react";
+import { Download, Upload, X, Plus } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
+import AddFacultyDialog from "./AddFacultyDialog";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const facultyGroups = [
     {
@@ -70,7 +72,7 @@ const facultyGroups = [
     },
 ];
 
-const FacultyProfileUpload = () => {
+const FacultyProfile = () => {
     const [selectedGroup, setSelectedGroup] = useState(
         facultyGroups[0].sheetName
     );
@@ -83,8 +85,12 @@ const FacultyProfileUpload = () => {
     const navigate = useNavigate();
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-    const user = JSON.parse(localStorage.getItem("user"));
-    const basePath = user?.role === "HEI Staff" ? "/hei-staff" : "/hei-admin";
+    const [openAddDialog, setOpenAddDialog] = useState(false);
+    const { createLog } = useActivityLog(); // Use the hook
+    // Get the user's role from local storage
+    const userRole = JSON.parse(localStorage.getItem("user"))?.role || "";
+
+
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -399,6 +405,13 @@ const FacultyProfileUpload = () => {
                                 await fetchFacultyProfiles();
                                 // Only update to 100% after all operations are complete
                                 updateProgress(100);
+
+                                // Log the upload action
+                                await createLog({
+                                    action: "Upload Faculty Profiles",
+                                    description:
+                                        "Uploaded faculty profiles from Excel file.",
+                                });
                             } catch (uploadError) {
                                 console.error(
                                     "Error uploading profiles:",
@@ -597,6 +610,12 @@ const FacultyProfileUpload = () => {
                         "Data exported successfully!",
                         "success"
                     );
+
+                    // Log the export action
+                    await createLog({
+                        action: "Export Faculty Profiles",
+                        description: "Exported faculty profiles to Excel.",
+                    });
                 } catch (error) {
                     console.error("Error exporting data:", error);
                     AlertComponent.showAlert(
@@ -624,17 +643,18 @@ const FacultyProfileUpload = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate(`${basePath}/dashboard`)}
+                            onClick={() => navigate(`/${userRole}/dashboard`)}
                             className="hover:underline"
                         >
                             Dashboard
                         </a>
                     </li>
                     <li className="text-gray-400">›</li>
+                    <li className="text-gray-400">›</li>
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate(`${basePath}/institutions`)}
+                            onClick={() => navigate(`/${userRole}/institutions`)}
                             className="hover:underline"
                         >
                             Institution Management
@@ -659,6 +679,16 @@ const FacultyProfileUpload = () => {
                 </div>
                 {/* CHED-Styled Action Buttons */}
                 <div className="flex gap-4 items-center">
+                    {/* Add Faculty Button */}
+                    <CHEDButton
+                        onClick={() => setOpenAddDialog(true)}
+                        icon={Plus}
+                        variant="primary"
+                        size="md"
+                        disabled={isUploading}
+                    >
+                        Add Faculty
+                    </CHEDButton>
                     {/* Import Button */}
                     <CHEDButton
                         onClick={() => setOpenUploadDialog(true)}
@@ -669,7 +699,6 @@ const FacultyProfileUpload = () => {
                     >
                         {isUploading ? "Uploading..." : "Import Form E2"}
                     </CHEDButton>
-
                     {/* Export Button */}
                     <CHEDButton
                         onClick={handleExportData}
@@ -682,6 +711,15 @@ const FacultyProfileUpload = () => {
                     </CHEDButton>
                 </div>
             </div>
+
+            {/* Add Faculty Dialog */}
+            <AddFacultyDialog
+                open={openAddDialog}
+                onClose={() => setOpenAddDialog(false)}
+                facultyGroups={facultyGroups}
+                institutionId={decryptId(decodeURIComponent(encryptedInstitutionId))}
+                onFacultyAdded={fetchFacultyProfiles}
+            />
 
             {/* Upload Modal */}
             {openUploadDialog && (
@@ -810,4 +848,4 @@ const FacultyProfileUpload = () => {
     );
 };
 
-export default FacultyProfileUpload;
+export default FacultyProfile;

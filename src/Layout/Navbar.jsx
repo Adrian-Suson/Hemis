@@ -37,7 +37,7 @@ const Navbar = () => {
     const navItems = useMemo(() => {
         const role = user?.role;
         const items = {
-            "Super Admin": [
+            "super-admin": [
                 {
                     text: "Dashboard",
                     path: "/super-admin/dashboard",
@@ -49,7 +49,7 @@ const Navbar = () => {
                     icon: Building,
                 },
             ],
-            "HEI Admin": [
+            "hei-admin": [
                 {
                     text: "Dashboard",
                     path: "/hei-admin/dashboard",
@@ -61,7 +61,7 @@ const Navbar = () => {
                     icon: Building,
                 },
             ],
-            "HEI Staff": [
+            "hei-staff": [
                 {
                     text: "Dashboard",
                     path: "/hei-staff/dashboard",
@@ -72,7 +72,7 @@ const Navbar = () => {
                     path: "/hei-staff/institutions",
                     icon: Building,
                 },
-            ], // Added "Institutions" back for HEI Staff
+            ],
         };
         return items[role] || [];
     }, [user]);
@@ -197,16 +197,16 @@ const Navbar = () => {
     // Get dashboard path based on role
     const getDashboardPath = useCallback(() => {
         const paths = {
-            "Super Admin": "/super-admin/dashboard",
-            "HEI Admin": "/hei-admin/dashboard",
-            "HEI Staff": "/hei-staff/dashboard",
+            "super-admin": "/super-admin/dashboard",
+            "hei-admin": "/hei-admin/dashboard",
+            "hei-staff": "/hei-staff/dashboard",
         };
         return paths[user?.role] || "/";
     }, [user]);
 
     return (
         <>
-            {/* Main Navbar - CHED Color Scheme */}
+            {/* Main Navbar */}
             <nav className="sticky top-0 z-50 bg-[#0038A8] shadow-lg">
                 <div className="max-w-[100vw] mx-auto flex justify-between items-center px-4 md:px-6">
                     {/* Logo & Title Section */}
@@ -331,13 +331,13 @@ const Navbar = () => {
                                             </button>
 
                                             {/* User Management or Staff Management */}
-                                            {user.role !== "HEI Staff" && ( // Hide User Management for HEI Staff
+                                            {user.role !== "hei-staff" && (
                                                 <button
                                                     onClick={() => {
                                                         setActiveDropdown(null);
                                                         handleNavigation(
                                                             user.role ===
-                                                                "HEI Admin"
+                                                                "hei-admin"
                                                                 ? "/hei-admin/staff-management"
                                                                 : "/super-admin/user-management"
                                                         );
@@ -348,7 +348,7 @@ const Navbar = () => {
                                                         size={16}
                                                         className="mr-2 text-[#0038A8]"
                                                     />
-                                                    {user.role === "HEI Admin"
+                                                    {user.role === "hei-admin"
                                                         ? "Staff Management"
                                                         : "User Management"}
                                                 </button>
@@ -395,7 +395,7 @@ const Navbar = () => {
                 </div>
             </nav>
 
-            {/* Red strip beneath the navbar - inspired by CHED logo */}
+            {/* Red strip beneath the navbar */}
             <div className="h-1 bg-[#CD0000] w-full shadow-sm"></div>
 
             {/* Animation Keyframes */}

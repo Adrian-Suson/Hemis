@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
@@ -6,6 +7,7 @@ import { ChevronDown, Filter, X, Search, Check, Edit3, Loader2, AlertCircle } fr
 import Pagination from "../../../Components/Pagination";
 import FilterPopover from "../../../Components/FilterPopover";
 import AlertComponent from "../../../Components/AlertComponent";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 // Enhanced EditableCell component integrated directly
 const EditableCell = ({
@@ -572,6 +574,7 @@ const EditableCell = ({
 };
 
 const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
+    const { createLog } = useActivityLog(); // Use the hook
     const [facultyProfiles, setFacultyProfiles] = useState(initialFacultyProfiles);
     const [tabValue, setTabValue] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
@@ -1137,9 +1140,7 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 );
 
                 if (profileIndex === -1) {
-                    console.error(`Profile with id ${id} not found`);
-                    setIsSaving(false);
-                    return;
+                    throw new Error("Profile not found");
                 }
 
                 const profile = {
@@ -1147,8 +1148,8 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                     [field]: value,
                 };
                 updatedFacultyProfiles[profileIndex] = profile;
-                const token = localStorage.getItem("token");
 
+                const token = localStorage.getItem("token");
                 await axios.put(
                     `${config.API_URL}/faculty-profiles/${profile.id}`,
                     { [field]: value },
@@ -1156,10 +1157,23 @@ const FacultyProfileTable = ({ facultyProfiles: initialFacultyProfiles }) => {
                 );
 
                 setFacultyProfiles(updatedFacultyProfiles);
-                AlertComponent.showAlert("Faculty profile updated successfully!", "success");
+
+                // Log the edit action
+                await createLog({
+                    action: "Edit Faculty",
+                    description: `Edited field "${field}" for faculty ID: ${id}`,
+                });
+
+                AlertComponent.showAlert(
+                    "Faculty profile updated successfully!",
+                    "success"
+                );
             } catch (error) {
                 console.error("Error saving changes:", error);
-                AlertComponent.showAlert("Failed to save faculty profile changes.", "error");
+                AlertComponent.showAlert(
+                    "Failed to save faculty profile changes.",
+                    "error"
+                );
             } finally {
                 setIsSaving(false);
                 setEditingCell(null);

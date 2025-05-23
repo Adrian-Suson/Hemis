@@ -5,6 +5,7 @@ import { X, Upload } from "lucide-react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import config from "../utils/config";
+import useActivityLog from "../Hooks/useActivityLog";
 
 const GraduatesUploadDialog = ({ open, onClose }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -13,6 +14,7 @@ const GraduatesUploadDialog = ({ open, onClose }) => {
     const [institutionId, setInstitutionId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
+    const { createLog } = useActivityLog();
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const ACCEPTED_FILE_TYPES = [
@@ -212,6 +214,11 @@ const GraduatesUploadDialog = ({ open, onClose }) => {
                             },
                         }
                     );
+
+                    await createLog({
+                        action: "Upload Graduates Data",
+                        description: `Uploaded data for ${allGraduates.length} graduates`,
+                    });
 
                     Swal.fire({
                         title: "Success",

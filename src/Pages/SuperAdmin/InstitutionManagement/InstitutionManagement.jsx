@@ -8,7 +8,6 @@ import config from "../../../utils/config";
 import AlertComponent from "../../../Components/AlertComponent";
 import ManualInstitutionDialog from "./ManualInstitutionDialog";
 import { useLoading } from "../../../Context/LoadingContext";
-import useActivityLog from "../../../Hooks/useActivityLog";
 import UploadDialog from "./UploadDialog";
 import InstitutionTable from "./InstitutionTable";
 import FilterPopover from "../../../Components/FilterPopover";
@@ -18,7 +17,6 @@ const InstitutionManagement = () => {
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const { showLoading, hideLoading, updateProgress } = useLoading();
-    const { createLog } = useActivityLog();
     const [openManualDialog, setOpenManualDialog] = useState(false);
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedInstitutionType, setSelectedInstitutionType] = useState("");
@@ -136,7 +134,7 @@ const InstitutionManagement = () => {
             });
 
             let institutionsData = [];
-            if (user?.role !== "Super Admin") {
+            if (user?.role !== "super-admin") {
                 institutionsData = response.data.filter(
                     (institution) => institution.id === user?.institution_id
                 );
@@ -237,10 +235,7 @@ const InstitutionManagement = () => {
                     }
                 );
                 console.log("Institution response:", institutionResponse.data);
-                await createLog({
-                    action: "uploaded_institution",
-                    description: `Uploaded institution: ${extractedInstitution.name}`,
-                });
+
 
                 AlertComponent.showAlert(
                     "Institution data uploaded successfully!",
@@ -428,9 +423,9 @@ const InstitutionManagement = () => {
     // Determine dashboard link based on user role
     const user = JSON.parse(localStorage.getItem("user"));
     const dashboardLink =
-        user?.role === "Super Admin"
+        user?.role === "super-admin"
             ? "/super-admin/dashboard"
-            : user?.role === "HEI Admin"
+            : user?.role === "hei-admin"
             ? "/hei-admin/dashboard"
             : "/hei-staff/dashboard";
 

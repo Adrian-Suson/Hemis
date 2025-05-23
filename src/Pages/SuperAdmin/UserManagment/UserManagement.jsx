@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import CHEDButton from "../../../Components/CHEDButton";
 import AlertComponent from "../../../Components/AlertComponent";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -24,6 +25,7 @@ const UserManagement = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
     const currentUser = JSON.parse(localStorage.getItem("user")); // Get the current logged-in user
+    const { createLog } = useActivityLog(); // Use the hook
 
     const fetchUsers = async () => {
         try {
@@ -33,6 +35,8 @@ const UserManagement = () => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUsers(response.data);
+
+
         } catch {
             AlertComponent.showAlert(
                 "Failed to fetch users. Please login again.",
@@ -63,7 +67,9 @@ const UserManagement = () => {
     };
 
     const handleUserUpdated = () => {
-        fetchUsers();
+        setSearchTerm(""); // Clear search term
+        setStatusFilter("All"); // Reset status filter
+        setPage(0); // Reset pagination
         AlertComponent.showAlert("User updated successfully!", "success");
     };
 
@@ -76,6 +82,13 @@ const UserManagement = () => {
                     await axios.delete(`${config.API_URL}/users/${id}`, {
                         headers: { Authorization: `Bearer ${token}` },
                     });
+
+                    // Log the deactivate action
+                    await createLog({
+                        action: "Deactivate User",
+                        description: `Deactivated user with ID: ${id}`,
+                    });
+
                     fetchUsers();
                     AlertComponent.showAlert("User deactivated successfully!", "success");
                 } catch {
@@ -96,6 +109,13 @@ const UserManagement = () => {
                         {},
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
+
+                    // Log the reactivate action
+                    await createLog({
+                        action: "Reactivate User",
+                        description: `Reactivated user with ID: ${id}`,
+                    });
+
                     fetchUsers();
                     AlertComponent.showAlert("User reactivated successfully!", "success");
                 } catch {
@@ -208,7 +228,7 @@ const UserManagement = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                    user.role === "Super Admin"
+                                                    user.role === "super-admin"
                                                         ? "bg-green-100 text-green-800"
                                                         : "bg-gray-100 text-gray-800"
                                                 }`}

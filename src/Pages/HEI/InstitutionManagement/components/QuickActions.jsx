@@ -23,7 +23,7 @@ const QuickActions = ({
     handleNavigation,
 }) => {
     const currentUser = JSON.parse(localStorage.getItem("user")); // Get the current logged-in user
-    const isStaff = currentUser?.role === "HEI Staff"; // Check if the role is HEI Staff
+    const isStaff = currentUser?.role === "hei-staff"; // Check if the role is HEI Staff
     const basePath = isStaff ? "/hei-staff/institutions" : "/hei-admin/institutions"; // Adjust base path based on role
 
     return (

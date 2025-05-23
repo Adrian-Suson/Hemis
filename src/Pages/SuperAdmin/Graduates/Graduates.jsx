@@ -15,8 +15,10 @@ import FilterPopover from "../../../Components/FilterPopover";
 import CHEDButton from "../../../Components/CHEDButton";
 import AlertComponent from "../../../Components/AlertComponent";
 import ManualGraduateDialog from "./ManualGraduateDialog";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const Graduates = () => {
+    const { createLog } = useActivityLog(); // Use the hook
     const [graduates, setGraduates] = useState([]);
     const [loading, setLoading] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
@@ -54,6 +56,7 @@ const Graduates = () => {
                 })
             );
             setGraduates(formattedData);
+
         } catch (error) {
             console.error("Error fetching graduates:", error);
             AlertComponent.showAlert(
@@ -267,6 +270,12 @@ const Graduates = () => {
                 }
 
                 uploadToBackend(allGraduates);
+
+                // Log the upload action
+                await createLog({
+                    action: "Upload Graduates",
+                    description: `Uploaded graduate records for institution ID: ${institutionId}`,
+                });
             };
 
             reader.onerror = (error) => {
@@ -380,6 +389,14 @@ const Graduates = () => {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
         saveAs(blob, "Graduates_List.xlsx");
+
+        // Log the export action
+        await createLog({
+            action: "Export Graduates",
+            description: "Exported graduate records to Excel.",
+        });
+
+        AlertComponent.showAlert("Data exported successfully!", "success");
     };
 
     const uniqueYears = [

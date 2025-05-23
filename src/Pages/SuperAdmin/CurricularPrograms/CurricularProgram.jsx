@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
 import ProgramInputDialog from "./ProgramInputDialog";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const CurricularProgram = () => {
+    const { createLog } = useActivityLog(); // Use the hook
     const { institutionId: encryptedInstitutionId } = useParams();
     const [programs, setPrograms] = useState([]);
     const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
@@ -82,6 +84,7 @@ const CurricularProgram = () => {
                 console.error("Invalid data format:", response.data);
                 setPrograms([]);
             }
+
         } catch (error) {
             console.error("Error fetching programs:", error);
             AlertComponent.showAlert(
@@ -349,6 +352,12 @@ const CurricularProgram = () => {
                             "Curricular data imported successfully!",
                             "success"
                         );
+
+                        // Log the upload action
+                        await createLog({
+                            action: "Upload Curricular Programs",
+                            description: `Uploaded curricular programs for institution ID: ${institutionId}`,
+                        });
                     } catch (error) {
                         console.error(
                             "Error importing curricular data:",
@@ -506,6 +515,12 @@ const CurricularProgram = () => {
             window.URL.revokeObjectURL(url);
             updateProgress(100);
             AlertComponent.showAlert("Data exported successfully!", "success");
+
+            // Log the export action
+            await createLog({
+                action: "Export Curricular Programs",
+                description: "Exported curricular programs to Excel.",
+            });
         } catch (error) {
             console.error("Error exporting data:", error);
             AlertComponent.showAlert(
@@ -563,7 +578,6 @@ const CurricularProgram = () => {
                 program_type: categories[mainTabValue],
             };
 
-            console.log("programDAtta", programData);
 
             if (selectedProgram) {
                 // Update existing program

@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import { X, Upload } from "lucide-react";
 import config from "../../../utils/config";
 import axios from "axios";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const UploadDialog = ({
     openUploadDialog,
@@ -21,6 +22,8 @@ const UploadDialog = ({
     selectedMunicipality,
     setSelectedMunicipality,
 }) => {
+    const { createLog } = useActivityLog(); // Use the hook
+
     const [fileError, setFileError] = useState("");
     const [typeError, setTypeError] = useState("");
     const [uuidError, setUuidError] = useState("");
@@ -243,7 +246,7 @@ const UploadDialog = ({
         return errors;
     };
 
-    const handleUploadClick = () => {
+    const handleUploadClick = async () => {
         setValidationTriggered(true);
         const errors = validateInputs();
         if (errors.length > 0) {
@@ -272,7 +275,24 @@ const UploadDialog = ({
             localStorage.setItem("uuids", JSON.stringify(updatedUuids));
         }
 
-        handleFileUpload(selectedYear, uuid);
+        try {
+            await handleFileUpload(selectedYear, uuid);
+
+            // Log the upload action
+            await createLog({
+                action: "Upload Institutions",
+                description: `Uploaded institutions from file: ${selectedFile.name}`,
+            });
+
+            Swal.fire({
+                title: "Success",
+                text: "Institutions uploaded successfully!",
+                icon: "success",
+                confirmButtonColor: "#3085d6",
+            });
+        } catch (error) {
+            console.error("Error uploading institutions:", error);
+        }
     };
 
     if (!openUploadDialog) return null;
@@ -346,7 +366,7 @@ const UploadDialog = ({
                                         uuidError && validationTriggered
                                             ? "border-red-500"
                                             : "border-gray-300"
-                                        } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
                                 />
                                 {showUuidSuggestions &&
                                     filteredUuids.length > 0 && (

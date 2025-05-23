@@ -7,6 +7,7 @@ import moment from "moment";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import config from "../utils/config";
+import useActivityLog from "../Hooks/useActivityLog"; // Import the hook
 
 const InstitutionUploadDialog = ({ open, onClose }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -23,6 +24,7 @@ const InstitutionUploadDialog = ({ open, onClose }) => {
     const [selectedDate, setSelectedDate] = useState(moment());
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
+    const { createLog } = useActivityLog(); // Use the hook
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const ACCEPTED_FILE_TYPES = [
@@ -248,6 +250,12 @@ const InstitutionUploadDialog = ({ open, onClose }) => {
                             },
                         }
                     );
+
+                    // Log the upload action
+                    await createLog({
+                        action: "Upload Institution Data",
+                        description: `Uploaded institution data for: ${extractedInstitution.name}`,
+                    });
 
                     Swal.fire({
                         title: "Success",

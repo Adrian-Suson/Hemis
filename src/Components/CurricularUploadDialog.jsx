@@ -6,6 +6,7 @@ import axios from "axios";
 import AlertComponent from "../Components/AlertComponent";
 import { useLoading } from "../Context/LoadingContext";
 import config from "../utils/config";
+import useActivityLog from "../Hooks/useActivityLog";
 
 const CurricularUploadDialog = ({ open, onClose }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -15,6 +16,7 @@ const CurricularUploadDialog = ({ open, onClose }) => {
     const [loading, setLoading] = useState(false);
     const { updateProgress, showLoading, hideLoading } = useLoading();
     const fileInputRef = useRef(null);
+    const { createLog } = useActivityLog();
 
     const categories = useMemo(
         () => [
@@ -357,6 +359,12 @@ const CurricularUploadDialog = ({ open, onClose }) => {
 
                     // Refresh the programs list after successful upload
                     fetchPrograms();
+
+                    // After successful upload, add this before the success alert
+                    await createLog({
+                        action: "Upload Curricular Data",
+                        description: `Uploaded curricular data for ${allParsedData.length} programs`,
+                    });
 
                     AlertComponent.showAlert(
                         "Curricular data imported successfully!",

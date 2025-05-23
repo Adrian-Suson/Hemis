@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
@@ -5,6 +6,7 @@ import config from "../../../utils/config";
 import { X, Check, Edit3, Loader2, AlertCircle } from "lucide-react";
 import AlertComponent from "../../../Components/AlertComponent";
 import Pagination from "../../../Components/Pagination";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 // Enhanced EditableCell component for program tables
 const EditableCell = ({
@@ -353,6 +355,7 @@ const EditableCell = ({
 };
 
 const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
+    const { createLog } = useActivityLog(); // Use the hook
     const { currentCount, totalCount, searchTerm } = summary || {};
     const [subTabValue, setSubTabValue] = useState(0);
     const [error, setError] = useState(null);
@@ -838,6 +841,13 @@ const ProgramTables = ({ programs, loading, fetchPrograms, summary }) => {
                 );
 
                 fetchPrograms();
+
+                // Log the edit action
+                await createLog({
+                    action: "Edit Program",
+                    description: `Edited field "${field}" for program ID: ${id}`,
+                });
+
                 AlertComponent.showAlert(
                     "Program updated successfully",
                     "success"

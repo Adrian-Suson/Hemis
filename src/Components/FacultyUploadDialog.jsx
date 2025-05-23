@@ -6,12 +6,14 @@ import axios from "axios";
 import { useLoading } from "../Context/LoadingContext";
 import config from "../utils/config";
 import AlertComponent from "../Components/AlertComponent";
+import useActivityLog from "../Hooks/useActivityLog";
 
 const FacultyUploadDialog = ({ open, onClose, fetchFacultyProfiles }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const fileInputRef = useRef(null);
+    const { createLog } = useActivityLog();
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -163,6 +165,12 @@ const FacultyUploadDialog = ({ open, onClose, fetchFacultyProfiles }) => {
                 );
 
                 updateProgress(90); // Progress after sending data to the server
+
+                // Add activity log before showing success alert
+                await createLog({
+                    action: "Upload Faculty Data",
+                    description: `Uploaded data for ${allFacultyProfiles.length} faculty members`,
+                });
 
                 AlertComponent.showAlert("Faculty data uploaded successfully!", "success");
 

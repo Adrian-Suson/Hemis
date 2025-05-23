@@ -10,6 +10,7 @@ import { useLoading } from "../../../Context/LoadingContext";
 import FormInput from "../../../Components/FormInput";
 import YearPicker from "../../../Components/YearPicker";
 import AlertComponent from "../../../Components/AlertComponent"; // Import AlertComponent
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const EditCampusFormDialog = ({
     open,
@@ -19,6 +20,7 @@ const EditCampusFormDialog = ({
     fetchCampuses,
 }) => {
     const { showLoading, hideLoading } = useLoading();
+    const { createLog } = useActivityLog(); // Use the hook
     const { institutionId: encryptedInstitutionId } = useParams();
     const decryptedInstitutionId = decryptId(encryptedInstitutionId);
     const {
@@ -323,6 +325,13 @@ const EditCampusFormDialog = ({
 
             console.log("[Edit Campus] Server response:", response.data);
             AlertComponent.showAlert("Campus updated successfully!", "success");
+
+            // Log the activity
+            await createLog({
+                action: "Edit Campus",
+                description: `Edited campus: ${campus.suc_name}`,
+            });
+
             fetchCampuses();
             resetForm();
             onClose();

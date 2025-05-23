@@ -13,15 +13,13 @@ class User extends Model
     use Notifiable;
 
     protected $fillable = [
-        'profile_image',
         'name',
         'email',
-        'email_verified_at',
         'password',
         'role',
-        'status',
         'institution_id',
-        'remember_token',
+        'status',
+        'profile_image',
     ];
 
     protected $casts = [

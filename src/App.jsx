@@ -65,7 +65,7 @@ function App() {
                     {/* Super Admin Routes under /super-admin/* */}
                     <Route
                         element={
-                            <ProtectedRoute allowedRoles={["Super Admin"]} />
+                            <ProtectedRoute allowedRoles={["super-admin"]} />
                         }
                     >
                         <Route
@@ -101,7 +101,7 @@ function App() {
                     {/* HEI Admin Routes under /hei-admin/* */}
                     <Route
                         element={
-                            <ProtectedRoute allowedRoles={["HEI Admin"]} />
+                            <ProtectedRoute allowedRoles={["hei-admin"]} />
                         }
                     >
                         <Route
@@ -137,7 +137,7 @@ function App() {
                     {/* HEI Staff Routes under /hei-staff/* */}
                     <Route
                         element={
-                            <ProtectedRoute allowedRoles={["HEI Staff"]} />
+                            <ProtectedRoute allowedRoles={["hei-staff"]} />
                         }
                     >
                         <Route

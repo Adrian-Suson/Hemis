@@ -7,6 +7,7 @@ import { decryptId } from "../../../utils/encryption";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import config from "../../../utils/config";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const ProgramInputDialog = ({ open, onClose, onSubmit, program = null }) => {
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -55,6 +56,8 @@ const ProgramInputDialog = ({ open, onClose, onSubmit, program = null }) => {
         report_year: "",
         institution_id: reportYear,
     });
+
+    const { createLog } = useActivityLog(); // Use the hook
 
     useEffect(() => {
         const fetchInstitutionData = async () => {
@@ -188,6 +191,14 @@ const ProgramInputDialog = ({ open, onClose, onSubmit, program = null }) => {
                 );
                 console.log('Create response:', response.data);
             }
+
+            // Log the action
+            await createLog({
+                action: program ? "Update Program" : "Add Program",
+                description: program
+                    ? `Updated program: ${formData.program_name}`
+                    : `Added new program: ${formData.program_name}`,
+            });
 
             onSubmit(processedData);
             onClose();

@@ -338,8 +338,6 @@ const EditDialog = ({
                 institution_type: formData.institution_type || null,
             };
 
-            console.log("Payload to update:", JSON.stringify(payload, null, 2));
-
             const response = await axios.put(
                 `${config.API_URL}/institutions/${formData.id}`,
                 payload,
@@ -351,15 +349,10 @@ const EditDialog = ({
                 }
             );
 
+            // Log the edit action
             await createLog({
-                action: "updated_institution",
-                description: `Updated institution: ${formData.name}`,
-                modelType: "App\\Models\\Institution",
-                modelId: formData.id,
-                properties: {
-                    name: formData.name,
-                    institution_type: formData.institution_type,
-                },
+                action: "Edit Institution",
+                description: `Edited institution: ${formData.name}`,
             });
 
             onEdit(response.data || payload);
@@ -382,11 +375,6 @@ const EditDialog = ({
                 errorMessage =
                     "Validation failed: " +
                     Object.values(validationErrors).flat().join(", ");
-            } else {
-                console.error(
-                    "Update error:",
-                    error.response?.data || error.message
-                );
             }
 
             showSnackbar(errorMessage, "error");

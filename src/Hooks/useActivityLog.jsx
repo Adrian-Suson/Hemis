@@ -5,9 +5,6 @@ import config from '../utils/config';
 
 const useActivityLog = () => {
     const [logs, setLogs] = useState([]);
-    const [page, setPage] = useState(1);
-    const [lastPage, setLastPage] = useState(1);
-    const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -27,11 +24,9 @@ const useActivityLog = () => {
                 }
             });
 
-            const { data, current_page, last_page, total } = response.data;
+            const { data } = response.data;
             setLogs(prev => (newPage === 1 ? data : [...prev, ...data]));
-            setPage(current_page);
-            setLastPage(last_page);
-            setTotal(total);
+
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch activity logs');
         } finally {
@@ -66,24 +61,13 @@ const useActivityLog = () => {
         }
     }, [fetchLogs]);
 
-    // Load more logs
-    const loadMore = useCallback(() => {
-        if (page < lastPage && !loading) {
-            setPage(prev => prev + 1);
-            fetchLogs(page + 1);
-        }
-    }, [page, lastPage, loading, fetchLogs]);
 
     return {
         logs,
         loading,
         error,
-        page,
-        lastPage,
-        total,
         fetchLogs,
         createLog,
-        loadMore
     };
 };
 

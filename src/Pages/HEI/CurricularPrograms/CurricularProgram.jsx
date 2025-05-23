@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
 import ProgramInputDialog from "./ProgramInputDialog";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const CurricularProgram = () => {
+    const { createLog } = useActivityLog(); // Use the hook
     const { institutionId: encryptedInstitutionId } = useParams();
     const [programs, setPrograms] = useState([]);
     const [openReferenceDialog, setOpenReferenceDialog] = useState(false);
@@ -35,6 +37,10 @@ const CurricularProgram = () => {
     const navigate = useNavigate();
     const [openProgramDialog, setOpenProgramDialog] = useState(false);
     const [selectedProgram, setSelectedProgram] = useState(null);
+
+       // Get the user's role from local storage
+    const userRole = JSON.parse(localStorage.getItem("user"))?.role || "";
+
 
     const categories = useMemo(
         () => [
@@ -82,6 +88,7 @@ const CurricularProgram = () => {
                 console.error("Invalid data format:", response.data);
                 setPrograms([]);
             }
+
         } catch (error) {
             console.error("Error fetching programs:", error);
             AlertComponent.showAlert(
@@ -195,24 +202,16 @@ const CurricularProgram = () => {
                         });
 
                         const parsedData = sheetData
-                            .map((row, rowIndex) => {
-                                const aopYearRaw = row[7];
+                            .map((row,) => {
                                 console.log(
-                                    `Sheet ${sheetName}, Row ${
-                                        rowIndex + 11
-                                    }: Raw aop_year = ${aopYearRaw}`
-                                );
+                                    `Sheet ${sheetName}`, row)
+                                const aopYearRaw = row[7];
                                 const aopYear =
                                     aopYearRaw !== undefined &&
                                     aopYearRaw !== null &&
                                     !isNaN(aopYearRaw)
                                         ? String(aopYearRaw)
                                         : "N/A";
-                                console.log(
-                                    `Sheet ${sheetName}, Row ${
-                                        rowIndex + 11
-                                    }: Processed aop_year = ${aopYear}`
-                                );
 
                                 const labUnits = Number(row[12]) || 0;
                                 const lectureUnits = Number(row[13]) || 0;
@@ -300,9 +299,7 @@ const CurricularProgram = () => {
                             })
                             .filter(
                                 (data) =>
-                                    !!data.program_name &&
-                                    data.aop_year !== "N/A"
-                            );
+                                    !!data.program_name                            );
 
                         console.log(
                             `Sheet ${sheetName}: Total rows: ${sheetData.length}, Valid rows: ${parsedData.length}`
@@ -319,11 +316,11 @@ const CurricularProgram = () => {
                             "No valid programs with a program name found in any sheet of the Excel file.",
                             "warning"
                         );
-                        setIsUploading(false);
                         setOpenUploadDialog(false);
+                        setIsUploading(false);
                         setSelectedFile(null);
-                        updateProgress();
                         setLoading(false);
+                        hideLoading();
                         return;
                     }
 
@@ -358,6 +355,12 @@ const CurricularProgram = () => {
                             "Curricular data imported successfully!",
                             "success"
                         );
+
+                        // Log the upload action
+                        await createLog({
+                            action: "Upload Curricular Programs",
+                            description: `Uploaded curricular programs for institution ID: ${institutionId}`,
+                        });
                     } catch (error) {
                         console.error(
                             "Error importing curricular data:",
@@ -368,11 +371,11 @@ const CurricularProgram = () => {
                             "error"
                         );
                     } finally {
-                        setIsUploading(false);
                         setOpenUploadDialog(false);
+                        setIsUploading(false);
                         setSelectedFile(null);
-                        updateProgress();
                         setLoading(false);
+                        hideLoading();
                     }
                 } catch (error) {
                     console.error("Error processing file:", error.message);
@@ -383,7 +386,6 @@ const CurricularProgram = () => {
                     setIsUploading(false);
                     setOpenUploadDialog(false);
                     setSelectedFile(null);
-                    updateProgress();
                     setLoading(false);
                 }
             };
@@ -397,7 +399,7 @@ const CurricularProgram = () => {
             );
             setIsUploading(false);
             setLoading(false);
-            updateProgress(0);
+            hideLoading();
         }
     };
 
@@ -500,7 +502,7 @@ const CurricularProgram = () => {
                 });
             }
             updateProgress(50);
-            const fileName = `Curricular_Programs_${
+            const fileName = `Form_B_Curricular_Programs_${
                 new Date().toISOString().split("T")[0]
             }.xlsx`;
             const buffer = await workbook.xlsx.writeBuffer();
@@ -515,6 +517,12 @@ const CurricularProgram = () => {
             window.URL.revokeObjectURL(url);
             updateProgress(100);
             AlertComponent.showAlert("Data exported successfully!", "success");
+
+            // Log the export action
+            await createLog({
+                action: "Export Curricular Programs",
+                description: "Exported curricular programs to Excel.",
+            });
         } catch (error) {
             console.error("Error exporting data:", error);
             AlertComponent.showAlert(
@@ -523,6 +531,7 @@ const CurricularProgram = () => {
             );
         } finally {
             setLoading(false);
+            hideLoading();
         }
     };
 
@@ -572,7 +581,6 @@ const CurricularProgram = () => {
                 program_type: categories[mainTabValue],
             };
 
-            console.log("programDAtta", programData);
 
             if (selectedProgram) {
                 // Update existing program
@@ -627,7 +635,7 @@ const CurricularProgram = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate("/super-admin/dashboard")}
+                            onClick={() => navigate(`/${userRole}/dashboard`)}
                             className="hover:underline"
                         >
                             Dashboard
@@ -637,9 +645,7 @@ const CurricularProgram = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() =>
-                                navigate("/super-admin/institutions")
-                            }
+                            onClick={() => navigate(`/${userRole}/institutions`)}
                             className="hover:underline"
                         >
                             Institution Management

@@ -8,11 +8,12 @@ import config from "../../../utils/config";
 import { useLoading } from "../../../Context/LoadingContext";
 import { FilePenLine, Plus, Trash2 } from "lucide-react";
 import AlertComponent from "../../../Components/AlertComponent";
-import CHEDButton from "../../../Components/CHEDButton";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
+    const { createLog } = useActivityLog(); // Use the hook
     const [campuses, setCampuses] = useState(initialCampuses);
     const { showLoading, hideLoading } = useLoading();
     const [tabValue, setTabValue] = useState(0);
@@ -264,71 +265,90 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
         return rows;
     }, [campuses]);
 
-    const handleEditClick = useCallback((row) => {
-        console.log("Edit clicked:", row);
-        setEditCampusData(row);
-        setOpenEditDialog(true);
+    const handleEditClick = useCallback(async (row) => {
+        try {
+            console.log("Edit clicked:", row);
+            setEditCampusData(row);
+            setOpenEditDialog(true);
+            await createLog({
+                action: "Edit Campus",
+                description: `Opened edit dialog for campus: ${row.suc_name}`,
+            });
+        } catch (error) {
+            console.error("Error logging activity:", error);
+        }
     }, []);
 
     const handleDeleteClick = useCallback(
-        (campusId) => {
-            console.log("Delete clicked:", campusId);
-            AlertComponent.showConfirmation(
-                "Do you really want to delete this campus? This action cannot be undone.",
-                async () => {
-                    showLoading();
-                    const token = localStorage.getItem("token");
-                    if (!token) {
-                        AlertComponent.showAlert(
-                            "Authentication token is missing.",
-                            "error"
-                        );
-                        hideLoading();
-                        return;
-                    }
-
-                    try {
-                        if (!campusId.startsWith("temp-")) {
-                            await axios.delete(
-                                `${config.API_URL}/campuses/${campusId}`,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                }
+        async (campusId) => {
+            try {
+                console.log("Delete clicked:", campusId);
+                AlertComponent.showConfirmation(
+                    "Do you really want to delete this campus? This action cannot be undone.",
+                    async () => {
+                        showLoading();
+                        const token = localStorage.getItem("token");
+                        if (!token) {
+                            AlertComponent.showAlert(
+                                "Authentication token is missing.",
+                                "error"
                             );
+                            hideLoading();
+                            return;
                         }
 
-                        const updatedCampuses = campuses.filter(
-                            (campus) =>
-                                String(campus.id) !== campusId &&
-                                `temp-${campuses.indexOf(campus)}` !== campusId
-                        );
-                        setCampuses(updatedCampuses);
+                        try {
+                            if (!campusId.startsWith("temp-")) {
+                                await axios.delete(
+                                    `${config.API_URL}/campuses/${campusId}`,
+                                    {
+                                        headers: {
+                                            Authorization: `Bearer ${token}`,
+                                        },
+                                    }
+                                );
+                            }
 
-                        AlertComponent.showAlert(
-                            "Campus deleted successfully!",
-                            "success"
-                        );
-                    } catch (error) {
-                        console.error("Error deleting campus:", error);
-                        let errorMessage = "Failed to delete campus.";
-                        if (error.response) {
-                            errorMessage = `Error: ${
-                                error.response.data.message ||
-                                error.response.data.errors?.join("; ") ||
-                                error.message
-                            }`;
+                            const updatedCampuses = campuses.filter(
+                                (campus) =>
+                                    String(campus.id) !== campusId &&
+                                    `temp-${campuses.indexOf(campus)}` !==
+                                        campusId
+                            );
+                            setCampuses(updatedCampuses);
+
+                            await createLog({
+                                action: "Delete Campus",
+                                description: `Deleted campus with ID: ${campusId}`,
+                            });
+
+                            AlertComponent.showAlert(
+                                "Campus deleted successfully!",
+                                "success"
+                            );
+                        } catch (error) {
+                            console.error("Error deleting campus:", error);
+                            let errorMessage = "Failed to delete campus.";
+                            if (error.response) {
+                                errorMessage = `Error: ${
+                                    error.response.data.message ||
+                                    error.response.data.errors?.join("; ") ||
+                                    error.message
+                                }`;
+                            }
+                            AlertComponent.showAlert(errorMessage, "error");
+                        } finally {
+                            hideLoading();
                         }
-                        AlertComponent.showAlert(errorMessage, "error");
-                    } finally {
-                        hideLoading();
+                    },
+                    () => {
+                        console.log("Deletion cancelled");
                     }
-                },
-                () => {
-                    console.log("Deletion cancelled");
-                }
-            );
+                );
+            } catch (error) {
+                console.error("Error logging activity:", error);
+                AlertComponent.showAlert("Failed to log activity.", "error");
+            }
         },
         [campuses]
     );
@@ -337,8 +357,14 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
     const handleCloseAddDialog = () => setOpenAddDialog(false);
     const handleCloseEditDialog = () => setOpenEditDialog(false);
 
-    const handleAddCampus = (newCampusData) => {
-        setCampuses((prev) => [...prev, newCampusData]);
+    const handleAddCampus = async (newCampusData) => {
+        try {
+            setCampuses((prev) => [...prev, newCampusData]);
+            AlertComponent.showAlert("Campus added successfully!", "success");
+        } catch (error) {
+            console.error("Error logging activity:", error);
+            AlertComponent.showAlert("Failed to log activity.", "error");
+        }
         handleCloseAddDialog();
     };
 
@@ -380,18 +406,25 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
         <div className="my-4 flex flex-col h-full">
             {/* Toolbar */}
             <div className="flex justify-between items-center bg-gray-100 border-b border-gray-300 mb-4 sm:pl-4 px-2 py-2">
-                <span className="text-xl font-semibold text-gray-800">
-                    Campus Management
-                </span>
-                <CHEDButton
+                <h1 className="text-2xl font-medium">Campus Management</h1>
+                <button
                     onClick={handleOpenAddDialog}
-                    icon={Plus}
-                    variant="primary"
-                    size="md"
-                    className="w-full sm:w-auto"
+                    className="group relative flex items-center justify-center px-5 py-3 bg-[#0038A8] text-white rounded-md font-medium shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#0038A8] focus:ring-offset-2 transition-all duration-200 overflow-hidden w-full sm:w-auto"
                 >
-                    Add Campus
-                </CHEDButton>
+                    {/* Animated ray inspired by sun rays */}
+                    <div className="absolute inset-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="h-full w-16 bg-gradient-to-b from-[#FCD116]/40 via-transparent to-transparent rotate-12 transform translate-x-6 group-hover:translate-x-32 transition-transform duration-1000"></div>
+                        <div className="h-full w-8 bg-gradient-to-b from-[#FCD116]/30 via-transparent to-transparent -rotate-12 transform -translate-x-6 group-hover:translate-x-32 transition-transform duration-700 delay-100"></div>
+                    </div>
+
+                    {/* Red triangle accent */}
+                    <div className="absolute bottom-0 left-0 h-1.5 w-full bg-[#CD0000] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+
+                    <div className="bg-[#FCD116] rounded-full p-1 mr-2 flex items-center justify-center relative z-10">
+                        <Plus className="w-3.5 h-3.5 text-[#0038A8]" />
+                    </div>
+                    <span className="relative z-10 text-sm">Add Campus</span>
+                </button>
             </div>
 
             {/* Table Container */}

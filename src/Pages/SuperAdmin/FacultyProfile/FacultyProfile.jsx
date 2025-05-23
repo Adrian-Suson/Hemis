@@ -13,6 +13,7 @@ import AlertComponent from "../../../Components/AlertComponent";
 import { Download, Upload, X, Plus } from "lucide-react";
 import CHEDButton from "../../../Components/CHEDButton";
 import AddFacultyDialog from "./AddFacultyDialog";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const facultyGroups = [
     {
@@ -85,6 +86,7 @@ const FacultyProfileUpload = () => {
     const [openUploadDialog, setOpenUploadDialog] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [openAddDialog, setOpenAddDialog] = useState(false);
+    const { createLog } = useActivityLog(); // Use the hook
 
     // Fetch all faculty profiles on component mount
     useEffect(() => {
@@ -399,6 +401,13 @@ const FacultyProfileUpload = () => {
                                 await fetchFacultyProfiles();
                                 // Only update to 100% after all operations are complete
                                 updateProgress(100);
+
+                                // Log the upload action
+                                await createLog({
+                                    action: "Upload Faculty Profiles",
+                                    description:
+                                        "Uploaded faculty profiles from Excel file.",
+                                });
                             } catch (uploadError) {
                                 console.error(
                                     "Error uploading profiles:",
@@ -597,6 +606,12 @@ const FacultyProfileUpload = () => {
                         "Data exported successfully!",
                         "success"
                     );
+
+                    // Log the export action
+                    await createLog({
+                        action: "Export Faculty Profiles",
+                        description: "Exported faculty profiles to Excel.",
+                    });
                 } catch (error) {
                     console.error("Error exporting data:", error);
                     AlertComponent.showAlert(

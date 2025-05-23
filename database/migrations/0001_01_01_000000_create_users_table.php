@@ -15,16 +15,14 @@ return new class extends Migration {
             $table->longText('profile_image')->nullable();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['Super Admin', 'HEI Admin', 'HEI Staff'])->default('HEI Staff'); // Removed 'Viewer'
+            $table->enum('role', ['super-admin', 'hei-admin', 'hei-staff'])->default('hei-staff'); // Removed 'Viewer'
             $table->enum('status', ['Active', 'Inactive'])->default('Active');
             $table->unsignedBigInteger('institution_id')->nullable();
             $table->foreign('institution_id')
                 ->references('id')
                 ->on('institutions')
                 ->onDelete('set null');
-            $table->rememberToken();
             $table->timestamps();
         });
 

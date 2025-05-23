@@ -10,18 +10,23 @@ import GraduatesTable from "./GraduatesTable";
 import { useLoading } from "../../../Context/LoadingContext";
 import GraduatesSkeleton from "./GraduatesSkeleton";
 import { decryptId } from "../../../utils/encryption";
-import { Download, Filter, Upload } from "lucide-react";
+import { Download, Filter, Upload, Plus } from "lucide-react";
 import FilterPopover from "../../../Components/FilterPopover";
 import CHEDButton from "../../../Components/CHEDButton";
 import AlertComponent from "../../../Components/AlertComponent";
+import ManualGraduateDialog from "./ManualGraduateDialog";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const Graduates = () => {
+    const { createLog } = useActivityLog(); // Use the hook
     const [graduates, setGraduates] = useState([]);
     const [loading, setLoading] = useState(false);
     const { showLoading, hideLoading, updateProgress } = useLoading();
     const [searchTerm, setSearchTerm] = useState("");
     const [sexFilter, setSexFilter] = useState("");
     const [yearFilter, setYearFilter] = useState("");
+    const [openManualDialog, setOpenManualDialog] = useState(false);
+    const [reportYear, setReportYear] = useState(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
     const { institutionId: encryptedInstitutionId } = useParams();
@@ -29,9 +34,13 @@ const Graduates = () => {
         decodeURIComponent(encryptedInstitutionId)
     );
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    // Get the user's role from local storage
+    const userRole = JSON.parse(localStorage.getItem("user"))?.role || "";
+
 
     useEffect(() => {
         fetchGraduates();
+        fetchInstitutionReportYear();
     }, []);
 
     const fetchGraduates = async () => {
@@ -50,6 +59,7 @@ const Graduates = () => {
                 })
             );
             setGraduates(formattedData);
+
         } catch (error) {
             console.error("Error fetching graduates:", error);
             AlertComponent.showAlert(
@@ -59,6 +69,26 @@ const Graduates = () => {
         } finally {
             hideLoading();
             setLoading(false);
+        }
+    };
+
+    const fetchInstitutionReportYear = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `${config.API_URL}/institutions/${deinstitutionId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setReportYear(response.data?.report_year || null);
+        } catch (error) {
+            console.error(
+                "Error fetching institution report year:",
+                error
+            );
+            AlertComponent.showAlert(
+                "Failed to fetch institution report year.",
+                "error"
+            );
         }
     };
 
@@ -243,6 +273,12 @@ const Graduates = () => {
                 }
 
                 uploadToBackend(allGraduates);
+
+                // Log the upload action
+                await createLog({
+                    action: "Upload Graduates",
+                    description: `Uploaded graduate records for institution ID: ${institutionId}`,
+                });
             };
 
             reader.onerror = (error) => {
@@ -356,6 +392,14 @@ const Graduates = () => {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
         saveAs(blob, "Graduates_List.xlsx");
+
+        // Log the export action
+        await createLog({
+            action: "Export Graduates",
+            description: "Exported graduate records to Excel.",
+        });
+
+        AlertComponent.showAlert("Data exported successfully!", "success");
     };
 
     const uniqueYears = [
@@ -414,19 +458,18 @@ const Graduates = () => {
                     <li>
                         <a
                             href="#"
-                            onClick={() => navigate("/super-admin/dashboard")}
+                            onClick={() => navigate(`/${userRole}/dashboard`)}
                             className="hover:underline"
                         >
                             Dashboard
                         </a>
                     </li>
                     <li className="text-gray-400">›</li>
+                    <li className="text-gray-400">›</li>
                     <li>
                         <a
                             href="#"
-                            onClick={() =>
-                                navigate("/super-admin/institutions")
-                            }
+                            onClick={() => navigate(`/${userRole}/institutions`)}
                             className="hover:underline"
                         >
                             Institution Management
@@ -438,11 +481,22 @@ const Graduates = () => {
             </nav>
 
             {/* Header */}
-            <div className="flex justify-between items-center mb-4  p-2 bg-gray-50 border border-gray-200 rounded-md">
+            <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 border border-gray-200 rounded-md">
                 <h1 className="text-xl font-semibold text-gray-800">
                     List of Graduates
                 </h1>
                 <div className="flex gap-2">
+                    {/* Add Manual Graduate Button */}
+                    <CHEDButton
+                        onClick={() => setOpenManualDialog(true)}
+                        icon={Plus}
+                        variant="primary"
+                        size="md"
+                        disabled={loading || !reportYear}
+                    >
+                        Add Graduate
+                    </CHEDButton>
+
                     {/* Upload Button */}
                     <CHEDButton
                         onClick={() => fileInputRef.current?.click()}
@@ -508,7 +562,17 @@ const Graduates = () => {
             </div>
 
             {/* Graduates Table */}
-            <GraduatesTable graduates={filteredGraduates} />
+            <GraduatesTable graduates={filteredGraduates} institutionId={deinstitutionId}
+                reportYear={reportYear} onSuccess={fetchGraduates} />
+
+            {/* Manual Graduate Dialog */}
+            <ManualGraduateDialog
+                open={openManualDialog}
+                onClose={() => setOpenManualDialog(false)}
+                institutionId={deinstitutionId}
+                reportYear={reportYear}
+                onSuccess={fetchGraduates}
+            />
         </div>
     );
 };

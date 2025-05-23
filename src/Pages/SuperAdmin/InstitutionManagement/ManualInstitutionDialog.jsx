@@ -329,7 +329,6 @@ function ManualInstitutionDialog({
 
         updateProgress(10);
         try {
-            const token = localStorage.getItem("token");
             const payload = {
                 ...manualData,
                 institution_type:
@@ -337,23 +336,10 @@ function ManualInstitutionDialog({
             };
             console.log("Saving institution with payload:", payload);
 
-            const response = await axios.post(
-                `${config.API_URL}/institutions`,
-                payload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
 
             await createLog({
                 action: "added_institution",
                 description: `Manually added institution: ${payload.name}`,
-                modelType: "App\\Models\\Institution",
-                modelId: response.data.id,
-                properties: payload,
             });
 
             fetchInstitutions();

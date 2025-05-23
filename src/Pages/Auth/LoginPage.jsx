@@ -100,14 +100,13 @@ const LoginPage = () => {
 
       // Redirect based on user role
       switch (user.role) {
-        case "Super Admin":
+        case "super-admin":
           navigate("/super-admin/dashboard");
           break;
-        case "HEI Admin":
+        case "hei-admin":
           navigate("/hei-admin/dashboard");
           break;
-        case "HEI Staff":
-        case "Viewer":
+        case "hei-staff":
           navigate("/hei-staff/dashboard");
           break;
         default:

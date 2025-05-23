@@ -12,9 +12,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
     if (!allowedRoles.includes(user.role)) {
         // Redirect to appropriate dashboard based on role
         const dashboardPaths = {
-            "Super Admin": "/super-admin/dashboard",
-            "HEI Admin": "/hei-admin/dashboard",
-            "HEI Staff": "/hei-staff/dashboard",
+            "super-admin": "/super-admin/dashboard",
+            "hei-admin": "/hei-admin/dashboard",
+            "hei-staff": "/hei-staff/dashboard",
         };
         return <Navigate to={dashboardPaths[user.role] || "/login"} replace />;
     }

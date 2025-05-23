@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigate } from "react-router-dom";
 import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -136,15 +137,11 @@ const InstitutionTable = ({
             const institution = institutions.find(
                 (inst) => inst.id === institutionId
             );
+
+            // Log the delete action
             await createLog({
-                action: "deleted_institution",
+                action: "Delete Institution",
                 description: `Deleted institution: ${institution.name}`,
-                properties: {
-                    name: institution.name,
-                    institution_type: institution.institution_type,
-                },
-                modelType: "App\\Models\\Institution",
-                modelId: institutionId,
             });
 
             fetchInstitutions();
@@ -167,7 +164,7 @@ const InstitutionTable = ({
     };
 
     const handleExportToFormA = useCallback(
-        (institution) => {
+        async (institution) => {
             console.log(
                 "handleExportToFormA confirmation triggered for",
                 institution.name
@@ -289,6 +286,13 @@ const InstitutionTable = ({
                         a.click();
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
+
+                        // Log the export action
+                        await createLog({
+                            action: "Export Institution",
+                            description: `Exported Form A for institution: ${institution.name}`,
+                        });
+
                         setSnackbarMessage(
                             `Form A exported successfully for ${institution.name}!`
                         );
@@ -372,9 +376,6 @@ const InstitutionTable = ({
         await createLog({
             action: "edited_institution",
             description: `Edited institution: ${updatedInstitution.name}`,
-            modelType: "App\\Models\\Institution",
-            modelId: updatedInstitution.id,
-            properties: updatedInstitution,
         });
 
         if (fetchInstitutions) {

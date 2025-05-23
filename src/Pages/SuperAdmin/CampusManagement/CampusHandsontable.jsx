@@ -8,10 +8,12 @@ import config from "../../../utils/config";
 import { useLoading } from "../../../Context/LoadingContext";
 import { FilePenLine, Plus, Trash2 } from "lucide-react";
 import AlertComponent from "../../../Components/AlertComponent";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
+    const { createLog } = useActivityLog(); // Use the hook
     const [campuses, setCampuses] = useState(initialCampuses);
     const { showLoading, hideLoading } = useLoading();
     const [tabValue, setTabValue] = useState(0);
@@ -263,71 +265,90 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
         return rows;
     }, [campuses]);
 
-    const handleEditClick = useCallback((row) => {
-        console.log("Edit clicked:", row);
-        setEditCampusData(row);
-        setOpenEditDialog(true);
+    const handleEditClick = useCallback(async (row) => {
+        try {
+            console.log("Edit clicked:", row);
+            setEditCampusData(row);
+            setOpenEditDialog(true);
+            await createLog({
+                action: "Edit Campus",
+                description: `Opened edit dialog for campus: ${row.suc_name}`,
+            });
+        } catch (error) {
+            console.error("Error logging activity:", error);
+        }
     }, []);
 
     const handleDeleteClick = useCallback(
-        (campusId) => {
-            console.log("Delete clicked:", campusId);
-            AlertComponent.showConfirmation(
-                "Do you really want to delete this campus? This action cannot be undone.",
-                async () => {
-                    showLoading();
-                    const token = localStorage.getItem("token");
-                    if (!token) {
-                        AlertComponent.showAlert(
-                            "Authentication token is missing.",
-                            "error"
-                        );
-                        hideLoading();
-                        return;
-                    }
-
-                    try {
-                        if (!campusId.startsWith("temp-")) {
-                            await axios.delete(
-                                `${config.API_URL}/campuses/${campusId}`,
-                                {
-                                    headers: {
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                }
+        async (campusId) => {
+            try {
+                console.log("Delete clicked:", campusId);
+                AlertComponent.showConfirmation(
+                    "Do you really want to delete this campus? This action cannot be undone.",
+                    async () => {
+                        showLoading();
+                        const token = localStorage.getItem("token");
+                        if (!token) {
+                            AlertComponent.showAlert(
+                                "Authentication token is missing.",
+                                "error"
                             );
+                            hideLoading();
+                            return;
                         }
 
-                        const updatedCampuses = campuses.filter(
-                            (campus) =>
-                                String(campus.id) !== campusId &&
-                                `temp-${campuses.indexOf(campus)}` !== campusId
-                        );
-                        setCampuses(updatedCampuses);
+                        try {
+                            if (!campusId.startsWith("temp-")) {
+                                await axios.delete(
+                                    `${config.API_URL}/campuses/${campusId}`,
+                                    {
+                                        headers: {
+                                            Authorization: `Bearer ${token}`,
+                                        },
+                                    }
+                                );
+                            }
 
-                        AlertComponent.showAlert(
-                            "Campus deleted successfully!",
-                            "success"
-                        );
-                    } catch (error) {
-                        console.error("Error deleting campus:", error);
-                        let errorMessage = "Failed to delete campus.";
-                        if (error.response) {
-                            errorMessage = `Error: ${
-                                error.response.data.message ||
-                                error.response.data.errors?.join("; ") ||
-                                error.message
-                            }`;
+                            const updatedCampuses = campuses.filter(
+                                (campus) =>
+                                    String(campus.id) !== campusId &&
+                                    `temp-${campuses.indexOf(campus)}` !==
+                                        campusId
+                            );
+                            setCampuses(updatedCampuses);
+
+                            await createLog({
+                                action: "Delete Campus",
+                                description: `Deleted campus with ID: ${campusId}`,
+                            });
+
+                            AlertComponent.showAlert(
+                                "Campus deleted successfully!",
+                                "success"
+                            );
+                        } catch (error) {
+                            console.error("Error deleting campus:", error);
+                            let errorMessage = "Failed to delete campus.";
+                            if (error.response) {
+                                errorMessage = `Error: ${
+                                    error.response.data.message ||
+                                    error.response.data.errors?.join("; ") ||
+                                    error.message
+                                }`;
+                            }
+                            AlertComponent.showAlert(errorMessage, "error");
+                        } finally {
+                            hideLoading();
                         }
-                        AlertComponent.showAlert(errorMessage, "error");
-                    } finally {
-                        hideLoading();
+                    },
+                    () => {
+                        console.log("Deletion cancelled");
                     }
-                },
-                () => {
-                    console.log("Deletion cancelled");
-                }
-            );
+                );
+            } catch (error) {
+                console.error("Error logging activity:", error);
+                AlertComponent.showAlert("Failed to log activity.", "error");
+            }
         },
         [campuses]
     );
@@ -336,8 +357,14 @@ const CampusDataGrid = ({ campuses: initialCampuses, fetchCampuses }) => {
     const handleCloseAddDialog = () => setOpenAddDialog(false);
     const handleCloseEditDialog = () => setOpenEditDialog(false);
 
-    const handleAddCampus = (newCampusData) => {
-        setCampuses((prev) => [...prev, newCampusData]);
+    const handleAddCampus = async (newCampusData) => {
+        try {
+            setCampuses((prev) => [...prev, newCampusData]);
+            AlertComponent.showAlert("Campus added successfully!", "success");
+        } catch (error) {
+            console.error("Error logging activity:", error);
+            AlertComponent.showAlert("Failed to log activity.", "error");
+        }
         handleCloseAddDialog();
     };
 

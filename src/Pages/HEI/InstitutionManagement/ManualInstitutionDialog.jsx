@@ -16,6 +16,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
 import axios from "axios";
 import PropTypes from "prop-types";
+import useActivityLog from "../../../Hooks/useActivityLog";
 
 function ManualInstitutionDialog({
     open,
@@ -28,6 +29,7 @@ function ManualInstitutionDialog({
     setSnackbarMessage,
     setSnackbarSeverity,
 }) {
+    const { createLog } = useActivityLog();
     // Local state for the form fields
     const [manualData, setManualData] = useState({
         name: "",
@@ -270,7 +272,7 @@ function ManualInstitutionDialog({
                 institution_type: getInstitutionType(),
             };
 
-            await axios.post(
+            const response = await axios.post(
                 "http://localhost:8000/api/institutions",
                 payload,
                 {
@@ -280,6 +282,18 @@ function ManualInstitutionDialog({
                     },
                 }
             );
+
+            // Add activity log
+            await createLog({
+                action: "Create Institution",
+                description: `Created new institution: ${manualData.name}`,
+                modelType: "App\\Models\\Institution",
+                modelId: response.data.id,
+                properties: {
+                    name: manualData.name,
+                    institution_type: getInstitutionType(),
+                },
+            });
 
             // Refresh the list in parent
             fetchInstitutions();

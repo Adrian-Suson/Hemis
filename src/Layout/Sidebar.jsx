@@ -34,7 +34,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 // Define navigation items based on user role
 const getNavItems = (role) => {
     const items = {
-        "Super Admin": [
+        "super-admin": [
             {
                 text: "Dashboard",
                 icon: <HomeIcon />,
@@ -51,7 +51,7 @@ const getNavItems = (role) => {
                 path: "/super-admin/statistics",
             },
         ],
-        "HEI Admin": [
+        "hei-admin": [
             {
                 text: "Dashboard",
                 icon: <HomeIcon />,
@@ -63,7 +63,7 @@ const getNavItems = (role) => {
                 path: "/hei-admin/institutions",
             },
         ],
-        "HEI Staff": [
+        "hei-staff": [
             {
                 text: "Dashboard",
                 icon: <HomeIcon />,
@@ -82,21 +82,21 @@ const getNavItems = (role) => {
 // Define admin menu items based on user role
 const getAdminMenuItems = (role) => {
     const items = {
-        "Super Admin": [
+        "super-admin": [
             {
                 text: "User Management",
                 icon: <GroupIcon />,
                 path: "/super-admin/user-management",
             },
         ],
-        "HEI Admin": [
+        "hei-admin": [
             {
                 text: "Staff Management",
                 icon: <GroupIcon />,
                 path: "/hei-admin/staff-management",
             },
         ],
-        "HEI Staff": [], // No admin menu for HEI Staff
+        "hei-staff": [], // No admin menu for HEI Staff
     };
     return items[role] || [];
 };
@@ -395,13 +395,13 @@ Sidebar.propTypes = {
     setIsSidebarOpen: PropTypes.func.isRequired,
     isNonMobile: PropTypes.bool,
     isMinimized: PropTypes.bool.isRequired,
-    userRole: PropTypes.oneOf(["Super Admin", "HEI Admin", "HEI Staff"]),
+    userRole: PropTypes.oneOf(["super-admin", "hei-admin", "hei-staff"]),
 };
 
 Sidebar.defaultProps = {
     drawerWidth: "240px",
     isNonMobile: true,
-    userRole: "HEI Staff",
+    userRole: "hei-staff",
 };
 
 export default Sidebar;

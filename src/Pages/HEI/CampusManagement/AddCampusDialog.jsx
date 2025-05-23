@@ -10,6 +10,7 @@ import config from "../../../utils/config";
 import useLocationData from "../../../utils/useLocationData";
 import FormInput from "../../../Components/FormInput";
 import YearPicker from "../../../Components/YearPicker";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
 
 const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
     const { updateProgress, hideLoading } = useLoading();
@@ -23,6 +24,7 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
         fetchProvinces,
         fetchMunicipalities,
     } = useLocationData();
+    const { createLog } = useActivityLog(); // Use the hook
 
     const [newCampus, setNewCampus] = useState({
         institution_id: decryptedInstitutionId || "",
@@ -272,6 +274,12 @@ const AddCampusDialog = ({ open, onClose, onAddCampus }) => {
 
             const newCampusData = response.data.data || { id: Date.now() };
             onAddCampus({ ...payload, id: newCampusData.id });
+
+            await createLog({
+                action: "Add Campus",
+                description: `Added a new campus: ${payload.suc_name}`,
+            });
+
             updateProgress(100);
             hideLoading();
             AlertComponent.showAlert("Campus added successfully!", "success");

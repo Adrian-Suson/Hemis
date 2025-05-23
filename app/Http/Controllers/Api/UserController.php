@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class UserController extends Controller
@@ -70,45 +71,61 @@ class UserController extends Controller
     public function store(Request $request)
     {
         try {
+            // Validate the request
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
                 'password' => 'required|string|min:8',
-                'role' => 'required|in:Super Admin,HEI Admin,HEI Staff,Viewer',
+                'role' => 'required|in:super-admin,hei-admin,hei-staff',
                 'institution_id' => 'nullable|exists:institutions,id',
-                'status' => 'sometimes|in:Active,Inactive,Suspended',
+                'status' => 'sometimes|in:Active,Inactive',
                 'profile_image' => 'sometimes|nullable|string',
             ]);
 
-            if ($validated['role'] !== 'Super Admin' && !$request->filled('institution_id')) {
+            // Ensure institution_id is provided for non-super-admin roles
+            if ($validated['role'] !== 'super-admin' && !$request->filled('institution_id')) {
                 return response()->json([
-                    'message' => 'Institution ID is required for non-Super Admin users.',
+                    'message' => 'Institution ID is required for non-super-admin users.',
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-            if ($validated['role'] === 'Super Admin') {
+
+            // Set institution_id to null for super-admin
+            if ($validated['role'] === 'super-admin') {
                 $validated['institution_id'] = null;
             }
 
+            // Hash the password
             $validated['password'] = Hash::make($validated['password']);
 
+            // Handle profile image (if provided)
             if (isset($validated['profile_image']) && preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $validated['profile_image'])) {
-                // Store base64 string directly
+                // Profile image is valid, keep it as is
+                Log::info('Profile image provided and validated.');
             } else {
-                unset($validated['profile_image']);
+                unset($validated['profile_image']); // Remove invalid or empty profile image
             }
 
+            // Create the user
             $user = User::create($validated);
 
+            // Log the creation
+            Log::info('User created successfully:', $user->toArray());
+
+            // Return success response
             return response()->json([
                 'message' => 'User created successfully',
                 'user' => $user->load('institution'),
             ], Response::HTTP_CREATED);
         } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            Log::error('Validation failed:', $e->errors());
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $e) {
+            // Handle general exceptions
+            Log::error('Failed to create user:', ['error' => $e->getMessage()]);
             return response()->json([
                 'message' => 'Failed to create user',
                 'error' => $e->getMessage(),
@@ -128,24 +145,24 @@ class UserController extends Controller
                 'name' => 'sometimes|string|max:255',
                 'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
                 'password' => 'sometimes|string|min:8|confirmed',
-                'role' => 'sometimes|in:Super Admin,HEI Admin,HEI Staff,Viewer',
+                'role' => 'sometimes|in:super-admin,hei-admin,hei-staff',
                 'institution_id' => 'nullable|exists:institutions,id',
                 'profile_image' => 'sometimes|nullable|string',
-                'status' => 'sometimes|in:Active,Inactive,Suspended',
+                'status' => 'sometimes|in:Active,Inactive',
             ]);
 
             if (array_key_exists('role', $validated)) {
-                if ($validated['role'] !== 'Super Admin' && !$request->filled('institution_id')) {
+                if ($validated['role'] !== 'super-admin' && !$request->filled('institution_id')) {
                     return response()->json([
-                        'message' => 'Institution ID is required for non-Super Admin users.',
+                        'message' => 'Institution ID is required for non-super-admin users.',
                     ], Response::HTTP_UNPROCESSABLE_ENTITY);
                 }
-                if ($validated['role'] === 'Super Admin') {
+                if ($validated['role'] === 'super-admin') {
                     $validated['institution_id'] = null;
                 }
-            } elseif ($user->role !== 'Super Admin' && !$request->filled('institution_id') && !isset($validated['institution_id'])) {
+            } elseif ($user->role !== 'super-admin' && !$request->filled('institution_id') && !isset($validated['institution_id'])) {
                 return response()->json([
-                    'message' => 'Institution ID is required for non-Super Admin users.',
+                    'message' => 'Institution ID is required for non-super-admin users.',
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 

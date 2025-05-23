@@ -17,6 +17,7 @@ import QuickActions from "./components/QuickActions";
 import Filters from "./components/Filters";
 import Badge from "./components/Badge";
 import InstitutionManagementSkeleton from "./InstitutionManagementSkeleton";
+import useActivityLog from "../../../Hooks/useActivityLog";
 
 const CHED_COLORS = {
     blue: "#0038A8",
@@ -43,6 +44,7 @@ const InstitutionManagement = () => {
         exportFormA: false,
         deleteInstitution: false,
     });
+    const { createLog } = useActivityLog();
 
     const [reportYearFilter, setReportYearFilter] = useState(
         localStorage.getItem("reportYearFilter") ||
@@ -50,7 +52,7 @@ const InstitutionManagement = () => {
     );
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user"));
-    const basePath = user?.role === "HEI Staff" ? "/hei-staff" : "/hei-admin";
+    const userRole = user?.role || "";
 
     const getInstitutionType = () => {
         const user = JSON.parse(localStorage.getItem("user")) || {};
@@ -282,6 +284,12 @@ const InstitutionManagement = () => {
                     a.click();
                     window.URL.revokeObjectURL(url);
 
+                    // Add activity log
+                    await createLog({
+                        action: "Export Form A",
+                        description: `Exported Form A data for institution: ${institution.name}`,
+                    });
+
                     AlertComponent.showAlert("Data exported successfully!", "success");
                     updateProgress(100);
                 } catch (error) {
@@ -316,42 +324,6 @@ const InstitutionManagement = () => {
         return <InstitutionManagementSkeleton />;
     }
 
-    const handleConfirmDelete = () => {
-        AlertComponent.showConfirmation(
-            "Are you sure you want to delete this institution? This action cannot be undone.",
-            async () => {
-                setLoading((prev) => ({ ...prev, deleteInstitution: true }));
-                try {
-                    const token = localStorage.getItem("token");
-                    await axios.delete(
-                        `${config.API_URL}/institutions/${institution.id}`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    AlertComponent.showAlert(
-                        "Institution deleted successfully.",
-                        "success"
-                    );
-                    navigate("/hei-admin/dashboard");
-                } catch (error) {
-                    console.error("Error deleting institution:", error);
-                    AlertComponent.showAlert(
-                        error.response?.status === 401
-                            ? "Unauthorized access. Please log in again."
-                            : "Failed to delete institution.",
-                        "error"
-                    );
-                } finally {
-                    setLoading((prev) => ({
-                        ...prev,
-                        deleteInstitution: false,
-                    }));
-                }
-            },
-            () => {
-                console.log("Deletion cancelled");
-            }
-        );
-    };
 
     const handleEdit = (updatedInstitution) => {
         setInstitution(updatedInstitution);
@@ -385,7 +357,7 @@ const InstitutionManagement = () => {
                                 <li>
                                     <a
                                         href="#"
-                                        onClick={() => navigate(`${basePath}/dashboard`)}
+                                        onClick={() => navigate(`/${userRole}/dashboard`)}
                                         className="hover:text-blue-600 transition-colors flex items-center"
                                     >
                                         <Home className="w-4 h-4 mr-2" />
@@ -489,7 +461,6 @@ const InstitutionManagement = () => {
                             loading={loading}
                             handleExportToFormA={handleExportToFormA}
                             handleNavigation={handleNavigation}
-                            handleConfirmDelete={handleConfirmDelete}
                             reportYearFilter={reportYearFilter}
                         />
                     </div>

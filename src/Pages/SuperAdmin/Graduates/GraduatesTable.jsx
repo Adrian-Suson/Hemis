@@ -5,6 +5,8 @@ import { Check, X, Edit3, Loader2, AlertCircle } from "lucide-react";
 import axios from "axios";
 import config from "../../../utils/config";
 import AlertComponent from "../../../Components/AlertComponent";
+import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
+
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -260,6 +262,7 @@ const EditableCell = ({
 
 const GraduatesTable = ({ graduates, onUpdate, institutionId, reportYear, onSuccess }) => {
     const [page, setPage] = useState(1);
+        const { createLog } = useActivityLog(); // Use the hook
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [visibleColumns, setVisibleColumns] = useState(null);
     const [editingCell, setEditingCell] = useState(null);
@@ -400,6 +403,11 @@ const GraduatesTable = ({ graduates, onUpdate, institutionId, reportYear, onSucc
                     "info"
                 );
             } else {
+                 // Log the edit action
+            await createLog({
+                action: "Edit Graduate",
+                description: `Edited field "${field}" for graduate ID: ${graduate_id}`,
+            });
                 AlertComponent.showAlert(
                     response.data.message || "Graduate updated successfully!",
                     "success"
