@@ -135,7 +135,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen w-full flex items-stretch overflow-hidden relative bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/src/assets/cover.jpg')" }}>
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
 
       {/* Animated background particles */}
       {particles.map(particle => (

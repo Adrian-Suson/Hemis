@@ -283,13 +283,6 @@ const UploadDialog = ({
                 action: "Upload Institutions",
                 description: `Uploaded institutions from file: ${selectedFile.name}`,
             });
-
-            Swal.fire({
-                title: "Success",
-                text: "Institutions uploaded successfully!",
-                icon: "success",
-                confirmButtonColor: "#3085d6",
-            });
         } catch (error) {
             console.error("Error uploading institutions:", error);
         }

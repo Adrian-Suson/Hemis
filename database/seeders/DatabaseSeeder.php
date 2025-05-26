@@ -20,6 +20,10 @@ class DatabaseSeeder extends Seeder
             ProvinceSeeder::class,
             MunicipalitySeeder::class,
             ReportYearsSeeder::class,
+            InstitutionSeeder::class,
+            CurricularProgramSeeder::class,
+            GraduateSeeder::class,
+            FacultyProfileSeeder::class,
         ]);
     }
 }

@@ -178,7 +178,7 @@ const CurricularProgram = () => {
                 );
                 setIsUploading(false);
                 setLoading(false);
-                updateProgress(0);
+                hideLoading();
                 return;
             }
 

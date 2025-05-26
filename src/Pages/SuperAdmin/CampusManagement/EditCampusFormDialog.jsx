@@ -410,7 +410,6 @@ const EditCampusFormDialog = ({
                                 errorMessage={errors.campus_type}
                                 required
                                 options={[
-                                    { value: "", label: "Select Type" },
                                     { value: "MAIN", label: "MAIN" },
                                     { value: "Satellite", label: "Satellite" },
                                 ]}
@@ -454,7 +453,6 @@ const EditCampusFormDialog = ({
                                 }}
                                 errorMessage={errors.region}
                                 options={[
-                                    { value: "", label: "Select Region" },
                                     ...regions.map((region) => ({
                                         value: region.name,
                                         label: region.name,
@@ -488,7 +486,6 @@ const EditCampusFormDialog = ({
                                 errorMessage={errors.province_municipality}
                                 disabled={!campus.region}
                                 options={[
-                                    { value: "", label: "Select Province" },
                                     ...provinces.map((province) => ({
                                         value: province.name,
                                         label: province.name,
@@ -533,7 +530,6 @@ const EditCampusFormDialog = ({
                                 errorMessage={errors.province_municipality}
                                 disabled={!selectedProvince}
                                 options={[
-                                    { value: "", label: "Select Municipality" },
                                     ...municipalities.map((municipality) => ({
                                         value: municipality.name,
                                         label: municipality.name,

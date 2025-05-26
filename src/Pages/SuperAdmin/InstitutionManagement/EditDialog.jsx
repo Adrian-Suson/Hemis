@@ -1,8 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { X, Save, Calendar } from "lucide-react";
 import axios from "axios";
-import useActivityLog from "../../../Hooks/useActivityLog";
 import useLocationData from "../../../utils/useLocationData";
 import config from "../../../utils/config";
 
@@ -14,9 +14,7 @@ const EditDialog = ({
     setSnackbarOpen,
     setSnackbarMessage,
     setSnackbarSeverity,
-    fetchInstitutions,
 }) => {
-    const { createLog } = useActivityLog();
     const [formData, setFormData] = useState({});
     const [errors, setErrors] = useState({});
     const [openDatePicker, setOpenDatePicker] = useState(null);
@@ -63,40 +61,34 @@ const EditDialog = ({
         }
     }, [open, institution]);
 
+    // Fetch regions when the dialog opens
     useEffect(() => {
-        if (!open || !institution) return;
+        if (open) {
+            fetchRegions();
+        }
+    }, [open, fetchRegions]);
 
-        // Step 1: Fetch regions when the dialog opens
-        fetchRegions();
-
-        // Step 2: Fetch provinces if a region is selected and regions are populated
+    // Fetch provinces when a region is selected
+    useEffect(() => {
+        console.log("Fetching provinces for region:", formData.region);
         if (formData.region && regions.length > 0) {
             const regionObj = regions.find((r) => r.name === formData.region);
             if (regionObj) {
                 fetchProvinces(regionObj.id);
             }
         }
+    }, [formData.region, regions]);
 
-        // Step 3: Fetch municipalities if a province is selected and provinces are populated
+    // Fetch municipalities when a province is selected
+    useEffect(() => {
+        console.log("Fetching municipalities for province:", formData.province);
         if (formData.province && provinces.length > 0) {
-            const provinceObj = provinces.find(
-                (p) => p.name === formData.province
-            );
+            const provinceObj = provinces.find((p) => p.name === formData.province);
             if (provinceObj) {
                 fetchMunicipalities(provinceObj.id);
             }
         }
-    }, [
-        open,
-        institution,
-        formData.region,
-        formData.province,
-        regions,
-        provinces,
-        fetchRegions,
-        fetchProvinces,
-        fetchMunicipalities,
-    ]);
+    }, [formData.province, provinces]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -306,11 +298,9 @@ const EditDialog = ({
                 region_id:
                     regions.find((r) => r.name === formData.region)?.id || null,
                 province_id:
-                    provinces.find((p) => p.name === formData.province)?.id ||
-                    null,
+                    provinces.find((p) => p.name === formData.province)?.id || null,
                 municipality_id:
-                    municipalities.find((m) => m.name === formData.municipality)
-                        ?.id || null,
+                    municipalities.find((m) => m.name === formData.municipality)?.id || null,
                 address_street: formData.address_street || null,
                 postal_code: formData.postal_code || null,
                 institutional_telephone:
@@ -349,15 +339,13 @@ const EditDialog = ({
                 }
             );
 
-            // Log the edit action
-            await createLog({
-                action: "Edit Institution",
-                description: `Edited institution: ${formData.name}`,
-            });
-
+            // Update local state instead of re-fetching
             onEdit(response.data || payload);
+
+            // Show success message
             showSnackbar("Institution updated successfully", "success");
-            fetchInstitutions();
+
+            // Close the dialog
             onClose();
         } catch (error) {
             let errorMessage = "Failed to update institution";

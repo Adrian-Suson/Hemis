@@ -23,6 +23,7 @@ import PropTypes from "prop-types";
 import { useLoading } from "../../../Context/LoadingContext";
 import { encryptId } from "../../../utils/encryption";
 import Pagination from "../../../Components/Pagination";
+import AlertComponent from "../../../Components/AlertComponent";
 
 // Custom hook to detect clicks outside an element
 const useClickOutside = (ref, callback) => {
@@ -347,105 +348,134 @@ const InstitutionTable = ({
             ...prev,
             ...updatedInstitution,
         }));
-
+        fetchInstitutions();
+        AlertComponent.showAlert(
+            "Institution Added successfully!",
+            "success"
+        );
         await createLog({
             action: "edited_institution",
             description: `Edited institution: ${updatedInstitution.name}`,
         });
-
-        if (fetchInstitutions) {
-            fetchInstitutions();
-        }
     };
 
     return (
         <div className="mb-4">
-            {/* Custom Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
-                <table className="w-full min-w-[800px] text-sm text-gray-900">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                                UUID
-                            </th>
-                            <th className="py-3 px-4 text-left font-semibold border-r border-gray-200">
-                                Name
-                            </th>
-                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                                Region
-                            </th>
-                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                                Address
-                            </th>
-                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                                Municipality
-                            </th>
-                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                                Province
-                            </th>
-                            <th className="py-3 px-4 text-center font-semibold border-r border-gray-200">
-                                Type
-                            </th>
-                            <th className="py-3 px-4 text-center font-semibold">
-                                Actions
-                            </th>
+           {/* Custom Compact Table with Max Height */}
+<div className="bg-white rounded-lg shadow-sm border border-gray-200">
+<div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 flex justify-between items-center">
+        <span>
+            Showing {Math.min((currentPage - 1) * pageSize + 1, filteredInstitutions.length)} to{' '}
+            {Math.min(currentPage * pageSize, filteredInstitutions.length)} of{' '}
+            {filteredInstitutions.length} institutions
+        </span>
+        <span>
+            {filteredInstitutions.length > pageSize && `Page ${currentPage} of ${totalPages}`}
+        </span>
+    </div>
+    <div className="max-h-[500px] overflow-auto">
+        <table className="w-full min-w-[800px] text-sm text-gray-900">
+            <thead className="bg-gray-100 sticky top-0 z-10">
+                <tr>
+                    <th className="py-2 px-3 text-center font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        UUID
+                    </th>
+                    <th className="py-2 px-3 text-left font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        Name
+                    </th>
+                    <th className="py-2 px-3 text-center font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        Region
+                    </th>
+                    <th className="py-2 px-3 text-center font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        Address
+                    </th>
+                    <th className="py-2 px-3 text-center font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        Municipality
+                    </th>
+                    <th className="py-2 px-3 text-center font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        Province
+                    </th>
+                    <th className="py-2 px-3 text-center font-semibold border-r border-gray-200 text-xs uppercase tracking-wider">
+                        Type
+                    </th>
+                    <th className="py-2 px-3 text-center font-semibold text-xs uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedInstitutions.length === 0 ? (
+                    <tr>
+                        <td
+                            colSpan="8"
+                            className="py-8 text-center text-gray-500 text-sm"
+                        >
+                            No institutions found.
+                        </td>
+                    </tr>
+                ) : (
+                    paginatedInstitutions.map((institution, index) => (
+                        <tr
+                            key={institution.id}
+                            className={`hover:bg-gray-50 transition-colors duration-150 ${
+                                index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
+                            }`}
+                        >
+                            <td className="py-2 px-3 text-center border-r border-gray-200 text-xs font-mono whitespace-nowrap">
+                                <span className="bg-gray-100 px-2 py-1 rounded text-gray-700">
+                                    {institution.uuid}
+                                </span>
+                            </td>
+                            <td className="py-2 px-3 text-left border-r border-gray-200 font-medium whitespace-normal">
+                                {institution.name}
+                            </td>
+                            <td className="py-2 px-3 text-center border-r border-gray-200 text-xs whitespace-nowrap">
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                    {institution.region}
+                                </span>
+                            </td>
+                            <td className="py-2 px-3 text-center border-r border-gray-200 text-xs whitespace-normal">
+                                {institution.address_street}
+                            </td>
+                            <td className="py-2 px-3 text-center border-r border-gray-200 text-xs whitespace-nowrap">
+                                {institution.municipality}
+                            </td>
+                            <td className="py-2 px-3 text-center border-r border-gray-200 text-xs whitespace-nowrap">
+                                {institution.province}
+                            </td>
+                            <td className="py-2 px-3 text-center border-r border-gray-200 text-xs whitespace-nowrap">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    institution.institution_type === 'State University'
+                                        ? 'bg-green-100 text-green-800'
+                                        : institution.institution_type === 'Private University'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                    {institution.institution_type}
+                                </span>
+                            </td>
+                            <td className="py-2 px-3 text-center whitespace-nowrap">
+                                <button
+                                    onClick={(e) =>
+                                        handleMenuOpen(e, institution)
+                                    }
+                                    disabled={Boolean(menuAnchorEl)}
+                                    aria-label={`More options for ${institution.name}`}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {paginatedInstitutions.length === 0 ? (
-                            <tr>
-                                <td
-                                    colSpan="8"
-                                    className="py-4 text-center text-gray-500"
-                                >
-                                    No institutions found.
-                                </td>
-                            </tr>
-                        ) : (
-                            paginatedInstitutions.map((institution) => (
-                                <tr
-                                    key={institution.id}
-                                    className="border-t border-gray-200 hover:bg-gray-50"
-                                >
-                                    <td className="py-2 px-4 text-center border-r border-gray-200">
-                                        {institution.uuid}
-                                    </td>
-                                    <td className="py-2 px-4 text-left border-r border-gray-200">
-                                        {institution.name}
-                                    </td>
-                                    <td className="py-2 px-4 text-center border-r border-gray-200">
-                                        {institution.region}
-                                    </td>
-                                    <td className="py-2 px-4 text-center border-r border-gray-200">
-                                        {institution.address_street}
-                                    </td>
-                                    <td className="py-2 px-4 text-center border-r border-gray-200">
-                                        {institution.municipality}
-                                    </td>
-                                    <td className="py-2 px-4 text-center border-r border-gray-200">
-                                        {institution.province}
-                                    </td>
-                                    <td className="py-2 px-4 text-center border-r border-gray-200">
-                                        {institution.institution_type}
-                                    </td>
-                                    <td className="py-2 px-4 text-center">
-                                        <button
-                                            onClick={(e) =>
-                                                handleMenuOpen(e, institution)
-                                            }
-                                            disabled={Boolean(menuAnchorEl)}
-                                            aria-label={`More options for ${institution.name}`}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 rounded-full transition-colors"
-                                        >
-                                            <MoreHorizontal className="w-5 h-5" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                    ))
+                )}
+            </tbody>
+        </table>
+    </div>
+
+
+
+</div>
 
             {/* Pagination */}
             {filteredInstitutions.length > 0 && (

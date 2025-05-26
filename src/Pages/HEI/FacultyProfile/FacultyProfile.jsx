@@ -178,7 +178,7 @@ const FacultyProfile = () => {
                         "error"
                     );
                     setIsUploading(false);
-                    updateProgress(0);
+                    hideLoading();
                     return;
                 }
 
@@ -200,7 +200,7 @@ const FacultyProfile = () => {
                         );
                         setIsUploading(false);
                         setLoading(false);
-                        updateProgress(0);
+                        hideLoading();
                         return;
                     }
                     const reader = new FileReader();
@@ -421,14 +421,14 @@ const FacultyProfile = () => {
                                     "Error uploading faculty profiles. Please try again.",
                                     "error"
                                 );
-                                updateProgress(0); // Reset progress on error
+                                hideLoading();
                             }
                         } else {
                             AlertComponent.showAlert(
                                 "No valid faculty data found in the uploaded file.",
                                 "error"
                             );
-                            updateProgress(0); // Reset progress when no data found
+                            hideLoading();
                         }
                         await fetchFacultyProfiles();
                         updateProgress(100);
@@ -439,7 +439,7 @@ const FacultyProfile = () => {
                         "Error uploading file. Please try again.",
                         "error"
                     );
-                    updateProgress(0);
+                    hideLoading();
                 } finally {
                     setIsUploading(false);
                     setSelectedFile(null);

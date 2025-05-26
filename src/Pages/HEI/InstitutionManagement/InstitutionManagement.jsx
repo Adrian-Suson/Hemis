@@ -300,7 +300,7 @@ const InstitutionManagement = () => {
                     );
                 } finally {
                     setLoading((prev) => ({ ...prev, exportFormA: false }));
-                    updateProgress(0);
+                    hideLoading();
                 }
             },
             () => {

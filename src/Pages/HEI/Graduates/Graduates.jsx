@@ -150,11 +150,11 @@ const Graduates = () => {
                     "error"
                 );
                 setLoading(false);
-                updateProgress(0);
+                hideLoading();
                 return;
             }
 
-            updateProgress(0);
+            updateProgress(10);
             const reader = new FileReader();
             reader.readAsBinaryString(file);
 

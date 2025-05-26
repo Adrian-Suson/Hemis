@@ -174,7 +174,7 @@ const CurricularProgram = () => {
                 );
                 setIsUploading(false);
                 setLoading(false);
-                updateProgress(0);
+                hideLoading();
                 return;
             }
 
@@ -315,7 +315,7 @@ const CurricularProgram = () => {
                         setIsUploading(false);
                         setOpenUploadDialog(false);
                         setSelectedFile(null);
-                        updateProgress();
+                        hideLoading();
                         setLoading(false);
                          hideLoading();
                         return;
@@ -371,7 +371,7 @@ const CurricularProgram = () => {
                         setIsUploading(false);
                         setOpenUploadDialog(false);
                         setSelectedFile(null);
-                        updateProgress();
+                        hideLoading();
                         setLoading(false);
                     }
                 } catch (error) {
@@ -383,7 +383,7 @@ const CurricularProgram = () => {
                     setIsUploading(false);
                     setOpenUploadDialog(false);
                     setSelectedFile(null);
-                    updateProgress();
+                    hideLoading();
                     setLoading(false);
                 }
             };
@@ -397,7 +397,7 @@ const CurricularProgram = () => {
             );
             setIsUploading(false);
             setLoading(false);
-            updateProgress(0);
+            hideLoading();
         }
     };
 

@@ -137,7 +137,7 @@ const DashboardPage = () => {
             setStats((prev) => ({
                 ...prev,
                 error: "No authentication token",
-                loading: false, // Ensure loading is turned off
+                loading: false,
             }));
             return;
         }
@@ -147,7 +147,7 @@ const DashboardPage = () => {
 
         try {
             console.log("Fetching dashboard data...");
-            const url = `${config.API_URL}/dashboard-data`; // Fetch all data
+            const url = `${config.API_URL}/dashboard-data`;
             const response = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -172,7 +172,7 @@ const DashboardPage = () => {
                     facultyProfiles,
                     programs,
                     institutions,
-                    loading: false, // Turn off loading
+                    loading: false,
                     error: null,
                 });
                 console.log("API Response Structure:", response.data);
@@ -181,7 +181,7 @@ const DashboardPage = () => {
                 setStats((prev) => ({
                     ...prev,
                     error: "Unexpected response format from the server.",
-                    loading: false, // Turn off loading
+                    loading: false,
                 }));
             }
         } catch (error) {
@@ -189,7 +189,7 @@ const DashboardPage = () => {
             setStats((prev) => ({
                 ...prev,
                 error: `Failed to load statistics: ${error.message}`,
-                loading: false, // Turn off loading
+                loading: false,
             }));
         } finally {
             hideLoading();
@@ -202,7 +202,7 @@ const DashboardPage = () => {
         const years = new Set(
             originalStats.institutions.map((inst) => inst.report_year)
         );
-        return ["", ...Array.from(years).sort((a, b) => b - a)]; // Include empty option for "All Years"
+        return ["", ...Array.from(years).sort((a, b) => b - a)];
     }, [originalStats.institutions]);
 
     const aggregations = useMemo(() => {
@@ -218,7 +218,6 @@ const DashboardPage = () => {
             users: stats.users?.length || 0,
             faculty: stats.facultyProfiles?.length || 0,
             programs: stats.programs?.length || 0,
-            // Count unique institutions by UUID
             institutions: uniqueInstitutions?.size || 0,
             enrollments:
                 stats.programs?.reduce(
@@ -312,6 +311,38 @@ const DashboardPage = () => {
             {}
         );
 
+        // Calculate enrollments by institution type
+        const enrollmentsByInstitutionType = stats.institutions.reduce(
+            (acc, institution) => {
+                const institutionType = institution.institution_type || "Unknown";
+                const relatedPrograms = stats.programs.filter(
+                    (program) => program.institution_id === institution.id
+                );
+                const totalEnrollments = relatedPrograms.reduce(
+                    (sum, program) => sum + (program.grand_total || 0),
+                    0
+                );
+                acc[institutionType] =
+                    (acc[institutionType] || 0) + totalEnrollments;
+                return acc;
+            },
+            {}
+        );
+
+        const institutionTypes = Object.keys(enrollmentsByInstitutionType);
+        const institutionTypeEnrollments = Object.values(enrollmentsByInstitutionType);
+        const totalInstitutionEnrollments = institutionTypeEnrollments.reduce(
+            (sum, value) => sum + value,
+            0
+        );
+
+        // Find institution type with the most enrollments
+        const maxInstitutionType = Object.entries(enrollmentsByInstitutionType).reduce(
+            (max, [type, count]) =>
+                count > (max.count || 0) ? { type, count } : max,
+            {}
+        );
+
         return [
             {
                 title: "Gender Distribution",
@@ -389,40 +420,56 @@ const DashboardPage = () => {
                 ],
             },
             {
-                title: "Student Status",
+                title: "Enrollments by Institution Type",
                 type: "pie",
                 data: {
-                    labels: ["Enrolled", "Graduates"],
+                    labels: institutionTypes,
                     datasets: [
                         {
-                            data: [
-                                aggregations.totals.enrollments,
-                                aggregations.totals.graduates,
-                            ],
+                            data: institutionTypeEnrollments,
                             backgroundColor: [
                                 CHART_COLORS.blue,
                                 CHART_COLORS.green,
-                            ],
+                                CHART_COLORS.red,
+                                CHART_COLORS.purple,
+                                CHART_COLORS.orange,
+                            ].slice(0, institutionTypes.length),
                             borderWidth: 0,
                             hoverOffset: 5,
                         },
                     ],
                 },
                 info: [
+                    ...institutionTypes.map((type, index) => ({
+                        label: type,
+                        value: institutionTypeEnrollments[index].toLocaleString(),
+                        percentage: totalInstitutionEnrollments
+                            ? Math.round(
+                                  (institutionTypeEnrollments[index] /
+                                      totalInstitutionEnrollments) *
+                                      100
+                              ) + "%"
+                            : "0%",
+                        color: [
+                            CHART_COLORS.blue,
+                            CHART_COLORS.green,
+                            CHART_COLORS.red,
+                            CHART_COLORS.purple,
+                            CHART_COLORS.orange,
+                        ][index % 5],
+                    })),
                     {
-                        label: "Enrolled",
-                        value: aggregations.totals.enrollments.toLocaleString(),
+                        label: "Total Enrollments",
+                        value: totalInstitutionEnrollments.toLocaleString(),
+                        color: CHART_COLORS.grey,
+                    },
+                    {
+                        label: "Largest Institution Type",
+                        value: maxInstitutionType.type || "None",
+                        percentage: maxInstitutionType.count
+                            ? maxInstitutionType.count.toLocaleString() + " students"
+                            : "0 students",
                         color: CHART_COLORS.blue,
-                    },
-                    {
-                        label: "Graduates",
-                        value: aggregations.totals.graduates.toLocaleString(),
-                        color: CHART_COLORS.green,
-                    },
-                    {
-                        label: "Graduation Rate",
-                        value: aggregations.graduationRate + "%",
-                        color: CHART_COLORS.green,
                     },
                 ],
             },
@@ -477,7 +524,7 @@ const DashboardPage = () => {
                 ],
             },
         ];
-    }, [aggregations]);
+    }, [aggregations, stats.institutions, stats.programs]);
 
     useEffect(() => {
         fetchStats();

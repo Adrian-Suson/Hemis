@@ -147,11 +147,11 @@ const Graduates = () => {
                     "error"
                 );
                 setLoading(false);
-                updateProgress(0);
+                hideLoading();
                 return;
             }
 
-            updateProgress(0);
+            updateProgress(10);
             const reader = new FileReader();
             reader.readAsBinaryString(file);
 
@@ -172,7 +172,7 @@ const Graduates = () => {
 
                     const jsonData = XLSX.utils.sheet_to_json(sheet, {
                         header: 1,
-                        range: 6,
+                        range: 2,
                     });
 
                     console.log(
@@ -351,11 +351,11 @@ const Graduates = () => {
 
         worksheet.columns = [
             { header: "Student ID", key: "student_id", width: 15 },
+            { header: "Date of Birth", key: "date_of_birth", width: 15 },
             { header: "Last Name", key: "last_name", width: 20 },
             { header: "First Name", key: "first_name", width: 20 },
             { header: "Middle Name", key: "middle_name", width: 20 },
             { header: "Sex", key: "sex", width: 10 },
-            { header: "Date of Birth", key: "date_of_birth", width: 15 },
             { header: "Date Graduated", key: "date_graduated", width: 15 },
             { header: "Program Name", key: "program_name", width: 30 },
             { header: "Program Major", key: "program_major", width: 20 },

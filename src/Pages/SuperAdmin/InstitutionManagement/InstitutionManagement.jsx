@@ -148,6 +148,7 @@ const InstitutionManagement = () => {
                 "Failed to load institution data.",
                 "error"
             );
+            hideLoading();
         } finally {
             setLoading(false);
             hideLoading();
@@ -235,12 +236,6 @@ const InstitutionManagement = () => {
                     }
                 );
                 console.log("Institution response:", institutionResponse.data);
-
-
-                AlertComponent.showAlert(
-                    "Institution data uploaded successfully!",
-                    "success"
-                );
 
                 const institutionId = institutionResponse.data.id;
                 if (!institutionId || isNaN(Number(institutionId))) {
@@ -344,10 +339,13 @@ const InstitutionManagement = () => {
                     }
                 );
 
+
                 AlertComponent.showAlert(
-                    "Campuses added successfully!",
+                    "Institution and Campuses uploaded successfully!",
                     "success"
                 );
+
+                fetchInstitutions();
                 updateProgress(100);
             } catch (error) {
                 console.error("Error sending data to backend:", error.response.data.error);
@@ -364,7 +362,6 @@ const InstitutionManagement = () => {
                 setSelectedRegion("");
                 setSelectedProvince("");
                 setSelectedMunicipality("");
-                fetchInstitutions();
             }
         };
 
