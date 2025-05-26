@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('hei_details', function (Blueprint $table) {
+        Schema::create('luc_details', function (Blueprint $table) {
             $table->id();
             $table->uiid('institution_uiid');
             $table->foreign('institution_uiid')
                 ->references('uiid')
-                ->on('institutions')
+                ->on('heis')
                 ->onDelete('cascade');
             $table->string('region', 255)->nullable();
             $table->string('province', 255)->nullable();
@@ -41,6 +41,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('hei_details');
+        Schema::dropIfExists('luc_details');
     }
 };

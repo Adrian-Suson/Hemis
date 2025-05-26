@@ -2,26 +2,49 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Hei extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'institutions';
+    /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
     protected $primaryKey = 'uiid';
-    protected $keyType = 'string';
-    public $incrementing = false;
 
-    protected $fillable = [
-        'name'
-    ];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = ['uiid', 'name'];
 
-    public function details(): HasMany
+    /**
+     * Get the SUC details for the HEI.
+     */
+    public function sucDetails()
     {
-        return $this->hasMany(HeiDetail::class, 'institution_uiid', 'uiid');
+        return $this->hasMany(SucDetail::class, 'institution_uiid', 'uiid');
+    }
+
+    /**
+     * Get the LUC details for the HEI.
+     */
+    public function lucDetails()
+    {
+        return $this->hasMany(LucDetail::class, 'institution_uiid', 'uiid');
+    }
+
+    /**
+     * Get the Private details for the HEI.
+     */
+    public function privateDetails()
+    {
+        return $this->hasMany(PrivateDetail::class, 'institution_uiid', 'uiid');
     }
 }

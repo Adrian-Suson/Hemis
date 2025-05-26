@@ -75,7 +75,10 @@ const InstitutionManagement = () => {
 
         return {
             types: getUniqueValues(filteredInstitutions, "institution_type"),
-            municipalities: getUniqueValues(filteredInstitutions, "municipality"),
+            municipalities: getUniqueValues(
+                filteredInstitutions,
+                "municipality"
+            ),
             provinces: getUniqueValues(filteredInstitutions, "province"),
             reportYears,
         };
@@ -161,10 +164,11 @@ const InstitutionManagement = () => {
     }, []);
 
     // Handle file upload for Form A
+    // Handle file upload for Form A
     const handleFileUpload = async (reportYear, uuid) => {
-        if (!selectedFile || !selectedInstitutionType) {
+        if (!selectedFile || !selectedInstitutionType || !uuid) {
             AlertComponent.showAlert(
-                "Please select both an institution type and a file.",
+                "Please select an institution type, a file, and a valid UUID.",
                 "warning"
             );
             return;
@@ -191,22 +195,46 @@ const InstitutionManagement = () => {
                     return isNaN(parsed) ? null : parsed;
                 };
 
-                const extractedInstitution = {
-                    uuid: String(uuid || ""),
-                    name: String(jsonDataA1[4]?.[2] || "Unknown"),
-                    region_id: Number.parseInt(selectedRegion, 10) || null,
-                    address_street: String(jsonDataA1[7]?.[2] || ""),
-                    municipality_id:
-                        Number.parseInt(selectedMunicipality, 10) || null,
-                    province_id: Number.parseInt(selectedProvince, 10) || null,
-                    postal_code: String(jsonDataA1[11]?.[2] || ""),
-                    institutional_telephone: String(jsonDataA1[12]?.[2] || ""),
-                    institutional_fax: String(jsonDataA1[13]?.[2] || ""),
-                    head_telephone: String(jsonDataA1[14]?.[2] || ""),
-                    institutional_email: String(jsonDataA1[15]?.[2] || ""),
-                    institutional_website: String(jsonDataA1[16]?.[2] || ""),
+                const toNullableString = (value) => {
+                    if (!value || value === "N/A" || value === "") return null;
+                    return String(value).trim().substring(0, 255);
+                };
+
+                // Create detail data for SUC/LUC/Private endpoints
+                const detailData = {
+                    region: toNullableString(jsonDataA1[6]?.[2] || null),
+                    province: toNullableString(jsonDataA1[8]?.[2] || null),
+                    municipality: toNullableString(jsonDataA1[9]?.[2] || null),
+                    address_street: toNullableString(
+                        jsonDataA1[7]?.[2] || null
+                    ),
+                    postal_code: toNullableString(jsonDataA1[11]?.[2] || null),
+                    institutional_telephone: toNullableString(
+                        jsonDataA1[12]?.[2] || null
+                    ),
+                    institutional_fax: toNullableString(
+                        jsonDataA1[13]?.[2] || null
+                    ),
+                    head_telephone: toNullableString(
+                        jsonDataA1[14]?.[2] || null
+                    ),
+                    institutional_email: toNullableString(
+                        jsonDataA1[15]?.[2] || null
+                    ),
+                    institutional_website: toNullableString(
+                        jsonDataA1[16]?.[2] || null
+                    ),
                     year_established: toNullableInteger(jsonDataA1[17]?.[2]),
-                    sec_registration: String(jsonDataA1[18]?.[2] || ""),
+                    report_year: Number.parseInt(reportYear, 10),
+                    head_name: toNullableString(jsonDataA1[22]?.[2] || null),
+                    head_title: toNullableString(jsonDataA1[23]?.[2] || null),
+                    head_education: toNullableString(
+                        jsonDataA1[24]?.[2] || null
+                    ),
+                    institution_type: selectedInstitutionType,
+                    sec_registration: toNullableString(
+                        jsonDataA1[18]?.[2] || null
+                    ),
                     year_granted_approved: toNullableInteger(
                         jsonDataA1[19]?.[2]
                     ),
@@ -216,18 +244,30 @@ const InstitutionManagement = () => {
                     year_converted_university: toNullableInteger(
                         jsonDataA1[21]?.[2]
                     ),
-                    head_name: String(jsonDataA1[22]?.[2] || ""),
-                    head_title: String(jsonDataA1[23]?.[2] || ""),
-                    head_education: String(jsonDataA1[24]?.[2] || ""),
-                    institution_type: selectedInstitutionType,
-                    report_year: reportYear,
                 };
 
                 updateProgress(50);
                 const token = localStorage.getItem("token");
-                const institutionResponse = await axios.post(
-                    `${config.API_URL}/institutions`,
-                    extractedInstitution,
+
+                // Step 1: Post institution details based on type
+                let detailEndpoint;
+                switch (selectedInstitutionType) {
+                    case "SUC":
+                        detailEndpoint = `suc-details`;
+                        break;
+                    case "LUC":
+                        detailEndpoint = `luc-details`;
+                        break;
+                    case "PHEI":
+                        detailEndpoint = `private-details`;
+                        break;
+                    default:
+                        throw new Error("Invalid institution type.");
+                }
+
+                const detailResponse = await axios.post(
+                    `${config.API_URL}/heis/${uuid}/${detailEndpoint}`,
+                    detailData,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -235,16 +275,15 @@ const InstitutionManagement = () => {
                         },
                     }
                 );
-                console.log("Institution response:", institutionResponse.data);
+                console.log("Detail response:", detailResponse.data);
 
-                const institutionId = institutionResponse.data.id;
-                if (!institutionId || isNaN(Number(institutionId))) {
-                    throw new Error(
-                        "Invalid institution ID received from server."
-                    );
+                const detailId = detailResponse.data.id;
+                if (!detailId) {
+                    throw new Error("Invalid detail ID received from server.");
                 }
-                console.log("Institution ID:", institutionId);
+                console.log("Detail ID:", detailId);
 
+                // Step 2: Process and upload campus data
                 const sheetA2 = workbook.Sheets[workbook.SheetNames[1]];
                 const jsonDataA2 = XLSX.utils.sheet_to_json(sheetA2, {
                     header: 1,
@@ -321,7 +360,7 @@ const InstitutionManagement = () => {
                                 -180,
                                 180
                             ),
-                            institution_id: Number.parseInt(institutionId, 10),
+                            institution_id: Number.parseInt(detailId, 10),
                             report_year: Number.parseInt(reportYear, 10),
                         };
                     });
@@ -339,21 +378,21 @@ const InstitutionManagement = () => {
                     }
                 );
 
-
                 AlertComponent.showAlert(
-                    "Institution and Campuses uploaded successfully!",
+                    "Institution details and campuses uploaded successfully!",
                     "success"
                 );
 
                 fetchInstitutions();
                 updateProgress(100);
             } catch (error) {
-                console.error("Error sending data to backend:", error.response.data.error);
-                const errorMessage = error.response?.data?.error || "An error occurred";
-                AlertComponent.showAlert(
-                    `${errorMessage}`,
-                    "error"
+                console.error(
+                    "Error sending data to backend:",
+                    error.response?.data?.error || error.message
                 );
+                const errorMessage =
+                    error.response?.data?.error || "An error occurred";
+                AlertComponent.showAlert(`${errorMessage}`, "error");
             } finally {
                 hideLoading();
                 setOpenUploadDialog(false);
@@ -528,7 +567,9 @@ const InstitutionManagement = () => {
                                     </button>
                                     <FilterPopover
                                         open={openFilterPopover}
-                                        onClose={() => setOpenFilterPopover(false)}
+                                        onClose={() =>
+                                            setOpenFilterPopover(false)
+                                        }
                                         filters={filters}
                                         onFilterChange={handleFilterChange}
                                         onClearFilters={clearFilters}

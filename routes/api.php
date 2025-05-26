@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CurricularProgramController;
 use App\Http\Controllers\Api\GraduateController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\HeiController;
 use App\Http\Controllers\Api\HEIDashboardController;
 use App\Http\Controllers\Api\InstitutionManagementController;
 use App\Http\Controllers\Api\ReportYearController; // Add this line
@@ -32,6 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Institution Routes
     Route::apiResource('institutions', InstitutionController::class);
+
+    Route::apiResource('heis', HeiController::class);
+    Route::post('heis/{uiid}/suc-details', [HeiController::class, 'addSucDetail']);
+    Route::post('heis/{uiid}/luc-details', [HeiController::class, 'addLucDetail']);
+    Route::post('heis/{uiid}/private-details', [HeiController::class, 'addPrivateDetail']);
 
     // Campus Routes
     Route::apiResource('campuses', CampusController::class);

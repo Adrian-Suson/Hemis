@@ -16,12 +16,12 @@ return new class extends Migration {
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['super-admin', 'hei-admin', 'hei-staff'])->default('hei-staff'); // Removed 'Viewer'
+            $table->enum('role', ['super-admin', 'hei-admin', 'hei-staff'])->default('hei-staff');
             $table->enum('status', ['Active', 'Inactive'])->default('Active');
-            $table->unsignedBigInteger('institution_id')->nullable();
-            $table->foreign('institution_id')
-                ->references('id')
-                ->on('institutions')
+            $table->uuid('hei_uiid')->nullable(); // Updated to reference the `uiid` in `heis`
+            $table->foreign('hei_uiid')
+                ->references('uiid')
+                ->on('heis')
                 ->onDelete('set null');
             $table->timestamps();
         });

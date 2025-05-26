@@ -1,11 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 import { X, Upload } from "lucide-react";
+import Select from "react-select";
 import config from "../../../utils/config";
 import axios from "axios";
-import useActivityLog from "../../../Hooks/useActivityLog"; // Import the hook
+import useActivityLog from "../../../Hooks/useActivityLog";
 
 const UploadDialog = ({
     openUploadDialog,
@@ -22,22 +23,18 @@ const UploadDialog = ({
     selectedMunicipality,
     setSelectedMunicipality,
 }) => {
-    const { createLog } = useActivityLog(); // Use the hook
-
+    const { createLog } = useActivityLog();
     const [fileError, setFileError] = useState("");
     const [typeError, setTypeError] = useState("");
-    const [uuidError, setUuidError] = useState("");
+    const [heiError, setHeiError] = useState("");
     const [validationTriggered, setValidationTriggered] = useState(false);
     const [regions, setRegions] = useState([]);
     const [provinces, setProvinces] = useState([]);
     const [municipalities, setMunicipalities] = useState([]);
     const [reportYears, setReportYears] = useState([]);
     const [selectedYear, setSelectedYear] = useState("");
-    const [uuid, setUuid] = useState("");
-    const [existingUuids, setExistingUuids] = useState([]);
-    const [filteredUuids, setFilteredUuids] = useState([]);
-    const [showUuidSuggestions, setShowUuidSuggestions] = useState(false);
-    const uuidInputRef = useRef(null);
+    const [heis, setHeis] = useState([]);
+    const [selectedHei, setSelectedHei] = useState(null);
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const ACCEPTED_FILE_TYPES = [
@@ -45,16 +42,27 @@ const UploadDialog = ({
         "application/vnd.ms-excel",
     ];
 
+    // Fetch HEIs
     useEffect(() => {
-        if (!selectedRegion) {
-            setSelectedRegion("10");
-        }
-    }, []);
-
-    useEffect(() => {
-        const storedUuids = JSON.parse(localStorage.getItem("uuids")) || [];
-        setExistingUuids(storedUuids);
-        setFilteredUuids(storedUuids);
+        const fetchHeis = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const res = await axios.get(`${config.API_URL}/heis`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setHeis(res.data);
+            } catch (error) {
+                console.error("Error fetching HEIs:", error);
+                setHeis([]);
+                Swal.fire({
+                    title: "Error",
+                    text: "Failed to fetch HEIs.",
+                    icon: "error",
+                    confirmButtonColor: "#d33",
+                });
+            }
+        };
+        fetchHeis();
     }, []);
 
     // Fetch report years
@@ -65,10 +73,8 @@ const UploadDialog = ({
                 const res = await axios.get(`${config.API_URL}/report-years`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                // Sort years in descending order (newest first)
                 const sortedYears = res.data.sort((a, b) => b.year - a.year);
                 setReportYears(sortedYears);
-                // Set default year to the newest (first in sorted array)
                 if (sortedYears.length > 0) {
                     setSelectedYear(sortedYears[0].year);
                 }
@@ -86,6 +92,7 @@ const UploadDialog = ({
         fetchReportYears();
     }, []);
 
+    // Fetch regions
     useEffect(() => {
         const fetchRegions = async () => {
             try {
@@ -94,6 +101,7 @@ const UploadDialog = ({
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 setRegions(res.data);
+                setSelectedRegion("10"); // Default to region 10
             } catch (error) {
                 console.error("Error fetching regions:", error);
                 setRegions([]);
@@ -102,6 +110,7 @@ const UploadDialog = ({
         fetchRegions();
     }, []);
 
+    // Fetch provinces
     useEffect(() => {
         if (selectedRegion) {
             const fetchProvinces = async (regionId) => {
@@ -126,6 +135,7 @@ const UploadDialog = ({
         }
     }, [selectedRegion]);
 
+    // Fetch municipalities
     useEffect(() => {
         if (selectedProvince) {
             const fetchMunicipalities = async (provinceId) => {
@@ -152,13 +162,15 @@ const UploadDialog = ({
         setOpenUploadDialog(false);
         setSelectedFile(null);
         setSelectedInstitutionType("");
-        setUuid("");
+        setSelectedHei(null);
         setFileError("");
         setTypeError("");
-        setUuidError("");
+        setHeiError("");
         setValidationTriggered(false);
-        setShowUuidSuggestions(false);
-        setSelectedYear(""); // Reset selected year
+        setSelectedYear("");
+        setSelectedRegion("");
+        setSelectedProvince("");
+        setSelectedMunicipality("");
     };
 
     const handleFileChange = (event) => {
@@ -174,41 +186,6 @@ const UploadDialog = ({
         if (validationTriggered) setValidationTriggered(false);
     };
 
-    const handleUuidChange = (e) => {
-        const value = e.target.value;
-        setUuid(value);
-        setShowUuidSuggestions(true);
-
-        if (value.trim()) {
-            const filtered = existingUuids.filter((item) =>
-                item.toLowerCase().includes(value.toLowerCase())
-            );
-            setFilteredUuids(filtered);
-        } else {
-            setFilteredUuids(existingUuids);
-        }
-
-        if (validationTriggered) setValidationTriggered(false);
-    };
-
-    const handleUuidSelect = (selectedUuid) => {
-        setUuid(selectedUuid);
-        setShowUuidSuggestions(false);
-    };
-
-    const handleClickOutside = (e) => {
-        if (uuidInputRef.current && !uuidInputRef.current.contains(e.target)) {
-            setShowUuidSuggestions(false);
-        }
-    };
-
-    useEffect(() => {
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-
     const validateInputs = () => {
         const errors = [];
 
@@ -219,11 +196,11 @@ const UploadDialog = ({
             setTypeError("");
         }
 
-        if (!uuid.trim()) {
-            setUuidError("Please enter a UUID.");
-            errors.push("UUID is required.");
+        if (!selectedHei) {
+            setHeiError("Please select an HEI.");
+            errors.push("HEI is required.");
         } else {
-            setUuidError("");
+            setHeiError("");
         }
 
         if (!selectedYear) {
@@ -267,28 +244,32 @@ const UploadDialog = ({
             return;
         }
 
-        const isNewUuid = !existingUuids.includes(uuid);
-        if (isNewUuid) {
-            const updatedUuids = [...existingUuids, uuid];
-            setExistingUuids(updatedUuids);
-            setFilteredUuids(updatedUuids);
-            localStorage.setItem("uuids", JSON.stringify(updatedUuids));
-        }
-
         try {
-            await handleFileUpload(selectedYear, uuid);
+            await handleFileUpload(selectedYear, selectedHei.uiid);
 
             // Log the upload action
             await createLog({
                 action: "Upload Institutions",
-                description: `Uploaded institutions from file: ${selectedFile.name}`,
+                description: `Uploaded details for HEI: ${selectedHei.name} from file: ${selectedFile.name}`,
             });
         } catch (error) {
             console.error("Error uploading institutions:", error);
+            Swal.fire({
+                title: "Error",
+                text: "Failed to upload institution details.",
+                icon: "error",
+                confirmButtonColor: "#d33",
+            });
         }
     };
 
     if (!openUploadDialog) return null;
+
+    // Format HEIs for react-select
+    const heiOptions = heis.map((hei) => ({
+        value: hei.uiid,
+        label: `${hei.name} (${hei.uiid})`,
+    }));
 
     return (
         <div className="fixed inset-0 shadow-amber-900 bg-black/50 flex items-center justify-center z-50">
@@ -319,7 +300,8 @@ const UploadDialog = ({
                                 Institution Type
                             </label>
                             <select
-                                id="institution-type"
+                                id="instituti
+                                on-type"
                                 value={selectedInstitutionType}
                                 onChange={(e) => {
                                     setSelectedInstitutionType(e.target.value);
@@ -339,49 +321,44 @@ const UploadDialog = ({
                             </select>
                         </div>
 
-                        {/* UUID Combo Box */}
-                        <div ref={uuidInputRef}>
+                        {/* HEI Dropdown */}
+                        <div>
                             <label
-                                htmlFor="uuid"
+                                htmlFor="hei"
                                 className="block text-sm font-medium text-gray-700 mb-1"
                             >
-                                UUID
+                                Select HEI
                             </label>
-                            <div className="relative">
-                                <input
-                                    id="uuid"
-                                    type="text"
-                                    value={uuid}
-                                    onChange={handleUuidChange}
-                                    onFocus={() => setShowUuidSuggestions(true)}
-                                    placeholder="Enter or select UUID"
-                                    className={`w-full px-3 py-2 border ${
-                                        uuidError && validationTriggered
-                                            ? "border-red-500"
-                                            : "border-gray-300"
-                                    } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
-                                />
-                                {showUuidSuggestions &&
-                                    filteredUuids.length > 0 && (
-                                        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
-                                            {filteredUuids.map(
-                                                (item, index) => (
-                                                    <li
-                                                        key={index}
-                                                        onClick={() =>
-                                                            handleUuidSelect(
-                                                                item
-                                                            )
-                                                        }
-                                                        className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-100 cursor-pointer"
-                                                    >
-                                                        {item}
-                                                    </li>
-                                                )
-                                            )}
-                                        </ul>
-                                    )}
-                            </div>
+                            <Select
+                                id="hei"
+                                options={heiOptions}
+                                value={heiOptions.find(
+                                    (option) => option.value === selectedHei?.uiid
+                                )}
+                                onChange={(selectedOption) => {
+                                    setSelectedHei(
+                                        heis.find(
+                                            (hei) => hei.uiid === selectedOption.value
+                                        ) || null
+                                    );
+                                    if (validationTriggered)
+                                        setValidationTriggered(false);
+                                }}
+                                placeholder="Search and select HEI..."
+                                className={`text-sm ${
+                                    heiError && validationTriggered
+                                        ? "border-red-500"
+                                        : ""
+                                }`}
+                                classNamePrefix="select"
+                                isClearable
+                                isSearchable
+                            />
+                            {heiError && validationTriggered && (
+                                <p className="text-red-500 text-xs mt-1">
+                                    {heiError}
+                                </p>
+                            )}
                         </div>
 
                         {/* Year Dropdown */}
