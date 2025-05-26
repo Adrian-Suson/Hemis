@@ -38,7 +38,7 @@ class InstitutionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'uuid' => 'required|string|max:255',
+            'uiid' => 'required|string|max:255',
             'name' => 'required|string|max:255',
             'region_id' => 'required|integer|exists:regions,id',
             'address_street' => 'nullable|string|max:255',
