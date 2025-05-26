@@ -10,7 +10,7 @@ class CreateCampusesTable extends Migration
     {
         Schema::create('campuses', function (Blueprint $table) {
             $table->id();
-            $table->string('suc_name', 255)->nullable();
+            $table->string('name', 255)->nullable();
             $table->string('campus_type', 255)->nullable();
             $table->string('institutional_code', 255)->nullable();
             $table->string('region', 255)->nullable();

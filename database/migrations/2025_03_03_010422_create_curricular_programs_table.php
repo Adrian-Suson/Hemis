@@ -62,7 +62,7 @@ return new class extends Migration {
             $table->integer('graduates_total')->nullable();
             $table->integer('externally_funded_merit_scholars')->nullable();
             $table->integer('internally_funded_grantees')->nullable();
-            $table->integer('suc_funded_grantees')->nullable();
+            $table->integer('funded_grantees')->nullable();
 
             $table->integer('report_year')->nullable();
             $table->foreign('report_year')
