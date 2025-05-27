@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->string('password');
             $table->enum('role', ['super-admin', 'hei-admin', 'hei-staff'])->default('hei-staff');
             $table->enum('status', ['Active', 'Inactive'])->default('Active');
-            $table->uuid('hei_uiid')->nullable(); // Updated to reference the `uiid` in `heis`
+                $table->string('hei_uiid', 36)->nullable(); // Updated to reference the `uiid` in `heis`
             $table->foreign('hei_uiid')
                 ->references('uiid')
                 ->on('heis')

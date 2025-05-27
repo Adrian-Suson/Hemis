@@ -7,13 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('curricular_programs', function (Blueprint $table) {
+        Schema::create('suc_form_b', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('institution_id'); // Changed to reference institution id
-            $table->foreign('institution_id')
+            $table->foreign('suc_details_id')
                 ->references('id')
-                ->on('institutions')
-                ->onDelete('cascade');
+                ->on('suc_details')
+                ->onDelete('cascade'); // Delete research form if associated details are deleted
             $table->string('program_name', 255)->notNullable();
             $table->integer('program_code')->nullable();
             $table->string('major_name', 255)->nullable();
@@ -76,6 +75,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('curricular_programs');
+        Schema::dropIfExists('suc_form_b');
     }
 };

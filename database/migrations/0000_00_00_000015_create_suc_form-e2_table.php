@@ -11,12 +11,10 @@ class CreateFacultyProfilesTable extends Migration
         // Create faculty_profiles table with institution relationship
         Schema::create('faculty_profiles', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('institution_id')->nullable(); // Ensure this column exists
-            $table->foreign('institution_id')
+             $table->foreign('suc_details_id')
                 ->references('id')
-                ->on('institutions')
-                ->onDelete('cascade'); // Add foreign key constraint
-
+                ->on('suc_details')
+                ->onDelete('cascade'); // Delete research form if associated details are deleted
             $table->string('faculty_group')->nullable(); // New column for faculty groups (A1, A2, A3, B, C1, C2, C3, D, E)
             $table->string('name')->nullable(); // NAME OF FACULTY (A2)
             $table->integer('generic_faculty_rank')->nullable(); // GENERIC FACULTY RANK (A3)

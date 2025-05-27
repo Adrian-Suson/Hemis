@@ -10,6 +10,7 @@ return new class extends Migration {
         Schema::create('heis', function (Blueprint $table) {
             $table->string('uiid', 36)->primary(); // Define uiid as a string with a length of 36
             $table->string('name', 255)->notNullable();
+            $table->enum('type', ['SUC', 'LUC', 'Private'])->notNullable(); // Add type column to distinguish HEI types
             $table->timestamps();
             $table->softDeletes();
         });

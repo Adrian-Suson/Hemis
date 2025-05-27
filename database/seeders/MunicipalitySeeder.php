@@ -14,7 +14,7 @@ class MunicipalitySeeder extends Seeder
      */
     public function run()
     {
-        // Municipalities for Region 9 provinces, including Basilan
+        // Municipalities for Region 9 provinces, including Basilan, Tawi-Tawi, and Sulu
         $municipalitiesByProvince = [
             'Basilan' => [
                 'Akbar',
@@ -107,6 +107,40 @@ class MunicipalitySeeder extends Seeder
                 'Talusan',
                 'Titay',
                 'Tungawan', // Total: 16 municipalities
+            ],
+            'Tawi-Tawi' => [
+                'Bongao', // Capital
+                'Languyan',
+                'Mapun',
+                'Panglima Sugala',
+                'Sapa-Sapa',
+                'Sibutu',
+                'Simunul',
+                'Sitangkai',
+                'South Ubian',
+                'Tandubas',
+                'Turtle Islands', // Total: 11 municipalities
+            ],
+            'Sulu' => [
+                'Banguingui',
+                'Hadji Panglima Tahil',
+                'Indanan',
+                'Jolo', // Capital
+                'Kalingalan Caluang',
+                'Lugus',
+                'Luuk',
+                'Maimbung',
+                'Old Panamao',
+                'Omar',
+                'Pandami',
+                'Panglima Estino',
+                'Pangutaran',
+                'Parang',
+                'Pata',
+                'Patikul',
+                'Siasi',
+                'Talipao',
+                'Tapul', // Total: 19 municipalities
             ],
         ];
 

@@ -29,11 +29,10 @@ class CreateCampusesTable extends Migration
                 ->references('year')
                 ->on('report_years')
                 ->onDelete('set null');
-            $table->unsignedBigInteger('institution_id'); // Changed to reference institution id
-            $table->foreign('institution_id')
+            $table->foreign('suc_details_id')
                 ->references('id')
-                ->on('institutions')
-                ->onDelete('cascade');
+                ->on('suc_details')
+                ->onDelete('cascade'); // Delete research form if associated details are deleted
             $table->timestamps();
             $table->softDeletes(); // added soft delete support
         });

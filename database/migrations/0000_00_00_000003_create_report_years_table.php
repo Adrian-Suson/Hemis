@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('report_years', function (Blueprint $table) {
-            $table->id();
-            $table->integer('year')->unique(); // Unique year
+            $table->integer('year')->primary();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

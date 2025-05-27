@@ -7,13 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('graduates_list', function (Blueprint $table) {
+        Schema::create('suc_pcr_graduate_list', function (Blueprint $table) {
             $table->id(); // Auto-incrementing primary key
-            $table->unsignedBigInteger('institution_id'); // Changed to reference institution id
-            $table->foreign('institution_id')
+            $table->foreign('suc_details_id')
                 ->references('id')
-                ->on('institutions')
-                ->onDelete('cascade'); // Foreign key to institutions table
+                ->on('suc_details')
+                ->onDelete('cascade'); // Delete research form if associated details are deleted
             $table->string('student_id')->unique(); // Unique student ID
             $table->date('date_of_birth'); // Date of birth
             $table->string('last_name'); // Last name
@@ -37,6 +36,6 @@ return new class extends Migration {
 
     public function down()
     {
-        Schema::dropIfExists('graduates_list');
+        Schema::dropIfExists('suc_pcr_graduate_list');
     }
 };

@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('private_details', function (Blueprint $table) {
             $table->id();
-            $table->uiid('institution_uiid');
+            $table->string('institution_uiid', 36);
             $table->foreign('institution_uiid')
                 ->references('uiid')
                 ->on('heis')
@@ -26,14 +26,19 @@ return new class extends Migration {
             $table->string('institutional_website', 255)->nullable();
             $table->integer('year_established')->nullable();
             $table->integer('report_year');
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('cascade');
             $table->string('head_name', 255)->nullable();
             $table->string('head_title', 255)->nullable();
             $table->string('head_education', 255)->nullable();
-            $table->string('institution_type', 255)->nullable();
             $table->string('sec_registration', 255)->nullable();
             $table->integer('year_granted_approved')->nullable();
             $table->integer('year_converted_college')->nullable();
             $table->integer('year_converted_university')->nullable();
+            $table->decimal('x_coordinate', 10, 7)->nullable();
+            $table->decimal('y_coordinate', 10, 7)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

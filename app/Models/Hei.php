@@ -18,11 +18,34 @@ class Hei extends Model
     protected $primaryKey = 'uiid';
 
     /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $fillable = ['uiid', 'name'];
+    protected $fillable = ['uiid', 'name', 'type'];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'type' => 'string',
+    ];
 
     /**
      * Get the SUC details for the HEI.
@@ -46,5 +69,50 @@ class Hei extends Model
     public function privateDetails()
     {
         return $this->hasMany(PrivateDetail::class, 'institution_uiid', 'uiid');
+    }
+
+    /**
+     * Check if the HEI is a SUC.
+     *
+     * @return bool
+     */
+    public function isSUC(): bool
+    {
+        return $this->type === 'SUC';
+    }
+
+    /**
+     * Check if the HEI is a LUC.
+     *
+     * @return bool
+     */
+    public function isLUC(): bool
+    {
+        return $this->type === 'LUC';
+    }
+
+    /**
+     * Check if the HEI is Private.
+     *
+     * @return bool
+     */
+    public function isPrivate(): bool
+    {
+        return $this->type === 'Private';
+    }
+
+    /**
+     * Get the appropriate details based on the HEI type.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany|null
+     */
+    public function getDetails()
+    {
+        return match ($this->type) {
+            'SUC' => $this->sucDetails(),
+            'LUC' => $this->lucDetails(),
+            'Private' => $this->privateDetails(),
+            default => null,
+        };
     }
 }

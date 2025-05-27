@@ -21,6 +21,8 @@ class ProvinceSeeder extends Seeder
                 'Zamboanga del Sur',
                 'Zamboanga Sibugay',
                 'Basilan',
+                'Sulu',
+                'Tawi-Tawi',
             ],
         ];
 
