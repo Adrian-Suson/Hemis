@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('private_form_b_C', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('private_detail_id')->constrained('private_details')->onDelete('cascade');
             // PROGRAM/COURSE
             $table->string('program_name')->nullable();
             $table->string('program_code')->nullable();

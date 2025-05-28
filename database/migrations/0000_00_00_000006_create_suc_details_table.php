@@ -37,8 +37,6 @@ return new class extends Migration {
             $table->integer('year_granted_approved')->nullable();
             $table->integer('year_converted_college')->nullable();
             $table->integer('year_converted_university')->nullable();
-            $table->decimal('x_coordinate', 10, 7)->nullable();
-            $table->decimal('y_coordinate', 10, 7)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

@@ -8,43 +8,62 @@ use Illuminate\Http\Request;
 
 class MunicipalityController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        if ($request->has('province_id')) {
-            return Municipality::where('province_id', $request->input('province_id'))
-                ->orderBy('name', 'asc')
-                ->get();
-        }
-        return Municipality::orderBy('name', 'asc')->get();
+        $municipalities = Municipality::with('province')->get();
+        return response()->json($municipalities);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required',
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
             'province_id' => 'required|exists:provinces,id',
         ]);
-        return Municipality::create($validated);
+
+        $municipality = Municipality::create($validatedData);
+        return response()->json($municipality, 201);
     }
 
-    public function show(Municipality $municipality)
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
     {
-        return $municipality;
+        $municipality = Municipality::with('province')->findOrFail($id);
+        return response()->json($municipality);
     }
 
-    public function update(Request $request, Municipality $municipality)
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'name' => 'required',
-            'province_id' => 'required|exists:provinces,id',
+        $municipality = Municipality::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'province_id' => 'sometimes|exists:provinces,id',
         ]);
-        $municipality->update($validated);
-        return $municipality;
+
+        $municipality->update($validatedData);
+        return response()->json($municipality);
     }
 
-    public function destroy(Municipality $municipality)
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
     {
+        $municipality = Municipality::findOrFail($id);
         $municipality->delete();
-        return response()->noContent();
+
+        return response()->json(['message' => 'Municipality deleted successfully']);
     }
 }

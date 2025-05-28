@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Graduate extends Model
+class LucPrcGraduate extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'graduates_list';
+    protected $table = 'luc_prc_graduate_list';
 
     protected $fillable = [
-        'institution_id',
+        'luc_detail_id',
         'student_id',
         'date_of_birth',
         'last_name',
@@ -22,24 +22,19 @@ class Graduate extends Model
         'date_graduated',
         'program_name',
         'program_major',
-        'program_authority_to_operate_graduate',
+        'authority_number',
         'year_granted',
-        'report_year',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'date_graduated' => 'date',
         'sex' => 'string',
+        'year_granted' => 'integer',
     ];
 
-    public function institution()
+    public function lucDetail()
     {
-        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
-    }
-
-    public function reportYear()
-    {
-        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
+        return $this->belongsTo(LucDetail::class, 'luc_detail_id');
     }
 }

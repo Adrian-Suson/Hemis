@@ -2,26 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LucDetail extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'luc_details';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'institution_uiid',
         'region',
@@ -39,31 +28,51 @@ class LucDetail extends Model
         'head_name',
         'head_title',
         'head_education',
-        'institution_type',
         'sec_registration',
         'year_granted_approved',
         'year_converted_college',
         'year_converted_university',
+        'x_coordinate',
+        'y_coordinate',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
         'year_established' => 'integer',
         'report_year' => 'integer',
         'year_granted_approved' => 'integer',
         'year_converted_college' => 'integer',
         'year_converted_university' => 'integer',
+        'x_coordinate' => 'decimal:7',
+        'y_coordinate' => 'decimal:7',
     ];
 
-    /**
-     * Get the HEI associated with the LUC detail.
-     */
     public function hei()
     {
         return $this->belongsTo(Hei::class, 'institution_uiid', 'uiid');
+    }
+
+    public function reportYear()
+    {
+        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
+    }
+
+    public function prcGraduates()
+    {
+        return $this->hasMany(LucPrcGraduate::class, 'luc_detail_id');
+    }
+
+    public function formBCs()
+    {
+        return $this->hasMany(LucFormBC::class, 'luc_detail_id');
+    }
+
+    public function deanProfiles()
+    {
+        return $this->hasMany(LucDeanProfile::class, 'luc_detail_id');
+    }
+
+    public function formE5s()
+    {
+        return $this->hasMany(LucFormE5::class, 'luc_detail_id');
     }
 }

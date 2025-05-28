@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class FacultyProfile extends Model
+class SucFormE2 extends Model
 {
     use SoftDeletes;
 
     protected $table = 'faculty_profiles';
 
     protected $fillable = [
-        'institution_id', // Updated to institution_id
+        'suc_details_id',
         'faculty_group',
         'name',
         'generic_faculty_rank',
@@ -58,9 +58,45 @@ class FacultyProfile extends Model
         'report_year',
     ];
 
-    public function institution()
+    protected $casts = [
+        'generic_faculty_rank' => 'integer',
+        'ssl_salary_grade' => 'integer',
+        'annual_basic_salary' => 'integer',
+        'on_leave_without_pay' => 'integer',
+        'full_time_equivalent' => 'float',
+        'gender' => 'integer',
+        'highest_degree_attained' => 'integer',
+        'pursuing_next_degree' => 'integer',
+        'masters_with_thesis' => 'integer',
+        'doctorate_with_dissertation' => 'integer',
+        'undergrad_lab_credit_units' => 'float',
+        'undergrad_lecture_credit_units' => 'float',
+        'undergrad_total_credit_units' => 'float',
+        'undergrad_lab_hours_per_week' => 'float',
+        'undergrad_lecture_hours_per_week' => 'float',
+        'undergrad_total_hours_per_week' => 'float',
+        'undergrad_lab_contact_hours' => 'float',
+        'undergrad_lecture_contact_hours' => 'float',
+        'undergrad_total_contact_hours' => 'float',
+        'graduate_lab_credit_units' => 'float',
+        'graduate_lecture_credit_units' => 'float',
+        'graduate_total_credit_units' => 'float',
+        'graduate_lab_contact_hours' => 'float',
+        'graduate_lecture_contact_hours' => 'float',
+        'graduate_total_contact_hours' => 'float',
+        'research_load' => 'float',
+        'extension_services_load' => 'float',
+        'study_load' => 'float',
+        'production_load' => 'float',
+        'administrative_load' => 'float',
+        'other_load_credits' => 'float',
+        'total_work_load' => 'float',
+        'report_year' => 'integer',
+    ];
+
+    public function sucDetail()
     {
-        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
+        return $this->belongsTo(SucDetail::class, 'suc_details_id');
     }
 
     public function reportYear()

@@ -8,43 +8,62 @@ use Illuminate\Http\Request;
 
 class ProvinceController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        if ($request->has('region_id')) {
-            return Province::where('region_id', $request->input('region_id'))
-                ->orderBy('name', 'asc')
-                ->get();
-        }
-        return Province::orderBy('name', 'asc')->get();
+        $provinces = Province::with(['region', 'municipalities'])->get();
+        return response()->json($provinces);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required',
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
             'region_id' => 'required|exists:regions,id',
         ]);
-        return Province::create($validated);
+
+        $province = Province::create($validatedData);
+        return response()->json($province, 201);
     }
 
-    public function show(Province $province)
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
     {
-        return $province;
+        $province = Province::with(['region', 'municipalities'])->findOrFail($id);
+        return response()->json($province);
     }
 
-    public function update(Request $request, Province $province)
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'name' => 'required',
-            'region_id' => 'required|exists:regions,id',
+        $province = Province::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'region_id' => 'sometimes|exists:regions,id',
         ]);
-        $province->update($validated);
-        return $province;
+
+        $province->update($validatedData);
+        return response()->json($province);
     }
 
-    public function destroy(Province $province)
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
     {
+        $province = Province::findOrFail($id);
         $province->delete();
-        return response()->noContent();
+
+        return response()->json(['message' => 'Province deleted successfully']);
     }
 }

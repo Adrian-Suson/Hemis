@@ -47,7 +47,7 @@ const CampusManagement = () => {
     }, []);
 
     if (loading) {
-        return <CampusManagementSkeleton />;
+        return Loading...;
     }
 
     return (

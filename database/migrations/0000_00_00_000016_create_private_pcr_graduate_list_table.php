@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('Private_prc_graduate_list', function (Blueprint $table) {
+        Schema::create('private_prc_graduate_list', function (Blueprint $table) {
             $table->id();
-
+            $table->foreignId('private_detail_id')->constrained('private_details')->onDelete('cascade');
             // Student Identification
             $table->string('student_id')->unique();
 
@@ -44,6 +44,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('Private_prc_graduate_list');
+        Schema::dropIfExists('private_prc_graduate_list');
     }
 };

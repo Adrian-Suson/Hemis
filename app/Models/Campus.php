@@ -12,7 +12,8 @@ class Campus extends Model
     protected $table = 'campuses';
 
     protected $fillable = [
-        'suc_name',
+        'suc_details_id',
+        'name',
         'campus_type',
         'institutional_code',
         'region',
@@ -27,19 +28,20 @@ class Campus extends Model
         'latitude_coordinates',
         'longitude_coordinates',
         'report_year',
-        'institution_id', // Updated to institution_id
     ];
 
     protected $casts = [
+        'year_first_operation' => 'integer',
         'land_area_hectares' => 'decimal:2',
         'distance_from_main' => 'decimal:2',
         'latitude_coordinates' => 'decimal:6',
         'longitude_coordinates' => 'decimal:6',
+        'report_year' => 'integer',
     ];
 
-    public function institution()
+    public function sucDetail()
     {
-        return $this->belongsTo(Institution::class, 'institution_id', 'id'); // Updated to use institution_id
+        return $this->belongsTo(SucDetail::class, 'suc_details_id');
     }
 
     public function reportYear()

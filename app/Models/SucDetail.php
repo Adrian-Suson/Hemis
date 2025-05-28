@@ -2,26 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SucDetail extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
     protected $table = 'suc_details';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'institution_uiid',
         'region',
@@ -39,18 +28,12 @@ class SucDetail extends Model
         'head_name',
         'head_title',
         'head_education',
-        'institution_type',
         'sec_registration',
         'year_granted_approved',
         'year_converted_college',
         'year_converted_university',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
         'year_established' => 'integer',
         'report_year' => 'integer',
@@ -59,11 +42,43 @@ class SucDetail extends Model
         'year_converted_university' => 'integer',
     ];
 
-    /**
-     * Get the HEI associated with the SUC detail.
-     */
     public function hei()
     {
         return $this->belongsTo(Hei::class, 'institution_uiid', 'uiid');
+    }
+
+    public function reportYear()
+    {
+        return $this->belongsTo(ReportYear::class, 'report_year', 'year');
+    }
+
+    public function pcrGraduates()
+    {
+        return $this->hasMany(SucPcrGraduate::class, 'suc_details_id');
+    }
+
+    public function researchForms()
+    {
+        return $this->hasMany(SucNfResearchForm::class, 'suc_details_id');
+    }
+
+    public function formE2s()
+    {
+        return $this->hasMany(SucFormE2::class, 'suc_details_id');
+    }
+
+    public function formE1s()
+    {
+        return $this->hasMany(SucFormE1::class, 'suc_details_id');
+    }
+
+    public function campuses()
+    {
+        return $this->hasMany(Campus::class, 'suc_details_id');
+    }
+
+    public function formBs()
+    {
+        return $this->hasMany(SucFormB::class, 'suc_details_id');
     }
 }

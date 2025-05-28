@@ -13,9 +13,8 @@ return new class extends Migration
     {
         Schema::create('private_form_e5', function (Blueprint $table) {
             $table->id();
-            $table->string('faculty_name_ln')->nullable();
-            $table->string('faculty_name_fn')->nullable();
-            $table->string('faculty_name_mi')->nullable();
+            $table->foreignId('private_detail_id')->constrained('private_details')->onDelete('cascade');
+            $table->string('faculty_name')->nullable();
             $table->string('full_time_part_time_code')->nullable();
             $table->string('gender_code')->nullable();
             $table->string('primary_teaching_discipline_code')->nullable();
