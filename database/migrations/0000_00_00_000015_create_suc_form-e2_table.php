@@ -4,14 +4,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateFacultyProfilesTable extends Migration
+class CreateSucFormE2Table extends Migration
 {
     public function up()
     {
         // Create faculty_profiles table with institution relationship
-        Schema::create('faculty_profiles', function (Blueprint $table) {
+        Schema::create('suc_form_e2', function (Blueprint $table) {
             $table->id();
-             $table->foreign('suc_details_id')
+            $table->unsignedBigInteger('suc_details_id');
+            $table->foreign('suc_details_id')
                 ->references('id')
                 ->on('suc_details')
                 ->onDelete('cascade'); // Delete research form if associated details are deleted
@@ -71,13 +72,23 @@ class CreateFacultyProfilesTable extends Migration
                 ->references('year')
                 ->on('report_years')
                 ->onDelete('set null');
+            $table->string('faculty_type')->nullable(); // 1 - Full-time, 2 - Part-time
             $table->timestamps();
             $table->softDeletes(); // added soft delete support
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('faculty_group'); // Index for filtering by faculty group
+            $table->index('name'); // Index for filtering by faculty name
+            $table->index('generic_faculty_rank'); // Index for filtering by faculty rank
+            $table->index('gender'); // Index for filtering by gender
+            $table->index('highest_degree_attained'); // Index for filtering by highest degree
+            $table->index('faculty_type'); // Index for filtering by faculty type
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('faculty_profiles');
+        Schema::dropIfExists('suc_form_e2');
     }
 }

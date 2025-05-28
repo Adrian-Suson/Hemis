@@ -9,6 +9,7 @@ return new class extends Migration {
     {
         Schema::create('suc_pcr_graduate_list', function (Blueprint $table) {
             $table->id(); // Auto-incrementing primary key
+            $table->unsignedBigInteger('suc_details_id');
             $table->foreign('suc_details_id')
                 ->references('id')
                 ->on('suc_details')
@@ -31,6 +32,15 @@ return new class extends Migration {
                 ->onDelete('cascade'); // Foreign key to report_years table
             $table->timestamps(); // Created_at and updated_at timestamps
             $table->softDeletes(); // added soft delete support
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('last_name'); // Index for filtering by last name
+            $table->index('first_name'); // Index for filtering by first name
+            $table->index('sex'); // Index for filtering by gender
+            $table->index('program_name'); // Index for filtering by program name
+            $table->index('year_granted'); // Index for filtering by year granted
+            $table->index('report_year'); // Index for filtering by report year
         });
     }
 

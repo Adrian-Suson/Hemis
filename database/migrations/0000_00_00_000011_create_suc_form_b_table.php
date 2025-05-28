@@ -9,6 +9,7 @@ return new class extends Migration {
     {
         Schema::create('suc_form_b', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('suc_details_id');
             $table->foreign('suc_details_id')
                 ->references('id')
                 ->on('suc_details')
@@ -29,7 +30,6 @@ return new class extends Migration {
             $table->integer('total_units')->nullable();
             $table->decimal('tuition_per_unit', 10, 2)->nullable();
             $table->decimal('program_fee', 10, 2)->nullable();
-            $table->string('program_type', 255)->nullable();
 
             // Enrollment-related columns
             $table->integer('new_students_freshmen_male')->nullable();
@@ -68,8 +68,18 @@ return new class extends Migration {
                 ->references('year')
                 ->on('report_years')
                 ->onDelete('set null');
+
+            $table->string('program_type', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('program_name'); // Index for filtering by program name
+            $table->index('program_code'); // Index for filtering by program code
+            $table->index('aop_year'); // Index for filtering by authority to offer year
+            $table->index('report_year'); // Index for filtering by report year
+            $table->index('program_type'); // Index for filtering by program type
         });
     }
 

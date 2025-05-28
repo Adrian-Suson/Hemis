@@ -2,17 +2,28 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PrivateDetail extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
     protected $table = 'private_details';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
-        'institution_uiid',
+        'hei_uiid',
         'region',
         'province',
         'municipality',
@@ -36,43 +47,19 @@ class PrivateDetail extends Model
         'y_coordinate',
     ];
 
-    protected $casts = [
-        'year_established' => 'integer',
-        'report_year' => 'integer',
-        'year_granted_approved' => 'integer',
-        'year_converted_college' => 'integer',
-        'year_converted_university' => 'integer',
-        'x_coordinate' => 'decimal:7',
-        'y_coordinate' => 'decimal:7',
-    ];
-
+    /**
+     * Get the HEI associated with the private detail.
+     */
     public function hei()
     {
-        return $this->belongsTo(Hei::class, 'institution_uiid', 'uiid');
+        return $this->belongsTo(Hei::class, 'hei_uiid', 'uiid');
     }
 
+    /**
+     * Get the report year associated with the private detail.
+     */
     public function reportYear()
     {
         return $this->belongsTo(ReportYear::class, 'report_year', 'year');
-    }
-
-    public function deanProfiles()
-    {
-        return $this->hasMany(PrivateDeanProfile::class, 'private_detail_id');
-    }
-
-    public function formE5s()
-    {
-        return $this->hasMany(PrivateFormE5::class, 'private_detail_id');
-    }
-
-    public function formBCs()
-    {
-        return $this->hasMany(PrivateFormBC::class, 'private_detail_id');
-    }
-
-    public function prcGraduates()
-    {
-        return $this->hasMany(PrivatePrcGraduate::class, 'private_detail_id');
     }
 }

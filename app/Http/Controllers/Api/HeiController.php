@@ -11,9 +11,18 @@ class HeiController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $heis = Hei::all();
+        // Get the type from the query parameter
+        $type = $request->query('type');
+
+        // Fetch HEIs with related details filtered by type if provided
+        $heis = Hei::with(['lucDetails', 'privateDetails', 'otherDetails']) // Eager load relationships
+            ->when($type, function ($query, $type) {
+                return $query->where('type', $type);
+            })
+            ->get();
+
         return response()->json($heis);
     }
 

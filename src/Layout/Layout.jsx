@@ -22,15 +22,19 @@ const MenuIcon = ({ className = "" }) => (
     </svg>
 );
 
+MenuIcon.propTypes = {
+    className: PropTypes.string,
+};
+
 const Layout = ({ userRole }) => {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar starts closed
     const [isMinimized, setIsMinimized] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
-        <div className="flex flex-col sm:flex-row w-full h-full">
+        <div className="flex flex-col w-full h-full">
             {/* Mobile AppBar - only show on screens smaller than 600px */}
-            <header className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-blue-600 shadow-md">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-blue-600 shadow-md sm:hidden">
                 <div className="flex items-center px-4 py-3">
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -45,31 +49,20 @@ const Layout = ({ userRole }) => {
                 </div>
             </header>
 
-            {/* Mobile Sidebar */}
-            <div className="sm:hidden">
-                <Sidebar
-                    userRole={userRole}
-                    isNonMobile={false}
-                    drawerWidth="300px"
-                    isSidebarOpen={mobileMenuOpen}
-                    setIsSidebarOpen={setMobileMenuOpen}
-                    isMinimized={isMinimized}
-                    setIsMinimized={setIsMinimized}
-                />
-            </div>
-
-            {/* Desktop Sidebar - only show on screens 600px and larger */}
-            <div className="hidden sm:block">
-                <Sidebar
-                    userRole={userRole}
-                    isNonMobile={true}
-                    drawerWidth="300px"
-                    isSidebarOpen={isSidebarOpen}
-                    setIsSidebarOpen={setIsSidebarOpen}
-                    isMinimized={isMinimized}
-                    setIsMinimized={setIsMinimized}
-                />
-            </div>
+            {/* Sidebar - only show on extra small screens */}
+            {mobileMenuOpen && (
+                <div className="sm:hidden">
+                    <Sidebar
+                        userRole={userRole}
+                        isNonMobile={false}
+                        drawerWidth="300px"
+                        isSidebarOpen={mobileMenuOpen}
+                        setIsSidebarOpen={setMobileMenuOpen}
+                        isMinimized={isMinimized}
+                        setIsMinimized={setIsMinimized}
+                    />
+                </div>
+            )}
 
             {/* Main Content Area */}
             <div className="flex-1 mt-16 sm:mt-0">
@@ -83,7 +76,7 @@ const Layout = ({ userRole }) => {
                         setIsMinimized={setIsMinimized}
                     />
                 </div>
-                
+
                 {/* Router Outlet */}
                 <Outlet />
             </div>

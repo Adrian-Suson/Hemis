@@ -2,39 +2,36 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Hei extends Model
 {
-    use SoftDeletes;
+    use HasFactory;
 
-    protected $primaryKey = 'uiid';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    protected $fillable = ['uiid', 'name', 'type'];
 
-    protected $fillable = [
-        'uiid',
-        'name',
-        'type',
-    ];
-
-    protected $casts = [
-        'type' => 'string',
-    ];
-
-    public function sucDetail()
+    /**
+     * Relationship with LucDetail.
+     */
+    public function lucDetails()
     {
-        return $this->hasOne(SucDetail::class, 'institution_uiid', 'uiid');
+        return $this->hasMany(LucDetail::class, 'hei_id');
     }
 
-    public function lucDetail()
+    /**
+     * Relationship with PrivateDetail.
+     */
+    public function privateDetails()
     {
-        return $this->hasOne(LucDetail::class, 'institution_uiid', 'uiid');
+        return $this->hasMany(PrivateDetail::class, 'hei_id');
     }
 
-    public function privateDetail()
+    /**
+     * Relationship with SucDetail.
+     */
+    public function sucDetails()
     {
-        return $this->hasOne(PrivateDetail::class, 'institution_uiid', 'uiid');
+        return $this->hasMany(SucDetail::class, 'hei_id');
     }
 }

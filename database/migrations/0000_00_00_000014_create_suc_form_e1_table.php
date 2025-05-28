@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('suc_form_e1', function (Blueprint $table) {
             $table->id();
-             $table->foreign('suc_details_id')
+            $table->unsignedBigInteger('suc_details_id');
+            $table->foreign('suc_details_id')
                 ->references('id')
                 ->on('suc_details')
                 ->onDelete('cascade'); // Delete research form if associated details are deleted
-            $table->string('faculty_name_ln')->nullable();
-            $table->string('faculty_name_fn')->nullable();
-            $table->string('faculty_name_mi')->nullable();
+            $table->string('faculty_name')->nullable();
             $table->string('generic_faculty_rank')->nullable();
             $table->string('home_college')->nullable();
             $table->string('home_dept')->nullable();
@@ -73,7 +72,16 @@ return new class extends Migration
             $table->decimal('other_official_load_credits', 4, 2)->nullable()->comment('Credit Units');
             $table->decimal('total_work_load', 4, 2)->nullable();
 
+            $table->string('faculty_type')->nullable();
             $table->timestamps();
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('faculty_name'); // Index for filtering by faculty name
+            $table->index('generic_faculty_rank'); // Index for filtering by faculty rank
+            $table->index('gender'); // Index for filtering by gender
+            $table->index('highest_degree_attained'); // Index for filtering by highest degree
+            $table->index('faculty_type'); // Index for filtering by faculty type
         });
     }
 

@@ -21,9 +21,9 @@ const NotFound = () => {
         if (user) {
             // User is logged in, redirect to dashboard based on role
             const destination =
-                user.role === "Super Admin"
+                user.role === "super-admin"
                     ? "/super-admin/dashboard"
-                    : user.role === "HEI Admin"
+                    : user.role === "hei-admin"
                     ? "/hei-admin/dashboard"
                     : "/hei-staff/dashboard";
             navigate(destination);

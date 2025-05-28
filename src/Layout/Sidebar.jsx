@@ -1,35 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
-import {
-    Box,
-    Collapse,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    useTheme,
-    Avatar,
-    Divider,
-    Tooltip,
-    Button,
-} from "@mui/material";
-import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import HomeIcon from "@mui/icons-material/Home";
-import StorageIcon from "@mui/icons-material/Storage";
-import GroupIcon from "@mui/icons-material/Group";
-import PropTypes from "prop-types";
-import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import { useNavigate } from "react-router-dom";
-import Logo from "../assets/ChedLogo.png";
-import DP from "../assets/Profile.png";
-import axios from "axios";
-import config from "../utils/config";
-import { MdAdminPanelSettings } from "react-icons/md";
-import BarChartIcon from "@mui/icons-material/BarChart";
+import { ChevronLeft, Home, Database, Users, BarChart3, ChevronDown, ChevronUp, LogOut, Shield } from "lucide-react";
+import PropTypes from "prop-types"; // Import PropTypes at the top
 
 // Define navigation items based on user role
 const getNavItems = (role) => {
@@ -37,41 +9,41 @@ const getNavItems = (role) => {
         "super-admin": [
             {
                 text: "Dashboard",
-                icon: <HomeIcon />,
+                icon: Home,
                 path: "/super-admin/dashboard",
             },
             {
                 text: "Institutions",
-                icon: <StorageIcon />,
+                icon: Database,
                 path: "/super-admin/institutions",
             },
             {
                 text: "Statistics",
-                icon: <BarChartIcon />,
+                icon: BarChart3,
                 path: "/super-admin/statistics",
             },
         ],
         "hei-admin": [
             {
                 text: "Dashboard",
-                icon: <HomeIcon />,
+                icon: Home,
                 path: "/hei-admin/dashboard",
             },
             {
                 text: "Institutions",
-                icon: <StorageIcon />,
+                icon: Database,
                 path: "/hei-admin/institutions",
             },
         ],
         "hei-staff": [
             {
                 text: "Dashboard",
-                icon: <HomeIcon />,
+                icon: Home,
                 path: "/hei-staff/dashboard",
             },
             {
                 text: "Institutions",
-                icon: <StorageIcon />,
+                icon: Database,
                 path: "/hei-staff/institutions",
             },
         ],
@@ -85,14 +57,14 @@ const getAdminMenuItems = (role) => {
         "super-admin": [
             {
                 text: "User Management",
-                icon: <GroupIcon />,
+                icon: Users,
                 path: "/super-admin/user-management",
             },
         ],
         "hei-admin": [
             {
                 text: "Staff Management",
-                icon: <GroupIcon />,
+                icon: Users,
                 path: "/hei-admin/staff-management",
             },
         ],
@@ -102,40 +74,38 @@ const getAdminMenuItems = (role) => {
 };
 
 const Sidebar = ({
-    drawerWidth = "240px",
     isSidebarOpen,
     setIsSidebarOpen,
     isNonMobile = true,
     isMinimized,
+    // Navigation and API functions as props to make component reusable
+    onNavigate = (path) => console.log('Navigate to:', path),
+    onLogout = () => console.log('Logout clicked'),
+    onFetchUser = () => Promise.resolve({
+        id: 1,
+        name: "John Doe",
+        email: "john@example.com",
+        role: "super-admin",
+        profile_image: null
+    }),
 }) => {
     const [active, setActive] = useState("");
     const [openManagement, setOpenManagement] = useState(false);
-    const navigate = useNavigate();
-    const theme = useTheme();
     const [user, setUser] = useState(null);
 
     const navItems = getNavItems(user?.role);
     const adminMenuItems = getAdminMenuItems(user?.role);
 
     const handleNavigation = (path) => {
-        navigate(path);
+        onNavigate(path);
         setActive(path);
         if (!isNonMobile) setIsSidebarOpen(false); // Close sidebar on mobile after navigation
     };
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const storedUser = JSON.parse(localStorage.getItem("user"));
-
-            const response = await axios.get(
-                `${config.API_URL}/users/${storedUser.id}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-
-            setUser(response.data);
+            const userData = await onFetchUser();
+            setUser(userData);
         } catch (error) {
             console.error("Failed to fetch user:", error);
         }
@@ -147,261 +117,197 @@ const Sidebar = ({
 
     const handleLogout = async () => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.post(
-                `${config.API_URL}/auth/logout`,
-                {},
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            localStorage.clear();
-            navigate("/", { replace: true });
-            window.location.reload(false);
+            await onLogout();
         } catch (error) {
             console.error("Logout failed:", error);
-            localStorage.clear();
-            navigate("/", { replace: true });
-            window.location.reload(false);
         }
     };
 
-    const renderNavItem = ({ text, icon, path }) => {
+    const renderNavItem = ({ text, icon: IconComponent, path }) => {
+        const isActive = active === path;
         return (
-            <ListItem key={text} disablePadding>
-                <ListItemButton
+            <li key={text} className="mb-1">
+                <button
                     onClick={() => handleNavigation(path)}
-                    sx={{
-                        backgroundColor:
-                            active === path
-                                ? theme.palette.primary.light
-                                : "transparent",
-                        color:
-                            active === path
-                                ? theme.palette.primary.contrastText
-                                : theme.palette.text.primary,
-                        "&:hover": {
-                            backgroundColor: theme.palette.primary.light,
-                            color: theme.palette.primary.contrastText,
-                        },
-                        px: 2,
-                        justifyContent: isMinimized ? "center" : "flex-start",
-                    }}
+                    className={`
+                        w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200
+                        ${isActive
+                            ? 'bg-blue-500 text-white shadow-md'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                        }
+                        ${isMinimized ? 'justify-center px-2' : 'justify-start'}
+                    `}
                 >
-                    <ListItemIcon
-                        sx={{
-                            color:
-                                active === path
-                                    ? theme.palette.primary.contrastText
-                                    : theme.palette.text.primary,
-                            minWidth: isMinimized ? "auto" : "56px",
-                            justifyContent: "center",
-                        }}
-                    >
-                        {icon}
-                    </ListItemIcon>
-                    {!isMinimized && <ListItemText primary={text} />}
-                </ListItemButton>
-            </ListItem>
+                    <div className={`flex items-center justify-center ${isMinimized ? '' : 'mr-3'}`}>
+                        <IconComponent size={20} />
+                    </div>
+                    {!isMinimized && (
+                        <span className="font-medium">{text}</span>
+                    )}
+                </button>
+            </li>
         );
     };
 
+    // Overlay for mobile
+    const Overlay = () => (
+        <div
+            className={`
+                fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden
+                ${isSidebarOpen ? 'block' : 'hidden'}
+            `}
+            onClick={() => setIsSidebarOpen(false)}
+        />
+    );
+
     return (
-        <Drawer
-            open={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            variant={isNonMobile ? "persistent" : "temporary"}
-            anchor="left"
-            sx={{
-                width: isMinimized ? "64px" : drawerWidth,
-                "& .MuiDrawer-paper": {
-                    color: theme.palette.text.primary,
-                    backgroundColor: theme.palette.background.default,
-                    boxSizing: "border-box",
-                    width: isMinimized ? "64px" : drawerWidth,
-                    transition: "width 0.3s",
-                    overflowX: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                },
-            }}
-        >
-            <Box>
-                <Box p={isMinimized ? 1.5 : 4}>
-                    <Box
-                        display="flex"
-                        alignItems="center"
-                        gap="0.5rem"
-                        justifyContent="space-between"
-                    >
-                        <Box display="flex" alignItems="center" gap="0.5rem">
-                            <Box
-                                component="img"
-                                alt="logo"
-                                src={Logo}
-                                height={isMinimized ? "35px" : "50px"}
-                                width={isMinimized ? "35px" : "50px"}
-                                borderRadius="50%"
-                                sx={{ objectFit: "cover" }}
-                            />
+        <>
+            <Overlay />
+            <div
+                className={`
+                    fixed left-0 top-0 h-full bg-white shadow-xl z-50 flex flex-col
+                    transition-all duration-300 ease-in-out
+                    ${isMinimized ? 'w-16' : 'w-60'}
+                    ${isNonMobile
+                        ? (isSidebarOpen ? 'translate-x-0' : '-translate-x-full')
+                        : (isSidebarOpen ? 'translate-x-0' : '-translate-x-full')
+                    }
+                    md:${isNonMobile ? 'relative' : 'fixed'}
+                `}
+            >
+                {/* Header */}
+                <div className={`p-${isMinimized ? '3' : '6'} border-b border-gray-200`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <div className={`
+                                rounded-full bg-blue-500 flex items-center justify-center text-white font-bold
+                                ${isMinimized ? 'w-8 h-8 text-sm' : 'w-12 h-12 text-lg'}
+                            `}>
+                                C
+                            </div>
                             {!isMinimized && (
-                                <Typography
-                                    variant="h6"
-                                    fontWeight={600}
-                                    color={theme.palette.text.primary}
-                                >
+                                <h1 className="text-lg font-semibold text-gray-800 leading-tight">
                                     Information Management
-                                </Typography>
+                                </h1>
                             )}
-                        </Box>
+                        </div>
                         {!isNonMobile && (
-                            <IconButton onClick={() => setIsSidebarOpen(false)}>
-                                <ChevronLeftIcon />
-                            </IconButton>
-                        )}
-                    </Box>
-                </Box>
-
-                <Box
-                    sx={{
-                        flexGrow: 1,
-                        overflowY: "auto",
-                        maxHeight: "calc(90vh - 160px)",
-                    }}
-                >
-                    <Divider sx={{ my: 2 }} />
-                    <List>{navItems.map(renderNavItem)}</List>
-
-                    {adminMenuItems.length > 0 && (
-                        <>
-                            <Divider sx={{ my: 2 }} />
-                            <ListItem disablePadding>
-                                <ListItemButton
-                                    onClick={() =>
-                                        setOpenManagement(!openManagement)
-                                    }
-                                    sx={{
-                                        justifyContent: isMinimized
-                                            ? "center"
-                                            : "flex-start",
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: isMinimized
-                                                ? "auto"
-                                                : "56px",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <MdAdminPanelSettings
-                                            fontSize={25}
-                                            color="black"
-                                        />
-                                    </ListItemIcon>
-                                    {!isMinimized && (
-                                        <ListItemText primary="Admin" />
-                                    )}
-                                    {!isMinimized &&
-                                        (openManagement ? (
-                                            <ExpandLess />
-                                        ) : (
-                                            <ExpandMore />
-                                        ))}
-                                </ListItemButton>
-                            </ListItem>
-                            <Collapse
-                                in={openManagement}
-                                timeout="auto"
-                                unmountOnExit
+                            <button
+                                onClick={() => setIsSidebarOpen(false)}
+                                className="p-1 rounded-md hover:bg-gray-100"
                             >
-                                <List sx={{ ml: isMinimized ? 0 : 4 }}>
-                                    {adminMenuItems.map(renderNavItem)}
-                                </List>
-                            </Collapse>
-                        </>
-                    )}
-                </Box>
-            </Box>
-
-            <Box px={isMinimized ? "0.5rem" : "2rem"} mb={2}>
-                <Divider sx={{ my: 2 }} />
-                <Box
-                    mt="10px"
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                    gap="0.5rem"
-                >
-                    <Box
-                        display="flex"
-                        width="100%"
-                        gap="0.75rem"
-                        justifyContent={isMinimized ? "center" : "flex-start"}
-                        alignItems="center"
-                    >
-                        <Avatar
-                            src={user?.profile_image || DP}
-                            sx={{
-                                width: isMinimized ? 40 : 40,
-                                height: isMinimized ? 40 : 40,
-                            }}
-                        >
-                            {user?.email?.charAt(0)}
-                        </Avatar>
-                        {!isMinimized && user && (
-                            <Box display="flex" flexDirection="column">
-                                <Typography variant="body1" fontWeight="600">
-                                    {user.name}
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    color="textSecondary"
-                                >
-                                    {user.role}
-                                </Typography>
-                            </Box>
+                                <ChevronLeft size={20} className="text-gray-600" />
+                            </button>
                         )}
-                    </Box>
-                    <Tooltip title="Log Out" arrow>
-                        <Button
-                            onClick={handleLogout}
-                            variant="contained"
-                            color="error"
-                            sx={{
-                                width: isMinimized ? "40px" : "100%",
-                                borderRadius: "8px",
-                                textTransform: "none",
-                                fontWeight: 600,
-                                padding: isMinimized ? "8px" : "8px 16px",
-                                minWidth: 0,
-                                justifyContent: "center",
-                            }}
-                        >
-                            <ExitToAppIcon />
-                            {!isMinimized && "Logout"}
-                        </Button>
-                    </Tooltip>
-                </Box>
-            </Box>
-        </Drawer>
+                    </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex-1 overflow-y-auto py-4">
+                    <div className="px-3">
+                        <ul className="space-y-1">
+                            {navItems.map(renderNavItem)}
+                        </ul>
+                    </div>
+
+                    {/* Admin Menu */}
+                    {adminMenuItems.length > 0 && (
+                        <div className="mt-6 px-3">
+                            <div className="border-t border-gray-200 pt-4">
+                                <button
+                                    onClick={() => setOpenManagement(!openManagement)}
+                                    className={`
+                                        w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200
+                                        text-gray-700 hover:bg-gray-50
+                                        ${isMinimized ? 'justify-center px-2' : 'justify-between'}
+                                    `}
+                                >
+                                    <div className={`flex items-center ${isMinimized ? '' : 'space-x-3'}`}>
+                                        <Shield size={20} />
+                                        {!isMinimized && (
+                                            <span className="font-medium">Admin</span>
+                                        )}
+                                    </div>
+                                    {!isMinimized && (
+                                        <div className="ml-auto">
+                                            {openManagement ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                        </div>
+                                    )}
+                                </button>
+
+                                <div className={`
+                                    overflow-hidden transition-all duration-300 ease-in-out
+                                    ${openManagement ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
+                                `}>
+                                    <ul className={`mt-2 space-y-1 ${isMinimized ? '' : 'ml-4'}`}>
+                                        {adminMenuItems.map(renderNavItem)}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* User Profile & Logout */}
+                <div className={`p-${isMinimized ? '2' : '4'} border-t border-gray-200`}>
+                    <div className="mb-4">
+                        <div className={`
+                            flex items-center space-x-3
+                            ${isMinimized ? 'justify-center' : 'justify-start'}
+                        `}>
+                            <div className="relative">
+                                {user?.profile_image ? (
+                                    <img
+                                        src={user.profile_image}
+                                        alt="Profile"
+                                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium text-sm border-2 border-gray-200">
+                                        {user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                )}
+                            </div>
+                            {!isMinimized && user && (
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                        {user.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate capitalize">
+                                        {user.role?.replace('-', ' ')}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleLogout}
+                        className={`
+                            flex items-center justify-center w-full bg-red-500 hover:bg-red-600
+                            text-white font-medium rounded-lg transition-colors duration-200
+                            ${isMinimized ? 'p-2' : 'px-4 py-2 space-x-2'}
+                        `}
+                        title="Log Out"
+                    >
+                        <LogOut size={18} />
+                        {!isMinimized && <span>Logout</span>}
+                    </button>
+                </div>
+            </div>
+        </>
     );
 };
 
 Sidebar.propTypes = {
-    drawerWidth: PropTypes.string,
-    isSidebarOpen: PropTypes.bool.isRequired,
-    setIsSidebarOpen: PropTypes.func.isRequired,
-    isNonMobile: PropTypes.bool,
-    isMinimized: PropTypes.bool.isRequired,
-    userRole: PropTypes.oneOf(["super-admin", "hei-admin", "hei-staff"]),
-};
-
-Sidebar.defaultProps = {
-    drawerWidth: "240px",
-    isNonMobile: true,
-    userRole: "hei-staff",
+    drawerWidth: PropTypes.string, // Width of the sidebar
+    isSidebarOpen: PropTypes.bool.isRequired, // Whether the sidebar is open
+    setIsSidebarOpen: PropTypes.func.isRequired, // Function to toggle sidebar state
+    isNonMobile: PropTypes.bool, // Whether the view is non-mobile
+    isMinimized: PropTypes.bool.isRequired, // Whether the sidebar is minimized
+    onNavigate: PropTypes.func, // Function to handle navigation
+    onLogout: PropTypes.func, // Function to handle logout
+    onFetchUser: PropTypes.func, // Function to fetch user data
 };
 
 export default Sidebar;

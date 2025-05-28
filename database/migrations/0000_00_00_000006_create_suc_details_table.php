@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('suc_details', function (Blueprint $table) {
             $table->id();
-            $table->string('institution_uiid', 36);
-            $table->foreign('institution_uiid')
+            $table->string('hei_uiid', 36);
+            $table->foreign('hei_uiid')
                 ->references('uiid')
                 ->on('heis')
                 ->onDelete('cascade');
@@ -39,6 +39,13 @@ return new class extends Migration {
             $table->integer('year_converted_university')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            // Add indexes for faster queries
+            $table->index('hei_uiid'); // Index for faster lookups and joins
+            $table->index('region'); // Index for filtering by region
+            $table->index('province'); // Index for filtering by province
+            $table->index('municipality'); // Index for filtering by municipality
+            $table->index('report_year'); // Index for filtering by report year
         });
     }
 

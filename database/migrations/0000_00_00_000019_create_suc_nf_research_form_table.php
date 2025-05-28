@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('suc_nf_research_form', function (Blueprint $table) {
             $table->id(); // Primary key
-            $table->unsignedBigInteger('suc_details_id'); // Foreign key for suc_details table
+            $table->unsignedBigInteger('suc_details_id');
             $table->foreign('suc_details_id')
                 ->references('id')
                 ->on('suc_details')
@@ -28,6 +28,14 @@ return new class extends Migration
             $table->year('year_of_publication'); // Year of Publication
             $table->string('type_of_publication'); // Type of Publication
             $table->timestamps(); // Created at and Updated at
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('title_of_article'); // Index for filtering by article title
+            $table->index('authors'); // Index for filtering by authors
+            $table->index('book_or_journal_name'); // Index for filtering by book/journal name
+            $table->index('year_of_publication'); // Index for filtering by year of publication
+            $table->index('type_of_publication'); // Index for filtering by type of publication
         });
     }
 

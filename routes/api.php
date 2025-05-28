@@ -23,57 +23,57 @@ use App\Http\Controllers\Api\AdminUserController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
-Route::post('register', [AuthController::class, 'register']);
-Route::post('login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('logout', [AuthController::class, 'logout']);
-    Route::get('me', [AuthController::class, 'me']);
-    Route::put('profile', [AuthController::class, 'updateProfile']);
-    Route::get('admin/users', [AdminUserController::class, 'index']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::get('/admin/users', [AdminUserController::class, 'index']);
 
     // Admin: View all users
-    Route::get('admin/users/{id}', [AdminUserController::class, 'show']);
+    Route::get('/admin/users/{id}', [AdminUserController::class, 'show']);
     // Admin: View a specific user
-    Route::put('admin/users/{id}', [AdminUserController::class, 'update']); // Admin: Update a user
-    Route::delete('admin/users/{id}', [AdminUserController::class, 'destroy']); // Admin: Delete a user
+    Route::put('/admin/users/{id}', [AdminUserController::class, 'update']); // Admin: Update a user
+    Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']); // Admin: Delete a user
 
     // HEI Routes
-    Route::apiResource('heis', HeiController::class);
+    Route::apiResource('/heis', HeiController::class);
 
     // SUC Details Routes
-    Route::apiResource('suc-details', SucDetailsController::class);
+    Route::apiResource('/suc-details', SucDetailsController::class);
     // SUC Form B Routes
-    Route::apiResource('suc-form-b', SucFormBController::class);
+    Route::apiResource('/suc-form-b', SucFormBController::class);
     // SUC Form E1 Routes
-    Route::apiResource('suc-form-e1', SucFormE1Controller::class);
+    Route::apiResource('/suc-form-e1', SucFormE1Controller::class);
     // SUC Form E2 Routes
-    Route::apiResource('suc-form-e2', SucFormE2Controller::class);
+    Route::apiResource('/suc-form-e2', SucFormE2Controller::class);
     // SUC Non-Faculty Research Form Routes
-    Route::apiResource('suc-nf-research-form', SucNfResearchFormController::class);
+    Route::apiResource('/suc-nf-research-form', SucNfResearchFormController::class);
     // SUC PCR Graduate Routes
-    Route::apiResource('suc-pcr-graduate', SucPcrGraduateController::class);
+    Route::apiResource('/suc-pcr-graduate', SucPcrGraduateController::class);
 
     // LUC Details Routes
-    Route::apiResource('luc-details', LucDetailsController::class);
+    Route::apiResource('/luc-details', LucDetailsController::class);
     // LUC Form BC Routes
-    Route::apiResource('luc-form-bc', LucFormBCController::class);
+    Route::apiResource('/luc-form-bc', LucFormBCController::class);
     // LUC Form E5 Routes
-    Route::apiResource('luc-form-e5', LucFormE5Controller::class);
+    Route::apiResource('/luc-form-e5', LucFormE5Controller::class);
     // LUC PRC Graduate Routes
-    Route::apiResource('luc-prc-graduate', LucPrcGraduateController::class);
+    Route::apiResource('/luc-prc-graduate', LucPrcGraduateController::class);
     // LUC Dean Profile Routes
-    Route::apiResource('luc-dean-profiles', LucDeanProfileController::class);
+    Route::apiResource('/luc-dean-profiles', LucDeanProfileController::class);
 
 
     // Private Details Routes
-    Route::apiResource('private-details', PrivateDetailsController::class);
+    Route::apiResource('/private-details', PrivateDetailsController::class);
     // Private Form BC Routes
-    Route::apiResource('private-form-bc', PrivateFormBCController::class);
+    Route::apiResource('/private-form-bc', PrivateFormBCController::class);
     // Private Form E5 Routes
-    Route::apiResource('private-form-e5', PrivateFormE5Controller::class);
+    Route::apiResource('/private-form-e5', PrivateFormE5Controller::class);
     // Private PRC Graduate Routes
-    Route::apiResource('private-prc-graduate', PrivatePrcGraduateController::class);
+    Route::apiResource('/private-prc-graduate', PrivatePrcGraduateController::class);
     // Private Dean Profile Routes
-    Route::apiResource('private-dean-profiles', PrivateDeanProfileController::class);
+    Route::apiResource('/private-dean-profiles', PrivateDeanProfileController::class);
 });

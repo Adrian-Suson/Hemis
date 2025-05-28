@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('private_form_b_C', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('suc_details_id');
             $table->foreignId('private_detail_id')->constrained('private_details')->onDelete('cascade');
+
             // PROGRAM/COURSE
             $table->string('program_name')->nullable();
             $table->string('program_code')->nullable();
             $table->string('major_name')->nullable();
             $table->string('major_code')->nullable();
 
-            //
             $table->integer('with_thesis_dissertation')->nullable()->comment('1 - Yes, 2 - No');
 
             // PROGRAM STATUS
@@ -32,13 +33,11 @@ return new class extends Migration
             $table->string('aop_serial')->nullable();
             $table->integer('aop_year')->nullable();
 
-
             $table->text('remarks')->nullable();
 
             // Program Mode
             $table->string('program_mode_code')->nullable();
             $table->string('program_mode_program')->nullable()->comment('if OT');
-
 
             $table->integer('normal_length_years')->nullable();
             $table->integer('program_credit_units')->nullable();
@@ -71,7 +70,17 @@ return new class extends Migration
             $table->integer('graduates_f')->nullable();
             $table->integer('graduates_total')->nullable();
 
+            $table->integer('program_type')->nullable();
             $table->timestamps();
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('private_detail_id'); // Index for faster lookups and joins
+            $table->index('program_name'); // Index for filtering by program name
+            $table->index('program_code'); // Index for filtering by program code
+            $table->index('year_implemented'); // Index for filtering by year implemented
+            $table->index('aop_year'); // Index for filtering by authority to offer year
+            $table->index(columns: 'program_type'); // Index for filtering by program type
         });
     }
 

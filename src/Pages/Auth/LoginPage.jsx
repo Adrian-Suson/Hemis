@@ -81,9 +81,7 @@ const LoginPage = () => {
         { email, password }
       );
 
-      const token = response.data.data.token;
-      const user = response.data.data.user;
-      const institution = response.data.data.institution;
+     const { user, token } = response.data;
 
       // Check if the user is inactive
       if (user.status === "Inactive") {
@@ -94,8 +92,6 @@ const LoginPage = () => {
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("institution", JSON.stringify(institution));
-
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       // Redirect based on user role

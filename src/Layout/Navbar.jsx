@@ -5,16 +5,17 @@ import config from "../utils/config";
 import DP from "../assets/Profile.png";
 import Logo from "../assets/ChedLogo.png";
 import ProfileDialog from "./ProfileDialog";
-import CustomSnackbar from "../Components/CustomSnackbar";
 import {
     Menu,
     ChevronDown,
     User,
     LogOut,
     X,
-    UserPlus,
     LayoutDashboard,
     Building,
+    Settings,
+    List,
+    Users,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -26,11 +27,6 @@ const Navbar = () => {
     const [activeTabIndex, setActiveTabIndex] = useState(0);
     const [openProfileDialog, setOpenProfileDialog] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: "",
-        severity: "info",
-    });
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Navigation items based on user role
@@ -45,8 +41,42 @@ const Navbar = () => {
                 },
                 {
                     text: "Institutions",
-                    path: "/super-admin/institutions",
                     icon: Building,
+                    dropdown: [
+                        {
+                            text: "SUC",
+                            path: "/super-admin/institutions/suc",
+                        },
+                        {
+                            text: "LUC",
+                            path: "/super-admin/institutions/luc",
+                        },
+                        {
+                            text: "PRIVATE",
+                            path: "/super-admin/institutions/private",
+                        },
+                    ],
+                },
+                {
+                    text: "Admin",
+                    icon: Settings,
+                    dropdown: [
+                        {
+                            text: "User Management",
+                            path: "/super-admin/user-management",
+                            icon: Users,
+                        },
+                        {
+                            text: "System Management",
+                            path: "/super-admin/system-management",
+                            icon: Settings,
+                        },
+                        {
+                            text: "HEI List",
+                            path: "/super-admin/hei-list",
+                            icon: List,
+                        },
+                    ],
                 },
             ],
             "hei-admin": [
@@ -57,8 +87,42 @@ const Navbar = () => {
                 },
                 {
                     text: "Institutions",
-                    path: "/hei-admin/institutions",
                     icon: Building,
+                    dropdown: [
+                        {
+                            text: "SUC",
+                            path: "/hei-admin/institutions/suc",
+                        },
+                        {
+                            text: "LUC",
+                            path: "/hei-admin/institutions/luc",
+                        },
+                        {
+                            text: "PRIVATE",
+                            path: "/hei-admin/institutions/private",
+                        },
+                    ],
+                },
+                {
+                    text: "Admin",
+                    icon: Settings,
+                    dropdown: [
+                        {
+                            text: "Staff Management",
+                            path: "/hei-admin/staff-management",
+                            icon: Users,
+                        },
+                        {
+                            text: "System Management",
+                            path: "/hei-admin/system-management",
+                            icon: Settings,
+                        },
+                        {
+                            text: "HEI List",
+                            path: "/hei-admin/hei-list",
+                            icon: List,
+                        },
+                    ],
                 },
             ],
             "hei-staff": [
@@ -69,23 +133,28 @@ const Navbar = () => {
                 },
                 {
                     text: "Institutions",
-                    path: "/hei-staff/institutions",
                     icon: Building,
+                    dropdown: [
+                        {
+                            text: "SUC",
+                            path: "/hei-staff/institutions/suc",
+                        },
+                        {
+                            text: "LUC",
+                            path: "/hei-staff/institutions/luc",
+                        },
+                        {
+                            text: "PRIVATE",
+                            path: "/hei-staff/institutions/private",
+                        },
+                    ],
                 },
             ],
         };
         return items[role] || [];
     }, [user]);
 
-    // Show snackbar
-    const showSnackbar = useCallback((message, severity = "info") => {
-        setSnackbar({ open: true, message, severity });
-    }, []);
 
-    // Close snackbar
-    const handleSnackbarClose = useCallback(() => {
-        setSnackbar((prev) => ({ ...prev, open: false }));
-    }, []);
 
     // Fetch user profile
     const fetchUserProfile = useCallback(async () => {
@@ -98,17 +167,17 @@ const Navbar = () => {
             if (!storedUser?.id) throw new Error("User data not found");
 
             const response = await axios.get(
-                `${config.API_URL}/users/${storedUser.id}`,
+                `${config.API_URL}/me`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+            console.log("User profile fetched:", response.data);
             setUser(response.data);
         } catch (err) {
             console.error("Fetch user error:", err);
-            showSnackbar(err.message || "Unable to load user profile", "error");
         } finally {
             setLoading(false);
         }
-    }, [showSnackbar]);
+    }, []);
 
     // Handle navigation
     const handleNavigation = useCallback(
@@ -154,7 +223,6 @@ const Navbar = () => {
             window.location.reload();
         } catch (err) {
             console.error("Logout error:", err);
-            showSnackbar("Logout failed, clearing session", "error");
             localStorage.clear();
             setUser(null);
             navigate("/", { replace: true });
@@ -162,16 +230,23 @@ const Navbar = () => {
         } finally {
             setLoading(false);
         }
-    }, [navigate, showSnackbar]);
+    }, [navigate]);
 
     // Update active tab based on location
     useEffect(() => {
         const currentPath = location.pathname;
-        const index = navItems.findIndex(
-            (item) =>
-                item.path === currentPath ||
-                currentPath.startsWith(item.path + "/")
-        );
+        const index = navItems.findIndex((item) => {
+            if (item.path) {
+                return item.path === currentPath || currentPath.startsWith(item.path + "/");
+            } else if (item.dropdown) {
+                return item.dropdown.some(
+                    (dropItem) =>
+                        dropItem.path === currentPath ||
+                        currentPath.startsWith(dropItem.path + "/")
+                );
+            }
+            return false;
+        });
         setActiveTabIndex(index >= 0 ? index : 0);
     }, [location.pathname, navItems]);
 
@@ -203,6 +278,16 @@ const Navbar = () => {
         };
         return paths[user?.role] || "/";
     }, [user]);
+
+    // Check if current path matches any dropdown item
+    const isDropdownItemActive = useCallback((dropdownItems) => {
+        const currentPath = location.pathname;
+        return dropdownItems.some(
+            (item) =>
+                item.path === currentPath ||
+                currentPath.startsWith(item.path + "/")
+        );
+    }, [location.pathname]);
 
     return (
         <>
@@ -238,29 +323,39 @@ const Navbar = () => {
                     <div className="flex items-center gap-2">
                         {/* Desktop Menu Links */}
                         <div className="hidden md:flex items-center space-x-1">
-                            {navItems.map(
-                                ({ text, path, icon: Icon }, index) => (
+                            {navItems.map((item, index) => {
+                                const { text, path, icon: Icon, dropdown } = item;
+                                const hasDropdown = dropdown && dropdown.length > 0;
+                                const isActive = path ?
+                                    (activeTabIndex === index) :
+                                    (activeTabIndex === index || isDropdownItemActive(dropdown));
+
+                                return (
                                     <div
                                         key={text}
                                         className="relative"
                                         data-dropdown
                                     >
                                         <button
-                                            onClick={() =>
-                                                handleNavigation(path)
-                                            }
+                                            onClick={() => {
+                                                if (path) {
+                                                    handleNavigation(path);
+                                                } else if (hasDropdown) {
+                                                    toggleDropdown(`nav-${index}`);
+                                                }
+                                            }}
                                             className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all
-                                            ${
-                                                activeTabIndex === index
-                                                    ? "text-white bg-white/15"
-                                                    : "text-white/85 hover:text-white hover:bg-white/10"
-                                            }
-                                            ${
-                                                loading
-                                                    ? "cursor-not-allowed opacity-60"
-                                                    : "hover:translate-y-[-1px]"
-                                            }
-                                        `}
+                                                ${
+                                                    isActive
+                                                        ? "text-white bg-white/15"
+                                                        : "text-white/85 hover:text-white hover:bg-white/10"
+                                                }
+                                                ${
+                                                    loading
+                                                        ? "cursor-not-allowed opacity-60"
+                                                        : "hover:translate-y-[-1px]"
+                                                }
+                                            `}
                                             disabled={loading}
                                         >
                                             {Icon && (
@@ -270,10 +365,39 @@ const Navbar = () => {
                                                 />
                                             )}
                                             <span>{text}</span>
+                                            {hasDropdown && (
+                                                <ChevronDown
+                                                    size={14}
+                                                    className={`transition-transform duration-200 ${
+                                                        activeDropdown === `nav-${index}` ? "rotate-180" : ""
+                                                    }`}
+                                                />
+                                            )}
                                         </button>
+
+                                        {/* Navigation Dropdown */}
+                                        {hasDropdown && activeDropdown === `nav-${index}` && (
+                                            <div className="absolute top-full left-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 p-1 z-50 animate-fadeIn">
+                                                {dropdown.map((dropItem) => (
+                                                    <button
+                                                        key={dropItem.text}
+                                                        onClick={() => handleNavigation(dropItem.path)}
+                                                        className="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                                    >
+                                                        {dropItem.icon && (
+                                                            <dropItem.icon
+                                                                size={16}
+                                                                className="mr-2 text-[#0038A8]"
+                                                            />
+                                                        )}
+                                                        {dropItem.text}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )
-                            )}
+                                );
+                            })}
                         </div>
 
                         {/* User Menu & Mobile Toggle */}
@@ -300,7 +424,9 @@ const Navbar = () => {
                                         </div>
                                         <ChevronDown
                                             size={16}
-                                            className="text-white"
+                                            className={`text-white transition-transform duration-200 ${
+                                                activeDropdown === "user" ? "rotate-180" : ""
+                                            }`}
                                         />
                                     </button>
 
@@ -329,30 +455,6 @@ const Navbar = () => {
                                                 />
                                                 My Profile
                                             </button>
-
-                                            {/* User Management or Staff Management */}
-                                            {user.role !== "hei-staff" && (
-                                                <button
-                                                    onClick={() => {
-                                                        setActiveDropdown(null);
-                                                        handleNavigation(
-                                                            user.role ===
-                                                                "hei-admin"
-                                                                ? "/hei-admin/staff-management"
-                                                                : "/super-admin/user-management"
-                                                        );
-                                                    }}
-                                                    className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                                                >
-                                                    <UserPlus
-                                                        size={16}
-                                                        className="mr-2 text-[#0038A8]"
-                                                    />
-                                                    {user.role === "hei-admin"
-                                                        ? "Staff Management"
-                                                        : "User Management"}
-                                                </button>
-                                            )}
 
                                             <div className="border-t border-gray-100 mt-1 pt-1">
                                                 <button
@@ -393,6 +495,76 @@ const Navbar = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden bg-[#0038A8] border-t border-white/10">
+                        <div className="px-4 py-2 space-y-1">
+                            {navItems.map((item, index) => {
+                                const { text, path, icon: Icon, dropdown } = item;
+                                const hasDropdown = dropdown && dropdown.length > 0;
+                                const isActive = path ?
+                                    (activeTabIndex === index) :
+                                    (activeTabIndex === index || isDropdownItemActive(dropdown));
+
+                                return (
+                                    <div key={text} data-dropdown>
+                                        <button
+                                            onClick={() => {
+                                                if (path) {
+                                                    handleNavigation(path);
+                                                } else if (hasDropdown) {
+                                                    toggleDropdown(`mobile-nav-${index}`);
+                                                }
+                                            }}
+                                            className={`flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium transition-colors
+                                                ${
+                                                    isActive
+                                                        ? "text-white bg-white/15"
+                                                        : "text-white/85 hover:text-white hover:bg-white/10"
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {Icon && <Icon size={16} />}
+                                                <span>{text}</span>
+                                            </div>
+                                            {hasDropdown && (
+                                                <ChevronDown
+                                                    size={14}
+                                                    className={`transition-transform duration-200 ${
+                                                        activeDropdown === `mobile-nav-${index}` ? "rotate-180" : ""
+                                                    }`}
+                                                />
+                                            )}
+                                        </button>
+
+                                        {/* Mobile Dropdown */}
+                                        {hasDropdown && activeDropdown === `mobile-nav-${index}` && (
+                                            <div className="ml-4 mt-1 space-y-1">
+                                                {dropdown.map((dropItem) => (
+                                                    <button
+                                                        key={dropItem.text}
+                                                        onClick={() => handleNavigation(dropItem.path)}
+                                                        className="flex items-center w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                                    >
+                                                        {dropItem.icon && (
+                                                            <dropItem.icon
+                                                                size={14}
+                                                                className="mr-2"
+                                                            />
+                                                        )}
+                                                        {dropItem.text}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </nav>
 
             {/* Red strip beneath the navbar */}
@@ -418,14 +590,6 @@ const Navbar = () => {
                 fetchUserProfile={fetchUserProfile}
             />
 
-            <CustomSnackbar
-                open={snackbar.open}
-                message={snackbar.message}
-                severity={snackbar.severity}
-                onClose={handleSnackbarClose}
-                autoHideDuration={5000}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            />
         </>
     );
 };

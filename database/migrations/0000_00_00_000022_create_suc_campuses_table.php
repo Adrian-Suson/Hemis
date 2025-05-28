@@ -4,12 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCampusesTable extends Migration
+class CreateSucCampusesTable extends Migration
 {
     public function up()
     {
-        Schema::create('campuses', function (Blueprint $table) {
+        Schema::create('suc_campuses', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('suc_details_id');
+            $table->foreign('suc_details_id')
+                ->references('id')
+                ->on('suc_details')
+                ->onDelete('cascade');
             $table->string('name', 255)->nullable();
             $table->string('campus_type', 255)->nullable();
             $table->string('institutional_code', 255)->nullable();
@@ -29,17 +34,21 @@ class CreateCampusesTable extends Migration
                 ->references('year')
                 ->on('report_years')
                 ->onDelete('set null');
-            $table->foreign('suc_details_id')
-                ->references('id')
-                ->on('suc_details')
-                ->onDelete('cascade'); // Delete research form if associated details are deleted
             $table->timestamps();
             $table->softDeletes(); // added soft delete support
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('name'); // Index for filtering by campus name
+            $table->index('region'); // Index for filtering by region
+            $table->index('province_municipality'); // Index for filtering by province or municipality
+            $table->index('year_first_operation'); // Index for filtering by year of first operation
+            $table->index('report_year'); // Index for filtering by report year
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('campuses');
+        Schema::dropIfExists('suc_campuses');
     }
 }

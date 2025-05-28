@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('private_prc_graduate_list', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('suc_details_id');
             $table->foreignId('private_detail_id')->constrained('private_details')->onDelete('cascade');
+            
             // Student Identification
             $table->string('student_id')->unique();
 
@@ -26,6 +28,7 @@ return new class extends Migration
 
             // Graduation Information
             $table->date('date_graduated')->nullable();
+
             // Program Information
             $table->string('program_name');
             $table->string('program_major');
@@ -36,6 +39,15 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('private_detail_id'); // Index for faster lookups and joins
+            $table->index('last_name'); // Index for filtering by last name
+            $table->index('first_name'); // Index for filtering by first name
+            $table->index('sex'); // Index for filtering by gender
+            $table->index('program_name'); // Index for filtering by program name
+            $table->index('year_granted'); // Index for filtering by year granted
         });
     }
 

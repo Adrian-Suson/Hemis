@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('luc_prc_graduate_list', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('luc_detail_id')->constrained('luc_details')->onDelete('cascade');
-
-            // Student Identification
+            $table->foreignId('luc_detail_id') // Define the column and foreign key in one step
+                ->constrained('luc_details')
+                ->onDelete('cascade');
             $table->string('student_id')->unique();
 
             // Personal Information
@@ -27,6 +27,7 @@ return new class extends Migration
 
             // Graduation Information
             $table->date('date_graduated')->nullable();
+
             // Program Information
             $table->string('program_name');
             $table->string('program_major');
@@ -37,6 +38,14 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
+
+            // Add indexes for faster queries
+            $table->index('luc_detail_id'); // Index for faster lookups and joins
+            $table->index('last_name'); // Index for filtering by last name
+            $table->index('first_name'); // Index for filtering by first name
+            $table->index('sex'); // Index for filtering by gender
+            $table->index('program_name'); // Index for filtering by program name
+            $table->index('year_granted'); // Index for filtering by year granted
         });
     }
 

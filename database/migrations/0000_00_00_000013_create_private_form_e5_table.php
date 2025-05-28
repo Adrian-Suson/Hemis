@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('private_form_e5', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('suc_details_id');
             $table->foreignId('private_detail_id')->constrained('private_details')->onDelete('cascade');
             $table->string('faculty_name')->nullable();
             $table->string('full_time_part_time_code')->nullable();
@@ -39,7 +40,18 @@ return new class extends Migration
             $table->text('subjects_taught')->nullable()->comment('please enumerate');
             $table->string('annual_salary_code')->nullable();
 
+            $table->string('faculty_type')->nullable(); // 1 - Full-time, 2 - Part-time
             $table->timestamps();
+
+            // Add indexes for faster queries
+            $table->index('suc_details_id'); // Index for faster lookups and joins
+            $table->index('private_detail_id'); // Index for faster lookups and joins
+            $table->index('faculty_name'); // Index for filtering by faculty name
+            $table->index('gender_code'); // Index for filtering by gender
+            $table->index('primary_teaching_discipline_code'); // Index for filtering by teaching discipline
+            $table->index('highest_degree_attained_code'); // Index for filtering by highest degree
+            $table->index('faculty_rank_code'); // Index for filtering by faculty rank
+            $table->index('faculty_type'); // Index for filtering by faculty type
         });
     }
 
