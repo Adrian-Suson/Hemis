@@ -16,6 +16,8 @@ import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
 import SucHeiManagement from "./Pages/SuperAdmin/Suc/SucHeis/SucHeiManagement";
+import PrivateHeiManagement from "./Pages/SuperAdmin/Private/PrivateHeiManagement/PrivateHeiManagement";
+import LucHeiManagement from "./Pages/SuperAdmin/Luc/LucHeis/LucHeisManagement";
 
 function ExternalRedirect({ to }) {
     window.location.href = to;
@@ -53,6 +55,8 @@ function App() {
                     >
                         <Route path="super-admin/dashboard" element={<Dashboard />} />
                         <Route path="/super-admin/institutions/suc" element={<SucHeiManagement />} />
+                        <Route path="/super-admin/institutions/luc" element={<LucHeiManagement />} />
+                        <Route path="/super-admin/institutions/private" element={<PrivateHeiManagement />} />
 
 
                     </Route>
