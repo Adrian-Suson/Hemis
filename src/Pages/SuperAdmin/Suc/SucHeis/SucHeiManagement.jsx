@@ -1,67 +1,56 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, GraduationCap, X } from "lucide-react";
+import { Plus, Search, GraduationCap, X, Upload, RefreshCw } from "lucide-react";
 import SucDataTable from "./SucDataTable";
 import SucForm from "./SucForm";
+import SucUploadModal from "./SucUploadModal";
+import config from "../../../../utils/config";
+
 
 function SucHeiManagement() {
     const [sucData, setSucData] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [modalType, setModalType] = useState(""); // 'add' or 'edit'
     const [currentRecord, setCurrentRecord] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Mock data - replace with API calls
+    // API Base URL - adjust this to match your Laravel API
+
+    // Fetch SUC data from API
     useEffect(() => {
-        setSucData([
-            {
-                id: 1,
-                institution_uiid: "SUC-001",
-                institution_name: "University of the Philippines",
-                region: "NCR",
-                province: "Metro Manila",
-                municipality: "Quezon City",
-                address_street: "Diliman",
-                postal_code: "1101",
-                institutional_telephone: "+63-2-8981-8500",
-                institutional_fax: "+63-2-8981-8501",
-                institutional_email: "info@up.edu.ph",
-                institutional_website: "https://up.edu.ph",
-                year_established: 1908,
-                report_year: 2024,
-                head_name: "Angelo A. Jimenez",
-                head_title: "President",
-                head_education: "PhD in Economics",
-                head_telephone: "+63-2-8981-8502",
-                sec_registration: "SEC-UP-001",
-                year_granted_approved: 1908,
-                year_converted_college: null,
-                year_converted_university: 1908,
-            },
-            {
-                id: 2,
-                institution_uiid: "SUC-002",
-                institution_name: "Polytechnic University of the Philippines",
-                region: "NCR",
-                province: "Metro Manila",
-                municipality: "Manila",
-                address_street: "Sta. Mesa",
-                postal_code: "1016",
-                institutional_telephone: "+63-2-5335-1PUP",
-                institutional_email: "info@pup.edu.ph",
-                institutional_website: "https://pup.edu.ph",
-                year_established: 1904,
-                report_year: 2024,
-                head_name: "Dr. Manuel M. Muhi",
-                head_title: "President",
-                head_education: "PhD in Engineering",
-                head_telephone: "+63-2-5335-1900",
-                sec_registration: "SEC-PUP-001",
-                year_granted_approved: 1904,
-                year_converted_college: 1978,
-                year_converted_university: 1978,
-            },
-        ]);
+        fetchSucData();
     }, []);
+
+    const fetchSucData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${config.API_URL}/suc-details`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error response:', errorData);
+                throw new Error(`Failed to fetch SUC data: ${response.status} ${response.statusText}`);
+            }
+            const data = await response.json();
+
+            console.log('Fetching SUC data from:', data);
+            setSucData(data);
+        } catch (error) {
+            console.error('Error fetching SUC data:', error);
+            setError('Failed to load SUC data. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const openModal = (type, record = null) => {
         setModalType(type);
@@ -75,32 +64,129 @@ function SucHeiManagement() {
         setModalType("");
     };
 
-    const handleSave = (formData) => {
-        if (modalType === "add") {
-            const newSuc = { ...formData, id: Date.now() };
-            setSucData([...sucData, newSuc]);
-        } else {
-            setSucData(
-                sucData.map((item) =>
-                    item.id === currentRecord.id
-                        ? { ...item, ...formData }
-                        : item
-                )
-            );
+    const openUploadModal = () => {
+        setIsUploadModalOpen(true);
+    };
+
+    const closeUploadModal = () => {
+        setIsUploadModalOpen(false);
+    };
+
+    const createSucDetail = async (formData) => {
+        try {
+            const response = await fetch(`${config.API_URL}/suc-details`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create SUC detail');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating SUC detail:', error);
+            throw error;
         }
-        closeModal();
+    };
+
+    const updateSucDetail = async (id, formData) => {
+        try {
+            const response = await fetch(`${config.API_URL}/suc-details/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update SUC detail');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating SUC detail:', error);
+            throw error;
+        }
+    };
+
+    const deleteSucDetail = async (id) => {
+        try {
+            const response = await fetch(`${config.API_URL}/suc-details/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
+                    'Accept': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete SUC detail');
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error deleting SUC detail:', error);
+            throw error;
+        }
+    };
+
+    const handleSave = async (formData) => {
+        try {
+            if (modalType === "add") {
+                const newSuc = await createSucDetail(formData);
+                setSucData([...sucData, newSuc]);
+            } else {
+                const updatedSuc = await updateSucDetail(currentRecord.id, formData);
+                setSucData(
+                    sucData.map((item) =>
+                        item.id === currentRecord.id ? updatedSuc : item
+                    )
+                );
+            }
+            closeModal();
+        } catch (error) {
+            alert(`Error ${modalType === 'add' ? 'creating' : 'updating'} SUC record: ${error.message}`);
+        }
     };
 
     const handleEdit = (record) => {
         openModal("edit", record);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (
             window.confirm("Are you sure you want to delete this SUC record?")
         ) {
-            setSucData(sucData.filter((item) => item.id !== id));
+            try {
+                await deleteSucDetail(id);
+                setSucData(sucData.filter((item) => item.id !== id));
+            } catch (error) {
+                alert(`Error deleting SUC record: ${error.message}`);
+            }
         }
+    };
+
+    const handleDataImported = (importedData) => {
+        // Add the imported data to the existing data
+        setSucData(prevData => [...prevData, ...importedData]);
+        // Close the upload modal after successful import
+        setIsUploadModalOpen(false);
+    };
+
+    const handleRefresh = () => {
+        fetchSucData();
     };
 
     const filteredData = sucData.filter(
@@ -112,6 +198,17 @@ function SucHeiManagement() {
             item.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.municipality?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading SUC data...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
@@ -129,6 +226,24 @@ function SucHeiManagement() {
                         and Colleges (SUC) in the Philippines
                     </p>
                 </div>
+
+                {/* Error Alert */}
+                {error && (
+                    <div className="mb-6 p-4 rounded-lg border bg-red-50 border-red-200 text-red-800">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <X className="w-5 h-5 mr-2" />
+                                <span className="font-medium">{error}</span>
+                            </div>
+                            <button
+                                onClick={() => setError(null)}
+                                className="text-red-500 hover:text-red-700"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Main Content */}
                 <div className="bg-white rounded-lg shadow-sm mb-6">
@@ -155,13 +270,34 @@ function SucHeiManagement() {
                                     </span>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => openModal("add")}
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add New SUC
-                            </button>
+                            <div className="flex gap-2">
+                                {/* Refresh Button */}
+                                <button
+                                    onClick={handleRefresh}
+                                    disabled={loading}
+                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                                    Refresh
+                                </button>
+
+                                {/* Upload Excel Button */}
+                                <button
+                                    onClick={openUploadModal}
+                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Upload Excel
+                                </button>
+
+                                <button
+                                    onClick={() => openModal("add")}
+                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add New SUC
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -170,35 +306,28 @@ function SucHeiManagement() {
                         data={filteredData}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        loading={loading}
                     />
                 </div>
             </div>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-5xl shadow-lg rounded-md bg-white">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                                <GraduationCap className="w-5 h-5 mr-2" />
-                                {modalType === "add" ? "Add New" : "Edit"} State
-                                University/College
-                            </h3>
-                            <button
-                                onClick={closeModal}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
+            {/* Upload Modal */}
+            <SucUploadModal
+                isOpen={isUploadModalOpen}
+                onClose={closeUploadModal}
+                onDataImported={handleDataImported}
+            />
 
+            {/* Form Modal */}
+            {isModalOpen && (
                         <SucForm
                             initialData={currentRecord}
                             onSave={handleSave}
                             onCancel={closeModal}
+                            modalType={modalType}
+                            closeModal={closeModal}
                         />
-                    </div>
-                </div>
+
             )}
         </div>
     );

@@ -1,9 +1,24 @@
-import { Edit, Trash2, GraduationCap, Phone, Mail } from "lucide-react";
+import { GraduationCap, Phone, Mail, MoreHorizontal } from "lucide-react";
 import PropTypes from "prop-types";
+import Popper from "../../../../Components/Popper";
+import { useNavigate } from "react-router-dom";
 
 function SucDataTable({ data, onEdit, onDelete }) {
+    const navigate = useNavigate();
+
+    const handleViewCampuses = (suc) => {
+        const SucDetailId = suc.id || suc.id;
+        if (SucDetailId) {
+            navigate(`/super-admin/institutions/suc/campuses/${SucDetailId}`, {
+                state: { heiName: suc.hei_name || suc.institution_name },
+            });
+        } else {
+            console.error("No hei_uiid found for SUC:", suc);
+        }
+    };
+
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
             <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                     <tr>
@@ -34,10 +49,10 @@ function SucDataTable({ data, onEdit, onDelete }) {
                                 <div className="flex items-center">
                                     <div>
                                         <div className="text-sm font-medium text-gray-900">
-                                            {suc.institution_name}
+                                            {suc.institution_name || suc.hei_name}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {suc.institution_uiid}
+                                            {suc.institution_uiid || suc.hei_uiid}
                                         </div>
                                     </div>
                                 </div>
@@ -78,21 +93,44 @@ function SucDataTable({ data, onEdit, onDelete }) {
                                     </div>
                                 )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button
-                                    onClick={() => onEdit(suc)}
-                                    className="text-blue-600 hover:text-blue-900 mr-3"
-                                    title="Edit SUC"
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                                <Popper
+                                    trigger={
+                                        <button
+                                            className="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md p-1"
+                                            title="More Actions"
+                                        >
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                    }
+                                    placement="bottom-end"
+                                    className="w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]"
+                                    offset={[0, 4]}
                                 >
-                                    <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => onDelete(suc.id)}
-                                    className="text-red-600 hover:text-red-900"
-                                    title="Delete SUC"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                    <div className="py-1">
+                                        <button
+                                            onClick={() => handleViewCampuses(suc)}
+                                            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150"
+                                            role="menuitem"
+                                        >
+                                            View Campuses
+                                        </button>
+                                        <button
+                                            onClick={() => onEdit(suc)}
+                                            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150"
+                                            role="menuitem"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete(suc.id)}
+                                            className="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-100 focus:outline-none focus:bg-red-100 transition-colors duration-150"
+                                            role="menuitem"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </Popper>
                             </td>
                         </tr>
                     ))}
@@ -105,8 +143,7 @@ function SucDataTable({ data, onEdit, onDelete }) {
                                         No SUCs found
                                     </p>
                                     <p className="text-sm">
-                                        Try adjusting your search terms or add a
-                                        new SUC.
+                                        Try adjusting your search terms or add a new SUC.
                                     </p>
                                 </div>
                             </td>
@@ -121,44 +158,20 @@ function SucDataTable({ data, onEdit, onDelete }) {
 SucDataTable.propTypes = {
     data: PropTypes.arrayOf(
         PropTypes.shape({
-            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-                .isRequired,
-            institution_uiid: PropTypes.string,
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
             institution_name: PropTypes.string,
+            hei_name: PropTypes.string,
+            institution_uiid: PropTypes.string,
+            hei_uiid: PropTypes.string,
             region: PropTypes.string,
             province: PropTypes.string,
             municipality: PropTypes.string,
-            address_street: PropTypes.string,
-            postal_code: PropTypes.string,
             institutional_telephone: PropTypes.string,
-            institutional_fax: PropTypes.string,
-            head_telephone: PropTypes.string,
             institutional_email: PropTypes.string,
-            institutional_website: PropTypes.string,
-            year_established: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
-            report_year: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
+            year_established: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
             head_name: PropTypes.string,
             head_title: PropTypes.string,
-            head_education: PropTypes.string,
-            sec_registration: PropTypes.string,
-            year_granted_approved: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
-            year_converted_college: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
-            year_converted_university: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
+            year_converted_university: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         })
     ).isRequired,
     onEdit: PropTypes.func.isRequired,

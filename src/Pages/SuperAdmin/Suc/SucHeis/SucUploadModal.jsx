@@ -27,7 +27,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const heiOptions = Array.isArray(heis)
     ? heis.map((hei) => ({
         value: hei.uiid,
-        label: hei.name,
+        label: `${hei.name} (${hei.uiid})`,
         name: hei.name,
       }))
     : [];
@@ -301,137 +301,368 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   };
 
   const processFormA1 = async (worksheet) => {
-    try {
-      setUploadMessage("Processing Form A1 data and saving to database (40%)...");
+  try {
+    setUploadMessage("Processing Form A1 data and saving to database (40%)...");
 
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1,
-        defval: "",
-        raw: false,
-      });
-      console.log("Parsed JSON data from Form A1:", jsonData);
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+      raw: false,
+    });
 
-      const extractedInstitution = {
-        uuid: selectedHei?.uiid || "",
-        name: parseString(jsonData[4]?.[2] || "Unknown"),
-        region_id: parseString(selectedRegion) || null, // Assuming region name is used; adjust if ID is needed
-        address_street: parseString(jsonData[7]?.[2] || ""),
-        municipality_id: parseString(selectedMunicipality) || null, // Assuming name; adjust if ID is needed
-        province_id: parseString(selectedProvince) || null, // Assuming name; adjust if ID is needed
-        postal_code: parseString(jsonData[11]?.[2] || ""),
-        institutional_telephone: parseString(jsonData[12]?.[2] || ""),
-        institutional_fax: parseString(jsonData[13]?.[2] || ""),
-        head_telephone: parseString(jsonData[14]?.[2] || ""),
-        institutional_email: parseString(jsonData[15]?.[2] || ""),
-        institutional_website: parseString(jsonData[16]?.[2] || ""),
-        year_established: toNullableInteger(jsonData[17]?.[2]),
-        sec_registration: parseString(jsonData[18]?.[2] || ""),
-        year_granted_approved: toNullableInteger(jsonData[19]?.[2]),
-        year_converted_college: toNullableInteger(jsonData[20]?.[2]),
-        year_converted_university: toNullableInteger(jsonData[21]?.[2]),
-        head_name: parseString(jsonData[22]?.[2] || ""),
-        head_title: parseString(jsonData[23]?.[2] || ""),
-        head_education: parseString(jsonData[24]?.[2] || ""),
-        institution_type: "SUC", // Hardcoded as SUC based on fetchHeis filter
-        report_year: parseInteger(selectedYear, 1800, new Date().getFullYear()),
-      };
-
-      if (!extractedInstitution.name) {
-        throw new Error("Institution name is required for Form A1.");
-      }
-
-      setUploadMessage("Saving Form A1 data to database (50%)...");
-
-      const token = localStorage.getItem("token");
-      const institutionResponse = await axios.post(
-        `${config.API_URL}/suc-details`,
-        extractedInstitution,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("Institution response:", institutionResponse.data);
-
-      // Simulate createLog (replace with actual implementation if available)
-      console.log({
-        action: "uploaded_institution",
-        description: `Uploaded institution: ${extractedInstitution.name}`,
-      });
-
-      const institutionId = institutionResponse.data.id;
-      if (!institutionId || isNaN(Number(institutionId))) {
-        throw new Error("Invalid institution ID received from server.");
-      }
-      console.log("Institution ID:", institutionId);
-
-      return [{ institution: { id: institutionId, ...extractedInstitution } }];
-    } catch (error) {
-      console.error("Form A1 processing error:", error);
-      throw new Error(error.response?.data?.error || `Failed to process Form A1: ${error.message}`);
+    if (!jsonData || jsonData.length === 0) {
+      throw new Error("Form A1 worksheet is empty or invalid");
     }
-  };
 
-  const processFormA2 = async (worksheet, institutionId) => {
-    try {
-      setUploadMessage("Processing Form A2 data and saving to database (80%)...");
-      console.log("Processing Form A2 worksheet:", worksheet);
+    console.log("Parsed JSON data from Form A1:", jsonData);
 
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1,
-        defval: "",
-        raw: false,
-      });
-      console.log("Parsed JSON data from Form A2:", jsonData);
+    // Dynamic field mapping - based on exact field labels from Form A1
+    const fieldMappings = {
+      institution_name: ["institution name", "institution name (no abbreviation please)"],
+      address_street: ["street", "address of suc main campus", "main campus"],
+      municipality_city: ["municipalitycity", "municipality", "city"],
+      province: ["province"],
+      region: ["region"],
+      postal_code: ["postal or zip code", "postal code", "zip code"],
+      institutional_telephone: ["institutional telephone", "institutional telephone (include area code)"],
+      institutional_fax: ["institutional fax", "institutional fax no", "institutional fax no. (include area code)"],
+      head_telephone: ["institutional head's telephone", "institutional head's telephone ( include area code)", "head telephone"],
+      institutional_email: ["institutional e-mail address", "institutional email", "e-mail address"],
+      institutional_website: ["institutional web site", "web site", "website"],
+      year_established: ["year established"],
+      sec_registration: ["latest sec registration", "latest sec registration/enabling law or charter", "sec registration", "enabling law", "charter"],
+      year_granted_approved: ["year granted or approved", "year granted", "year approved"],
+      year_converted_college: ["year converted to college status", "converted to college", "college status"],
+      year_converted_university: ["year converted to university status", "converted to university", "university status"],
+      head_name: ["name of institutional head", "institutional head", "head name"],
+      head_title: ["title of head of institution", "head title", "title of head"],
+      head_education: ["highest educational attainment of the head", "educational attainment", "head education"]
+    };
 
-      const startRow = 10; // As per handleFileUpload
-      const currentYear = new Date().getFullYear();
+    // Function to find cell value by searching for field labels
+    const findFieldValue = (searchTerms, dataType = 'string') => {
+      for (let rowIndex = 0; rowIndex < jsonData.length; rowIndex++) {
+        const row = jsonData[rowIndex];
+        if (!row || !Array.isArray(row)) continue;
 
-      const processedCampuses = jsonData
-        .slice(startRow)
-        .filter((row) => row.some((cell) => cell !== undefined && cell !== ""))
-        .map((row) => ({
-          suc_name: parseString(row[1]),
-          campus_type: parseString(row[2]),
-          institutional_code: parseString(row[3]),
-          region: regionMapping[row[4]] || parseString(row[4]) || "",
-          province_municipality: parseString(row[5]) || "",
-          year_first_operation: parseInteger(row[6], 1800, currentYear),
-          land_area_hectares: parseNumeric(row[7], 0),
-          distance_from_main: parseNumeric(row[8], 0),
-          autonomous_code: autonomousMapping[row[9]] || parseString(row[9]),
-          position_title: headTitleMapping[row[10]] || parseString(row[10]),
-          head_full_name: parseString(row[11]),
-          former_name: parseString(row[12]),
-          latitude_coordinates: parseNumeric(row[13], -90, 90),
-          longitude_coordinates: parseNumeric(row[14], -180, 180),
-          institution_id: Number.parseInt(institutionId, 10),
-          report_year: parseInteger(selectedYear, 1800, currentYear),
-        }))
-        .filter((campus) => campus.suc_name); // Skip rows without campus name
+        for (let colIndex = 0; colIndex < row.length; colIndex++) {
+          const cell = String(row[colIndex] || "").toLowerCase().trim();
 
-      if (processedCampuses.length === 0) {
-        throw new Error("No valid campus data found in Form A2.");
+          // Check if any search term matches the cell content
+          const matchFound = searchTerms.some(term =>
+            cell.includes(term.toLowerCase()) ||
+            cell === term.toLowerCase()
+          );
+
+          if (matchFound) {
+            // Look for the value in adjacent cells (right, below, or next row same column)
+            const possibleValueCells = [
+              row[colIndex + 1], // Same row, next column
+              row[colIndex + 2], // Same row, two columns right
+              jsonData[rowIndex + 1]?.[colIndex], // Next row, same column
+              jsonData[rowIndex + 1]?.[colIndex + 1], // Next row, next column
+              jsonData[rowIndex]?.[colIndex + 3], // Same row, three columns right
+            ];
+
+            for (const valueCell of possibleValueCells) {
+              if (valueCell !== undefined && valueCell !== null && String(valueCell).trim() !== "") {
+                const cleanValue = String(valueCell).trim();
+                console.log(`Found ${searchTerms[0]}: "${cleanValue}" at position [${rowIndex}][${colIndex}]`);
+
+                // Return parsed value based on data type
+                switch (dataType) {
+                  case 'integer':
+                    return toNullableInteger(cleanValue);
+                  case 'string':
+                  default:
+                    return parseString(cleanValue);
+                }
+              }
+            }
+          }
+        }
       }
 
-      console.log("Processed campuses:", JSON.stringify(processedCampuses, null, 2));
+      console.warn(`Field not found for search terms: ${searchTerms.join(', ')}`);
+      return dataType === 'integer' ? null : null;
+    };
 
-      const token = localStorage.getItem("token");
-      await axios.post(`${config.API_URL}/suc-campuses`, processedCampuses, {
+    // Extract institution data using dynamic field mapping
+    const extractedInstitution = {
+      hei_uiid: selectedHei?.uiid || "",
+      institution_name: findFieldValue(fieldMappings.institution_name),
+      region: parseString(selectedRegion) || findFieldValue(fieldMappings.region),
+      province: parseString(selectedProvince) || findFieldValue(fieldMappings.province),
+      municipality: parseString(selectedMunicipality) || findFieldValue(fieldMappings.municipality_city),
+      address_street: findFieldValue(fieldMappings.address_street),
+      postal_code: findFieldValue(fieldMappings.postal_code),
+      institutional_telephone: findFieldValue(fieldMappings.institutional_telephone),
+      institutional_fax: findFieldValue(fieldMappings.institutional_fax),
+      head_telephone: findFieldValue(fieldMappings.head_telephone),
+      institutional_email: findFieldValue(fieldMappings.institutional_email),
+      institutional_website: findFieldValue(fieldMappings.institutional_website),
+      year_established: findFieldValue(fieldMappings.year_established, 'integer'),
+      sec_registration: findFieldValue(fieldMappings.sec_registration),
+      year_granted_approved: findFieldValue(fieldMappings.year_granted_approved, 'integer'),
+      year_converted_college: findFieldValue(fieldMappings.year_converted_college, 'integer'),
+      year_converted_university: findFieldValue(fieldMappings.year_converted_university, 'integer'),
+      head_name: findFieldValue(fieldMappings.head_name),
+      head_title: findFieldValue(fieldMappings.head_title),
+      head_education: findFieldValue(fieldMappings.head_education),
+      report_year: parseInteger(selectedYear),
+    };
+
+    console.log("Extracted institution data:", extractedInstitution);
+
+    if (!extractedInstitution.hei_uiid) {
+      throw new Error("Institution selection is required for Form A1.");
+    }
+
+    setUploadMessage("Saving Form A1 data to database (50%)...");
+
+    const token = localStorage.getItem("token");
+    const institutionResponse = await axios.post(
+      `${config.API_URL}/suc-details`,
+      extractedInstitution,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+      }
+    );
+
+    console.log("Institution response:", institutionResponse.data);
+
+    // Log the upload action
+    console.log({
+      action: "uploaded_institution",
+      description: `Uploaded institution data for ${selectedHei?.name}`,
+    });
+
+    const institutionId = institutionResponse.data.id;
+    if (!institutionId || isNaN(Number(institutionId))) {
+      throw new Error("Invalid institution ID received from server.");
+    }
+
+    console.log("Institution ID:", institutionId);
+
+    return [{ institution: { id: institutionId, ...extractedInstitution } }];
+
+  } catch (error) {
+    console.error("Form A1 processing error:", error);
+    throw new Error(error.response?.data?.error || `Failed to process Form A1: ${error.message}`);
+  }
+};
+
+  const processFormA2 = async (worksheet, institutionId) => {
+  try {
+    setUploadMessage("Processing Form A2 data and saving to database (80%)...");
+    console.log("Processing Form A2 worksheet:", worksheet);
+
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+      raw: false,
+    });
+
+    if (!jsonData || jsonData.length === 0) {
+      throw new Error("Form A2 worksheet is empty or invalid");
+    }
+
+    console.log("Parsed JSON data from Form A2:", jsonData);
+
+    // Dynamic header detection for Form A2 campus data - based on actual Excel headers
+    const fieldMappings = {
+      seq_no: ["seq. no.", "seq no", "sequence", "no."],
+      suc_name: ["name of the suc campus", "suc campus", "campus name", "name of campus"],
+      campus_type: ["main or satellite", "main or satellite?", "campus type", "type"],
+      institutional_code: ["institutional code", "institutional code (use the one assigned by ched)", "ched code", "code"],
+      region: ["region"],
+      province_municipality: ["municipality/ city and province", "municipality/city and province", "municipality", "city and province", "location"],
+      year_first_operation: ["year of first operation as a suc", "year of first operation", "first operation", "year established"],
+      land_area_hectares: ["land area in hectares", "land area", "hectares", "area"],
+      distance_from_main: ["distance from main campus", "distance from main campus ( kms)", "distance", "kms from main"],
+      autonomous_code: ["autonomous from the main campus", "autonomous from the main campus? (use code)", "autonomous", "autonomy code"],
+      position_title: ["position title of highest official", "position title of highest official in the campus", "position title", "official title"],
+      head_full_name: ["full name of highest official", "full name of highest official in the campus", "full name", "official name"],
+      former_name: ["former name of the campus", "former name of the campus ( if any)", "former name", "previous name"],
+      latitude_coordinates: ["latitude coordinates", "latitude", "lat"],
+      longitude_coordinates: ["longitude coordinates", "longitude", "long", "lng"]
+    };
+
+    // Function to find header row and column mappings
+    const findHeaderMappings = () => {
+      const columnMappings = {};
+      let headerRowIndex = -1;
+
+      // Search for header row (look for rows with multiple field matches)
+      for (let rowIndex = 0; rowIndex < Math.min(15, jsonData.length); rowIndex++) {
+        const row = jsonData[rowIndex];
+        if (!row || !Array.isArray(row)) continue;
+
+        let matchCount = 0;
+        const tempMappings = {};
+
+        for (let colIndex = 0; colIndex < row.length; colIndex++) {
+          const cellValue = String(row[colIndex] || "").toLowerCase().trim();
+
+          // Check each field mapping
+          for (const [fieldKey, searchTerms] of Object.entries(fieldMappings)) {
+            const matchFound = searchTerms.some(term =>
+              cellValue.includes(term.toLowerCase()) ||
+              cellValue === term.toLowerCase()
+            );
+
+            if (matchFound) {
+              tempMappings[fieldKey] = colIndex;
+              matchCount++;
+              console.log(`Found header "${fieldKey}" at column ${colIndex}: "${cellValue}"`);
+              break;
+            }
+          }
+        }
+
+        // If we found a good number of headers, this is likely the header row
+        if (matchCount >= 5) {
+          headerRowIndex = rowIndex;
+          Object.assign(columnMappings, tempMappings);
+          break;
+        }
+      }
+
+      console.log("Header mappings:", columnMappings);
+      console.log("Header row index:", headerRowIndex);
+      return { columnMappings, headerRowIndex };
+    };
+
+    // (Removed unused findDataStartRow function)
+
+    const { columnMappings, headerRowIndex } = findHeaderMappings();
+
+    // If no header found, use the actual column positions from the Excel file
+    const defaultMappings = {
+      seq_no: 0,           // Column A - "Seq. No."
+      suc_name: 1,         // Column B - "NAME OF THE SUC CAMPUS"
+      campus_type: 2,      // Column C - "MAIN OR SATELLITE?"
+      institutional_code: 3, // Column D - "INSTITUTIONAL CODE"
+      region: 4,           // Column E - "REGION"
+      province_municipality: 5, // Column F - "MUNICIPALITY/ CITY AND PROVINCE"
+      year_first_operation: 6,  // Column G - "YEAR OF FIRST OPERATION AS A SUC"
+      land_area_hectares: 7,    // Column H - "LAND AREA IN HECTARES"
+      distance_from_main: 8,    // Column I - "DISTANCE FROM MAIN CAMPUS ( KMS)"
+      autonomous_code: 9,       // Column J - "AUTONOMOUS FROM THE MAIN CAMPUS? (USE CODE)"
+      position_title: 10,       // Column K - "POSITION TITLE OF HIGHEST OFFICIAL IN THE CAMPUS"
+      head_full_name: 11,       // Column L - "FULL NAME OF HIGHEST OFFICIAL IN THE CAMPUS"
+      former_name: 12,          // Column M - "FORMER NAME OF THE CAMPUS ( IF ANY)"
+      latitude_coordinates: 13, // Column N - "LATITUDE COORDINATES"
+      longitude_coordinates: 14 // Column O - "LONGITUDE COORDINATES"
+    };
+
+    const actualMappings = Object.keys(columnMappings).length > 0 ? columnMappings : defaultMappings;
+    const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 13; // Data starts at row 13 based on Excel analysis
+
+    console.log("Using column mappings:", actualMappings);
+    console.log("Starting data from row:", startRow);
+
+    // Helper function to get cell value using dynamic mapping
+    const getCellValue = (row, fieldKey) => {
+      const colIndex = actualMappings[fieldKey];
+      return colIndex !== undefined ? row[colIndex] : undefined;
+    };
+
+    const currentYear = new Date().getFullYear();
+
+    const processedCampuses = jsonData
+      .slice(startRow)
+      .filter((row) => {
+        if (!row || !row.some((cell) => cell !== undefined && cell !== "")) {
+          return false;
+        }
+
+        // More flexible filtering - check if any field has meaningful data
+        const campusName = getCellValue(row, 'suc_name');
+        const institutionalCode = getCellValue(row, 'institutional_code');
+        const region = getCellValue(row, 'region');
+
+        return (campusName && String(campusName).trim().length > 2) ||
+               (institutionalCode && String(institutionalCode).trim().length > 2) ||
+               (region && String(region).trim().length > 1);
+      })
+      .map((row, index) => {
+        const campus = {
+          suc_details_id: Number.parseInt(institutionId, 10), // Required by backend
+          name: parseString(getCellValue(row, 'suc_name')), // Matches 'name' in backend validation
+          campus_type: parseString(getCellValue(row, 'campus_type')),
+          institutional_code: parseString(getCellValue(row, 'institutional_code')),
+          region: regionMapping?.[getCellValue(row, 'region')] || parseString(getCellValue(row, 'region')) || "",
+          province_municipality: parseString(getCellValue(row, 'province_municipality')) || "",
+          year_first_operation: parseInteger(getCellValue(row, 'year_first_operation'), 1800, currentYear),
+          land_area_hectares: parseNumeric(getCellValue(row, 'land_area_hectares'), 0),
+          distance_from_main: parseNumeric(getCellValue(row, 'distance_from_main'), 0),
+          autonomous_code: autonomousMapping?.[getCellValue(row, 'autonomous_code')] || parseString(getCellValue(row, 'autonomous_code')),
+          position_title: headTitleMapping?.[getCellValue(row, 'position_title')] || parseString(getCellValue(row, 'position_title')),
+          head_full_name: parseString(getCellValue(row, 'head_full_name')),
+          former_name: parseString(getCellValue(row, 'former_name')),
+          latitude_coordinates: parseNumeric(getCellValue(row, 'latitude_coordinates'), -90, 90),
+          longitude_coordinates: parseNumeric(getCellValue(row, 'longitude_coordinates'), -180, 180),
+          report_year: parseInteger(selectedYear, 1800, currentYear), // Matches 'report_year' in backend validation
+        };
+
+        // Log each processed campus for debugging
+        console.log(`Processed campus ${index + 1}:`, campus);
+        return campus;
+      })
+      .filter((campus) => {
+        // More flexible final filtering - keep campus if it has essential data
+        return campus.suc_name || campus.institutional_code || campus.region;
       });
 
-      return processedCampuses.map((campus) => ({ sucCampuses: campus }));
-    } catch (error) {
-      console.error("Form A2 processing error:", error);
-      throw new Error(error.response?.data?.error || `Failed to process Form A2: ${error.message}`);
+    if (processedCampuses.length === 0) {
+      // Enhanced error message with debugging info
+      console.error("Debugging info for Form A2:");
+      console.error("Total rows in sheet:", jsonData.length);
+      console.error("Start row:", startRow);
+      console.error("Column mappings:", actualMappings);
+      console.error("Sample rows around start position:");
+      for (let i = Math.max(0, startRow - 2); i < Math.min(jsonData.length, startRow + 5); i++) {
+        console.error(`Row ${i}:`, jsonData[i]);
+      }
+
+      throw new Error(`No valid campus data found in Form A2.
+        Debug info:
+        - Total rows: ${jsonData.length}
+        - Data start row: ${startRow}
+        - Header found at row: ${headerRowIndex}
+        - Column mappings found: ${Object.keys(columnMappings).length}
+        Please check if the worksheet contains campus data with names, codes, or regions.`);
     }
-  };
+
+    console.log("Final processed campuses:", JSON.stringify(processedCampuses, null, 2));
+
+    const token = localStorage.getItem("token");
+    const response = await axios.post(`${config.API_URL}/suc-campus`, processedCampuses, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log("Campus data saved successfully:", response.data);
+
+    // Log the upload action
+    console.log({
+      action: "uploaded_campuses",
+      description: `Uploaded ${processedCampuses.length} campus records`,
+    });
+
+    return processedCampuses.map((campus) => ({ sucCampuses: campus }));
+
+  } catch (error) {
+    console.error("Form A2 processing error:", error);
+    throw new Error(error.response?.data?.error || `Failed to process Form A2: ${error.message}`);
+  }
+};
 
   if (!isOpen) return null;
 

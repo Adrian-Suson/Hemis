@@ -19,7 +19,8 @@ use App\Http\Controllers\Api\PrivatePrcGraduateController;
 use App\Http\Controllers\Api\PrivateDeanProfileController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdminUserController;
-
+use App\Http\Controllers\Api\SucCampusController;
+use App\Http\Controllers\Api\LocationController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -35,14 +36,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin: View all users
     Route::get('/admin/users/{id}', [AdminUserController::class, 'show']);
     // Admin: View a specific user
-    Route::put('/admin/users/{id}', [AdminUserController::class, 'update']); // Admin: Update a user
-    Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']); // Admin: Delete a user
+    Route::put('/admin/users/{id}', [AdminUserController::class, 'update']);
+    Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']);
 
     // HEI Routes
     Route::apiResource('/heis', HeiController::class);
 
     // SUC Details Routes
     Route::apiResource('/suc-details', SucDetailsController::class);
+    // SUC Campus Routes
+    Route::apiResource('/suc-campus', SucCampusController::class);
     // SUC Form B Routes
     Route::apiResource('/suc-form-b', SucFormBController::class);
     // SUC Form E1 Routes
@@ -76,4 +79,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/private-prc-graduate', PrivatePrcGraduateController::class);
     // Private Dean Profile Routes
     Route::apiResource('/private-dean-profiles', PrivateDeanProfileController::class);
+
+
+    // Location Routes
+    Route::get('/regions', [LocationController::class, 'getRegions']);
+    Route::get('/provinces', [LocationController::class, 'getProvinces']);
+    Route::get('/municipalities', [LocationController::class, 'getMunicipalities']);
+
+    Route::get('/regions/{id}', [LocationController::class, 'showRegion']);
+    Route::get('/provinces/{id}', [LocationController::class, 'showProvince']);
+    Route::get('/municipalities/{id}', [LocationController::class, 'showMunicipality']);
 });

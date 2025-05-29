@@ -170,7 +170,6 @@ const Navbar = () => {
                 `${config.API_URL}/me`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log("User profile fetched:", response.data);
             setUser(response.data);
         } catch (err) {
             console.error("Fetch user error:", err);

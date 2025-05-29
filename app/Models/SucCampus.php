@@ -2,15 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Campus extends Model
+class SucCampus extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'campuses';
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'suc_campuses';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
         'suc_details_id',
         'name',
@@ -30,20 +41,17 @@ class Campus extends Model
         'report_year',
     ];
 
-    protected $casts = [
-        'year_first_operation' => 'integer',
-        'land_area_hectares' => 'decimal:2',
-        'distance_from_main' => 'decimal:2',
-        'latitude_coordinates' => 'decimal:6',
-        'longitude_coordinates' => 'decimal:6',
-        'report_year' => 'integer',
-    ];
-
+    /**
+     * Define the relationship with the SucDetail model.
+     */
     public function sucDetail()
     {
         return $this->belongsTo(SucDetail::class, 'suc_details_id');
     }
 
+    /**
+     * Define the relationship with the ReportYear model.
+     */
     public function reportYear()
     {
         return $this->belongsTo(ReportYear::class, 'report_year', 'year');

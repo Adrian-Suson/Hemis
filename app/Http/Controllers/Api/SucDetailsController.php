@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SucDetail;
+use App\Models\Hei;
 use Illuminate\Http\Request;
 
 class SucDetailsController extends Controller
@@ -13,7 +14,12 @@ class SucDetailsController extends Controller
      */
     public function index()
     {
-        $sucDetails = SucDetail::all();
+        $sucDetails = SucDetail::all()->map(function ($sucDetail) {
+            $hei = Hei::where('uiid', $sucDetail->hei_uiid)->first();
+            $sucDetail->hei_name = $hei ? $hei->name : null; // Add HEI name to the response
+            return $sucDetail;
+        });
+
         return response()->json($sucDetails);
     }
 
@@ -23,7 +29,7 @@ class SucDetailsController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'institution_uiid' => 'required|string|max:36',
+            'hei_uiid' => 'required|string|max:36',
             'region' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
             'municipality' => 'nullable|string|max:255',
@@ -66,7 +72,7 @@ class SucDetailsController extends Controller
         $sucDetail = SucDetail::findOrFail($id);
 
         $validatedData = $request->validate([
-            'institution_uiid' => 'sometimes|string|max:36',
+            'hei_uiid' => 'sometimes|string|max:36',
             'region' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
             'municipality' => 'nullable|string|max:255',

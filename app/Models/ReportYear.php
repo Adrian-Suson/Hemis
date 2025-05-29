@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ReportYear extends Model
 {
-    use SoftDeletes;
 
     protected $table = 'report_years';
 
