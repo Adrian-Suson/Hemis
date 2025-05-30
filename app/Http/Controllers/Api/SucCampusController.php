@@ -21,7 +21,7 @@ class SucCampusController extends Controller
             }
 
             // Log the incoming request
-            Log:info("Fetching campuses for suc_details_id: $sucDetailsId");
+            Log::info("Fetching campuses for suc_details_id: $sucDetailsId");
 
             $sucCampuses = SucCampus::with(['sucDetail', 'reportYear'])
                 ->where('suc_details_id', $sucDetailsId)
@@ -42,27 +42,33 @@ class SucCampusController extends Controller
      */
     public function store(Request $request)
     {
+        Log::info('Incoming request data:', $request->all());
+
         $validatedData = $request->validate([
-            'suc_details_id' => 'required|exists:suc_details,id',
-            'name' => 'required|string|max:255',
-            'campus_type' => 'nullable|string|max:255',
-            'institutional_code' => 'nullable|string|max:255',
-            'region' => 'nullable|string|max:255',
-            'province_municipality' => 'nullable|string|max:255',
-            'year_first_operation' => 'nullable|integer',
-            'land_area_hectares' => 'nullable|numeric',
-            'distance_from_main' => 'nullable|numeric',
-            'autonomous_code' => 'nullable|string|max:255',
-            'position_title' => 'nullable|string|max:255',
-            'head_full_name' => 'nullable|string|max:255',
-            'former_name' => 'nullable|string|max:255',
-            'latitude_coordinates' => 'nullable|numeric',
-            'longitude_coordinates' => 'nullable|numeric',
-            'report_year' => 'nullable|exists:report_years,year',
+            '*.suc_details_id' => 'required|exists:suc_details,id',
+            '*.name' => 'required|string|max:255',
+            '*.campus_type' => 'nullable|string|max:255',
+            '*.institutional_code' => 'nullable|string|max:255',
+            '*.region' => 'nullable|string|max:255',
+            '*.province_municipality' => 'nullable|string|max:255',
+            '*.year_first_operation' => 'nullable|integer',
+            '*.land_area_hectares' => 'nullable|numeric',
+            '*.distance_from_main' => 'nullable|numeric',
+            '*.autonomous_code' => 'nullable|string|max:255',
+            '*.position_title' => 'nullable|string|max:255',
+            '*.head_full_name' => 'nullable|string|max:255',
+            '*.former_name' => 'nullable|string|max:255',
+            '*.latitude_coordinates' => 'nullable|numeric',
+            '*.longitude_coordinates' => 'nullable|numeric',
+            '*.report_year' => 'nullable|exists:report_years,year',
         ]);
 
-        $sucCampus = SucCampus::create($validatedData);
-        return response()->json($sucCampus, 201);
+        $createdCampuses = [];
+        foreach ($validatedData as $campusData) {
+            $createdCampuses[] = SucCampus::create($campusData);
+        }
+
+        return response()->json($createdCampuses, 201);
     }
 
     /**

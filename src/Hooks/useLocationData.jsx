@@ -70,7 +70,13 @@ const useLocationData = () => {
     fetchData();
   }, []);
 
-  return { regions, provinces, municipalities, loading, error };
+  // Helper function to get municipality postal code
+  const getMunicipalityPostalCode = (municipalityName) => {
+    const municipality = municipalities.find(m => m.name === municipalityName);
+    return municipality ? municipality.postal_code : '';
+  };
+
+  return { regions, provinces, municipalities, loading, error, getMunicipalityPostalCode };
 };
 
 export default useLocationData;

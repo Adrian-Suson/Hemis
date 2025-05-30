@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios"; // Import axios
 import { Plus, Search, GraduationCap, X, Upload, RefreshCw } from "lucide-react";
 import SucDataTable from "./SucDataTable";
 import SucForm from "./SucForm";
@@ -16,8 +17,6 @@ function SucHeiManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // API Base URL - adjust this to match your Laravel API
-
     // Fetch SUC data from API
     useEffect(() => {
         fetchSucData();
@@ -27,23 +26,14 @@ function SucHeiManagement() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${config.API_URL}/suc-details`, {
-                method: 'GET',
+            const response = await axios.get(`${config.API_URL}/suc-details`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
                     'Accept': 'application/json',
                 },
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Error response:', errorData);
-                throw new Error(`Failed to fetch SUC data: ${response.status} ${response.statusText}`);
-            }
-            const data = await response.json();
-
-            console.log('Fetching SUC data from:', data);
-            setSucData(data);
+            setSucData(response.data);
         } catch (error) {
             console.error('Error fetching SUC data:', error);
             setError('Failed to load SUC data. Please try again.');
@@ -74,22 +64,15 @@ function SucHeiManagement() {
 
     const createSucDetail = async (formData) => {
         try {
-            const response = await fetch(`${config.API_URL}/suc-details`, {
-                method: 'POST',
+            const response = await axios.post(`${config.API_URL}/suc-details`, formData, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify(formData),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create SUC detail');
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             console.error('Error creating SUC detail:', error);
             throw error;
@@ -98,22 +81,15 @@ function SucHeiManagement() {
 
     const updateSucDetail = async (id, formData) => {
         try {
-            const response = await fetch(`${config.API_URL}/suc-details/${id}`, {
-                method: 'PUT',
+            const response = await axios.put(`${config.API_URL}/suc-details/${id}`, formData, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify(formData),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update SUC detail');
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             console.error('Error updating SUC detail:', error);
             throw error;
@@ -122,18 +98,12 @@ function SucHeiManagement() {
 
     const deleteSucDetail = async (id) => {
         try {
-            const response = await fetch(`${config.API_URL}/suc-details/${id}`, {
-                method: 'DELETE',
+            await axios.delete(`${config.API_URL}/suc-details/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add token from localStorage
                     'Accept': 'application/json',
                 },
             });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to delete SUC detail');
-            }
 
             return true;
         } catch (error) {
@@ -144,11 +114,47 @@ function SucHeiManagement() {
 
     const handleSave = async (formData) => {
         try {
+            // Construct the payload
+            const sucDetailsPayload = {
+                hei_uiid: formData.institution_uiid,
+                region: formData.region || null,
+                province: formData.province || null,
+                municipality: formData.municipality || null,
+                report_year: formData.report_year,
+                address_street: formData.address_street || null,
+                postal_code: formData.postal_code || null,
+                institutional_telephone: formData.institutional_telephone || null,
+                institutional_fax: formData.institutional_fax || null,
+                head_telephone: formData.head_telephone || null,
+                institutional_email: formData.institutional_email || null,
+                institutional_website: formData.institutional_website || null,
+                year_established: formData.year_established || null,
+                head_name: formData.head_name || null,
+                head_title: formData.head_title || null,
+                head_education: formData.head_education || null,
+                sec_registration: formData.sec_registration || null,
+                year_granted_approved: formData.year_granted_approved || null,
+                year_converted_college: formData.year_converted_college || null,
+                year_converted_university: formData.year_converted_university || null,
+                institution_name: formData.institution_name || null,
+            };
+
             if (modalType === "add") {
-                const newSuc = await createSucDetail(formData);
+                // Check if the record already exists
+                const exists = sucData.some(item =>
+                    item.institution_uiid === formData.institution_uiid &&
+                    item.report_year === formData.report_year
+                );
+
+                if (exists) {
+                    alert('This SUC record for the selected year already exists.');
+                    return;
+                }
+
+                const newSuc = await createSucDetail(sucDetailsPayload);
                 setSucData([...sucData, newSuc]);
             } else {
-                const updatedSuc = await updateSucDetail(currentRecord.id, formData);
+                const updatedSuc = await updateSucDetail(currentRecord.id, sucDetailsPayload);
                 setSucData(
                     sucData.map((item) =>
                         item.id === currentRecord.id ? updatedSuc : item

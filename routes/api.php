@@ -45,7 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // SUC Details Routes
     Route::apiResource('/suc-details', SucDetailsController::class);
     // SUC Campus Routes
-    Route::apiResource('/suc-campus', SucCampusController::class);
+    Route::apiResource('/suc-campuses', SucCampusController::class);
     // SUC Form B Routes
     Route::apiResource('/suc-form-b', SucFormBController::class);
     // SUC Form E1 Routes
