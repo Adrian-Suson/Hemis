@@ -2,83 +2,92 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
-    Building2,
+    GraduationCap,
     MoreHorizontal,
     ArrowLeft,
     X,
     Eye,
-    MapPin,
-    User,
-    Globe,
+    BookOpen,
+    Users,
+    Award,
     Search,
     Filter,
     Download,
     Plus,
     TrendingUp,
     Edit,
+    Calendar,
+    DollarSign,
+    Upload,
 } from "lucide-react";
 import Popper from "../../../../Components/Popper";
-import CampusDetailsView from "./CampusDetailsView"; // Import the separate component
-import AddCampusForm from "./AddCampusForm"; // Import the add campus form
-import EditCampusForm from "./EditCampusForm"; // Import the edit campus form
+import ProgramDetailsView from "./ProgramDetailsView";
+import AddProgramForm from "./AddProgramForm";
+import EditProgramForm from "./EditProgramForm";
+import ProgramUploadModal from "./ProgramUploadModal"; // Import ProgramUploadModal
 import config from "../../../../utils/config";
-import axios from "axios"; // Ensure axios is imported
+import axios from "axios";
 
-function SucCampuses() {
+function SucPrograms() {
     const { SucDetailId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const heiName = location.state?.heiName || "Unknown Institution";
 
-    const [campuses, setCampuses] = useState([]);
-    const [filteredCampuses, setFilteredCampuses] = useState([]);
+    const [programs, setPrograms] = useState([]);
+    const [filteredPrograms, setFilteredPrograms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [selectedCampus, setSelectedCampus] = useState(null);
+    const [selectedProgram, setSelectedProgram] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [addLoading, setAddLoading] = useState(false);
     const [editLoading, setEditLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
 
-    // Fetch campuses when component mounts
+    // Fetch programs when component mounts
     useEffect(() => {
-        fetchCampuses();
+        fetchPrograms();
     }, []);
 
-    // Filter campuses based on search and type
+    // Filter programs based on search and filters
     useEffect(() => {
-        let filtered = campuses;
+        let filtered = programs;
 
         if (searchTerm) {
             filtered = filtered.filter(
-                (campus) =>
-                    campus.name
+                (program) =>
+                    program.program_name
                         ?.toLowerCase()
                         .includes(searchTerm.toLowerCase()) ||
-                    campus.municipality
+                    program.program_code
+                        ?.toString()
+                        .includes(searchTerm.toLowerCase()) ||
+                    program.major_name
                         ?.toLowerCase()
                         .includes(searchTerm.toLowerCase()) ||
-                    campus.head_name
+                    program.aop_category
                         ?.toLowerCase()
                         .includes(searchTerm.toLowerCase())
             );
         }
 
+        // Filter by program type based on the specified list
         if (filterType !== "ALL") {
             filtered = filtered.filter(
-                (campus) => campus.campus_type === filterType
+                (program) => program.program_type === filterType
             );
         }
 
-        setFilteredCampuses(filtered);
-    }, [campuses, searchTerm, filterType]);
+        setFilteredPrograms(filtered);
+    }, [programs, searchTerm, filterType]);
 
-    const fetchCampuses = async () => {
+    const fetchPrograms = async () => {
         if (!SucDetailId) {
-            console.error("SucDetailId is undefined. Cannot fetch campuses.");
+            console.error("SucDetailId is undefined. Cannot fetch programs.");
             setError(
                 "Invalid institution ID. Please check the URL or try again."
             );
@@ -89,7 +98,7 @@ function SucCampuses() {
         setLoading(true);
         setError("");
         try {
-            const response = await axios.get(`${config.API_URL}/suc-campuses`, {
+            const response = await axios.get(`${config.API_URL}/suc-form-b`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                     Accept: "application/json",
@@ -99,142 +108,143 @@ function SucCampuses() {
                 },
             });
 
-            const campusData = Array.isArray(response.data)
+            const programData = Array.isArray(response.data)
                 ? response.data
                 : response.data.data || [];
-            setCampuses(campusData);
-            setFilteredCampuses(campusData);
-            console.log("Fetched campuses:", campusData);
-
+            setPrograms(programData);
+            setFilteredPrograms(programData);
+            console.log("Fetched programs:", programData);
         } catch (err) {
-            console.error("Error fetching campuses:", err);
-            setError("Failed to load campuses. Please try again.");
+            console.error("Error fetching programs:", err);
+            setError("Failed to load academic programs. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleViewDetails = (campus) => {
-        setSelectedCampus(campus);
+    const handleUploadPrograms = () => {
+        setIsUploadModalOpen(true);
+    };
+
+    const handleViewDetails = (program) => {
+        setSelectedProgram(program);
         setIsDetailModalOpen(true);
     };
 
-    const handleEdit = (campus) => {
-        setSelectedCampus(campus);
+    const handleEdit = (program) => {
+        setSelectedProgram(program);
         setIsEditModalOpen(true);
     };
 
-    const handleUpdateCampus = async (updatedCampusData) => {
-        setEditLoading(true);
-        try {
-            const response = await axios.put(`${config.API_URL}/suc-campuses/${updatedCampusData.id}`, updatedCampusData, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (response.status === 200) {
-                // Update the campus in the list
-                const updatedCampus = response.data;
-                setCampuses(prev => prev.map(campus =>
-                    campus.id === updatedCampus.id ? updatedCampus : campus
-                ));
-                setFilteredCampuses(prev => prev.map(campus =>
-                    campus.id === updatedCampus.id ? updatedCampus : campus
-                ));
-
-                // Close the modal and show success message
-                setIsEditModalOpen(false);
-                setSelectedCampus(null);
-                console.log("Campus updated successfully:", updatedCampus);
-
-                // You can add a toast notification here if you have one
-                // toast.success("Campus updated successfully!");
-            }
-        } catch (err) {
-            console.error("Error updating campus:", err);
-            setError("Failed to update campus. Please try again.");
-
-            // You can add a toast notification here if you have one
-            // toast.error("Failed to update campus. Please try again.");
-        } finally {
-            setEditLoading(false);
-        }
-    };
-
-    const closeEditModal = () => {
-        setIsEditModalOpen(false);
-        setSelectedCampus(null);
-    };
-
-    const handleAddCampus = () => {
+    const handleAddProgram = () => {
         setIsAddModalOpen(true);
     };
 
-    const handleSaveCampus = async (campusData) => {
+    const handleSaveProgram = async (programData) => {
         setAddLoading(true);
         try {
-            const response = await axios.post(`${config.API_URL}/suc-campuses`, campusData, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                },
-            });
+            const response = await axios.post(
+                `${config.API_URL}/suc-form-b`,
+                programData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
 
             if (response.status === 201) {
-                // Add the new campus to the list
-                const newCampus = response.data;
-                setCampuses(prev => [...prev, newCampus]);
-                setFilteredCampuses(prev => [...prev, newCampus]);
+                const newProgram = response.data;
+                setPrograms((prev) => [...prev, newProgram]);
+                setFilteredPrograms((prev) => [...prev, newProgram]);
 
-                // Close the modal and show success message
                 setIsAddModalOpen(false);
-                console.log("Campus created successfully:", newCampus);
-
-                // You can add a toast notification here if you have one
-                // toast.success("Campus created successfully!");
+                console.log("Program created successfully:", newProgram);
             }
         } catch (err) {
-            console.error("Error creating campus:", err);
-            setError("Failed to create campus. Please try again.");
-
-            // You can add a toast notification here if you have one
-            // toast.error("Failed to create campus. Please try again.");
+            console.error("Error creating program:", err);
+            setError("Failed to create program. Please try again.");
         } finally {
             setAddLoading(false);
         }
     };
 
-    const closeAddModal = () => {
-        setIsAddModalOpen(false);
-    };
-
-    const handleDelete = async (campusId) => {
-        if (!window.confirm("Are you sure you want to delete this campus?"))
-            return;
-
+    const handleUpdateProgram = async (updatedProgramData) => {
+        setEditLoading(true);
         try {
-            const response = await axios.delete(
-                `${config.API_URL}/suc-campus/${campusId}`,
+            const response = await axios.put(
+                `${config.API_URL}/suc-form-b/${updatedProgramData.id}`,
+                updatedProgramData,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.status === 200) {
+                const updatedProgram = response.data;
+                setPrograms((prev) =>
+                    prev.map((program) =>
+                        program.id === updatedProgram.id
+                            ? updatedProgram
+                            : program
+                    )
+                );
+                setFilteredPrograms((prev) =>
+                    prev.map((program) =>
+                        program.id === updatedProgram.id
+                            ? updatedProgram
+                            : program
+                    )
+                );
+
+                setIsEditModalOpen(false);
+                setSelectedProgram(null);
+                console.log("Program updated successfully:", updatedProgram);
+            }
+        } catch (err) {
+            console.error("Error updating program:", err);
+            setError("Failed to update program. Please try again.");
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
+    const handleDelete = async (programId) => {
+        try {
+            const response = await axios.delete(
+                `${config.API_URL}/suc-form-b/${programId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
                         Accept: "application/json",
                     },
                 }
             );
 
             if (response.status === 200) {
-                setCampuses(campuses.filter((campus) => campus.id !== campusId));
-            } else {
-                throw new Error("Failed to delete campus");
+                setPrograms((prev) =>
+                    prev.filter((program) => program.id !== programId)
+                );
+                setFilteredPrograms((prev) =>
+                    prev.filter((program) => program.id !== programId)
+                );
+                console.log("Program deleted successfully.");
             }
         } catch (err) {
-            console.error("Error deleting campus:", err);
-            setError("Failed to delete campus. Please try again.");
+            console.error("Error deleting program:", err);
+            setError("Failed to delete program. Please try again.");
         }
     };
 
@@ -244,7 +254,64 @@ function SucCampuses() {
 
     const closeDetailModal = () => {
         setIsDetailModalOpen(false);
-        setSelectedCampus(null);
+        setSelectedProgram(null);
+    };
+
+    const closeAddModal = () => {
+        setIsAddModalOpen(false);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        setSelectedProgram(null);
+    };
+
+    const closeUploadModal = () => {
+        setIsUploadModalOpen(false);
+    };
+
+    const formatCurrency = (amount) => {
+        if (!amount) return "₱0.00";
+        return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+        }).format(amount);
+    };
+
+    const getTotalEnrollment = (program) => {
+        const fields = [
+            "1st_year_male",
+            "1st_year_female",
+            "2nd_year_male",
+            "2nd_year_female",
+            "3rd_year_male",
+            "3rd_year_female",
+            "4th_year_male",
+            "4th_year_female",
+            "5th_year_male",
+            "5th_year_female",
+            "6th_year_male",
+            "6th_year_female",
+            "7th_year_male",
+            "7th_year_female",
+        ];
+        return fields.reduce(
+            (total, field) => total + (program[field] || 0),
+            0
+        );
+    };
+
+    const getProgramTypeColor = (type) => {
+        switch (type?.toLowerCase()) {
+            case "undergraduate":
+                return "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300";
+            case "graduate":
+                return "bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-300";
+            case "doctoral":
+                return "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-300";
+            default:
+                return "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border-gray-300";
+        }
     };
 
     useEffect(() => {
@@ -266,10 +333,10 @@ function SucCampuses() {
                         </button>
                         <div className="flex-1">
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                Campus Management
+                                Academic Programs Management
                             </h1>
                             <p className="text-gray-600 flex items-center">
-                                <Building2 className="w-4 h-4 mr-2" />
+                                <GraduationCap className="w-4 h-4 mr-2" />
                                 {heiName}
                             </p>
                         </div>
@@ -284,7 +351,7 @@ function SucCampuses() {
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <input
                                             type="text"
-                                            placeholder="Search campuses..."
+                                            placeholder="Search programs..."
                                             value={searchTerm}
                                             onChange={(e) =>
                                                 setSearchTerm(e.target.value)
@@ -297,20 +364,36 @@ function SucCampuses() {
                                         <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <select
                                             value={filterType}
-                                            onChange={(e) =>
-                                                setFilterType(e.target.value)
-                                            }
+                                            onChange={(e) => {
+                                                const selectedType = e.target.value;
+                                                if (selectedType === "ALL") {
+                                                    setFilterType(programs); // Show all programs
+                                                } else {
+                                                    setFilterType(
+                                                        programs.filter(
+                                                            (program) =>
+                                                                program.program_type ===
+                                                                selectedType
+                                                        )
+                                                    ); // Filter by selected type
+                                                }
+                                            }}
                                             className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
                                         >
-                                            <option value="ALL">
-                                                All Types
+                                            <option value="ALL">All Types</option>
+                                            <option value="Doctorate">Doctorate</option>
+                                            <option value="Masters">Masters</option>
+                                            <option value="Post-Baccalaureate">
+                                                Post-Baccalaureate
                                             </option>
-                                            <option value="MAIN">
-                                                Main Campus
+                                            <option value="Baccalaureate">
+                                                Baccalaureate
                                             </option>
-                                            <option value="SATELLITE">
-                                                Satellite Campus
+                                            <option value="Pre-Baccalaureate">
+                                                Pre-Baccalaureate
                                             </option>
+                                            <option value="VocTech">VocTech</option>
+                                            <option value="Basic">Basic</option>
                                         </select>
                                     </div>
                                 </div>
@@ -321,19 +404,26 @@ function SucCampuses() {
                                         Export
                                     </button>
                                     <button
-                                        onClick={handleAddCampus}
+                                        onClick={handleUploadPrograms}
+                                        className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload Excel
+                                    </button>
+                                    <button
+                                        onClick={handleAddProgram}
                                         className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Add Campus
+                                        Add Program
                                     </button>
                                 </div>
                             </div>
 
                             <div className="flex items-center text-sm text-gray-500">
                                 <TrendingUp className="w-4 h-4 mr-1" />
-                                Showing {filteredCampuses.length} of{" "}
-                                {campuses.length} campuses
+                                Showing {filteredPrograms.length} of{" "}
+                                {programs.length} programs
                             </div>
                         </div>
                     </div>
@@ -356,13 +446,13 @@ function SucCampuses() {
                             <div className="flex flex-col items-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
                                 <span className="text-gray-600 font-medium">
-                                    Loading campuses...
+                                    Loading programs...
                                 </span>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    /* Campus Table with Fixed Height */
+                    /* Programs Table */
                     <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 overflow-hidden">
                         {/* Table Header - Fixed */}
                         <div className="bg-gradient-to-r from-gray-50/80 to-blue-50/50 border-b border-gray-200/50">
@@ -371,16 +461,16 @@ function SucCampuses() {
                                     <thead>
                                         <tr>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Campus Information
+                                                Program Information
                                             </th>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Type & Code
+                                                Details & Category
                                             </th>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Location
+                                                Enrollment & Units
                                             </th>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Leadership
+                                                Financials
                                             </th>
                                             <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                                 Actions
@@ -396,10 +486,10 @@ function SucCampuses() {
                             <div className="overflow-x-auto">
                                 <table className="min-w-full">
                                     <tbody className="divide-y divide-gray-200/30">
-                                        {filteredCampuses.map(
-                                            (campus, index) => (
+                                        {filteredPrograms.map(
+                                            (program, index) => (
                                                 <tr
-                                                    key={campus.id}
+                                                    key={program.id}
                                                     className={`hover:bg-blue-50/30 transition-all duration-200 ${
                                                         index % 2 === 0
                                                             ? "bg-white/30"
@@ -409,81 +499,118 @@ function SucCampuses() {
                                                     <td className="px-4 py-4">
                                                         <div className="flex items-center">
                                                             <div className="flex-shrink-0 h-10 w-10">
-                                                                <div
-                                                                    className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                                                                        campus.campus_type ===
-                                                                        "MAIN"
-                                                                            ? "bg-gradient-to-br from-green-100 to-green-200 text-green-700"
-                                                                            : "bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700"
-                                                                    }`}
-                                                                >
-                                                                    <Building2 className="w-5 h-5" />
+                                                                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700">
+                                                                    <GraduationCap className="w-5 h-5" />
                                                                 </div>
                                                             </div>
                                                             <div className="ml-4">
                                                                 <div className="text-sm font-semibold text-gray-900">
                                                                     {
-                                                                        campus.name
+                                                                        program.program_name
                                                                     }
                                                                 </div>
                                                                 <div className="text-xs text-gray-500">
-                                                                    Campus ID:{" "}
-                                                                    {campus.id}
+                                                                    Code:{" "}
+                                                                    {program.program_code ||
+                                                                        "N/A"}
                                                                 </div>
+                                                                {program.major_name && (
+                                                                    <div className="text-xs text-blue-600 font-medium">
+                                                                        Major:{" "}
+                                                                        {
+                                                                            program.major_name
+                                                                        }
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div className="space-y-2">
                                                             <span
-                                                                className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
-                                                                    campus.campus_type ===
-                                                                    "MAIN"
-                                                                        ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
-                                                                        : "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
-                                                                }`}
+                                                                className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getProgramTypeColor(
+                                                                    program.program_type
+                                                                )}`}
                                                             >
-                                                                {
-                                                                    campus.campus_type
-                                                                }
+                                                                {program.program_type ||
+                                                                    "Unknown"}
                                                             </span>
-                                                            <div className="text-xs text-gray-600 font-mono">
-                                                                {campus.institutional_code ||
-                                                                    "No Code"}
+                                                            <div className="text-xs text-gray-600">
+                                                                <div className="flex items-center">
+                                                                    <BookOpen className="w-3 h-3 mr-1 text-gray-400" />
+                                                                    {program.aop_category ||
+                                                                        "No Category"}
+                                                                </div>
+                                                                <div className="flex items-center mt-1">
+                                                                    <Calendar className="w-3 h-3 mr-1 text-gray-400" />
+                                                                    {program.program_normal_length_in_years ||
+                                                                        "N/A"}{" "}
+                                                                    years
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div className="space-y-1">
                                                             <div className="text-sm font-medium text-gray-900 flex items-center">
-                                                                <MapPin className="w-3 h-3 mr-1 text-gray-400" />
-                                                                {
-                                                                    campus.province_municipality
-                                                                }
+                                                                <Users className="w-3 h-3 mr-1 text-gray-400" />
+                                                                {getTotalEnrollment(
+                                                                    program
+                                                                )}{" "}
+                                                                Students
                                                             </div>
                                                             <div className="text-xs text-gray-600">
-                                                                {campus.region}
+                                                                Total Units:{" "}
+                                                                {program.total_units ||
+                                                                    0}
                                                             </div>
-                                                            {campus.latitude &&
-                                                                campus.longitude && (
-                                                                    <div className="text-xs text-green-600 flex items-center">
-                                                                        <Globe className="w-3 h-3 mr-1" />
-                                                                        Geo-located
-                                                                    </div>
-                                                                )}
+                                                            <div className="text-xs text-gray-600">
+                                                                Lab:{" "}
+                                                                {program.lab_units ||
+                                                                    0}{" "}
+                                                                | Lecture:{" "}
+                                                                {program.lecture_units ||
+                                                                    0}
+                                                            </div>
+                                                            {program.graduates_total >
+                                                                0 && (
+                                                                <div className="text-xs text-green-600 flex items-center">
+                                                                    <Award className="w-3 h-3 mr-1" />
+                                                                    {
+                                                                        program.graduates_total
+                                                                    }{" "}
+                                                                    Graduates
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div className="space-y-1">
                                                             <div className="text-sm font-medium text-gray-900 flex items-center">
-                                                                <User className="w-3 h-3 mr-1 text-gray-400" />
-                                                                {campus.head_full_name ||
-                                                                    "Not assigned"}
+                                                                <DollarSign className="w-3 h-3 mr-1 text-gray-400" />
+                                                                {formatCurrency(
+                                                                    program.tuition_per_unit
+                                                                )}
+                                                                /unit
                                                             </div>
-                                                            <div className="text-xs text-gray-600 truncate max-w-32">
-                                                                {campus.position_title ||
-                                                                    "No title"}
+                                                            <div className="text-xs text-gray-600">
+                                                                Program Fee:{" "}
+                                                                {formatCurrency(
+                                                                    program.program_fee
+                                                                )}
                                                             </div>
+                                                            {(program.externally_funded_merit_scholars >
+                                                                0 ||
+                                                                program.internally_funded_grantees >
+                                                                    0) && (
+                                                                <div className="text-xs text-blue-600">
+                                                                    Scholars:{" "}
+                                                                    {(program.externally_funded_merit_scholars ||
+                                                                        0) +
+                                                                        (program.internally_funded_grantees ||
+                                                                            0)}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
@@ -505,7 +632,7 @@ function SucCampuses() {
                                                                 <button
                                                                     onClick={() =>
                                                                         handleViewDetails(
-                                                                            campus
+                                                                            program
                                                                         )
                                                                     }
                                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
@@ -517,26 +644,26 @@ function SucCampuses() {
                                                                 <button
                                                                     onClick={() =>
                                                                         handleEdit(
-                                                                            campus
+                                                                            program
                                                                         )
                                                                     }
                                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
                                                                     role="menuitem"
                                                                 >
                                                                     <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
-                                                                    Edit Campus
+                                                                    Edit Program
                                                                 </button>
                                                                 <button
                                                                     onClick={() =>
                                                                         handleDelete(
-                                                                            campus.id
+                                                                            program.id
                                                                         )
                                                                     }
                                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
                                                                     role="menuitem"
                                                                 >
                                                                     Delete
-                                                                    Campus
+                                                                    Program
                                                                 </button>
                                                             </div>
                                                         </Popper>
@@ -544,7 +671,7 @@ function SucCampuses() {
                                                 </tr>
                                             )
                                         )}
-                                        {filteredCampuses.length === 0 && (
+                                        {filteredPrograms.length === 0 && (
                                             <tr>
                                                 <td
                                                     colSpan="5"
@@ -552,32 +679,22 @@ function SucCampuses() {
                                                 >
                                                     <div className="text-gray-500">
                                                         <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                                                            <Building2 className="w-10 h-10 text-gray-400" />
+                                                            <GraduationCap className="w-10 h-10 text-gray-400" />
                                                         </div>
-                                                        <p className="text-lg font-semibold text-gray-900 mb-2">
-                                                            {searchTerm ||
-                                                            filterType !== "ALL"
-                                                                ? "No matching campuses found"
-                                                                : "No Campuses Found"}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600 mb-4">
-                                                            {searchTerm ||
-                                                            filterType !== "ALL"
-                                                                ? "Try adjusting your search terms or filters."
-                                                                : "This institution has no campuses registered yet."}
-                                                        </p>
-                                                        {!searchTerm &&
-                                                            filterType ===
-                                                                "ALL" && (
+
+                                                        {
+                                                            !searchTerm(
                                                                 <button
-                                                                    onClick={handleAddCampus}
-                                                                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200"
+                                                                    onClick={
+                                                                        handleUploadPrograms
+                                                                    }
+                                                                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all duration-200"
                                                                 >
-                                                                    <Plus className="w-4 h-4 mr-2" />
-                                                                    Add First
-                                                                    Campus
+                                                                    <Upload className="w-4 h-4 mr-2" />
+                                                                    Upload Excel
                                                                 </button>
-                                                            )}
+                                                            )
+                                                        }
                                                     </div>
                                                 </td>
                                             </tr>
@@ -589,37 +706,41 @@ function SucCampuses() {
                     </div>
                 )}
 
-                {/* Campus Detail Modal using separate component */}
-                <CampusDetailsView
+                {/* Program Detail Modal */}
+                <ProgramDetailsView
                     isOpen={isDetailModalOpen}
                     onClose={closeDetailModal}
-                    campusData={selectedCampus}
+                    programData={selectedProgram}
                 />
 
-                {/* Add Campus Modal using separate component */}
-                <AddCampusForm
+                {/* Add Program Modal */}
+                <AddProgramForm
                     isOpen={isAddModalOpen}
                     onClose={closeAddModal}
-                    onSave={handleSaveCampus}
+                    onSave={handleSaveProgram}
                     institutionId={SucDetailId}
                     loading={addLoading}
                 />
 
-                {/* Edit Campus Modal using separate component */}
-                <EditCampusForm
+                {/* Edit Program Modal */}
+                <EditProgramForm
                     isOpen={isEditModalOpen}
                     onClose={closeEditModal}
-                    onSave={handleUpdateCampus}
-                    campusData={selectedCampus}
+                    onSave={handleUpdateProgram}
+                    programData={selectedProgram}
                     loading={editLoading}
+                />
+
+                {/* Upload Programs Modal */}
+                <ProgramUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={closeUploadModal}
+                    institutionId={SucDetailId}
+                    onUploadSuccess={fetchPrograms}
                 />
             </div>
         </div>
     );
 }
 
-SucCampuses.propTypes = {
-    // No props required since data is fetched internally
-};
-
-export default SucCampuses;
+export default SucPrograms;

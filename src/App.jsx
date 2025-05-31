@@ -9,16 +9,17 @@ import PropTypes from "prop-types";
 // Import pages
 import LoginPage from "./Pages/Auth/LoginPage";
 import Dashboard from "./Pages/SuperAdmin/Dashboard/Dashboard";
-
+import SucPrograms from "./Pages/SuperAdmin/Suc/SucPrograms/SucPrograms"; // Import the new page
+import SucHeiManagement from "./Pages/SuperAdmin/Suc/SucHeis/SucHeiManagement";
+import PrivateHeiManagement from "./Pages/SuperAdmin/Private/PrivateHeiManagement/PrivateHeiManagement";
+import LucHeiManagement from "./Pages/SuperAdmin/Luc/LucHeis/LucHeisManagement";
+import SucCampuses from "./Pages/SuperAdmin/Suc/SucCampuses/SucCampuses";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
-import SucHeiManagement from "./Pages/SuperAdmin/Suc/SucHeis/SucHeiManagement";
-import PrivateHeiManagement from "./Pages/SuperAdmin/Private/PrivateHeiManagement/PrivateHeiManagement";
-import LucHeiManagement from "./Pages/SuperAdmin/Luc/LucHeis/LucHeisManagement";
-import SucCampuses from "./Pages/SuperAdmin/Suc/SucCampuses/SucCampuses";
+
 
 function ExternalRedirect({ to }) {
     window.location.href = to;
@@ -59,9 +60,9 @@ function App() {
                         <Route path="/super-admin/institutions/luc" element={<LucHeiManagement />} />
                         <Route path="/super-admin/institutions/private" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/institutions/suc/campuses/:SucDetailId" element={<SucCampuses />} />
+                        <Route path="/super-admin/institutions/suc/programs/:SucDetailId" element={<SucPrograms />} /> {/* New Route */}
                         <Route path="/super-admin/institutions/luc/campuses/:lucDetailId" element={<LucHeiManagement />} />
                         <Route path="/super-admin/institutions/private/campuses/:privateDetailId" element={<PrivateHeiManagement />} />
-
                     </Route>
 
                     {/* HEI Admin Routes under /hei-admin/* */}
@@ -70,10 +71,7 @@ function App() {
                             <ProtectedRoute allowedRoles={["hei-admin"]} />
                         }
                     >
-
-                                {/* <Route path="/hei-admin/institutions/suc" element={<Heis />} /> */}
-
-
+                        {/* Add HEI Admin routes here */}
                     </Route>
 
                     {/* HEI Staff Routes under /hei-staff/* */}
@@ -82,8 +80,7 @@ function App() {
                             <ProtectedRoute allowedRoles={["hei-staff"]} />
                         }
                     >
-
-                    {/* <Route path="/hei-staff/institutions/suc" element={<Heis />} /> */}
+                        {/* Add HEI Staff routes here */}
                     </Route>
 
                     {/* Catch all route for 404 */}

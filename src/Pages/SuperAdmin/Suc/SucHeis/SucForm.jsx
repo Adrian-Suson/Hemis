@@ -7,6 +7,11 @@ import {
   User,
   Calendar,
   GraduationCap,
+  Globe,
+  Award,
+  FileText,
+  Plus,
+  Edit,
 } from 'lucide-react';
 import Select from 'react-select';
 import axios from 'axios';
@@ -15,7 +20,7 @@ import PropTypes from 'prop-types';
 import useLocationData from '../../../../Hooks/useLocationData';
 import Dialog from '../../../../Components/Dialog';
 
-function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
+function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) {
   const [formData, setFormData] = useState({
     institution_uiid: initialData?.institution_uiid || '',
     institution_name: initialData?.institution_name || '',
@@ -39,25 +44,18 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
     year_converted_college: initialData?.year_converted_college || '',
     year_converted_university: initialData?.year_converted_university || ''
   });
+
   const [heis, setHeis] = useState([]);
   const [loadingHeis, setLoadingHeis] = useState(false);
-  const [uiidError, setUiidError] = useState('');
-  const [locationError, setLocationError] = useState('');
+  const [errors, setErrors] = useState({});
 
   // Use the location hook
   const { regions, provinces, municipalities, loading: locationLoading, error: locationFetchError, getMunicipalityPostalCode } = useLocationData();
-
 
   // Fetch HEIs when component mounts
   useEffect(() => {
     fetchHeis();
   }, []);
-
-  useEffect(() => {
-    if (locationFetchError) {
-      setLocationError(locationFetchError);
-    }
-  }, [locationFetchError]);
 
   const fetchHeis = async () => {
     setLoadingHeis(true);
@@ -70,10 +68,62 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
       setHeis(response.data);
     } catch (error) {
       console.error("Error fetching HEIs:", error);
-      setUiidError("Failed to load institutions. Please try again.");
+      setErrors(prev => ({ ...prev, heis: "Failed to load institutions. Please try again." }));
     } finally {
       setLoadingHeis(false);
     }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Required fields
+    if (!formData.institution_uiid.trim()) {
+      newErrors.institution_uiid = "Institution UIID is required";
+    }
+    if (!formData.institution_name.trim()) {
+      newErrors.institution_name = "Institution name is required";
+    }
+    if (!formData.report_year) {
+      newErrors.report_year = "Report year is required";
+    }
+
+    // Email validation
+    if (formData.institutional_email && !/\S+@\S+\.\S+/.test(formData.institutional_email)) {
+      newErrors.institutional_email = "Please enter a valid email address";
+    }
+
+    // Website validation
+    if (formData.institutional_website && !formData.institutional_website.startsWith('http')) {
+      newErrors.institutional_website = "Website must start with http:// or https://";
+    }
+
+    // Year validations
+    const currentYear = new Date().getFullYear();
+    if (formData.year_established && (isNaN(formData.year_established) || formData.year_established < 1800 || formData.year_established > currentYear)) {
+      newErrors.year_established = "Please enter a valid year";
+    }
+    if (formData.report_year && (isNaN(formData.report_year) || formData.report_year < 1800 || formData.report_year > currentYear + 1)) {
+      newErrors.report_year = "Please enter a valid report year";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // Format HEIs for react-select
@@ -119,12 +169,8 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
   };
 
   const handleUiidChange = (selectedOption) => {
-    setFormData({
-      ...formData,
-      institution_uiid: selectedOption ? selectedOption.value : '',
-      institution_name: selectedOption ? selectedOption.name : '',
-    });
-    setUiidError('');
+    handleInputChange('institution_uiid', selectedOption ? selectedOption.value : '');
+    handleInputChange('institution_name', selectedOption ? selectedOption.name : '');
   };
 
   const handleRegionChange = (selectedOption) => {
@@ -133,6 +179,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
       region: selectedOption ? selectedOption.value : '',
       province: '', // Reset province when region changes
       municipality: '', // Reset municipality when region changes
+      postal_code: '', // Reset postal code
     });
   };
 
@@ -141,6 +188,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
       ...formData,
       province: selectedOption ? selectedOption.value : '',
       municipality: '', // Reset municipality when province changes
+      postal_code: '', // Reset postal code
     });
   };
 
@@ -156,22 +204,25 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
   };
 
   const handleSubmit = async () => {
-    // Basic validation
-    if (!formData.institution_uiid || !formData.institution_name || !formData.report_year) {
-      alert('Please fill in all required fields (Institution UIID, Name, and Report Year)');
-      setUiidError(formData.institution_uiid ? '' : 'Please select an institution UIID.');
-      return;
+    if (validateForm()) {
+      onSave(formData);
     }
-    onSave(formData);
   };
 
-  // Custom select styles
+  const handleClose = () => {
+    setErrors({});
+    onCancel();
+  };
+
+  // Custom select styles to match the campus forms
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
       borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
       boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
       '&:hover': { borderColor: '#3b82f6' },
+      borderRadius: '0.5rem',
+      padding: '0.125rem',
     }),
     option: (base, state) => ({
       ...base,
@@ -180,378 +231,409 @@ function SucForm({ initialData, onSave, onCancel, modalType, closeModal }) {
     }),
   };
 
+  const isEdit = modalType === "edit";
+
   return (
     <Dialog
       isOpen={true}
-      onClose={closeModal}
-      title={`${modalType === "add" ? "Add New" : "Edit"} - Region IX`}
-      subtitle="SUC Institution Details"
-      icon={GraduationCap}
+      onClose={handleClose}
+      title={`${isEdit ? "Edit" : "Add New"} SUC Institution`}
+      subtitle="State University & College Details - Region IX"
+      icon={isEdit ? Edit : Plus}
       variant="default"
       size="xl"
     >
-      <div className="space-y-6 max-h-[600px] overflow-y-auto px-2">
+      <div className="space-y-4 p-4">
         {/* Error Messages */}
-        {(uiidError || locationError) && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
-            {uiidError || locationError}
+        {(errors.heis || locationFetchError) && (
+          <div className="p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-800 rounded-xl shadow-sm">
+            <div className="flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              {errors.heis || locationFetchError}
+            </div>
           </div>
         )}
 
         {/* Basic Information */}
-        <div className="w-full">
-          <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-            <Building className="w-5 h-5 mr-2 text-blue-600" />
-            Basic Information
-          </h4>
-          <div className="mb-4 w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select SUC HEI <span className="text-red-500"></span>
-            </label>
-            {loadingHeis ? (
-              <div className="flex items-center justify-center p-4 border border-gray-200 rounded-md bg-gray-50">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-600 mr-2"></div>
-                <span className="text-sm text-gray-500">Loading institutions...</span>
+        <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
+              <Building className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">Basic Information</h3>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select SUC Institution <span className="text-red-500">*</span>
+              </label>
+              {loadingHeis ? (
+                <div className="flex items-center justify-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-600 mr-2"></div>
+                  <span className="text-sm text-gray-500">Loading institutions...</span>
+                </div>
+              ) : (
+                <>
+                  <Select
+                    options={uiidOptions}
+                    value={uiidOptions.find((option) => option.value === formData.institution_uiid) || null}
+                    onChange={handleUiidChange}
+                    placeholder="Select an institution (e.g., Western Mindanao State University)"
+                    isClearable
+                    isSearchable
+                    className={`text-sm ${errors.institution_uiid ? "border-red-400" : ""}`}
+                    classNamePrefix="select"
+                    styles={{
+                      ...customSelectStyles,
+                      control: (base) => ({
+                        ...base,
+                        borderColor: errors.institution_uiid ? "#ef4444" : base.borderColor,
+                        "&:hover": { borderColor: errors.institution_uiid ? "#ef4444" : "#3b82f6" },
+                      }),
+                    }}
+                  />
+                  {errors.institution_uiid && <p className="text-red-500 text-xs mt-1">{errors.institution_uiid}</p>}
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Year Established
+                </label>
+                <input
+                  type="number"
+                  value={formData.year_established}
+                  onChange={(e) => handleInputChange("year_established", e.target.value)}
+                  placeholder="e.g., 1957"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${
+                    errors.year_established ? "border-red-300 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {errors.year_established && <p className="text-red-500 text-xs mt-1">{errors.year_established}</p>}
               </div>
-            ) : (
-              <>
-                <Select
-                  options={uiidOptions}
-                  value={uiidOptions.find((option) => option.value === formData.institution_uiid) || null}
-                  onChange={handleUiidChange}
-                  placeholder="Select an institution (e.g., Western Mindanao State University, Jose Rizal Memorial State University)"
-                  isClearable
-                  isSearchable
-                  className={`text-sm ${uiidError ? "border-red-400" : ""}`}
-                  classNamePrefix="select"
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      borderColor: uiidError ? "#ef4444" : base.borderColor,
-                      "&:hover": { borderColor: uiidError ? "#ef4444" : "#3b82f6" },
-                      borderRadius: "0.375rem",
-                      padding: "0.25rem",
-                      width: "100%",
-                    }),
-                  }}
-                  aria-label="Select institution UIID"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Report Year <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={formData.report_year}
+                  onChange={(e) => handleInputChange("report_year", e.target.value)}
+                  placeholder="e.g., 2024"
+                  min="1800"
+                  max={new Date().getFullYear() + 1}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${
+                    errors.report_year ? "border-red-300 bg-red-50" : "border-gray-300"
+                  }`}
                 />
-                {uiidError && <p className="mt-1 text-sm text-red-500">{uiidError}</p>}
-              </>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Year Established
-              </label>
-              <input
-                type="text"
-                value={formData.year_established}
-                onChange={(e) => setFormData({ ...formData, year_established: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., 1957 (WMSU), 1965 (JRMSU)"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Report Year <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.report_year}
-                onChange={(e) => setFormData({ ...formData, report_year: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., 2024"
-                required
-              />
+                {errors.report_year && <p className="text-red-500 text-xs mt-1">{errors.report_year}</p>}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Location Information */}
-        <div className="w-full">
-          <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-            <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-            Location Information - Zamboanga Peninsula
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
-              {locationLoading ? (
-                <div className="flex items-center justify-center p-4 border border-gray-200 rounded-md bg-gray-50">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-600 mr-2"></div>
-                  <span className="text-sm text-gray-500">Loading regions...</span>
+        {/* Location & Contact Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Location Information */}
+          <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-xl p-4 border border-emerald-200/60 shadow-sm">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-emerald-500 rounded-lg shadow-sm">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Location</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                  {locationLoading ? (
+                    <div className="flex items-center justify-center p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-emerald-600 mr-2"></div>
+                      <span className="text-xs text-gray-500">Loading...</span>
+                    </div>
+                  ) : (
+                    <Select
+                      options={regionOptions}
+                      value={regionOptions.find((option) => option.value === formData.region) || null}
+                      onChange={handleRegionChange}
+                      placeholder="Select region..."
+                      isClearable
+                      isSearchable
+                      className="text-sm"
+                      classNamePrefix="select"
+                      styles={customSelectStyles}
+                    />
+                  )}
                 </div>
-              ) : (
-                <Select
-                  options={regionOptions}
-                  value={regionOptions.find((option) => option.value === formData.region) || null}
-                  onChange={handleRegionChange}
-                  placeholder="Select region..."
-                  isClearable
-                  isSearchable
-                  className="text-sm"
-                  classNamePrefix="select"
-                  styles={{
-                    ...customSelectStyles,
-                    control: (base) => ({
-                      ...base,
-                      width: "100%",
-                    }),
-                  }}
-                  aria-label="Select region"
-                />
-              )}
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-              {locationLoading ? (
-                <div className="flex items-center justify-center p-4 border border-gray-200 rounded-md bg-gray-50">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-600 mr-2"></div>
-                  <span className="text-sm text-gray-500">Loading provinces...</span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                  <Select
+                    options={getProvinceOptions()}
+                    value={getProvinceOptions().find((option) => option.value === formData.province) || null}
+                    onChange={handleProvinceChange}
+                    placeholder="Select province..."
+                    isClearable
+                    isSearchable
+                    isDisabled={!formData.region || locationLoading}
+                    className="text-sm"
+                    classNamePrefix="select"
+                    styles={customSelectStyles}
+                  />
                 </div>
-              ) : (
-                <Select
-                  options={getProvinceOptions()}
-                  value={getProvinceOptions().find((option) => option.value === formData.province) || null}
-                  onChange={handleProvinceChange}
-                  placeholder="Select province..."
-                  isClearable
-                  isSearchable
-                  isDisabled={!formData.region}
-                  className="text-sm"
-                  classNamePrefix="select"
-                  styles={{
-                    ...customSelectStyles,
-                    control: (base) => ({
-                      ...base,
-                      width: "100%",
-                    }),
-                  }}
-                  aria-label="Select province"
-                />
-              )}
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Municipality/City</label>
-              {locationLoading ? (
-                <div className="flex items-center justify-center p-4 border border-gray-200 rounded-md bg-gray-50">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-600 mr-2"></div>
-                  <span className="text-sm text-gray-500">Loading municipalities...</span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Municipality/City</label>
+                  <Select
+                    options={getMunicipalityOptions()}
+                    value={getMunicipalityOptions().find((option) => option.value === formData.municipality) || null}
+                    onChange={handleMunicipalityChange}
+                    placeholder="Select municipality..."
+                    isClearable
+                    isSearchable
+                    isDisabled={!formData.province || locationLoading}
+                    className="text-sm"
+                    classNamePrefix="select"
+                    styles={customSelectStyles}
+                  />
                 </div>
-              ) : (
-                <Select
-                  options={getMunicipalityOptions()}
-                  value={getMunicipalityOptions().find((option) => option.value === formData.municipality) || null}
-                  onChange={handleMunicipalityChange}
-                  placeholder={formData.province ? "Select municipality/city..." : "Select province first"}
-                  isClearable
-                  isSearchable
-                  isDisabled={!formData.province}
-                  className="text-sm"
-                  classNamePrefix="select"
-                  styles={{
-                    ...customSelectStyles,
-                    control: (base) => ({
-                      ...base,
-                      width: "100%",
-                    }),
-                  }}
-                  aria-label="Select municipality"
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                <input
+                  type="text"
+                  value={formData.address_street}
+                  onChange={(e) => handleInputChange("address_street", e.target.value)}
+                  placeholder="e.g., Normal Road, Baliwasan"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200"
                 />
-              )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                <input
+                  type="text"
+                  value={formData.postal_code}
+                  onChange={(e) => handleInputChange("postal_code", e.target.value)}
+                  placeholder="e.g., 7000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200"
+                />
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 w-full">
-            <div className="md:col-span-3 w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
-              <input
-                type="text"
-                value={formData.address_street}
-                onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., Normal Road, Baliwasan (WMSU), Dapitan City (JRMSU)"
-              />
+
+          {/* Contact Information */}
+          <div className="bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-100 rounded-xl p-4 border border-purple-200/60 shadow-sm">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-purple-500 rounded-lg shadow-sm">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Contact</h3>
             </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
-              <input
-                type="text"
-                value={formData.postal_code}
-                onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., 7000 (Zamboanga City), 8207 (Dapitan City)"
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Institutional Telephone</label>
+                <input
+                  type="text"
+                  value={formData.institutional_telephone}
+                  onChange={(e) => handleInputChange("institutional_telephone", e.target.value)}
+                  placeholder="e.g., +63-62-991-8888"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Institutional Fax</label>
+                <input
+                  type="text"
+                  value={formData.institutional_fax}
+                  onChange={(e) => handleInputChange("institutional_fax", e.target.value)}
+                  placeholder="e.g., +63-62-991-8889"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formData.institutional_email}
+                  onChange={(e) => handleInputChange("institutional_email", e.target.value)}
+                  placeholder="e.g., info@wmsu.edu.ph"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 ${
+                    errors.institutional_email ? "border-red-300 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {errors.institutional_email && <p className="text-red-500 text-xs mt-1">{errors.institutional_email}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Globe className="w-4 h-4 inline mr-1" />
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={formData.institutional_website}
+                  onChange={(e) => handleInputChange("institutional_website", e.target.value)}
+                  placeholder="e.g., https://wmsu.edu.ph"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 ${
+                    errors.institutional_website ? "border-red-300 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {errors.institutional_website && <p className="text-red-500 text-xs mt-1">{errors.institutional_website}</p>}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Contact Information */}
-        <div className="w-full">
-          <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-            <Phone className="w-5 h-5 mr-2 text-blue-600" />
-            Contact Information
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Institutional Telephone</label>
-              <input
-                type="text"
-                value={formData.institutional_telephone}
-                onChange={(e) => setFormData({ ...formData, institutional_telephone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., +63-62-991-8888 (Zamboanga area code)"
-              />
+        {/* Leadership & Legal Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Leadership Information */}
+          <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 rounded-xl p-4 border border-amber-200/60 shadow-sm">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-amber-500 rounded-lg shadow-sm">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Leadership</h3>
             </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Institutional Fax</label>
-              <input
-                type="text"
-                value={formData.institutional_fax}
-                onChange={(e) => setFormData({ ...formData, institutional_fax: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., +63-62-991-8889"
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Head Name</label>
+                <input
+                  type="text"
+                  value={formData.head_name}
+                  onChange={(e) => handleInputChange("head_name", e.target.value)}
+                  placeholder="e.g., Dr. Grace J. Rebollos"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={formData.head_title}
+                  onChange={(e) => handleInputChange("head_title", e.target.value)}
+                  placeholder="e.g., University President"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <GraduationCap className="w-4 h-4 inline mr-1" />
+                  Educational Background
+                </label>
+                <input
+                  type="text"
+                  value={formData.head_education}
+                  onChange={(e) => handleInputChange("head_education", e.target.value)}
+                  placeholder="e.g., PhD in Education"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Direct Telephone</label>
+                <input
+                  type="text"
+                  value={formData.head_telephone}
+                  onChange={(e) => handleInputChange("head_telephone", e.target.value)}
+                  placeholder="e.g., +63-62-991-8800"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                />
+              </div>
             </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={formData.institutional_email}
-                onChange={(e) => setFormData({ ...formData, institutional_email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., info@wmsu.edu.ph, registrar@jrmsu.edu.ph"
-              />
+          </div>
+
+          {/* Legal & Historical Information */}
+          <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 rounded-xl p-4 border border-slate-200/60 shadow-sm">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-slate-600 rounded-lg shadow-sm">
+                <Calendar className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Legal & Historical</h3>
             </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-              <input
-                type="url"
-                value={formData.institutional_website}
-                onChange={(e) => setFormData({ ...formData, institutional_website: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., https://wmsu.edu.ph, https://jrmsu.edu.ph"
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Award className="w-4 h-4 inline mr-1" />
+                  SEC Registration
+                </label>
+                <input
+                  type="text"
+                  value={formData.sec_registration}
+                  onChange={(e) => handleInputChange("sec_registration", e.target.value)}
+                  placeholder="e.g., SUC-WMSU-001"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Year Granted/Approved</label>
+                <input
+                  type="number"
+                  value={formData.year_granted_approved}
+                  onChange={(e) => handleInputChange("year_granted_approved", e.target.value)}
+                  placeholder="e.g., 1957"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Year Converted to College</label>
+                <input
+                  type="number"
+                  value={formData.year_converted_college}
+                  onChange={(e) => handleInputChange("year_converted_college", e.target.value)}
+                  placeholder="Leave blank if not applicable"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Year Converted to University</label>
+                <input
+                  type="number"
+                  value={formData.year_converted_university}
+                  onChange={(e) => handleInputChange("year_converted_university", e.target.value)}
+                  placeholder="e.g., 1957"
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors duration-200"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Leadership Information */}
-        <div className="w-full">
-          <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-            <User className="w-5 h-5 mr-2 text-blue-600" />
-            Leadership Information
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Head Name</label>
-              <input
-                type="text"
-                value={formData.head_name}
-                onChange={(e) => setFormData({ ...formData, head_name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., Dr. Grace J. Rebollos, Dr. Majahar B. Abubakar"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input
-                type="text"
-                value={formData.head_title}
-                onChange={(e) => setFormData({ ...formData, head_title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., University President, SUC President"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Educational Background</label>
-              <input
-                type="text"
-                value={formData.head_education}
-                onChange={(e) => setFormData({ ...formData, head_education: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., PhD in Education, Doctor of Education"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Direct Telephone</label>
-              <input
-                type="text"
-                value={formData.head_telephone}
-                onChange={(e) => setFormData({ ...formData, head_telephone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., +63-62-991-8800 (President's Office)"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Legal & Historical Information */}
-        <div className="w-full">
-          <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-            <Calendar className="w-5 h-5 mr-2 text-blue-600" />
-            Legal & Historical Information
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">SEC Registration</label>
-              <input
-                type="text"
-                value={formData.sec_registration}
-                onChange={(e) => setFormData({ ...formData, sec_registration: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., SUC-WMSU-001, SUC-JRMSU-001"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year Granted/Approved</label>
-              <input
-                type="text"
-                value={formData.year_granted_approved}
-                onChange={(e) => setFormData({ ...formData, year_granted_approved: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., 1957 (WMSU charter), 1965 (JRMSU charter)"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year Converted to College</label>
-              <input
-                type="text"
-                value={formData.year_converted_college}
-                onChange={(e) => setFormData({ ...formData, year_converted_college: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="Leave blank if not applicable"
-              />
-            </div>
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year Converted to University</label>
-              <input
-                type="text"
-                value={formData.year_converted_university}
-                onChange={(e) => setFormData({ ...formData, year_converted_university: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-600"
-                placeholder="e.g., 1957 (WMSU), 1990s (JRMSU)"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end space-x-3 pt-6 border-t bg-gray-50 -mx-2 px-2">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
           <button
             type="button"
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+            onClick={handleClose}
+            disabled={loading}
+            className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            disabled={loading}
+            className={`w-full sm:w-auto px-6 py-2.5 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center ${
+              isEdit
+                ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:ring-green-500"
+                : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500"
+            }`}
           >
-            <Save className="w-4 h-4 mr-2 inline" />
-            Save Region IX SUC
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                {isEdit ? "Updating..." : "Creating..."}
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isEdit ? "Update SUC" : "Create SUC"}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -587,6 +669,7 @@ SucForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   modalType: PropTypes.string.isRequired,
   closeModal: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
 };
 
 export default SucForm;

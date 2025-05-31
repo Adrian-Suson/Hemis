@@ -48,6 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/suc-campuses', SucCampusController::class);
     // SUC Form B Routes
     Route::apiResource('/suc-form-b', SucFormBController::class);
+    Route::post('/suc-form-b/bulk', [SucFormBController::class, 'bulkStore']);
+    
     // SUC Form E1 Routes
     Route::apiResource('/suc-form-e1', SucFormE1Controller::class);
     // SUC Form E2 Routes

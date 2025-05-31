@@ -5,6 +5,7 @@ import SucDataTable from "./SucDataTable";
 import SucForm from "./SucForm";
 import SucUploadModal from "./SucUploadModal";
 import config from "../../../../utils/config";
+import AlertComponent from "../../../../Components/AlertComponent"; // Import AlertComponent
 
 
 function SucHeiManagement() {
@@ -147,12 +148,13 @@ function SucHeiManagement() {
                 );
 
                 if (exists) {
-                    alert('This SUC record for the selected year already exists.');
+                    AlertComponent.showAlert('This SUC record for the selected year already exists.', 'error');
                     return;
                 }
 
                 const newSuc = await createSucDetail(sucDetailsPayload);
                 setSucData([...sucData, newSuc]);
+                AlertComponent.showAlert('SUC record created successfully!', 'success');
             } else {
                 const updatedSuc = await updateSucDetail(currentRecord.id, sucDetailsPayload);
                 setSucData(
@@ -160,10 +162,11 @@ function SucHeiManagement() {
                         item.id === currentRecord.id ? updatedSuc : item
                     )
                 );
+                AlertComponent.showAlert('SUC record updated successfully!', 'success');
             }
             closeModal();
         } catch (error) {
-            alert(`Error ${modalType === 'add' ? 'creating' : 'updating'} SUC record: ${error.message}`);
+            AlertComponent.showAlert(`Error ${modalType === 'add' ? 'creating' : 'updating'} SUC record: ${error.message}`, 'error');
         }
     };
 
@@ -172,16 +175,18 @@ function SucHeiManagement() {
     };
 
     const handleDelete = async (id) => {
-        if (
-            window.confirm("Are you sure you want to delete this SUC record?")
-        ) {
-            try {
-                await deleteSucDetail(id);
-                setSucData(sucData.filter((item) => item.id !== id));
-            } catch (error) {
-                alert(`Error deleting SUC record: ${error.message}`);
+        AlertComponent.showConfirmation(
+            "Are you sure you want to delete this SUC record?",
+            async () => {
+                try {
+                    await deleteSucDetail(id);
+                    setSucData(sucData.filter((item) => item.id !== id));
+                    AlertComponent.showAlert('SUC record deleted successfully!', 'success');
+                } catch (error) {
+                    AlertComponent.showAlert(`Error deleting SUC record: ${error.message}`, 'error');
+                }
             }
-        }
+        );
     };
 
     const handleDataImported = (importedData) => {

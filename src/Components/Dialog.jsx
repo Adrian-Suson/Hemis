@@ -13,11 +13,11 @@ function Dialog({
     // Overlay styling
     overlayClassName = "fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center min-h-full w-full z-50 p-4 sm:p-6",
     // Container styling
-    containerClassName = "relative w-full",
+    containerClassName = "relative w-full flex flex-col",
     // Modal styling
-    modalClassName = "bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20",
+    modalClassName = "bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden max-h-[90vh]",
     // Header styling
-    headerClassName = "bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-4 sm:p-6 text-white",
+    headerClassName = "bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6 text-white flex-shrink-0",
     headerContentClassName = "flex justify-between items-center",
     // Icon styling
     iconContainerClassName = "h-10 w-10 sm:h-12 sm:w-12 bg-white/20 rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0",
@@ -30,9 +30,9 @@ function Dialog({
     closeButtonClassName = "text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-lg p-1.5 sm:p-2 transition-all duration-200 flex-shrink-0",
     closeIconClassName = "w-5 h-5 sm:w-6 sm:h-6",
     // Content styling
-    contentClassName = "p-4 sm:p-6",
+    contentClassName = "flex-1 min-h-0 relative overflow-y-auto",
     // Footer styling
-    footerClassName = "mt-6 sm:mt-8 flex flex-col sm:flex-row justify-end gap-3 pt-4 sm:pt-6 border-t border-gray-200",
+    footerClassName = "border-t border-gray-200 p-4 sm:p-6 flex-shrink-0",
     // Style variants (predefined themes)
     variant = "default", // default, success, warning, danger, dark, minimal
     // Size variants
@@ -88,12 +88,12 @@ function Dialog({
 
     // Size variants
     const sizes = {
-        xs: "max-w-sm",
-        sm: "max-w-md",
-        default: "max-w-2xl",
-        lg: "max-w-4xl",
-        xl: "max-w-6xl",
-        full: "max-w-full mx-4"
+        xs: "max-w-sm max-h-[80vh]",
+        sm: "max-w-md max-h-[85vh]",
+        default: "max-w-2xl max-h-[90vh]",
+        lg: "max-w-4xl max-h-[90vh]",
+        xl: "max-w-6xl max-h-[95vh]",
+        full: "max-w-full max-h-[95vh] mx-4"
     };
 
     // Get variant styles
@@ -113,8 +113,8 @@ function Dialog({
     return (
         <div className={overlayClassName}>
             <div className={`${containerClassName} ${sizeClass}`}>
-                <div className={mergeClasses(modalClassName, modalClassName, variantStyles.modal)} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-                    {/* Modal Header */}
+                <div className={mergeClasses(modalClassName, modalClassName, variantStyles.modal)}>
+                    {/* Modal Header - Fixed */}
                     <div className={mergeClasses(headerClassName, headerClassName, variantStyles.header)}>
                         <div className={headerContentClassName}>
                             <div className="flex items-center min-w-0 flex-1 mr-4">
@@ -134,6 +134,7 @@ function Dialog({
                                 <button
                                     onClick={onClose}
                                     className={mergeClasses(closeButtonClassName, closeButtonClassName, variantStyles.closeButton)}
+                                    aria-label="Close dialog"
                                 >
                                     <X className={closeIconClassName} />
                                 </button>
@@ -141,12 +142,45 @@ function Dialog({
                         </div>
                     </div>
 
-                    {/* Modal Content */}
+                    {/* Modal Content - Scrollable */}
                     <div className={contentClassName}>
-                        {children}
+                        <div className="h-full overflow-y-auto overflow-x-hidden">
+                            {/* Custom scrollbar styling */}
+                            <style>{`
+                                .scroll-content::-webkit-scrollbar {
+                                    width: 8px;
+                                }
+                                .scroll-content::-webkit-scrollbar-track {
+                                    background: rgba(0, 0, 0, 0.05);
+                                    border-radius: 4px;
+                                }
+                                .scroll-content::-webkit-scrollbar-thumb {
+                                    background: linear-gradient(to bottom, rgba(59, 130, 246, 0.6), rgba(37, 99, 235, 0.8));
+                                    border-radius: 4px;
+                                    border: 1px solid rgba(255, 255, 255, 0.2);
+                                }
+                                .scroll-content::-webkit-scrollbar-thumb:hover {
+                                    background: linear-gradient(to bottom, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 1));
+                                }
+                                /* For Firefox */
+                                .scroll-content {
+                                    scrollbar-width: thin;
+                                    scrollbar-color: rgba(59, 130, 246, 0.6) rgba(0, 0, 0, 0.05);
+                                }
+                            `}</style>
+                            <div className="scroll-content h-full overflow-y-auto overflow-x-hidden">
+                                {children}
+                            </div>
+
+                            {/* Scroll indicators */}
+                            <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-white/80 to-transparent pointer-events-none opacity-0 transition-opacity duration-300"
+                                 id="scroll-top-indicator" />
+                            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-white/80 to-transparent pointer-events-none opacity-0 transition-opacity duration-300"
+                                 id="scroll-bottom-indicator" />
+                        </div>
                     </div>
 
-                    {/* Modal Footer */}
+                    {/* Modal Footer - Fixed (only if footer content exists) */}
                     {footer && (
                         <div className={footerClassName}>
                             {footer}
@@ -166,7 +200,6 @@ Dialog.propTypes = {
     icon: PropTypes.elementType,
     children: PropTypes.node,
     footer: PropTypes.node,
-    maxWidth: PropTypes.string,
     showCloseButton: PropTypes.bool,
     overlayClassName: PropTypes.string,
     containerClassName: PropTypes.string,
@@ -187,12 +220,11 @@ Dialog.propTypes = {
 };
 
 Dialog.defaultProps = {
-    maxWidth: "max-w-5xl",
     showCloseButton: true,
-    overlayClassName: "fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full z-50 p-4 sm:p-6",
-    containerClassName: "relative mx-auto w-full",
-    modalClassName: "bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20",
-    headerClassName: "bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-2xl p-4 sm:p-6 text-white",
+    overlayClassName: "fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full z-50 p-4 sm:p-6 flex items-center justify-center",
+    containerClassName: "relative w-full flex flex-col",
+    modalClassName: "bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden max-h-[90vh]",
+    headerClassName: "bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6 text-white flex-shrink-0",
     headerContentClassName: "flex justify-between items-center",
     iconContainerClassName: "h-10 w-10 sm:h-12 sm:w-12 bg-white/20 rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0",
     iconClassName: "w-5 h-5 sm:w-6 sm:h-6",
@@ -201,8 +233,8 @@ Dialog.defaultProps = {
     subtitleClassName: "text-blue-100 text-sm hidden sm:block",
     closeButtonClassName: "text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-lg p-1.5 sm:p-2 transition-all duration-200 flex-shrink-0",
     closeIconClassName: "w-5 h-5 sm:w-6 sm:h-6",
-    contentClassName: "p-4 sm:p-6",
-    footerClassName: "mt-6 sm:mt-8 flex flex-col sm:flex-row justify-end gap-3 pt-4 sm:pt-6 border-t border-gray-200",
+    contentClassName: "flex-1 min-h-0 relative overflow-y-auto",
+    footerClassName: "border-t border-gray-200 p-4 sm:p-6 flex-shrink-0",
     variant: "default",
     size: "default"
 };

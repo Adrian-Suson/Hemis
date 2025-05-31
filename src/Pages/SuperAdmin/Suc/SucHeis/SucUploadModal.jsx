@@ -1,5 +1,19 @@
 import { useState, useEffect } from "react";
-import { X, Upload, FileSpreadsheet, AlertCircle, CheckCircle, Building2, MapPin } from "lucide-react";
+import {
+  X,
+  Upload,
+  FileSpreadsheet,
+  AlertCircle,
+  CheckCircle,
+  Building2,
+  MapPin,
+  Calendar,
+  Info,
+  FileText,
+  Database,
+  Globe,
+  Plus
+} from "lucide-react";
 import Select from "react-select";
 import * as XLSX from "xlsx";
 import axios from "axios";
@@ -7,6 +21,7 @@ import config from "../../../../utils/config";
 import PropTypes from "prop-types";
 import useLocationData from "../../../../Hooks/useLocationData";
 import Dialog from "../../../../Components/Dialog";
+import AlertComponent from "../../../../Components/AlertComponent";
 
 function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const [uploadStatus, setUploadStatus] = useState(null); // null, 'loading', 'success', 'error'
@@ -15,7 +30,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const [heis, setHeis] = useState([]);
   const [selectedHei, setSelectedHei] = useState(null);
   const [loadingHeis, setLoadingHeis] = useState(false);
-  const [heiError, setHeiError] = useState("");
+  const [errors, setErrors] = useState({});
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [selectedProvince, setSelectedProvince] = useState(null);
@@ -28,8 +43,9 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const heiOptions = Array.isArray(heis)
     ? heis.map((hei) => ({
         value: hei.uiid,
-        label: hei.name,
+        label: `${hei.name} (${hei.uiid})`,
         name: hei.name,
+        uiid: hei.uiid,
       }))
     : [];
 
@@ -51,10 +67,25 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
       setHeis(response.data);
     } catch (error) {
       console.error("Error fetching HEIs:", error);
-      setUploadStatus("error");
-      setUploadMessage("Failed to load institutions. Please try again.");
+      setErrors(prev => ({ ...prev, heis: "Failed to load institutions. Please try again." }));
     } finally {
       setLoadingHeis(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    // Clear error when user makes a selection
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+
+    if (field === 'hei') {
+      setSelectedHei(value);
+    } else if (field === 'year') {
+      setSelectedYear(value);
     }
   };
 
@@ -63,6 +94,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     ? regions.map((region) => ({
         value: region.name,
         label: region.name,
+        id: region.id,
       }))
     : [];
 
@@ -73,6 +105,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
         .map((province) => ({
           value: province.name,
           label: province.name,
+          id: province.id,
         }))
     : [];
 
@@ -105,6 +138,38 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const clearUploadStatus = () => {
     setUploadStatus(null);
     setUploadMessage("");
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!selectedHei) {
+      newErrors.hei = "Please select an institution before uploading";
+    }
+
+    if (!selectedYear) {
+      newErrors.year = "Please select a report year";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Custom select styles to match other forms
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+      boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+      '&:hover': { borderColor: '#3b82f6' },
+      borderRadius: '0.5rem',
+      padding: '0.125rem',
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : '',
+      color: state.isSelected ? 'white' : '#374151',
+    }),
   };
 
   // Reference mappings from the Excel file
@@ -183,25 +248,21 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Check if HEI is selected
-    if (!selectedHei) {
-      setUploadStatus("error");
-      setUploadMessage("Please select an institution first before uploading Excel file.");
-      setHeiError("Please select an institution.");
+    // Validate form before processing
+    if (!validateForm()) {
+      AlertComponent.showAlert("Please fill in all required fields before uploading.", "error");
       return;
     }
-    setHeiError("");
 
     // Validate file type
     const validTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-      "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "text/csv",
     ];
     if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
-      setUploadStatus("error");
-      setUploadMessage("Please upload a valid Excel file (.xlsx, .xls) or CSV file.");
-      return;
+        AlertComponent.showAlert("Please upload a valid Excel file (.xlsx, .xls) or CSV file.", "error");
+        return;
     }
 
     setIsUploading(true);
@@ -209,41 +270,41 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     setUploadMessage("Processing Excel file...");
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, {
-        cellStyles: true,
-        cellFormulas: true,
-        cellDates: true,
-        cellNF: true,
-        sheetStubs: true,
-        type: "array",
-      });
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, {
+            cellStyles: true,
+            cellFormulas: true,
+            cellDates: true,
+            cellNF: true,
+            sheetStubs: true,
+            type: "array",
+        });
 
-      // Identify HEMIS sheets
-      const hemisSheets = workbook.SheetNames.filter(
-        (name) =>
-          name.toUpperCase().includes("FORM A1") ||
-          name.toUpperCase().includes("FORM A2") ||
-          name.toUpperCase().includes("A1") ||
-          name.toUpperCase().includes("A2")
-      ).map((name) => ({
-        name,
-        type: name.toUpperCase().includes("A1") ? "A1" : "A2",
-        description: name.toUpperCase().includes("A1") ? "SUC Institutional Profile" : "Campus Information",
-      }));
+        // Identify HEMIS sheets
+        const hemisSheets = workbook.SheetNames.filter(
+            (name) =>
+                name.toUpperCase().includes("FORM A1") ||
+                name.toUpperCase().includes("FORM A2") ||
+                name.toUpperCase().includes("A1") ||
+                name.toUpperCase().includes("A2")
+        ).map((name) => ({
+            name,
+            type: name.toUpperCase().includes("A1") ? "A1" : "A2",
+            description: name.toUpperCase().includes("A1") ? "SUC Institutional Profile" : "Campus Information",
+        }));
 
-      if (hemisSheets.length === 0) {
-        throw new Error("No HEMIS forms (A1 or A2) found in the Excel file.");
-      }
+        if (hemisSheets.length === 0) {
+            throw new Error("No HEMIS forms (A1 or A2) found in the Excel file.");
+        }
 
-      await processAllHemisSheets(workbook, hemisSheets);
+        await processAllHemisSheets(workbook, hemisSheets);
     } catch (error) {
-      console.error("Excel upload error:", error);
-      setUploadStatus("error");
-      setUploadMessage(`Error processing Excel file: ${error.message}`);
+        console.error("Excel upload error:", error);
+        setUploadStatus("error");
+        setUploadMessage(`Error processing Excel file: ${error.message}`);
     } finally {
-      setIsUploading(false);
-      event.target.value = "";
+        setIsUploading(false);
+        event.target.value = "";
     }
   };
 
@@ -256,87 +317,87 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     // Process Form A1 first to get institution_id
     const formA1Sheets = hemisSheets.filter((sheet) => sheet.type === "A1");
     for (const sheet of formA1Sheets) {
-      try {
-        setUploadMessage(`Processing ${sheet.description} from ${sheet.name} (30%)...`);
-        const worksheet = workbook.Sheets[sheet.name];
-        const a1Records = await processFormA1(worksheet);
-        if (a1Records.length > 0) {
-          institutionId = a1Records[0].institution.id;
-          createdRecords.push(...a1Records);
-          successMessage += `Imported SUC institutional profile from ${sheet.name}. `;
+        try {
+            setUploadMessage(`Processing ${sheet.description} from ${sheet.name}...`);
+            const worksheet = workbook.Sheets[sheet.name];
+            const a1Records = await processFormA1(worksheet);
+            if (a1Records.length > 0) {
+                institutionId = a1Records[0].institution.id;
+                createdRecords.push(...a1Records);
+                successMessage += `Imported SUC institutional profile from ${sheet.name}. `;
+            }
+        } catch (error) {
+            console.error(`Error processing sheet ${sheet.name}:`, error);
+            errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
         }
-      } catch (error) {
-        console.error(`Error processing sheet ${sheet.name}:`, error);
-        errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
-      }
     }
 
     // Process Form A2 with the obtained institution_id
     const formA2Sheets = hemisSheets.filter((sheet) => sheet.type === "A2");
     for (const sheet of formA2Sheets) {
-      try {
-        setUploadMessage(`Processing ${sheet.description} from ${sheet.name} (70%)...`);
-        const worksheet = workbook.Sheets[sheet.name];
-        const a2Records = await processFormA2(worksheet, institutionId);
-        createdRecords.push(...a2Records);
-        successMessage += `Imported ${a2Records.length} campus records from ${sheet.name}. `;
-      } catch (error) {
-        console.error(`Error processing sheet ${sheet.name}:`, error);
-        errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
-      }
+        try {
+            setUploadMessage(`Processing ${sheet.description} from ${sheet.name}...`);
+            const worksheet = workbook.Sheets[sheet.name];
+            const a2Records = await processFormA2(worksheet, institutionId);
+            createdRecords.push(...a2Records);
+            successMessage += `Imported ${a2Records.length} campus records from ${sheet.name}. `;
+        } catch (error) {
+            console.error(`Error processing sheet ${sheet.name}:`, error);
+            errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
+        }
     }
 
     if (createdRecords.length > 0) {
-      onDataImported(createdRecords);
-      setUploadStatus("success");
-      setUploadMessage(successMessage.trim() + " (100%)");
-      // Reset state
-      setSelectedHei(null);
-      setSelectedRegion(null);
-      setSelectedProvince(null);
-      setSelectedMunicipality(null);
+        onDataImported(createdRecords);
+        setUploadStatus("success");
+        setUploadMessage(successMessage.trim());
+
+        // Reset state
+        setSelectedHei(null);
+        setSelectedRegion(null);
+        setSelectedProvince(null);
+        setSelectedMunicipality(null);
+        setErrors({});
     } else {
-      setUploadStatus("error");
-      setUploadMessage(`No valid data imported. Errors: ${errors.join("; ")}`);
+        setUploadStatus("error");
+        setUploadMessage(`No valid data imported. Errors: ${errors.join("; ")}`);
     }
   };
 
   const processFormA1 = async (worksheet) => {
     try {
-      setUploadMessage("Processing Form A1 data and saving to database (40%)...");
+      setUploadMessage("Processing Form A1 data and saving to database...");
 
       const jsonData = XLSX.utils.sheet_to_json(worksheet, {
         header: 1,
         defval: "",
         raw: false,
       });
-      console.log("Parsed JSON data from Form A1:", jsonData);
 
       const extractedInstitution = {
-        hei_uiid: selectedHei?.uiid || "", // Required field
-        region: parseString(selectedRegion) || null, // Optional
-        province: parseString(selectedProvince) || null, // Optional
-        municipality: parseString(selectedMunicipality) || null, // Optional
-        address_street: parseString(jsonData[7]?.[2] || ""), // Optional
-        postal_code: parseString(jsonData[11]?.[2] || ""), // Optional
-        institutional_telephone: parseString(jsonData[12]?.[2] || ""), // Optional
-        institutional_fax: parseString(jsonData[13]?.[2] || ""), // Optional
-        head_telephone: parseString(jsonData[14]?.[2] || ""), // Optional
-        institutional_email: parseString(jsonData[15]?.[2] || ""), // Optional
-        institutional_website: parseString(jsonData[16]?.[2] || ""), // Optional
-        year_established: toNullableInteger(jsonData[17]?.[2]), // Optional
-        sec_registration: parseString(jsonData[18]?.[2] || ""), // Optional
-        year_granted_approved: toNullableInteger(jsonData[19]?.[2]), // Optional
-        year_converted_college: toNullableInteger(jsonData[20]?.[2]), // Optional
-        year_converted_university: toNullableInteger(jsonData[21]?.[2]), // Optional
-        head_name: parseString(jsonData[22]?.[2] || ""), // Optional
-        head_title: parseString(jsonData[23]?.[2] || ""), // Optional
-        head_education: parseString(jsonData[24]?.[2] || ""), // Optional
-        institution_type: "SUC", // Hardcoded as SUC based on fetchHeis filter
-        report_year: parseInteger(selectedYear, 1800, new Date().getFullYear()), // Required field
+        hei_uiid: selectedHei?.uiid || "",
+        region: parseString(selectedRegion) || null,
+        province: parseString(selectedProvince) || null,
+        municipality: parseString(selectedMunicipality) || null,
+        address_street: parseString(jsonData[7]?.[2] || ""),
+        postal_code: parseString(jsonData[11]?.[2] || ""),
+        institutional_telephone: parseString(jsonData[12]?.[2] || ""),
+        institutional_fax: parseString(jsonData[13]?.[2] || ""),
+        head_telephone: parseString(jsonData[14]?.[2] || ""),
+        institutional_email: parseString(jsonData[15]?.[2] || ""),
+        institutional_website: parseString(jsonData[16]?.[2] || ""),
+        year_established: toNullableInteger(jsonData[17]?.[2]),
+        sec_registration: parseString(jsonData[18]?.[2] || ""),
+        year_granted_approved: toNullableInteger(jsonData[19]?.[2]),
+        year_converted_college: toNullableInteger(jsonData[20]?.[2]),
+        year_converted_university: toNullableInteger(jsonData[21]?.[2]),
+        head_name: parseString(jsonData[22]?.[2] || ""),
+        head_title: parseString(jsonData[23]?.[2] || ""),
+        head_education: parseString(jsonData[24]?.[2] || ""),
+        institution_type: "SUC",
+        report_year: parseInteger(selectedYear, 1800, new Date().getFullYear()),
       };
 
-      console.log("Extracted institution data from Form A1:", extractedInstitution);
       const token = localStorage.getItem("token");
       const institutionResponse = await axios.post(
         `${config.API_URL}/suc-details`,
@@ -348,14 +409,11 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
           },
         }
       );
-      console.log("Institution response:", institutionResponse.data);
-
 
       const institutionId = institutionResponse.data.id;
       if (!institutionId || isNaN(Number(institutionId))) {
         throw new Error("Invalid institution ID received from server.");
       }
-      console.log("Institution ID:", institutionId);
 
       return [{ institution: { id: institutionId, ...extractedInstitution } }];
     } catch (error) {
@@ -366,19 +424,18 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
 
   const processFormA2 = async (worksheet, institutionId) => {
     try {
-        setUploadMessage("Processing Form A2 data and saving to database (80%)...");
+        setUploadMessage("Processing Form A2 data and saving to database...");
 
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             header: 1,
             defval: "",
             raw: false,
         });
-        console.log("Parsed JSON data from Form A2:", jsonData);
 
         // Find the row where "START BELOW THIS ROW" is located
         const startRow = jsonData.findIndex((row) =>
             row.some((cell) => String(cell).toUpperCase().includes("START BELOW THIS ROW"))
-        ) + 1; // Add 1 to start processing from the next row
+        ) + 1;
 
         if (startRow <= 0) {
             throw new Error('Marker "START BELOW THIS ROW" not found in the sheet.');
@@ -390,30 +447,29 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
             .slice(startRow)
             .filter((row) => row.some((cell) => cell !== undefined && cell !== ""))
             .map((row) => ({
-                suc_details_id: Number.parseInt(institutionId, 10) || null, // Required field
-                name: parseString(row[1]) || "", // Required field
-                campus_type: parseString(row[2]), // Optional
-                institutional_code: parseString(row[3]), // Optional
-                region: regionMapping[row[4]] || parseString(row[4]) || "", // Optional
-                province_municipality: parseString(row[5]) || "", // Optional
-                year_first_operation: parseInteger(row[6], 1800, currentYear), // Optional
-                land_area_hectares: parseNumeric(row[7], 0), // Optional
-                distance_from_main: parseNumeric(row[8], 0), // Optional
-                autonomous_code: autonomousMapping[row[9]] || parseString(row[9]), // Optional
-                position_title: headTitleMapping[row[10]] || parseString(row[10]), // Optional
-                head_full_name: parseString(row[11]), // Optional
-                former_name: parseString(row[12]), // Optional
-                latitude_coordinates: parseNumeric(row[13], -90, 90), // Optional
-                longitude_coordinates: parseNumeric(row[14], -180, 180), // Optional
-                report_year: parseInteger(selectedYear, 1800, currentYear), // Optional
+                suc_details_id: Number.parseInt(institutionId, 10) || null,
+                name: parseString(row[1]) || "",
+                campus_type: parseString(row[2]),
+                institutional_code: parseString(row[3]),
+                region: regionMapping[row[4]] || parseString(row[4]) || "",
+                province_municipality: parseString(row[5]) || "",
+                year_first_operation: parseInteger(row[6], 1800, currentYear),
+                land_area_hectares: parseNumeric(row[7], 0),
+                distance_from_main: parseNumeric(row[8], 0),
+                autonomous_code: autonomousMapping[row[9]] || parseString(row[9]),
+                position_title: headTitleMapping[row[10]] || parseString(row[10]),
+                head_full_name: parseString(row[11]),
+                former_name: parseString(row[12]),
+                latitude_coordinates: parseNumeric(row[13], -90, 90),
+                longitude_coordinates: parseNumeric(row[14], -180, 180),
+                report_year: parseInteger(selectedYear, 1800, currentYear),
             }))
-            .filter((campus) => campus.name); // Skip rows without campus name
+            .filter((campus) => campus.name);
 
         if (processedCampuses.length === 0) {
             throw new Error("No valid campus data found in Form A2.");
         }
 
-        console.log("Processed campuses from Form A2:", processedCampuses);
         const token = localStorage.getItem("token");
         await axios.post(`${config.API_URL}/suc-campuses`, processedCampuses, {
             headers: {
@@ -429,106 +485,152 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     }
   };
 
+  const handleClose = () => {
+    setErrors({});
+    setUploadStatus(null);
+    setUploadMessage("");
+    setSelectedHei(null);
+    setSelectedRegion(null);
+    setSelectedProvince(null);
+    setSelectedMunicipality(null);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
     <Dialog
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Upload SUC Data"
-      subtitle="Upload HEMIS Form A Excel files with multiple sheets"
+      subtitle="Import HEMIS Form A Excel files with institutional and campus data"
       icon={Upload}
       variant="default"
       size="xl"
     >
-      {/* Upload Status Alert */}
-      {uploadStatus && (
-        <div
-          className={`mb-6 p-4 rounded-lg border ${
+      <div className="space-y-4 p-4">
+        {/* Upload Status Alert */}
+        {uploadStatus && (
+          <div className={`p-4 rounded-xl border shadow-sm ${
             uploadStatus === "success"
-              ? "bg-green-50 border-green-200 text-green-800"
+              ? "bg-green-50/80 border-green-200 text-green-800"
               : uploadStatus === "error"
-              ? "bg-red-50 border-red-200 text-red-800"
-              : "bg-blue-50 border-blue-200 text-blue-800"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              {uploadStatus === "success" && <CheckCircle className="w-5 h-5 mr-2" />}
-              {uploadStatus === "error" && <AlertCircle className="w-5 h-5 mr-2" />}
-              {uploadStatus === "loading" && (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-800 mr-2"></div>
+              ? "bg-red-50/80 border-red-200 text-red-800"
+              : "bg-blue-50/80 border-blue-200 text-blue-800"
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {uploadStatus === "success" && <CheckCircle className="w-5 h-5 mr-2" />}
+                {uploadStatus === "error" && <AlertCircle className="w-5 h-5 mr-2" />}
+                {uploadStatus === "loading" && (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-800 mr-2"></div>
+                )}
+                <span className="font-medium">{uploadMessage}</span>
+              </div>
+              {uploadStatus !== "loading" && (
+                <button onClick={clearUploadStatus} className="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+                  <X className="w-4 h-4" />
+                </button>
               )}
-              <span className="font-medium">{uploadMessage}</span>
             </div>
-            {uploadStatus !== "loading" && (
-              <button onClick={clearUploadStatus} className="text-gray-500 hover:text-gray-700">
-                <X className="w-4 h-4" />
-              </button>
-            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Upload Section */}
-      <div>
-        {/* HEI Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Building2 className="w-4 h-4 inline mr-1" />
-            Select Institution (HEI) *
-          </label>
-          {loadingHeis ? (
-            <div className="flex items-center justify-center p-4 border border-gray-300 rounded-md">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
-              <span className="text-gray-600">Loading institutions...</span>
+        {/* Institution & Year Selection */}
+        <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
+              <Building2 className="w-5 h-5 text-white" />
             </div>
-          ) : (
-            <>
-              <Select
-                options={heiOptions}
-                value={heiOptions.find((option) => option.value === selectedHei?.uiid) || null}
-                onChange={(selectedOption) => {
-                  setSelectedHei(
-                    selectedOption
-                      ? { uiid: selectedOption.value, name: selectedOption.name }
-                      : null
+            <h3 className="text-base font-semibold text-gray-900">Institution Selection</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Institution <span className="text-red-500">*</span>
+              </label>
+              {loadingHeis ? (
+                <div className="flex items-center justify-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-600 mr-2"></div>
+                  <span className="text-sm text-gray-500">Loading institutions...</span>
+                </div>
+              ) : (
+                <>
+                  <Select
+                    options={heiOptions}
+                    value={heiOptions.find((option) => option.value === selectedHei?.uiid) || null}
+                    onChange={(selectedOption) => {
+                      handleInputChange('hei', selectedOption
+                        ? { uiid: selectedOption.value, name: selectedOption.name }
+                        : null
+                      );
+                    }}
+                    placeholder="Search and select an institution..."
+                    isClearable
+                    isSearchable
+                    className="text-sm"
+                    classNamePrefix="select"
+                    styles={{
+                      ...customSelectStyles,
+                      control: (base) => ({
+                        ...base,
+                        borderColor: errors.hei ? "#ef4444" : base.borderColor,
+                        "&:hover": { borderColor: errors.hei ? "#ef4444" : "#3b82f6" },
+                      }),
+                    }}
+                  />
+                  {errors.hei && <p className="text-red-500 text-xs mt-1">{errors.hei}</p>}
+                </>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Report Year <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => handleInputChange('year', parseInt(e.target.value))}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${
+                  errors.year ? "border-red-300 bg-red-50" : "border-gray-300"
+                }`}
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   );
-                  setHeiError("");
-                }}
-                placeholder="Search and select an institution..."
-                isClearable
-                isSearchable
-                className={`text-sm ${heiError ? "border-red-500" : ""}`}
-                classNamePrefix="select"
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    borderColor: heiError ? "#ef4444" : base.borderColor,
-                    "&:hover": { borderColor: heiError ? "#ef4444" : "#3b82f6" },
-                  }),
-                }}
-              />
-              {heiError && <p className="mt-1 text-sm text-red-600">{heiError}</p>}
-            </>
-          )}
+                })}
+              </select>
+              {errors.year && <p className="text-red-500 text-xs mt-1">{errors.year}</p>}
+            </div>
+          </div>
         </div>
 
         {/* Location Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <MapPin className="w-4 h-4 inline mr-1" />
-            Select Location
-          </label>
+        <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-xl p-4 border border-emerald-200/60 shadow-sm">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-emerald-500 rounded-lg shadow-sm">
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">Location (Optional)</h3>
+          </div>
           {loading ? (
-            <div className="flex items-center justify-center p-4 border border-gray-300 rounded-md">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
-              <span className="text-gray-600">Loading location data...</span>
+            <div className="flex items-center justify-center p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-emerald-600 mr-2"></div>
+              <span className="text-sm text-gray-500">Loading location data...</span>
             </div>
           ) : error ? (
-            <p className="text-sm text-red-600">{error}</p>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {error}
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
                 <Select
@@ -540,6 +642,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
                   isSearchable
                   className="text-sm"
                   classNamePrefix="select"
+                  styles={customSelectStyles}
                 />
               </div>
               <div>
@@ -554,6 +657,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
                   isDisabled={!selectedRegion}
                   className="text-sm"
                   classNamePrefix="select"
+                  styles={customSelectStyles}
                 />
               </div>
               <div>
@@ -568,59 +672,57 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
                   isDisabled={!selectedProvince}
                   className="text-sm"
                   classNamePrefix="select"
+                  styles={customSelectStyles}
                 />
               </div>
             </div>
           )}
         </div>
 
-        {/* Year Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Building2 className="w-4 h-4 inline mr-1" />
-            Select Year *
-          </label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="block w-full border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
-          >
-            {Array.from({ length: 10 }, (_, i) => {
-              const year = new Date().getFullYear() - i;
-              return (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-
         {/* Upload Instructions */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <div className="flex items-start">
-            <FileSpreadsheet className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
-            <div className="text-sm text-gray-600">
-              <p className="font-medium mb-1">HEMIS Excel Upload Instructions:</p>
-              <p className="mb-2">Upload HEMIS Form A Excel files with multiple sheets:</p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>
-                  <strong>Form A1:</strong> SUC Institutional Profile (institution details, address, contact info, head
-                  information)
-                </li>
-                <li>
-                  <strong>Form A2:</strong> Campus Information (campus names, locations, officials, coordinates)
-                </li>
-              </ul>
-              <p className="mt-2">
-                The system will process Form A1 (if present) to create or update the institutional profile, then link Form A2 campus data to it. If uploading only Form A2, ensure an institutional profile exists for the selected institution and year.
-              </p>
+        <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 rounded-xl p-4 border border-amber-200/60 shadow-sm">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-amber-500 rounded-lg shadow-sm">
+              <Info className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">Upload Instructions</h3>
+          </div>
+          <div className="space-y-3 text-sm text-gray-700">
+            <div className="flex items-start space-x-3">
+              <FileText className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium mb-1">HEMIS Form A Excel Files:</p>
+                <ul className="space-y-1 ml-2">
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
+                    <strong>Form A1:</strong> SUC Institutional Profile (details, address, contact, leadership)
+                  </li>
+                  <li className="flex items-center">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
+                    <strong>Form A2:</strong> Campus Information (names, locations, officials, coordinates)
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <Database className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p>The system processes Form A1 first to create the institutional profile, then links Form A2 campus data to it.</p>
+            </div>
+            <div className="flex items-start space-x-3">
+              <Globe className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p>Supported formats: .xlsx, .xls, and .csv files</p>
             </div>
           </div>
         </div>
 
-        {/* File Upload Button */}
-        <div className="mb-6">
+        {/* File Upload Section */}
+        <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 rounded-xl p-4 border border-slate-200/60 shadow-sm">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-slate-600 rounded-lg shadow-sm">
+              <FileSpreadsheet className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900">File Upload</h3>
+          </div>
           <div className="relative">
             <input
               type="file"
@@ -630,35 +732,86 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
               disabled={isUploading || !selectedHei}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             />
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                !selectedHei ? "border-gray-200 bg-gray-50" : "border-gray-300 hover:border-gray-400 bg-white"
-              }`}
-            >
-              <Upload className={`w-12 h-12 mx-auto mb-4 ${!selectedHei ? "text-gray-300" : "text-gray-400"}`} />
-              <p className={`text-lg font-medium mb-2 ${!selectedHei ? "text-gray-400" : "text-gray-900"}`}>
-                {isUploading ? "Processing..." : "Choose Excel File to Upload"}
+            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+              !selectedHei || isUploading
+                ? "border-gray-200 bg-gray-50/50"
+                : "border-slate-300 hover:border-slate-400 hover:bg-slate-50/50 bg-white"
+            }`}>
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                !selectedHei || isUploading
+                  ? "bg-gray-100"
+                  : "bg-gradient-to-br from-slate-100 to-slate-200"
+              }`}>
+                {isUploading ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+                ) : (
+                  <Upload className={`w-8 h-8 ${!selectedHei ? "text-gray-300" : "text-slate-600"}`} />
+                )}
+              </div>
+              <p className={`text-lg font-semibold mb-2 ${
+                !selectedHei || isUploading ? "text-gray-400" : "text-gray-900"
+              }`}>
+                {isUploading ? "Processing File..." : "Choose Excel File to Upload"}
               </p>
-              <p className={`text-sm ${!selectedHei ? "text-gray-400" : "text-gray-500"}`}>
-                Supports .xlsx, .xls, and .csv files
+              <p className={`text-sm mb-2 ${
+                !selectedHei || isUploading ? "text-gray-400" : "text-gray-600"
+              }`}>
+                Drag and drop or click to browse
               </p>
-              {!selectedHei && <p className="text-sm text-red-500 mt-2">Select an institution first</p>}
-              {isUploading && (
+              <div className="flex flex-wrap justify-center gap-2 mb-2">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  .xlsx
+                </span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  .xls
+                </span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  .csv
+                </span>
+              </div>
+              {!selectedHei && (
+                <div className="flex items-center justify-center mt-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 mr-1" />
+                  <span className="text-sm text-red-500 font-medium">Select an institution first</span>
+                </div>
+              )}
+              {uploadStatus === "loading" && (
                 <div className="mt-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-pulse" style={{width: "60%"}}></div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">{uploadMessage}</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
           <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            onClick={handleClose}
+            disabled={isUploading}
+            className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            Close
+            {isUploading ? "Processing..." : "Close"}
           </button>
+          {uploadStatus === "success" && (
+            <button
+              onClick={() => {
+                setUploadStatus(null);
+                setUploadMessage("");
+                setSelectedHei(null);
+                setSelectedRegion(null);
+                setSelectedProvince(null);
+                setSelectedMunicipality(null);
+              }}
+              className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm hover:shadow-md transition-all duration-200 font-medium flex items-center justify-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Upload Another File
+            </button>
+          )}
         </div>
       </div>
     </Dialog>
