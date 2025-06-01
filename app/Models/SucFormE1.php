@@ -10,9 +10,7 @@ class SucFormE1 extends Model
 
     protected $fillable = [
         'suc_details_id',
-        'faculty_name_ln',
-        'faculty_name_fn',
-        'faculty_name_mi',
+        'faculty_name',
         'generic_faculty_rank',
         'home_college',
         'home_dept',
@@ -50,6 +48,7 @@ class SucFormE1 extends Model
         'official_administrative_load',
         'other_official_load_credits',
         'total_work_load',
+        'faculty_type', // Added for completeness
     ];
 
     protected $casts = [
@@ -75,8 +74,35 @@ class SucFormE1 extends Model
         'total_work_load' => 'decimal:2',
     ];
 
+    /**
+     * Relationship with SucDetail model.
+     */
     public function sucDetail()
     {
         return $this->belongsTo(SucDetail::class, 'suc_details_id');
+    }
+
+    /**
+     * Scope for filtering by faculty type.
+     */
+    public function scopeByFacultyType($query, $type)
+    {
+        return $query->where('faculty_type', $type);
+    }
+
+    /**
+     * Scope for filtering by gender.
+     */
+    public function scopeByGender($query, $gender)
+    {
+        return $query->where('gender', $gender);
+    }
+
+    /**
+     * Scope for filtering by highest degree attained.
+     */
+    public function scopeByHighestDegree($query, $degree)
+    {
+        return $query->where('highest_degree_attained', $degree);
     }
 }

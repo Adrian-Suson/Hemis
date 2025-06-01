@@ -34,7 +34,7 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
             '6th_year_male', '6th_year_female',
             '7th_year_male', '7th_year_female'
         ];
-        return fields.reduce((total, field) => total + (programData[field] || 0), 0);
+        return fields.reduce((total, field) => total + (Number(programData[field]) || 0), 0);
     };
 
     const getTotalMale = () => {
@@ -42,7 +42,7 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
             '1st_year_male', '2nd_year_male', '3rd_year_male',
             '4th_year_male', '5th_year_male', '6th_year_male', '7th_year_male'
         ];
-        return fields.reduce((total, field) => total + (programData[field] || 0), 0);
+        return fields.reduce((total, field) => total + (Number(programData[field]) || 0), 0);
     };
 
     const getTotalFemale = () => {
@@ -50,18 +50,18 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
             '1st_year_female', '2nd_year_female', '3rd_year_female',
             '4th_year_female', '5th_year_female', '6th_year_female', '7th_year_female'
         ];
-        return fields.reduce((total, field) => total + (programData[field] || 0), 0);
+        return fields.reduce((total, field) => total + (Number(programData[field]) || 0), 0);
     };
 
     const getEnrollmentByYear = () => {
         const years = [
-            { year: '1st Year', male: programData['1st_year_male'] || 0, female: programData['1st_year_female'] || 0 },
-            { year: '2nd Year', male: programData['2nd_year_male'] || 0, female: programData['2nd_year_female'] || 0 },
-            { year: '3rd Year', male: programData['3rd_year_male'] || 0, female: programData['3rd_year_male'] || 0 },
-            { year: '4th Year', male: programData['4th_year_male'] || 0, female: programData['4th_year_female'] || 0 },
-            { year: '5th Year', male: programData['5th_year_male'] || 0, female: programData['5th_year_female'] || 0 },
-            { year: '6th Year', male: programData['6th_year_male'] || 0, female: programData['6th_year_female'] || 0 },
-            { year: '7th Year', male: programData['7th_year_male'] || 0, female: programData['7th_year_female'] || 0 },
+            { year: '1st Year', male: Number(programData['1st_year_male']) || 0, female: Number(programData['1st_year_female']) || 0 },
+            { year: '2nd Year', male: Number(programData['2nd_year_male']) || 0, female: Number(programData['2nd_year_female']) || 0 },
+            { year: '3rd Year', male: Number(programData['3rd_year_male']) || 0, female: Number(programData['3rd_year_female']) || 0 },
+            { year: '4th Year', male: Number(programData['4th_year_male']) || 0, female: Number(programData['4th_year_female']) || 0 },
+            { year: '5th Year', male: Number(programData['5th_year_male']) || 0, female: Number(programData['5th_year_female']) || 0 },
+            { year: '6th Year', male: Number(programData['6th_year_male']) || 0, female: Number(programData['6th_year_female']) || 0 },
+            { year: '7th Year', male: Number(programData['7th_year_male']) || 0, female: Number(programData['7th_year_female']) || 0 },
         ].filter(year => year.male > 0 || year.female > 0);
 
         return years;
@@ -88,7 +88,7 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
             'ANN': 'Annual',
             'MOD': 'Modular'
         };
-        return calendarTypes[code] || code || 'Not specified';
+        return calendarTypes[code] || String(code) || 'Not specified';
     };
 
     const getProgramStatus = (status) => {
@@ -98,14 +98,31 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
             'SUSPENDED': { label: 'Suspended', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
             'PHASED_OUT': { label: 'Phased Out', color: 'bg-gray-100 text-gray-800 border-gray-300' }
         };
-        return statusTypes[status] || { label: status || 'Unknown', color: 'bg-gray-100 text-gray-800 border-gray-300' };
+        return statusTypes[status] || { label: String(status) || 'Unknown', color: 'bg-gray-100 text-gray-800 border-gray-300' };
+    };
+
+    // Safe value conversion function
+    const safeValue = (value, defaultValue = "Not specified") => {
+        if (value === null || value === undefined || value === '') {
+            return defaultValue;
+        }
+        if (typeof value === 'object') {
+            return String(value) || defaultValue;
+        }
+        return String(value);
+    };
+
+    // Safe number conversion function
+    const safeNumber = (value, defaultValue = 0) => {
+        const num = Number(value);
+        return isNaN(num) ? defaultValue : num;
     };
 
     return (
         <Dialog
             isOpen={isOpen}
             onClose={onClose}
-            title={programData.program_name || "Program Details"}
+            title={safeValue(programData.program_name, "Program Details")}
             subtitle="Academic Program Information"
             icon={Eye}
             variant="view"
@@ -123,25 +140,25 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Program Name</label>
-                            <p className="text-sm text-gray-900 font-semibold">{programData.program_name || "Not specified"}</p>
+                            <p className="text-sm text-gray-900 font-semibold">{safeValue(programData.program_name)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Program Code</label>
-                            <p className="text-sm text-gray-900">{programData.program_code || "Not assigned"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.program_code, "Not assigned")}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Major/Specialization</label>
-                            <p className="text-sm text-gray-900">{programData.major_name || "No major specified"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.major_name, "No major specified")}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Major Code</label>
-                            <p className="text-sm text-gray-900">{programData.major_code || "Not assigned"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.major_code, "Not assigned")}</p>
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Program Type & Status</label>
                             <div className="flex flex-wrap gap-2">
                                 <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getProgramTypeColor(programData.program_type)}`}>
-                                    {programData.program_type || "Unknown Type"}
+                                    {safeValue(programData.program_type, "Unknown Type")}
                                 </span>
                                 <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getProgramStatus(programData.program_status).color}`}>
                                     {getProgramStatus(programData.program_status).label}
@@ -170,11 +187,11 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">AOP Category</label>
-                                    <p className="text-sm text-gray-900">{programData.aop_category || "Not specified"}</p>
+                                    <p className="text-sm text-gray-900">{safeValue(programData.aop_category)}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">AOP Serial</label>
-                                    <p className="text-sm text-gray-900">{programData.aop_serial || "Not assigned"}</p>
+                                    <p className="text-sm text-gray-900">{safeValue(programData.aop_serial, "Not assigned")}</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -183,7 +200,7 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                                         <Calendar className="w-4 h-4 inline mr-1" />
                                         Program Length
                                     </label>
-                                    <p className="text-sm text-gray-900">{programData.program_normal_length_in_years || "0"} years</p>
+                                    <p className="text-sm text-gray-900">{safeNumber(programData.program_normal_length_in_years)} years</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
@@ -198,15 +215,15 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                                 <div className="grid grid-cols-3 gap-2 text-center">
                                     <div className="bg-white/60 rounded-lg p-2 border">
                                         <div className="text-xs text-gray-600">Lecture</div>
-                                        <div className="text-sm font-semibold text-gray-900">{programData.lecture_units || 0}</div>
+                                        <div className="text-sm font-semibold text-gray-900">{safeNumber(programData.lecture_units)}</div>
                                     </div>
                                     <div className="bg-white/60 rounded-lg p-2 border">
                                         <div className="text-xs text-gray-600">Lab</div>
-                                        <div className="text-sm font-semibold text-gray-900">{programData.lab_units || 0}</div>
+                                        <div className="text-sm font-semibold text-gray-900">{safeNumber(programData.lab_units)}</div>
                                     </div>
                                     <div className="bg-white/60 rounded-lg p-2 border border-emerald-300">
                                         <div className="text-xs text-emerald-600">Total</div>
-                                        <div className="text-sm font-semibold text-emerald-900">{programData.total_units || 0}</div>
+                                        <div className="text-sm font-semibold text-emerald-900">{safeNumber(programData.total_units)}</div>
                                     </div>
                                 </div>
                             </div>
@@ -233,10 +250,10 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Estimated Total Cost</label>
                                 <p className="text-sm text-gray-600">
-                                    ({programData.total_units || 0} units × {formatCurrency(programData.tuition_per_unit)} + {formatCurrency(programData.program_fee)})
+                                    ({safeNumber(programData.total_units)} units × {formatCurrency(programData.tuition_per_unit)} + {formatCurrency(programData.program_fee)})
                                 </p>
                                 <p className="text-xl font-bold text-purple-900">
-                                    {formatCurrency(((programData.total_units || 0) * (programData.tuition_per_unit || 0)) + (programData.program_fee || 0))}
+                                    {formatCurrency((safeNumber(programData.total_units) * safeNumber(programData.tuition_per_unit)) + safeNumber(programData.program_fee))}
                                 </p>
                             </div>
                         </div>
@@ -288,14 +305,14 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                         )}
 
                         {/* New Students */}
-                        {(programData.new_students_freshmen_male > 0 || programData.new_students_freshmen_female > 0) && (
+                        {(safeNumber(programData.new_students_freshmen_male) > 0 || safeNumber(programData.new_students_freshmen_female) > 0) && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">New Freshmen Students</label>
                                 <div className="flex justify-between bg-white/60 rounded-lg p-2 border border-green-300">
-                                    <span className="text-sm text-green-600">Male: {programData.new_students_freshmen_male || 0}</span>
-                                    <span className="text-sm text-green-600">Female: {programData.new_students_freshmen_female || 0}</span>
+                                    <span className="text-sm text-green-600">Male: {safeNumber(programData.new_students_freshmen_male)}</span>
+                                    <span className="text-sm text-green-600">Female: {safeNumber(programData.new_students_freshmen_female)}</span>
                                     <span className="text-sm font-semibold text-green-900">
-                                        Total: {(programData.new_students_freshmen_male || 0) + (programData.new_students_freshmen_female || 0)}
+                                        Total: {safeNumber(programData.new_students_freshmen_male) + safeNumber(programData.new_students_freshmen_female)}
                                     </span>
                                 </div>
                             </div>
@@ -317,15 +334,15 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                             <div className="grid grid-cols-3 gap-3 text-center">
                                 <div className="bg-white/60 rounded-lg p-3 border">
                                     <div className="text-xs text-gray-600">Male</div>
-                                    <div className="text-lg font-semibold text-slate-900">{programData.graduates_males || 0}</div>
+                                    <div className="text-lg font-semibold text-slate-900">{safeNumber(programData.graduates_males)}</div>
                                 </div>
                                 <div className="bg-white/60 rounded-lg p-3 border">
                                     <div className="text-xs text-gray-600">Female</div>
-                                    <div className="text-lg font-semibold text-slate-900">{programData.graduates_females || 0}</div>
+                                    <div className="text-lg font-semibold text-slate-900">{safeNumber(programData.graduates_females)}</div>
                                 </div>
                                 <div className="bg-white/60 rounded-lg p-3 border border-slate-300">
                                     <div className="text-xs text-slate-600">Total</div>
-                                    <div className="text-lg font-bold text-slate-900">{programData.graduates_total || 0}</div>
+                                    <div className="text-lg font-bold text-slate-900">{safeNumber(programData.graduates_total)}</div>
                                 </div>
                             </div>
                             <div>
@@ -333,15 +350,15 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                                 <div className="grid grid-cols-3 gap-2 text-center mt-1">
                                     <div className="bg-white/60 rounded p-2 border">
                                         <div className="text-xs text-gray-600">Lecture</div>
-                                        <div className="text-sm font-semibold">{programData.lecture_units_actual || 0}</div>
+                                        <div className="text-sm font-semibold">{safeNumber(programData.lecture_units_actual)}</div>
                                     </div>
                                     <div className="bg-white/60 rounded p-2 border">
                                         <div className="text-xs text-gray-600">Lab</div>
-                                        <div className="text-sm font-semibold">{programData.laboratory_units_actual || 0}</div>
+                                        <div className="text-sm font-semibold">{safeNumber(programData.laboratory_units_actual)}</div>
                                     </div>
                                     <div className="bg-white/60 rounded p-2 border border-slate-300">
                                         <div className="text-xs text-slate-600">Total</div>
-                                        <div className="text-sm font-semibold">{programData.total_units_actual || 0}</div>
+                                        <div className="text-sm font-semibold">{safeNumber(programData.total_units_actual)}</div>
                                     </div>
                                 </div>
                             </div>
@@ -360,21 +377,21 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">External Merit Scholars</label>
                                 <div className="bg-white/60 rounded-lg p-3 border">
-                                    <div className="text-2xl font-bold text-indigo-900">{programData.externally_funded_merit_scholars || 0}</div>
+                                    <div className="text-2xl font-bold text-indigo-900">{safeNumber(programData.externally_funded_merit_scholars)}</div>
                                     <div className="text-xs text-gray-600">Students with external scholarships</div>
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Internal Grantees</label>
                                 <div className="bg-white/60 rounded-lg p-3 border">
-                                    <div className="text-2xl font-bold text-indigo-900">{programData.internally_funded_grantees || 0}</div>
+                                    <div className="text-2xl font-bold text-indigo-900">{safeNumber(programData.internally_funded_grantees)}</div>
                                     <div className="text-xs text-gray-600">Students with institutional aid</div>
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Total Funded Students</label>
                                 <div className="bg-white/60 rounded-lg p-3 border border-indigo-300">
-                                    <div className="text-2xl font-bold text-indigo-900">{programData.funded_grantees || 0}</div>
+                                    <div className="text-2xl font-bold text-indigo-900">{safeNumber(programData.funded_grantees)}</div>
                                     <div className="text-xs text-indigo-600">All scholarship recipients</div>
                                 </div>
                             </div>
@@ -393,23 +410,23 @@ function ProgramDetailsView({ isOpen, onClose, programData }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">AOP Year</label>
-                            <p className="text-sm text-gray-900">{programData.aop_year || "Not specified"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.aop_year)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Report Year</label>
-                            <p className="text-sm text-gray-900">{programData.report_year || "Not specified"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.report_year.year)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Subtotal Male Students</label>
-                            <p className="text-sm text-gray-900">{programData.subtotal_male || "Auto-calculated"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.subtotal_male, "Auto-calculated")}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Subtotal Female Students</label>
-                            <p className="text-sm text-gray-900">{programData.subtotal_female || "Auto-calculated"}</p>
+                            <p className="text-sm text-gray-900">{safeValue(programData.subtotal_female, "Auto-calculated")}</p>
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700">Grand Total Enrollment</label>
-                            <p className="text-lg font-semibold text-gray-900">{programData.grand_total || getTotalEnrollment()}</p>
+                            <p className="text-lg font-semibold text-gray-900">{safeValue(programData.grand_total, getTotalEnrollment().toString())}</p>
                         </div>
                     </div>
                 </div>
