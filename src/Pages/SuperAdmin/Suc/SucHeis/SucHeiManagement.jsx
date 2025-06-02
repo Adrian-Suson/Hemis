@@ -22,6 +22,7 @@ function SucHeiManagement() {
     // Fetch SUC data from API
     useEffect(() => {
         fetchSucData();
+
     }, []);
 
     const fetchSucData = async () => {
@@ -36,6 +37,7 @@ function SucHeiManagement() {
             });
 
             setSucData(response.data);
+            console.log('response.data:', response.data)
         } catch (error) {
             console.error('Error fetching SUC data:', error);
             setError('Failed to load SUC data. Please try again.');

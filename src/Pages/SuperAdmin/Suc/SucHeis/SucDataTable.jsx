@@ -36,7 +36,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
         const SucDetailId = suc.id || suc.id;
         if (SucDetailId) {
             navigate(`/super-admin/institutions/suc/campuses/${SucDetailId}`, {
-                state: { heiName: suc.hei_name || suc.institution_name },
+                state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
             });
         } else {
             console.error("No SUC ID found for campuses:", suc);
@@ -47,7 +47,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
         const SucDetailId = suc.id || suc.id;
         if (SucDetailId) {
             navigate(`/super-admin/institutions/suc/programs/${SucDetailId}`, {
-                state: { heiName: suc.hei_name || suc.institution_name },
+                state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
             });
         } else {
             console.error("No SUC ID found for programs:", suc);
@@ -58,7 +58,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
         const SucDetailId = suc.id || suc.id;
         if (SucDetailId) {
             navigate(`/super-admin/institutions/suc/faculty/${SucDetailId}`, {
-                state: { heiName: suc.hei_name || suc.institution_name },
+                state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
             });
         } else {
             console.error("No SUC ID found for faculty:", suc);
