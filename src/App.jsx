@@ -20,6 +20,7 @@ import SucFormE1 from "./Pages/SuperAdmin/Suc/SucFormE1/SucFormE1";
 import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
+import UserManagement from "./Pages/SuperAdmin/UserManagment/UserManagement";
 
 
 function ExternalRedirect({ to }) {
@@ -65,6 +66,7 @@ function App() {
                         <Route path="/super-admin/institutions/suc/faculty/:SucDetailId" element={<SucFormE1 />} />
                         <Route path="/super-admin/institutions/luc/campuses/:lucDetailId" element={<LucHeiManagement />} />
                         <Route path="/super-admin/institutions/private/campuses/:privateDetailId" element={<PrivateHeiManagement />} />
+                        <Route path="/super-admin/user-management" element={<UserManagement />} />
                     </Route>
 
                     {/* HEI Admin Routes under /hei-admin/* */}
