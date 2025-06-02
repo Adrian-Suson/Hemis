@@ -209,11 +209,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     "99": "Not known or not indicated",
   };
 
-  const autonomousMapping = {
-    "1": "CAMPUS IS AUTONOMOUS FROM THE SUC MAIN CAMPUS",
-    "2": "CAMPUS IS NOT AUTONOMOUS FROM MAIN CAMPUS",
-    "3": "NO INFORMATION ON THE MATTER",
-  };
+
 
   // Parsing helper functions
   const toNullableInteger = (value) => {
@@ -456,7 +452,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
                 year_first_operation: parseInteger(row[6], 1800, currentYear),
                 land_area_hectares: parseNumeric(row[7], 0),
                 distance_from_main: parseNumeric(row[8], 0),
-                autonomous_code: autonomousMapping[row[9]] || parseString(row[9]),
+                autonomous_code: parseString[row[9]] || parseString(row[9]),
                 position_title: headTitleMapping[row[10]] || parseString(row[10]),
                 head_full_name: parseString(row[11]),
                 former_name: parseString(row[12]),

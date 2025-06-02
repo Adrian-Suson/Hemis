@@ -656,8 +656,8 @@ function EditProgramForm({
                                             Bachelor
                                         </option>
                                         <option value="Master">Master</option>
-                                        <option value="Doctorate">
-                                            Doctorate
+                                        <option value="Doctoral">
+                                            Doctoral
                                         </option>
                                         <option value="Certificate">
                                             Certificate

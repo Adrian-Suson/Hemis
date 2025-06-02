@@ -22,7 +22,7 @@ import AlertComponent from "../../../../Components/AlertComponent";
 function ProgramUploadModal({
     isOpen,
     onClose,
-    onDataImported,
+    onUploadSuccess,
     institutionId,
 }) {
     const [uploadStatus, setUploadStatus] = useState(null); // null, 'loading', 'success', 'error'
@@ -134,7 +134,7 @@ function ProgramUploadModal({
 
     // Program type mapping based on sheet names
     const programTypeMapping = {
-        Doctorate: "Doctorate",
+        Doctoral: "Doctoral",
         Masters: "Masters",
         "Post-Baccalaureate": "Post-Baccalaureate",
         Baccalaureate: "Baccalaureate",
@@ -191,7 +191,7 @@ function ProgramUploadModal({
             // Use actual sheet names from the Excel file
             const programSheets = workbook.SheetNames.filter((name) =>
                 [
-                    "Doctorate",
+                    "Doctoral",
                     "Masters",
                     "Post-Baccalaureate",
                     "Baccalaureate",
@@ -257,7 +257,7 @@ function ProgramUploadModal({
         }
 
         if (createdRecords.length > 0) {
-            onDataImported(createdRecords);
+            onUploadSuccess();
             setUploadStatus("success");
             setUploadMessage(successMessage.trim());
 
@@ -454,6 +454,7 @@ function ProgramUploadModal({
                 `Programs upload response from ${sheetName}:`,
                 response.data
             );
+            onClose();
             return processedPrograms.map((program) => ({ program }));
         } catch (error) {
             console.error(
@@ -630,7 +631,7 @@ function ProgramUploadModal({
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Column C: Program Type (Doctorate,
+                                        Column C: Program Type (Doctoral,
                                         Masters, Post-Baccalaureate,
                                         Baccalaureate, Pre-Baccalaureate,
                                         VocTech, Basic)
@@ -802,7 +803,7 @@ function ProgramUploadModal({
 ProgramUploadModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
-    onDataImported: PropTypes.func.isRequired,
+    onUploadSuccess: PropTypes.func.isRequired,
     institutionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
         .isRequired,
 };

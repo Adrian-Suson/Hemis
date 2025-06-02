@@ -12,10 +12,10 @@ import {
     Globe,
     Search,
     Filter,
-    Download,
     Plus,
     TrendingUp,
     Edit,
+    Trash,
 } from "lucide-react";
 import Popper from "../../../../Components/Popper";
 import CampusDetailsView from "./CampusDetailsView"; // Import the separate component
@@ -316,10 +316,6 @@ function SucCampuses() {
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
-                                    <button className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Export
-                                    </button>
                                     <button
                                         onClick={handleAddCampus}
                                         className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -362,229 +358,202 @@ function SucCampuses() {
                         </div>
                     </div>
                 ) : (
-                    /* Campus Table with Fixed Height */
+                    /* Campus Table with Fixed Height and Aligned Columns */
                     <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 overflow-hidden">
-                        {/* Table Header - Fixed */}
-                        <div className="bg-gradient-to-r from-gray-50/80 to-blue-50/50 border-b border-gray-200/50">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full">
-                                    <thead>
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Campus Information
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Type & Code
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Location
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Leadership
-                                            </th>
-                                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
+                        {/* Single Table with Fixed Layout */}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full table-fixed">
+                                {/* Table Header */}
+                                <thead className="bg-gradient-to-r from-gray-50/80 to-blue-50/50 border-b border-gray-200/50 sticky top-0 z-10">
+                                    <tr>
+                                        <th className="w-[300px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Campus Information
+                                        </th>
+                                        <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Type & Code
+                                        </th>
+                                        <th className="w-[250px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Location
+                                        </th>
+                                        <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Leadership
+                                        </th>
+                                        <th className="w-[120px] px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                            </table>
                         </div>
 
-                        {/* Table Body - Scrollable */}
-                        <div className="max-h-96 overflow-y-auto">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full">
-                                    <tbody className="divide-y divide-gray-200/30">
-                                        {filteredCampuses.map(
-                                            (campus, index) => (
-                                                <tr
-                                                    key={campus.id}
-                                                    className={`hover:bg-blue-50/30 transition-all duration-200 ${
-                                                        index % 2 === 0
-                                                            ? "bg-white/30"
-                                                            : "bg-gray-50/30"
-                                                    }`}
-                                                >
-                                                    <td className="px-4 py-4">
-                                                        <div className="flex items-center">
-                                                            <div className="flex-shrink-0 h-10 w-10">
-                                                                <div
-                                                                    className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                                                                        campus.campus_type ===
-                                                                        "MAIN"
-                                                                            ? "bg-gradient-to-br from-green-100 to-green-200 text-green-700"
-                                                                            : "bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700"
-                                                                    }`}
-                                                                >
-                                                                    <Building2 className="w-5 h-5" />
-                                                                </div>
-                                                            </div>
-                                                            <div className="ml-4">
-                                                                <div className="text-sm font-semibold text-gray-900">
-                                                                    {
-                                                                        campus.name
-                                                                    }
-                                                                </div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    Campus ID:{" "}
-                                                                    {campus.id}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <div className="space-y-2">
-                                                            <span
-                                                                className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
-                                                                    campus.campus_type ===
-                                                                    "MAIN"
-                                                                        ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
-                                                                        : "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
-                                                                }`}
-                                                            >
-                                                                {
-                                                                    campus.campus_type
-                                                                }
-                                                            </span>
-                                                            <div className="text-xs text-gray-600 font-mono">
-                                                                {campus.institutional_code ||
-                                                                    "No Code"}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <div className="space-y-1">
-                                                            <div className="text-sm font-medium text-gray-900 flex items-center">
-                                                                <MapPin className="w-3 h-3 mr-1 text-gray-400" />
-                                                                {
-                                                                    campus.province_municipality
-                                                                }
-                                                            </div>
-                                                            <div className="text-xs text-gray-600">
-                                                                {campus.region}
-                                                            </div>
-                                                            {campus.latitude &&
-                                                                campus.longitude && (
-                                                                    <div className="text-xs text-green-600 flex items-center">
-                                                                        <Globe className="w-3 h-3 mr-1" />
-                                                                        Geo-located
-                                                                    </div>
-                                                                )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <div className="space-y-1">
-                                                            <div className="text-sm font-medium text-gray-900 flex items-center">
-                                                                <User className="w-3 h-3 mr-1 text-gray-400" />
-                                                                {campus.head_full_name ||
-                                                                    "Not assigned"}
-                                                            </div>
-                                                            <div className="text-xs text-gray-600 truncate max-w-32">
-                                                                {campus.position_title ||
-                                                                    "No title"}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-center">
-                                                        <Popper
-                                                            trigger={
-                                                                <button
-                                                                    className="text-gray-600 hover:text-gray-900 hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-lg p-2 transition-all duration-200"
-                                                                    title="More Actions"
-                                                                >
-                                                                    <MoreHorizontal className="w-4 h-4" />
-                                                                </button>
-                                                            }
-                                                            placement="bottom-end"
-                                                            className="w-40 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg"
-                                                            offset={[0, 4]}
-                                                            usePortal={true}
+                        {/* Scrollable Table Body */}
+                        <div
+                            className="max-h-[400px] overflow-y-auto overflow-x-hidden"
+                            style={{
+                                scrollBehavior: "smooth",
+                                scrollbarWidth: "thin",
+                                scrollbarColor: "#CBD5E1 #F1F5F9",
+                            }}
+                        >
+                            <table className="min-w-full table-fixed">
+                                <tbody className="divide-y divide-gray-200/30">
+                                    {filteredCampuses.map((campus, index) => (
+                                        <tr
+                                            key={campus.id}
+                                            className={`hover:bg-blue-50/30 transition-all duration-200 ${
+                                                index % 2 === 0
+                                                    ? "bg-white/30"
+                                                    : "bg-gray-50/30"
+                                            }`}
+                                        >
+                                            <td className="w-[300px] px-4 py-4">
+                                                <div className="flex items-start">
+                                                    <div className="flex-shrink-0 h-8 w-8 mt-1">
+                                                        <div
+                                                            className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                                                                campus.campus_type === "MAIN"
+                                                                    ? "bg-gradient-to-br from-green-100 to-green-200 text-green-700"
+                                                                    : "bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700"
+                                                            }`}
                                                         >
-                                                            <div className="py-2">
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleViewDetails(
-                                                                            campus
-                                                                        )
-                                                                    }
-                                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                                    role="menuitem"
-                                                                >
-                                                                    <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                                    View Details
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleEdit(
-                                                                            campus
-                                                                        )
-                                                                    }
-                                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
-                                                                    role="menuitem"
-                                                                >
-                                                                    <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
-                                                                    Edit Campus
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleDelete(
-                                                                            campus.id
-                                                                        )
-                                                                    }
-                                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
-                                                                    role="menuitem"
-                                                                >
-                                                                    Delete
-                                                                    Campus
-                                                                </button>
-                                                            </div>
-                                                        </Popper>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        )}
-                                        {filteredCampuses.length === 0 && (
-                                            <tr>
-                                                <td
-                                                    colSpan="5"
-                                                    className="px-6 py-12 text-center"
-                                                >
-                                                    <div className="text-gray-500">
-                                                        <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                                                            <Building2 className="w-10 h-10 text-gray-400" />
+                                                            <Building2 className="w-4 h-4" />
                                                         </div>
-                                                        <p className="text-lg font-semibold text-gray-900 mb-2">
-                                                            {searchTerm ||
-                                                            filterType !== "ALL"
-                                                                ? "No matching campuses found"
-                                                                : "No Campuses Found"}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600 mb-4">
-                                                            {searchTerm ||
-                                                            filterType !== "ALL"
-                                                                ? "Try adjusting your search terms or filters."
-                                                                : "This institution has no campuses registered yet."}
-                                                        </p>
-                                                        {!searchTerm &&
-                                                            filterType ===
-                                                                "ALL" && (
-                                                                <button
-                                                                    onClick={handleAddCampus}
-                                                                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200"
-                                                                >
-                                                                    <Plus className="w-4 h-4 mr-2" />
-                                                                    Add First
-                                                                    Campus
-                                                                </button>
-                                                            )}
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    <div className="ml-3 min-w-0 flex-1">
+                                                        <div className="text-xs font-semibold text-gray-900 leading-tight break-words">
+                                                            {campus.name}
+                                                        </div>
+                                                        <div className="text-[10px] text-gray-500 mt-1">
+                                                            Campus ID: {campus.id}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="w-[200px] px-4 py-4">
+                                                <div className="space-y-2">
+                                                    <span
+                                                        className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full shadow-sm ${
+                                                            campus.campus_type === "MAIN"
+                                                                ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
+                                                                : "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
+                                                        }`}
+                                                    >
+                                                        {campus.campus_type}
+                                                    </span>
+                                                    <div className="text-[10px] text-gray-600 font-mono break-words leading-tight">
+                                                        {campus.institutional_code || "No Code"}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="w-[250px] px-4 py-4">
+                                                <div className="space-y-1">
+                                                    <div className="text-xs font-medium text-gray-900 flex items-start">
+                                                        <MapPin className="w-3 h-3 mr-1 text-gray-400 flex-shrink-0 mt-0.5" />
+                                                        <span className="break-words leading-tight">
+                                                            {campus.province_municipality}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-600 break-words leading-tight ml-4">
+                                                        {campus.region}
+                                                    </div>
+                                                    {campus.latitude && campus.longitude && (
+                                                        <div className="text-[10px] text-green-600 flex items-center ml-4">
+                                                            <Globe className="w-2.5 h-2.5 mr-1 flex-shrink-0" />
+                                                            <span>Geo-located</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="w-[200px] px-4 py-4">
+                                                <div className="space-y-1">
+                                                    <div className="text-xs font-medium text-gray-900 flex items-start">
+                                                        <User className="w-3 h-3 mr-1 text-gray-400 flex-shrink-0 mt-0.5" />
+                                                        <span className="break-words leading-tight">
+                                                            {campus.head_full_name || "Not assigned"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-600 break-words leading-tight ml-4">
+                                                        {campus.position_title || "No title"}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="w-[120px] px-4 py-4 text-center">
+                                                <Popper
+                                                    trigger={
+                                                        <button
+                                                            className="text-gray-600 hover:text-gray-900 hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-lg p-2 transition-all duration-200"
+                                                            title="More Actions"
+                                                        >
+                                                            <MoreHorizontal className="w-4 h-4" />
+                                                        </button>
+                                                    }
+                                                    placement="bottom-end"
+                                                    className="w-40 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg"
+                                                    offset={[0, 4]}
+                                                    usePortal={true}
+                                                >
+                                                    <div className="py-2">
+                                                        <button
+                                                            onClick={() => handleViewDetails(campus)}
+                                                            className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                            role="menuitem"
+                                                        >
+                                                            <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                            View Details
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(campus)}
+                                                            className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
+                                                            role="menuitem"
+                                                        >
+                                                            <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
+                                                            Edit Campus
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(campus.id)}
+                                                            className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
+                                                            role="menuitem"
+                                                        >
+                                                            <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
+                                                            Delete Campus
+                                                        </button>
+                                                    </div>
+                                                </Popper>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredCampuses.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-12 text-center">
+                                                <div className="text-gray-500">
+                                                    <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                                                        <Building2 className="w-10 h-10 text-gray-400" />
+                                                    </div>
+                                                    <p className="text-lg font-semibold text-gray-900 mb-2">
+                                                        {searchTerm || filterType !== "ALL"
+                                                            ? "No matching campuses found"
+                                                            : "No Campuses Found"}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600 mb-4">
+                                                        {searchTerm || filterType !== "ALL"
+                                                            ? "Try adjusting your search terms or filters."
+                                                            : "This institution has no campuses registered yet."}
+                                                    </p>
+                                                    {!searchTerm && filterType === "ALL" && (
+                                                        <button
+                                                            onClick={handleAddCampus}
+                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200"
+                                                        >
+                                                            <Plus className="w-4 h-4 mr-2" />
+                                                            Add First Campus
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}
@@ -617,9 +586,5 @@ function SucCampuses() {
         </div>
     );
 }
-
-SucCampuses.propTypes = {
-    // No props required since data is fetched internally
-};
 
 export default SucCampuses;

@@ -19,6 +19,18 @@ class SucFormBController extends Controller
     }
 
     /**
+     * Get SucFormB data by SucDetailId
+     */
+    public function getBySucDetailId($sucDetailId)
+    {
+        $sucFormBs = SucFormB::with(['sucDetail', 'reportYear'])
+            ->where('suc_details_id', $sucDetailId)
+            ->get();
+
+        return response()->json($sucFormBs);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)

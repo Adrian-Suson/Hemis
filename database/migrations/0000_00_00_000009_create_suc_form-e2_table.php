@@ -16,7 +16,6 @@ class CreateSucFormE2Table extends Migration
                 ->references('id')
                 ->on('suc_details')
                 ->onDelete('cascade'); // Delete research form if associated details are deleted
-            $table->string('faculty_group')->nullable(); // New column for faculty groups (A1, A2, A3, B, C1, C2, C3, D, E)
             $table->string('name')->nullable(); // NAME OF FACULTY (A2)
             $table->integer('generic_faculty_rank')->nullable(); // GENERIC FACULTY RANK (A3)
             $table->string('home_college')->nullable(); // HOME COLLEGE (A4)
@@ -78,7 +77,6 @@ class CreateSucFormE2Table extends Migration
 
             // Add indexes for faster queries
             $table->index('suc_details_id'); // Index for faster lookups and joins
-            $table->index('faculty_group'); // Index for filtering by faculty group
             $table->index('name'); // Index for filtering by faculty name
             $table->index('generic_faculty_rank'); // Index for filtering by faculty rank
             $table->index('gender'); // Index for filtering by gender

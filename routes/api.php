@@ -47,9 +47,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // SUC Campus Routes
     Route::apiResource('/suc-campuses', SucCampusController::class);
     // SUC Form B Routes
-    Route::apiResource('/suc-form-b', SucFormBController::class);
+    Route::get('/suc-form-b', [SucFormBController::class, 'index']);
+    Route::get('/suc-form-b/suc-detail/{sucDetailId}', [SucFormBController::class, 'getBySucDetailId']);
+    Route::post('/suc-form-b', [SucFormBController::class, 'store']);
+    Route::get('/suc-form-b/{id}', [SucFormBController::class, 'show']);
+    Route::put('/suc-form-b/{id}', [SucFormBController::class, 'update']);
+    Route::delete('/suc-form-b/{id}', [SucFormBController::class, 'destroy']);
     Route::post('/suc-form-b/bulk', [SucFormBController::class, 'bulkStore']);
-    
+
     // SUC Form E1 Routes
     Route::apiResource('/suc-form-e1', SucFormE1Controller::class);
     // SUC Form E2 Routes

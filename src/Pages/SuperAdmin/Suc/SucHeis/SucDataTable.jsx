@@ -1,9 +1,13 @@
-import { GraduationCap, Phone, Mail, MoreHorizontal, Building2, BookOpen } from "lucide-react";
+import { GraduationCap, Phone, Mail, MoreHorizontal, Building2, BookOpen, Users, Download, Edit, Trash } from "lucide-react";
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Popper from "../../../../Components/Popper";
 import { useNavigate } from "react-router-dom";
 import SucDetailsView from "./SucDetailsView"; // Adjust path as needed
+import ExcelJS from "exceljs";
+import Swal from "sweetalert2";
+import axios from "axios";
+import config from "../../../../utils/config";
 
 // Mapping for head titles
 const HEAD_TITLE_MAPPING = {
@@ -22,10 +26,11 @@ const HEAD_TITLE_MAPPING = {
     99: "Not known or not indicated",
 };
 
-function SucDataTable({ data, onEdit, onDelete }) {
+function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
     const navigate = useNavigate();
     const [selectedSuc, setSelectedSuc] = useState(null);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [loading, setLoading] = useState({});
 
     const handleViewCampuses = (suc) => {
         const SucDetailId = suc.id || suc.id;
@@ -49,6 +54,17 @@ function SucDataTable({ data, onEdit, onDelete }) {
         }
     };
 
+    const handleViewFaculty = (suc) => {
+        const SucDetailId = suc.id || suc.id;
+        if (SucDetailId) {
+            navigate(`/super-admin/institutions/suc/faculty/${SucDetailId}`, {
+                state: { heiName: suc.hei_name || suc.institution_name },
+            });
+        } else {
+            console.error("No SUC ID found for faculty:", suc);
+        }
+    };
+
     const handleViewDetails = (suc) => {
         setSelectedSuc(suc);
         setIsDetailsModalOpen(true);
@@ -63,6 +79,195 @@ function SucDataTable({ data, onEdit, onDelete }) {
         const numericTitle = Number(title); // Convert to number
         return HEAD_TITLE_MAPPING[numericTitle] || "Unknown Title";
     };
+
+    const handleExportToFormA = useCallback(
+        async (institution) => {
+            console.log(
+                "handleExportToFormA confirmation triggered for",
+                institution.institution_name || institution.hei_name
+            );
+            Swal.fire({
+                title: "Confirm Export",
+                text: `Do you want to export Form A for ${institution.institution_name || institution.hei_name}?`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Export",
+                cancelButtonText: "Cancel",
+                customClass: {
+                    popup: "swal2-popup",
+                    title: "text-lg font-semibold text-gray-900",
+                    content: "text-gray-600",
+                },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    setLoading((prev) => ({ ...prev, exportFormA: true }));
+                    try {
+                        updateProgress && updateProgress(10);
+                        const response = await fetch(
+                            "/templates/Form-A-Themeplate.xlsx"
+                        );
+                        if (!response.ok)
+                            throw new Error(
+                                `HTTP error! Status: ${response.status}`
+                            );
+                        const arrayBuffer = await response.arrayBuffer();
+
+                        const workbook = new ExcelJS.Workbook();
+                        await workbook.xlsx.load(arrayBuffer);
+
+                        const sheetA1 = workbook.getWorksheet("FORM A1");
+                        const sheetA2 = workbook.getWorksheet("FORM A2");
+
+                        // Map SUC data fields to Form A1 structure (based on the template image)
+                        const a1Fields = [
+                            { row: 4, cell: 3, key: "institution_name", altKey: "hei_name" }, // Institution Name
+                            { row: 7, cell: 3, key: "address_street" }, // Street
+                            { row: 8, cell: 3, key: "municipality" }, // Municipality/City
+                            { row: 9, cell: 3, key: "province" }, // Province
+                            { row: 10, cell: 3, key: "region" }, // Region
+                            { row: 11, cell: 3, key: "postal_code" }, // Postal or Zip Code
+                            { row: 12, cell: 3, key: "institutional_telephone" }, // Institutional Telephone
+                            { row: 13, cell: 3, key: "institutional_fax" }, // Institutional Fax No.
+                            { row: 14, cell: 3, key: "head_telephone" }, // Institutional Head's Telephone
+                            { row: 15, cell: 3, key: "institutional_email" }, // Institutional E-mail Address
+                            { row: 16, cell: 3, key: "institutional_website" }, // Institutional Web Site
+                            { row: 17, cell: 3, key: "year_established" }, // Year Established
+                            { row: 18, cell: 3, key: "sec_registration" }, // Latest SEC Registration/Enabling Law or Charter
+                            { row: 19, cell: 3, key: "year_granted_approved" }, // Year Granted or Approved
+                            { row: 20, cell: 3, key: "year_converted_college" }, // Year Converted to College Status
+                            { row: 21, cell: 3, key: "year_converted_university" }, // Year Converted to University Status
+                            { row: 22, cell: 3, key: "head_name" }, // Name of Institutional Head
+                            { row: 23, cell: 3, key: "head_title", transform: getHeadTitle }, // Title of Head of Institution
+                            { row: 24, cell: 3, key: "head_education" }, // Highest Educational Attainment of the Head
+                        ];
+
+                        a1Fields.forEach(({ row, cell, key, altKey, transform }) => {
+                            let value = institution[key] || (altKey ? institution[altKey] : "") || "";
+                            if (transform && value) {
+                                value = transform(value);
+                            }
+                            sheetA1.getRow(row).getCell(cell).value = value;
+                        });
+
+                        updateProgress && updateProgress(20);
+                        const token = localStorage.getItem("token");
+                        const { data: campusData } = await axios.get(
+                            `${config.API_URL}/suc-campuses?suc_details_id=${institution.id}`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        console.log("campusData", campusData);
+
+                        // Handle different possible response structures
+                        let campuses = [];
+                        if (Array.isArray(campusData)) {
+                            campuses = campusData;
+                        } else if (campusData.campuses && Array.isArray(campusData.campuses)) {
+                            campuses = campusData.campuses;
+                        } else if (campusData.data && Array.isArray(campusData.data)) {
+                            campuses = campusData.data;
+                        }
+
+                        console.log("campuses", campuses);
+
+                        // Find the starting row for Form A2 - Campus data dynamically by searching for 'START BELOW THIS ROW'
+                        let a2StartRow = -1;
+                        sheetA2.eachRow((row, rowNumber) => {
+                            let foundMarker = false;
+                            row.eachCell((cell) => {
+                                if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
+                                    foundMarker = true;
+                                    return false; // Stop iterating cells in this row
+                                }
+                            });
+                            if (foundMarker) {
+                                a2StartRow = rowNumber + 1;
+                                return false; // Stop iterating rows once marker found
+                            }
+                        });
+
+                        if (a2StartRow === -1) {
+                            console.error("Could not find 'START BELOW THIS ROW' marker in FORM A2. Campus data will not be exported.");
+                            // Optionally throw an error or handle this case appropriately
+                        } else {
+                            // Form A2 - Campus data
+                            campuses.forEach((campus, index) => {
+                                const row = sheetA2.getRow(a2StartRow + index);
+
+                                // Map the actual data structure from your API response
+                                row.getCell(1).value = index + 1; // Seq No.
+                                row.getCell(2).value = campus.name || ""; // NAME OF THE SUC CAMPUS
+                                row.getCell(3).value = campus.campus_type || ""; // MAIN OR SATELLITE
+                                row.getCell(4).value = campus.institutional_code || ""; // INSTITUTIONAL CODE
+                                row.getCell(5).value = campus.region || ""; // REGION
+                                row.getCell(6).value = campus.province_municipality || ""; // MUNICIPALITY/CITY AND PROVINCE
+                                row.getCell(7).value = campus.year_first_operation || ""; // YEAR OF FIRST OPERATION
+                                row.getCell(8).value = campus.land_area_hectares || "0.0"; // LAND AREA IN HECTARES
+                                row.getCell(9).value = campus.distance_from_main || "0.0"; // DISTANCE FROM MAIN CAMPUS (KM)
+                                row.getCell(10).value = campus.autonomous_code || ""; // AUTONOMOUS FROM THE MAIN CAMPUS
+                                row.getCell(11).value = campus.position_title || ""; // POSITION TITLE OF HIGHEST OFFICIAL
+                                row.getCell(12).value = campus.head_full_name || ""; // FULL NAME OF HIGHEST OFFICIAL
+                                row.getCell(13).value = campus.former_name || ""; // FORMER NAME OF THE CAMPUS
+                                row.getCell(14).value = campus.latitude_coordinates || "0.0"; // LATITUDE COORDINATES
+                                row.getCell(15).value = campus.longitude_coordinates || "0.0"; // LONGITUDE COORDINATES
+
+                                row.commit();
+                            });
+                        }
+
+                        updateProgress && updateProgress(100);
+                        const fileName = `${
+                            institution.institution_uiid || institution.hei_uiid || "0000"
+                        }_${institution.institution_name || institution.hei_name || "Unknown"}_SUC_${
+                            new Date().toISOString().split("T")[0]
+                        }.xlsx`;
+
+                        const buffer = await workbook.xlsx.writeBuffer();
+                        const blob = new Blob([buffer], {
+                            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        // Log the export action
+                        if (createLog) {
+                            await createLog({
+                                action: "Export Institution",
+                                description: `Exported Form A for institution: ${institution.institution_name || institution.hei_name}`,
+                            });
+                        }
+
+                        Swal.fire({
+                            title: "Success!",
+                            text: "Form A exported successfully.",
+                            icon: "success",
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+
+                    } catch (error) {
+                        console.error("Error exporting Form A:", error);
+                        Swal.fire({
+                            title: "Error!",
+                            text: "Failed to export Form A. Please try again.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                        });
+                    } finally {
+                        setLoading((prev) => ({ ...prev, exportFormA: false }));
+                    }
+                }
+            });
+        },
+        [updateProgress, createLog]
+    );
 
     return (
         <>
@@ -181,6 +386,16 @@ function SucDataTable({ data, onEdit, onDelete }) {
                                             </button>
                                             <button
                                                 onClick={() =>
+                                                    handleViewFaculty(suc)
+                                                }
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
+                                                role="menuitem"
+                                            >
+                                                <Users className="w-4 h-4 mr-3 text-indigo-500 group-hover:text-indigo-600" />
+                                                Manage Faculty (Form E1)
+                                            </button>
+                                            <button
+                                                onClick={() =>
                                                     handleViewDetails(suc)
                                                 }
                                                 className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150 group"
@@ -192,16 +407,27 @@ function SucDataTable({ data, onEdit, onDelete }) {
                                             <div className="border-t border-gray-100 my-1"></div>
                                             <button
                                                 onClick={() => onEdit(suc)}
-                                                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150"
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
                                                 role="menuitem"
                                             >
+                                                 <Edit className="w-4 h-4 mr-3 text-green-700 group-hover:text-green-600" />
                                                 Edit Institution
                                             </button>
                                             <button
-                                                onClick={() => onDelete(suc.id)}
-                                                className="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-100 focus:outline-none focus:bg-red-100 transition-colors duration-150"
+                                                onClick={() => handleExportToFormA(suc)}
+                                                disabled={loading.exportFormA}
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 group disabled:opacity-50 disabled:cursor-not-allowed"
                                                 role="menuitem"
                                             >
+                                                <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-gray-600" />
+                                                {loading.exportFormA ? "Exporting..." : "Export to Excel"}
+                                            </button>
+                                            <button
+                                                onClick={() => onDelete(suc.id)}
+                                               className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150 group"
+                                                role="menuitem"
+                                            >
+                                                <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
                                                 Delete Institution
                                             </button>
                                         </div>
@@ -270,6 +496,8 @@ SucDataTable.propTypes = {
     ).isRequired,
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
+    createLog: PropTypes.func,
+    updateProgress: PropTypes.func,
 };
 
 export default SucDataTable;

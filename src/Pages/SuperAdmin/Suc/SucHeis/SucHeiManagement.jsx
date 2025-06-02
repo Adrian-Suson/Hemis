@@ -17,6 +17,7 @@ function SucHeiManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedReportYear, setSelectedReportYear] = useState(new Date().getFullYear()); // New state for report year
 
     // Fetch SUC data from API
     useEffect(() => {
@@ -202,12 +203,16 @@ function SucHeiManagement() {
 
     const filteredData = sucData.filter(
         (item) =>
-            item.institution_name
+            // Filter by search term
+            (item.institution_name
                 ?.toLowerCase()
                 .includes(searchTerm.toLowerCase()) ||
             item.head_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.municipality?.toLowerCase().includes(searchTerm.toLowerCase())
+            item.municipality?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            // Filter by report year
+            (selectedReportYear === null || // If no year is selected, show all
+             String(item.report_year) === String(selectedReportYear))
     );
 
     if (loading) {
@@ -274,6 +279,28 @@ function SucHeiManagement() {
                                         className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
+
+                                {/* Report Year Filter */}
+                                <div className="relative flex items-center">
+                                     <label htmlFor="reportYearFilter" className="block text-sm font-medium text-gray-700 mr-2">Year:</label>
+                                     <select
+                                         id="reportYearFilter"
+                                         value={selectedReportYear}
+                                         onChange={(e) => setSelectedReportYear(parseInt(e.target.value, 10))}
+                                         className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                     >
+                                         {/* <option value={null}>All Years</option> */}
+                                         {Array.from({ length: 10 }, (_, i) => {
+                                             const year = new Date().getFullYear() - i;
+                                             return (
+                                                 <option key={year} value={year}>
+                                                     {year}
+                                                 </option>
+                                             );
+                                         })}
+                                     </select>
+                                 </div>
+
                                 <div className="text-sm text-gray-500 flex items-center">
                                     Total SUCs:{" "}
                                     <span className="font-semibold ml-1">

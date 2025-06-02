@@ -13,7 +13,6 @@ class SucFormE2 extends Model
 
     protected $fillable = [
         'suc_details_id',
-        'faculty_group',
         'name',
         'generic_faculty_rank',
         'home_college',

@@ -379,7 +379,7 @@ function AddProgramForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                         <option value="">Select Category</option>
                                         <option value="Bachelor">Bachelor</option>
                                         <option value="Master">Master</option>
-                                        <option value="Doctorate">Doctorate</option>
+                                        <option value="Doctoral">Doctoral</option>
                                         <option value="Certificate">Certificate</option>
                                         <option value="Diploma">Diploma</option>
                                     </select>

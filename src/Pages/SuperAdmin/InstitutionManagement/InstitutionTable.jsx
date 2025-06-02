@@ -157,22 +157,7 @@ const InstitutionTable = ({
             console.log(
                 "handleExportToFormA confirmation triggered for",
                 institution.name
-            );
-            Swal.fire({
-                title: "Confirm Export",
-                text: `Do you want to export Form A for ${institution.name}?`,
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Export",
-                cancelButtonText: "Cancel",
-                customClass: {
-                    popup: "swal2-popup",
-                    title: "text-lg font-semibold text-gray-900",
-                    content: "text-gray-600",
-                },
-            }).then(async (result) => {
+            ).then(async (result) => {
                 if (result.isConfirmed) {
                     setLoading((prev) => ({ ...prev, exportFormA: true }));
                     try {

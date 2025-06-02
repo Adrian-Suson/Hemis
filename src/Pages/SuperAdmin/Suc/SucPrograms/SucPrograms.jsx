@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
     GraduationCap,
@@ -26,9 +26,11 @@ import ProgramDetailsView from "./ProgramDetailsView";
 import AddProgramForm from "./AddProgramForm";
 import EditProgramForm from "./EditProgramForm";
 import ProgramUploadModal from "./ProgramUploadModal";
-import Pagination from "../../../../Components/Pagination"; // Import the Pagination component
+import Pagination from "../../../../Components/Pagination";
 import config from "../../../../utils/config";
 import axios from "axios";
+import ExcelJS from "exceljs";
+import Swal from "sweetalert2";
 
 function SucPrograms() {
     const { SucDetailId } = useParams();
@@ -47,6 +49,7 @@ function SucPrograms() {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [addLoading, setAddLoading] = useState(false);
     const [editLoading, setEditLoading] = useState(false);
+    const [exportLoading, setExportLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
 
@@ -139,6 +142,253 @@ function SucPrograms() {
             setLoading(false);
         }
     };
+
+    const handleExportToFormB = useCallback(async () => {
+        try {
+            setExportLoading(true);
+
+            Swal.fire({
+                title: "Confirm Export",
+                text: `Do you want to export Form B for ${heiName}?`,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Export",
+                cancelButtonText: "Cancel",
+                customClass: {
+                    popup: "swal2-popup",
+                    title: "text-lg font-semibold text-gray-900",
+                    content: "text-gray-600",
+                },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        // Fetch the Form B template
+                        const response = await fetch("/public/templates/Form-B-Themeplate.xlsx");
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+
+                        const arrayBuffer = await response.arrayBuffer();
+                        const workbook = new ExcelJS.Workbook();
+                        await workbook.xlsx.load(arrayBuffer);
+
+                        // Get the template worksheet
+                        const templateWorksheet = workbook.getWorksheet("FORM B") || workbook.getWorksheet(1);
+                        if (!templateWorksheet) {
+                            throw new Error("Could not find Form B worksheet in template");
+                        }
+
+                        // Find the starting row for data dynamically by searching for 'START BELOW THIS ROW'
+                        let dataStartRow = -1;
+                        templateWorksheet.eachRow((row, rowNumber) => {
+                            let foundMarker = false;
+                            row.eachCell((cell) => {
+                                if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
+                                    foundMarker = true;
+                                    return false; // Stop iterating cells in this row
+                                }
+                            });
+                            if (foundMarker) {
+                                dataStartRow = rowNumber + 1;
+                                return false; // Stop iterating rows once marker found
+                            }
+                        });
+
+                        if (dataStartRow === -1) {
+                            console.error("Could not find 'START BELOW THIS ROW' marker in template. Using default row 11.");
+                            dataStartRow = 11; // Fallback to default row
+                        }
+
+                        // Group programs by type
+                        const programsByType = programs.reduce((acc, program) => {
+                            const type = program.program_type || "Unknown";
+                            if (!acc[type]) {
+                                acc[type] = [];
+                            }
+                            acc[type].push(program);
+                            return acc;
+                        }, {});
+
+
+                        // Get program types
+                        const programTypes = Object.keys(programsByType);
+
+                        if (programTypes.length === 0) {
+                            throw new Error("No programs found to export");
+                        }
+
+                        // Process each program type and populate existing worksheets only
+                        let populatedSheets = 0;
+                        let skippedTypes = [];
+
+                        programTypes.forEach(programType => {
+                            // Look for existing worksheet with this program type name
+                            const existingWorksheet = workbook.worksheets.find(ws =>
+                                ws.name.toLowerCase() === programType.toLowerCase() ||
+                                ws.name.toLowerCase().includes(programType.toLowerCase())
+                            );
+
+                            if (existingWorksheet) {
+                                console.log(`Found existing worksheet "${existingWorksheet.name}" for program type "${programType}"`);
+
+                                // Find starting row dynamically for this specific worksheet
+                                let worksheetStartRow = -1;
+                                existingWorksheet.eachRow((row, rowNumber) => {
+                                    let foundMarker = false;
+                                    row.eachCell((cell) => {
+                                        if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
+                                            foundMarker = true;
+                                            return false; // Stop iterating cells in this row
+                                        }
+                                    });
+                                    if (foundMarker) {
+                                        worksheetStartRow = rowNumber + 1;
+                                        return false; // Stop iterating rows once marker found
+                                    }
+                                });
+
+                                // Use default row if marker not found
+                                if (worksheetStartRow === -1) {
+                                    worksheetStartRow = dataStartRow;
+                                }
+
+                                // Clear existing data rows first but preserve formulas
+                                const maxRows = existingWorksheet.rowCount;
+                                for (let rowNum = worksheetStartRow; rowNum <= maxRows; rowNum++) {
+                                    const row = existingWorksheet.getRow(rowNum);
+                                    row.eachCell((cell, colNumber) => {
+                                        if (colNumber <= 45) { // Clear only data columns (adjust as needed)
+                                            // Only clear values, not formulas
+                                            if (!cell.formula && !cell.sharedFormula) {
+                                                cell.value = null;
+                                            } else if (cell.formula || cell.sharedFormula) {
+                                                // For formula cells, just clear the cached value but keep the formula
+                                                cell.result = null;
+                                            }
+                                        }
+                                    });
+                                }
+
+                                // Populate with program data
+                                const programList = programsByType[programType];
+                                programList.forEach((program, index) => {
+                                    const rowNumber = worksheetStartRow + index;
+                                    const row = existingWorksheet.getRow(rowNumber);
+
+                                    // Map program data to Excel columns
+                                    row.getCell(1).value = index + 1; // Serial Number
+                                    row.getCell(2).value = program.program_name || ""; // Program Name
+                                    row.getCell(3).value = program.program_code || ""; // Program Code
+                                    row.getCell(4).value = program.major_name || ""; // Major/Specialization
+                                    row.getCell(5).value = program.program_type || ""; // Program Type
+                                    row.getCell(6).value = program.aop_category || ""; // AOP Category
+                                    row.getCell(7).value = program.program_normal_length_in_years || 0; // Program Length
+                                    row.getCell(8).value = program.total_units || 0; // Total Units
+                                    row.getCell(9).value = program.lecture_units || 0; // Lecture Units
+                                    row.getCell(10).value = program.lab_units || 0; // Laboratory Units
+
+                                    // Enrollment data
+                                    row.getCell(11).value = program["1st_year_male"] || 0;
+                                    row.getCell(12).value = program["1st_year_female"] || 0;
+                                    row.getCell(13).value = program["2nd_year_male"] || 0;
+                                    row.getCell(14).value = program["2nd_year_female"] || 0;
+                                    row.getCell(15).value = program["3rd_year_male"] || 0;
+                                    row.getCell(16).value = program["3rd_year_female"] || 0;
+                                    row.getCell(17).value = program["4th_year_male"] || 0;
+                                    row.getCell(18).value = program["4th_year_female"] || 0;
+                                    row.getCell(19).value = program["5th_year_male"] || 0;
+                                    row.getCell(20).value = program["5th_year_female"] || 0;
+                                    row.getCell(21).value = program["6th_year_male"] || 0;
+                                    row.getCell(22).value = program["6th_year_female"] || 0;
+                                    row.getCell(23).value = program["7th_year_male"] || 0;
+                                    row.getCell(24).value = program["7th_year_female"] || 0;
+
+                                    // Calculate total enrollment
+                                    const totalEnrollment = [
+                                        "1st_year_male", "1st_year_female",
+                                        "2nd_year_male", "2nd_year_female",
+                                        "3rd_year_male", "3rd_year_female",
+                                        "4th_year_male", "4th_year_female",
+                                        "5th_year_male", "5th_year_female",
+                                        "6th_year_male", "6th_year_female",
+                                        "7th_year_male", "7th_year_female"
+                                    ].reduce((total, field) => total + (program[field] || 0), 0);
+
+                                    row.getCell(25).value = totalEnrollment; // Total Enrollment
+
+                                    // Financial data
+                                    row.getCell(26).value = program.tuition_per_unit || 0; // Tuition per Unit
+                                    row.getCell(27).value = program.program_fee || 0; // Program Fee
+
+                                    // Graduates data
+                                    row.getCell(28).value = program.graduates_male || 0;
+                                    row.getCell(29).value = program.graduates_female || 0;
+                                    row.getCell(30).value = program.graduates_total || 0;
+
+                                    // Scholarship data
+                                    row.getCell(31).value = program.externally_funded_merit_scholars || 0;
+                                    row.getCell(32).value = program.internally_funded_grantees || 0;
+
+                                    row.commit();
+                                });
+
+                                populatedSheets++;
+                            } else {
+                                console.warn(`No existing worksheet found for program type: ${programType}`);
+                                skippedTypes.push(programType);
+                            }
+                        });
+
+                        // Don't create summary sheet - only work with existing sheets
+                        console.log(`Export completed: ${populatedSheets} sheets populated, ${skippedTypes.length} program types skipped`);
+                        if (skippedTypes.length > 0) {
+                            console.log(`Skipped program types: ${skippedTypes.join(', ')}`);
+                        }
+
+                        // Generate filename
+                        const fileName = `FormB_${heiName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+                        // Save and download the file
+                        const buffer = await workbook.xlsx.writeBuffer();
+                        const blob = new Blob([buffer], {
+                            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        Swal.fire({
+                            title: "Success!",
+                            text: `Form B exported successfully. ${populatedSheets} sheets populated${skippedTypes.length > 0 ? `, ${skippedTypes.length} program types skipped (no matching sheets found)` : ''}.`,
+                            icon: "success",
+                            timer: 4000,
+                            showConfirmButton: false,
+                        });
+
+                    } catch (error) {
+                        console.error("Error exporting Form B:", error);
+                        Swal.fire({
+                            title: "Error!",
+                            text: "Failed to export Form B. Please try again.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                        });
+                    }
+                }
+                setExportLoading(false);
+            });
+        } catch (error) {
+            console.error("Error in export function:", error);
+            setExportLoading(false);
+        }
+    }, [programs, heiName]);
 
     const handleUploadPrograms = () => {
         setIsUploadModalOpen(true);
@@ -423,9 +673,13 @@ function SucPrograms() {
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
-                                    <button className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button
+                                        onClick={handleExportToFormB}
+                                        disabled={exportLoading || programs.length === 0}
+                                        className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                         <Download className="w-4 h-4 mr-2" />
-                                        Export
+                                        {exportLoading ? "Exporting..." : "Export Form B"}
                                     </button>
                                     <button
                                         onClick={handleUploadPrograms}
@@ -563,7 +817,7 @@ function SucPrograms() {
                                                                     </div>
                                                                     <div className="ml-4 min-w-0 flex-1">
                                                                         <div
-                                                                            className="text-sm font-semibold text-gray-900 truncate"
+                                                                            className="text-sm font-semibold text-gray-900 text-wrap"
                                                                             title={
                                                                                 program.program_name
                                                                             }
@@ -579,7 +833,7 @@ function SucPrograms() {
                                                                         </div>
                                                                         {program.major_name && (
                                                                             <div
-                                                                                className="text-xs text-blue-600 font-medium truncate"
+                                                                                className="text-xs text-blue-600 font-medium text-wrap"
                                                                                 title={
                                                                                     program.major_name
                                                                                 }

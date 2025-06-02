@@ -24,7 +24,6 @@ class SucFormE2Controller extends Controller
     {
         $validatedData = $request->validate([
             'suc_details_id' => 'required|exists:suc_details,id',
-            'faculty_group' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
             'generic_faculty_rank' => 'nullable|integer',
             'home_college' => 'nullable|string|max:255',
@@ -91,7 +90,6 @@ class SucFormE2Controller extends Controller
 
         $validatedData = $request->validate([
             'suc_details_id' => 'sometimes|exists:suc_details,id',
-            'faculty_group' => 'nullable|string|max:255',
             'name' => 'sometimes|string|max:255',
             'generic_faculty_rank' => 'nullable|integer',
             'home_college' => 'nullable|string|max:255',

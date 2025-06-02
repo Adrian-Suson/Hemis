@@ -24,27 +24,25 @@ class SucFormE1Controller extends Controller
     {
         $validatedData = $request->validate([
             'suc_details_id' => 'required|exists:suc_details,id',
-            'faculty_name_ln' => 'required|string|max:255',
-            'faculty_name_fn' => 'required|string|max:255',
-            'faculty_name_mi' => 'nullable|string|max:10',
+            'faculty_name' => 'required|string|max:255',
             'generic_faculty_rank' => 'nullable|string|max:255',
             'home_college' => 'nullable|string|max:255',
             'home_dept' => 'nullable|string|max:255',
-            'is_tenured' => 'nullable|boolean',
+            'is_tenured' => 'nullable|string|max:10',
             'ssl_salary_grade' => 'nullable|string|max:255',
             'annual_basic_salary' => 'nullable|numeric',
-            'on_leave_without_pay' => 'nullable|boolean',
+            'on_leave_without_pay' => 'nullable|string|max:10',
             'full_time_equivalent' => 'nullable|numeric',
             'gender' => 'nullable|string|max:10',
             'highest_degree_attained' => 'nullable|string|max:255',
-            'actively_pursuing_next_degree' => 'nullable|boolean',
+            'actively_pursuing_next_degree' => 'nullable|string|max:10',
             'primary_teaching_load_discipline_1' => 'nullable|string|max:255',
             'primary_teaching_load_discipline_2' => 'nullable|string|max:255',
             'bachelors_discipline' => 'nullable|string|max:255',
             'masters_discipline' => 'nullable|string|max:255',
             'doctorate_discipline' => 'nullable|string|max:255',
-            'masters_with_thesis' => 'nullable|boolean',
-            'doctorate_with_dissertation' => 'nullable|boolean',
+            'masters_with_thesis' => 'nullable|string|max:10',
+            'doctorate_with_dissertation' => 'nullable|string|max:10',
             'lab_hours_elem_sec' => 'nullable|numeric',
             'lecture_hours_elem_sec' => 'nullable|numeric',
             'total_teaching_hours_elem_sec' => 'nullable|numeric',
@@ -64,6 +62,7 @@ class SucFormE1Controller extends Controller
             'official_administrative_load' => 'nullable|numeric',
             'other_official_load_credits' => 'nullable|numeric',
             'total_work_load' => 'nullable|numeric',
+            'faculty_type' => 'nullable|string|max:255'
         ]);
 
         $sucFormE1 = SucFormE1::create($validatedData);
@@ -88,27 +87,25 @@ class SucFormE1Controller extends Controller
 
         $validatedData = $request->validate([
             'suc_details_id' => 'sometimes|exists:suc_details,id',
-            'faculty_name_ln' => 'sometimes|string|max:255',
-            'faculty_name_fn' => 'sometimes|string|max:255',
-            'faculty_name_mi' => 'nullable|string|max:10',
+            'faculty_name' => 'sometimes|string|max:255',
             'generic_faculty_rank' => 'nullable|string|max:255',
             'home_college' => 'nullable|string|max:255',
             'home_dept' => 'nullable|string|max:255',
-            'is_tenured' => 'nullable|boolean',
+            'is_tenured' => 'nullable|string|max:10',
             'ssl_salary_grade' => 'nullable|string|max:255',
             'annual_basic_salary' => 'nullable|numeric',
-            'on_leave_without_pay' => 'nullable|boolean',
+            'on_leave_without_pay' => 'nullable|string|max:10',
             'full_time_equivalent' => 'nullable|numeric',
             'gender' => 'nullable|string|max:10',
             'highest_degree_attained' => 'nullable|string|max:255',
-            'actively_pursuing_next_degree' => 'nullable|boolean',
+            'actively_pursuing_next_degree' => 'nullable|string|max:10',
             'primary_teaching_load_discipline_1' => 'nullable|string|max:255',
             'primary_teaching_load_discipline_2' => 'nullable|string|max:255',
             'bachelors_discipline' => 'nullable|string|max:255',
             'masters_discipline' => 'nullable|string|max:255',
             'doctorate_discipline' => 'nullable|string|max:255',
-            'masters_with_thesis' => 'nullable|boolean',
-            'doctorate_with_dissertation' => 'nullable|boolean',
+            'masters_with_thesis' => 'nullable|string|max:10',
+            'doctorate_with_dissertation' => 'nullable|string|max:10',
             'lab_hours_elem_sec' => 'nullable|numeric',
             'lecture_hours_elem_sec' => 'nullable|numeric',
             'total_teaching_hours_elem_sec' => 'nullable|numeric',
@@ -128,6 +125,7 @@ class SucFormE1Controller extends Controller
             'official_administrative_load' => 'nullable|numeric',
             'other_official_load_credits' => 'nullable|numeric',
             'total_work_load' => 'nullable|numeric',
+            'faculty_type' => 'nullable|string|max:255'
         ]);
 
         $sucFormE1->update($validatedData);
