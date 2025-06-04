@@ -20,7 +20,7 @@ class ReportYear extends Model
 
     public function sucDetails()
     {
-        return $this->hasMany(SucDetail::class, 'report_year', 'year');
+        return $this->hasMany(SucDetails::class, 'report_year', 'year');
     }
 
     public function lucDetails()

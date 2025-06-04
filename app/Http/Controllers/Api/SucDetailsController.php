@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\SucDetail;
 use App\Models\Hei;
+use App\Models\SucDetails;
 use Illuminate\Http\Request;
 
 class SucDetailsController extends Controller
@@ -14,7 +14,7 @@ class SucDetailsController extends Controller
      */
     public function index()
     {
-        $sucDetails = SucDetail::all()->map(function ($sucDetail) {
+        $sucDetails = SucDetails::all()->map(function ($sucDetail) {
             $hei = Hei::where('uiid', $sucDetail->hei_uiid)->first();
             $sucDetail->hei_name = $hei ? $hei->name : null; // Add HEI name to the response
             return $sucDetail;
@@ -51,7 +51,7 @@ class SucDetailsController extends Controller
             'year_converted_university' => 'nullable|integer',
         ]);
 
-        $sucDetail = SucDetail::create($validatedData);
+        $sucDetail = SucDetails::create($validatedData);
         return response()->json($sucDetail, 201);
     }
 
@@ -60,7 +60,7 @@ class SucDetailsController extends Controller
      */
     public function show($id)
     {
-        $sucDetail = SucDetail::findOrFail($id);
+        $sucDetail = SucDetails::findOrFail($id);
         return response()->json($sucDetail);
     }
 
@@ -69,7 +69,7 @@ class SucDetailsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $sucDetail = SucDetail::findOrFail($id);
+        $sucDetail = SucDetails::findOrFail($id);
 
         $validatedData = $request->validate([
             'hei_uiid' => 'sometimes|string|max:36',
@@ -103,7 +103,7 @@ class SucDetailsController extends Controller
      */
     public function destroy($id)
     {
-        $sucDetail = SucDetail::findOrFail($id);
+        $sucDetail = SucDetails::findOrFail($id);
         $sucDetail->delete();
         return response()->json(['message' => 'Resource deleted successfully']);
     }

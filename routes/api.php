@@ -59,6 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/suc-form-e1', SucFormE1Controller::class);
     // SUC Form E2 Routes
     Route::apiResource('/suc-form-e2', SucFormE2Controller::class);
+    Route::get('/suc-form-e2/suc-detail/{sucDetailId}', [SucFormE2Controller::class, 'getBySucDetailId']);
+    Route::post('/suc-form-e2/bulk', [SucFormE2Controller::class, 'bulk']);
     // SUC Non-Faculty Research Form Routes
     Route::apiResource('/suc-nf-research-form', SucNfResearchFormController::class);
     // SUC PCR Graduate Routes

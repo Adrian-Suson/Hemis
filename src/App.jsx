@@ -15,6 +15,7 @@ import PrivateHeiManagement from "./Pages/SuperAdmin/Private/PrivateHeiManagemen
 import LucHeiManagement from "./Pages/SuperAdmin/Luc/LucHeis/LucHeisManagement";
 import SucCampuses from "./Pages/SuperAdmin/Suc/SucCampuses/SucCampuses";
 import SucFormE1 from "./Pages/SuperAdmin/Suc/SucFormE1/SucFormE1";
+import SucFormE2 from "./Pages/SuperAdmin/Suc/SucFormE2/SucFormE2";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -63,7 +64,8 @@ function App() {
                         <Route path="/super-admin/institutions/private" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/institutions/suc/campuses/:SucDetailId" element={<SucCampuses />} />
                         <Route path="/super-admin/institutions/suc/programs/:SucDetailId" element={<SucPrograms />} /> {/* New Route */}
-                        <Route path="/super-admin/institutions/suc/faculty/:SucDetailId" element={<SucFormE1 />} />
+                        <Route path="/super-admin/institutions/suc/form-e1/:SucDetailId" element={<SucFormE1 />} />
+                        <Route path="/super-admin/institutions/suc/form-e2/:SucDetailId" element={<SucFormE2 />} />
                         <Route path="/super-admin/institutions/luc/campuses/:lucDetailId" element={<LucHeiManagement />} />
                         <Route path="/super-admin/institutions/private/campuses/:privateDetailId" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/user-management" element={<UserManagement />} />

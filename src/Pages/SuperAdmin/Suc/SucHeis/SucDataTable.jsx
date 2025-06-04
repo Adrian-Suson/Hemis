@@ -1,4 +1,4 @@
-import { GraduationCap, Phone, Mail, MoreHorizontal, Building2, BookOpen, Users, Download, Edit, Trash } from "lucide-react";
+import { GraduationCap, Phone, Mail, MoreHorizontal, Building2, BookOpen, Users, Download, Edit, Trash, FileText } from "lucide-react";
 import PropTypes from "prop-types";
 import { useState, useCallback } from "react";
 import Popper from "../../../../Components/Popper";
@@ -32,37 +32,23 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [loading, setLoading] = useState({});
 
-    const handleViewCampuses = (suc) => {
+    const handleView = (suc, type) => {
         const SucDetailId = suc.id || suc.id;
-        if (SucDetailId) {
-            navigate(`/super-admin/institutions/suc/campuses/${SucDetailId}`, {
-                state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
-            });
-        } else {
-            console.error("No SUC ID found for campuses:", suc);
+        if (!SucDetailId) {
+            console.error(`No SUC ID found for ${type}:`, suc);
+            return;
         }
-    };
 
-    const handleViewPrograms = (suc) => {
-        const SucDetailId = suc.id || suc.id;
-        if (SucDetailId) {
-            navigate(`/super-admin/institutions/suc/programs/${SucDetailId}`, {
-                state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
-            });
-        } else {
-            console.error("No SUC ID found for programs:", suc);
-        }
-    };
+        const routes = {
+            campuses: `/super-admin/institutions/suc/campuses/${SucDetailId}`,
+            programs: `/super-admin/institutions/suc/programs/${SucDetailId}`,
+            formE1: `/super-admin/institutions/suc/form-e1/${SucDetailId}`,
+            formE2: `/super-admin/institutions/suc/form-e2/${SucDetailId}`
+        };
 
-    const handleViewFaculty = (suc) => {
-        const SucDetailId = suc.id || suc.id;
-        if (SucDetailId) {
-            navigate(`/super-admin/institutions/suc/faculty/${SucDetailId}`, {
-                state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
-            });
-        } else {
-            console.error("No SUC ID found for faculty:", suc);
-        }
+        navigate(routes[type], {
+            state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
+        });
     };
 
     const handleViewDetails = (suc) => {
@@ -365,9 +351,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                     >
                                         <div className="py-1">
                                             <button
-                                                onClick={() =>
-                                                    handleViewCampuses(suc)
-                                                }
+                                                onClick={() => handleView(suc, 'campuses')}
                                                 className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
                                                 role="menuitem"
                                             >
@@ -375,9 +359,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                                 View Campuses
                                             </button>
                                             <button
-                                                onClick={() =>
-                                                    handleViewPrograms(suc)
-                                                }
+                                                onClick={() => handleView(suc, 'programs')}
                                                 className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 focus:outline-none focus:bg-purple-50 transition-colors duration-150 group"
                                                 role="menuitem"
                                             >
@@ -385,9 +367,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                                 View Programs
                                             </button>
                                             <button
-                                                onClick={() =>
-                                                    handleViewFaculty(suc)
-                                                }
+                                                onClick={() => handleView(suc, 'formE1')}
                                                 className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
                                                 role="menuitem"
                                             >
@@ -395,9 +375,15 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                                 Manage Faculty (Form E1)
                                             </button>
                                             <button
-                                                onClick={() =>
-                                                    handleViewDetails(suc)
-                                                }
+                                                onClick={() => handleView(suc, 'formE2')}
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 focus:outline-none focus:bg-teal-50 transition-colors duration-150 group"
+                                                role="menuitem"
+                                            >
+                                                <FileText className="w-4 h-4 mr-3 text-teal-500 group-hover:text-teal-600" />
+                                                Manage Faculty (Form E2)
+                                            </button>
+                                            <button
+                                                onClick={() => handleViewDetails(suc)}
                                                 className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150 group"
                                                 role="menuitem"
                                             >

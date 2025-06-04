@@ -37,7 +37,7 @@ class SucPcrGraduate extends Model
 
     public function sucDetail()
     {
-        return $this->belongsTo(SucDetail::class, 'suc_details_id');
+        return $this->belongsTo(SucDetails::class, 'suc_details_id');
     }
 
     public function reportYear()
