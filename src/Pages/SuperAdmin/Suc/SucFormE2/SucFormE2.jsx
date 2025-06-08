@@ -454,12 +454,25 @@ function SucFormE2() {
         setIsUploadModalOpen(false);
     };
 
-    const formatCurrency = (amount) => {
-        if (!amount) return "₱0.00";
-        return new Intl.NumberFormat("en-PH", {
-            style: "currency",
-            currency: "PHP",
-        }).format(amount);
+
+    // Function to get salary range label based on the code (1-9)
+    const getSalaryRangeLabel = (rangeCode) => {
+        if (!rangeCode) return "No range data";
+
+        const salaryRanges = [
+            { value: "1", label: "₱60,000 below" },
+            { value: "2", label: "₱60,000 - ₱69,999" },
+            { value: "3", label: "₱70,000 - ₱79,999" },
+            { value: "4", label: "₱80,000 - ₱89,999" },
+            { value: "5", label: "₱90,000 - ₱99,999" },
+            { value: "6", label: "₱100,000 - ₱149,999" },
+            { value: "7", label: "₱150,000 - ₱249,999" },
+            { value: "8", label: "₱250,000 - ₱499,999" },
+            { value: "9", label: "₱500,000 - UP" }
+        ];
+
+        const range = salaryRanges.find(range => range.value === String(rangeCode));
+        return range ? range.label : "Invalid range code";
     };
 
     const getFacultyTypeColor = (type) => {
@@ -839,9 +852,12 @@ function SucFormE2() {
                                                             style={{ width: "192px" }}
                                                         >
                                                             <div className="space-y-1">
-                                                                <div className="text-sm font-medium text-gray-900">
-                                                                    {formatCurrency(member.annual_basic_salary)}
-                                                                </div>
+                                                                {/* Display the salary range label based on the code from annual_basic_salary */}
+                                                                {member.annual_basic_salary && (
+                                                                    <div className="text-sm font-medium text-gray-900">
+                                                                        {getSalaryRangeLabel(member.annual_basic_salary)}
+                                                                    </div>
+                                                                )}
                                                                 <div className="text-xs text-gray-600">
                                                                     <div>Total Load: {member.total_work_load || 0}</div>
                                                                     <div className="text-blue-600">

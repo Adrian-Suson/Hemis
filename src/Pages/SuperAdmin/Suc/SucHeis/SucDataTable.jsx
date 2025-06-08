@@ -43,7 +43,8 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
             campuses: `/super-admin/institutions/suc/campuses/${SucDetailId}`,
             programs: `/super-admin/institutions/suc/programs/${SucDetailId}`,
             formE1: `/super-admin/institutions/suc/form-e1/${SucDetailId}`,
-            formE2: `/super-admin/institutions/suc/form-e2/${SucDetailId}`
+            formE2: `/super-admin/institutions/suc/form-e2/${SucDetailId}`,
+            formGH: `/super-admin/institutions/suc/form-gh/${SucDetailId}`
         };
 
         navigate(routes[type], {
@@ -381,6 +382,14 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                             >
                                                 <FileText className="w-4 h-4 mr-3 text-teal-500 group-hover:text-teal-600" />
                                                 Manage Faculty (Form E2)
+                                            </button>
+                                            <button
+                                                onClick={() => handleView(suc, 'formGH')}
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-amber-50 focus:outline-none focus:bg-amber-50 transition-colors duration-150 group"
+                                                role="menuitem"
+                                            >
+                                                <FileText className="w-4 h-4 mr-3 text-amber-500 group-hover:text-amber-600" />
+                                                Financial Data (Form G-H)
                                             </button>
                                             <button
                                                 onClick={() => handleViewDetails(suc)}

@@ -13,21 +13,31 @@ import {
 } from "lucide-react";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
-import { useFacultyFormLogic } from "../../../../hooks/useFacultyFormLogic";
+import { useFacultyFormLogic } from "../../../../Hooks/useFacultyFormLogic";
+
+const annualSalaryOptions = [
+    { value: "1", label: "₱60,000 below" },
+    { value: "2", label: "₱60,000 - ₱69,999" },
+    { value: "3", label: "₱70,000 - ₱79,999" },
+    { value: "4", label: "₱80,000 - ₱89,999" },
+    { value: "5", label: "₱90,000 - ₱99,999" },
+    { value: "6", label: "₱100,000 - ₱149,999" },
+    { value: "7", label: "₱150,000 - ₱249,999" },
+    { value: "8", label: "₱250,000 - ₱499,999" },
+    { value: "9", label: "₱500,000 - UP" }
+];
+
+const getSalaryRangeLabel = (rangeCode) => {
+    if (!rangeCode) return "No salary range specified";
+    const range = annualSalaryOptions.find(option => option.value === String(rangeCode));
+    return range ? range.label : "Invalid range";
+};
 
 const FacultyDetailsView = ({ isOpen, onClose, facultyData }) => {
     // Use the hook to get options and helper functions
     const { genderOptions, facultyTypeOptions } = useFacultyFormLogic(facultyData?.suc_details_id);
 
     if (!facultyData) return null;
-
-    const formatCurrency = (amount) => {
-        if (!amount) return "₱0.00";
-        return new Intl.NumberFormat("en-PH", {
-            style: "currency",
-            currency: "PHP",
-        }).format(amount);
-    };
 
     const getFacultyTypeColor = (type) => {
         switch (type?.toUpperCase()) {
@@ -127,7 +137,7 @@ const FacultyDetailsView = ({ isOpen, onClose, facultyData }) => {
             variant="view"
             size="xl"
         >
-            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto p-4">
                 {/* Basic Faculty Information */}
                 <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
                     <div className="flex items-center space-x-3 mb-3">
@@ -259,8 +269,12 @@ const FacultyDetailsView = ({ isOpen, onClose, facultyData }) => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700">Annual Basic Salary</label>
-                            <p className="text-2xl font-bold text-amber-900">{formatCurrency(facultyData.annual_basic_salary)}</p>
-                            <p className="text-xs text-gray-600">Salary Grade: {safeValue(facultyData.ssl_salary_grade, "Not specified")}</p>
+                            {facultyData.annual_basic_salary && (
+                                <p className="text-2xl font-bold text-amber-900">
+                                    {getSalaryRangeLabel(facultyData.annual_basic_salary)}
+                                </p>
+                            )}
+                            <p className="text-xs text-gray-600">Salary Grade: {safeValue(facultyData.ssl_salary_grade, "Not assigned")}</p>
                         </div>
                         <div className="text-center">
                             <label className="block text-sm font-medium text-gray-700">Leave Status</label>

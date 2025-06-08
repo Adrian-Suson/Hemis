@@ -59,7 +59,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const fetchHeis = async () => {
     setLoadingHeis(true);
     try {
-      const response = await axios.get(`${config.API_URL}/heis?type=SUC`, {
+      const response = await axios.get(`${config.API_URL}/admin/heis?type=SUC`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

@@ -10,18 +10,6 @@ class SucDetails extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'suc_details';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'hei_uiid',
         'region',
@@ -42,22 +30,40 @@ class SucDetails extends Model
         'sec_registration',
         'year_granted_approved',
         'year_converted_college',
-        'year_converted_university',
+        'year_converted_university'
     ];
 
-    /**
-     * Get the HEI associated with the SUC detail.
-     */
+    protected $casts = [
+        'year_established' => 'integer',
+        'report_year' => 'integer',
+        'year_granted_approved' => 'integer',
+        'year_converted_college' => 'integer',
+        'year_converted_university' => 'integer'
+    ];
+
+    // Relationships
     public function hei()
     {
         return $this->belongsTo(Hei::class, 'hei_uiid', 'uiid');
     }
 
-    /**
-     * Get the report year associated with the SUC detail.
-     */
     public function reportYear()
     {
         return $this->belongsTo(ReportYear::class, 'report_year', 'year');
     }
-}
+
+    public function allotments()
+    {
+        return $this->hasMany(Allotment::class, 'suc_details_id');
+    }
+
+    public function expenditures()
+    {
+        return $this->hasMany(Expenditure::class, 'suc_details_id');
+    }
+
+    public function incomes()
+    {
+        return $this->hasMany(Income::class, 'suc_details_id');
+    }
+} 

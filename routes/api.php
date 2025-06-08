@@ -21,6 +21,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\SucCampusController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\AllotmentController;
+use App\Http\Controllers\Api\ExpenditureController;
+use App\Http\Controllers\Api\IncomeController;
+use App\Http\Controllers\Api\SucFormGHController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -40,7 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']);
 
     // HEI Routes
-    Route::apiResource('/heis', HeiController::class);
+    Route::apiResource('/admin/heis', HeiController::class);
 
     // SUC Details Routes
     Route::apiResource('/suc-details', SucDetailsController::class);
@@ -89,6 +93,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // Private Dean Profile Routes
     Route::apiResource('/private-dean-profiles', PrivateDeanProfileController::class);
 
+    // Allotment Routes
+    Route::apiResource('/suc-form-gh/allotments', AllotmentController::class);
+    Route::post('/suc-form-gh/allotments/bulk', [AllotmentController::class, 'bulkCreate']);
+
+    // Expenditure Routes
+    Route::apiResource('/suc-form-gh/expenditures', ExpenditureController::class);
+    Route::post('/suc-form-gh/expenditures/bulk', [ExpenditureController::class, 'bulkCreate']);
+
+    // Income Routes
+    Route::apiResource('/suc-form-gh/incomes', IncomeController::class);
+    Route::post('/suc-form-gh/incomes/bulk', [IncomeController::class, 'bulkCreate']);
+
+    // Consolidated SucFormGH Route
+    Route::get('/suc-form-gh/{sucDetailId}/all-data', [SucFormGHController::class, 'show']);
 
     // Location Routes
     Route::get('/regions', [LocationController::class, 'getRegions']);
@@ -98,4 +116,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/regions/{id}', [LocationController::class, 'showRegion']);
     Route::get('/provinces/{id}', [LocationController::class, 'showProvince']);
     Route::get('/municipalities/{id}', [LocationController::class, 'showMunicipality']);
+
 });

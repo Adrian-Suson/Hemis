@@ -83,15 +83,15 @@ export const useFacultyFormLogic = (institutionId) => {
     ];
 
     const annualSalaryOptions = [
-        { value: "1", label: "60,000 below" },
-        { value: "2", label: "60,000 - 69,999" },
-        { value: "3", label: "70,000 - 79,999" },
-        { value: "4", label: "80,000 - 89,999" },
-        { value: "5", label: "90,000 - 99,999" },
-        { value: "6", label: "100,000 - 149,999" },
-        { value: "7", label: "150,000 - 249,999" },
-        { value: "8", label: "250,000 - 499,999" },
-        { value: "9", label: "500,000 - UP" },
+        { value: "1", label: "Below ₱60,000" },
+        { value: "2", label: "₱60,000 - ₱69,999" },
+        { value: "3", label: "₱70,000 - ₱79,999" },
+        { value: "4", label: "₱80,000 - ₱89,999" },
+        { value: "5", label: "₱90,000 - ₱99,999" },
+        { value: "6", label: "₱100,000 - ₱149,999" },
+        { value: "7", label: "₱150,000 - ₱249,999" },
+        { value: "8", label: "₱250,000 - ₱499,999" },
+        { value: "9", label: "₱500,000 and above" },
     ];
 
     const onLeavePayOptions = [

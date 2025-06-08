@@ -73,7 +73,7 @@ const Navbar = () => {
                         },
                         {
                             text: "HEI List",
-                            path: "/super-admin/hei-list",
+                            path: "/super-admin/hei-management",
                             icon: List,
                         },
                     ],
