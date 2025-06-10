@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\ResearchTb3Controller;
 use App\Http\Controllers\Api\ResearchTb4Controller;
 use App\Http\Controllers\Api\ResearchTb5Controller;
 use App\Http\Controllers\Api\ResearchTbcController;
+use App\Http\Controllers\Api\GraduateController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -137,4 +138,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/research-tbc', ResearchTbcController::class);
     Route::post('/research-tbc/bulk', [ResearchTbcController::class, 'bulkStore']);
     Route::get('/research/all/{hei_id}', [ResearchTbcController::class, 'getAllResearch']);
+
+    // Graduate Routes
+    Route::apiResource('/graduates', GraduateController::class);
+    Route::post('/graduates/bulk', [GraduateController::class, 'bulkStore']);
+    Route::get('/graduates/search', [GraduateController::class, 'search']);
 });

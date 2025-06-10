@@ -9,7 +9,7 @@ import PropTypes from "prop-types";
 // Import pages
 import LoginPage from "./Pages/Auth/LoginPage";
 import Dashboard from "./Pages/SuperAdmin/Dashboard/Dashboard";
-import SucPrograms from "./Pages/SuperAdmin/Suc/SucPrograms/SucPrograms"; // Import the new page
+import SucPrograms from "./Pages/SuperAdmin/Suc/SucPrograms/SucPrograms";
 import SucHeiManagement from "./Pages/SuperAdmin/Suc/SucHeis/SucHeiManagement";
 import PrivateHeiManagement from "./Pages/SuperAdmin/Private/PrivateHeiManagement/PrivateHeiManagement";
 import LucHeiManagement from "./Pages/SuperAdmin/Luc/LucHeis/LucHeisManagement";
@@ -19,6 +19,7 @@ import SucFormE2 from "./Pages/SuperAdmin/Suc/SucFormE2/SucFormE2";
 import SucFormGH from "./Pages/SuperAdmin/Suc/SucFormGH/SucFormGH";
 import HeiManagement from "./Pages/SuperAdmin/HeisManagement/HeiManagement";
 import ResearchManagement from "./Pages/SuperAdmin/Suc/Research/ResearchManagement";
+import GraduateList from "./Pages/SuperAdmin/Suc/GraduateList/GraduateList";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -67,6 +68,7 @@ function App() {
                         <Route path="/super-admin/institutions/private" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/institutions/suc/campuses/:SucDetailId" element={<SucCampuses />} />
                         <Route path="/super-admin/institutions/suc/programs/:SucDetailId" element={<SucPrograms />} />
+                        <Route path="/super-admin/institutions/suc/graduates/:SucDetailId" element={<GraduateList />} />
                         <Route path="/super-admin/institutions/suc/form-e1/:SucDetailId" element={<SucFormE1 />} />
                         <Route path="/super-admin/institutions/suc/form-e2/:SucDetailId" element={<SucFormE2 />} />
                         <Route path="/super-admin/institutions/suc/form-gh/:SucDetailId" element={<SucFormGH />} />
