@@ -25,7 +25,6 @@ return new class extends Migration {
 
             // Add indexes for faster queries
             $table->index('suc_details_id');
-            $table->index('campus');
             $table->index('income_category');
             $table->index('report_year');
         });
@@ -35,4 +34,4 @@ return new class extends Migration {
     {
         Schema::dropIfExists('suc_income');
     }
-}; 
+};

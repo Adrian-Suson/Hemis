@@ -18,6 +18,7 @@ import SucFormE1 from "./Pages/SuperAdmin/Suc/SucFormE1/SucFormE1";
 import SucFormE2 from "./Pages/SuperAdmin/Suc/SucFormE2/SucFormE2";
 import SucFormGH from "./Pages/SuperAdmin/Suc/SucFormGH/SucFormGH";
 import HeiManagement from "./Pages/SuperAdmin/HeisManagement/HeiManagement";
+import ResearchManagement from "./Pages/SuperAdmin/Suc/Research/ResearchManagement";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -69,6 +70,7 @@ function App() {
                         <Route path="/super-admin/institutions/suc/form-e1/:SucDetailId" element={<SucFormE1 />} />
                         <Route path="/super-admin/institutions/suc/form-e2/:SucDetailId" element={<SucFormE2 />} />
                         <Route path="/super-admin/institutions/suc/form-gh/:SucDetailId" element={<SucFormGH />} />
+                        <Route path="/super-admin/institutions/suc/research/:heiId" element={<ResearchManagement />} />
                         <Route path="/super-admin/institutions/luc/campuses/:lucDetailId" element={<LucHeiManagement />} />
                         <Route path="/super-admin/institutions/private/campuses/:privateDetailId" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/user-management" element={<UserManagement />} />

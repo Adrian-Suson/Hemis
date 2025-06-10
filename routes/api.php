@@ -25,6 +25,12 @@ use App\Http\Controllers\Api\AllotmentController;
 use App\Http\Controllers\Api\ExpenditureController;
 use App\Http\Controllers\Api\IncomeController;
 use App\Http\Controllers\Api\SucFormGHController;
+use App\Http\Controllers\Api\ResearchTb1Controller;
+use App\Http\Controllers\Api\ResearchTb2Controller;
+use App\Http\Controllers\Api\ResearchTb3Controller;
+use App\Http\Controllers\Api\ResearchTb4Controller;
+use App\Http\Controllers\Api\ResearchTb5Controller;
+use App\Http\Controllers\Api\ResearchTbcController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -117,4 +123,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/provinces/{id}', [LocationController::class, 'showProvince']);
     Route::get('/municipalities/{id}', [LocationController::class, 'showMunicipality']);
 
+    // Research Routes
+    Route::apiResource('/research-tb1', ResearchTb1Controller::class);
+    Route::post('/research-tb1/bulk', [ResearchTb1Controller::class, 'bulkStore']);
+    Route::apiResource('/research-tb2', ResearchTb2Controller::class);
+    Route::post('/research-tb2/bulk', [ResearchTb2Controller::class, 'bulkStore']);
+    Route::apiResource('/research-tb3', ResearchTb3Controller::class);
+    Route::post('/research-tb3/bulk', [ResearchTb3Controller::class, 'bulkStore']);
+    Route::apiResource('/research-tb4', ResearchTb4Controller::class);
+    Route::post('/research-tb4/bulk', [ResearchTb4Controller::class, 'bulkStore']);
+    Route::apiResource('/research-tb5', ResearchTb5Controller::class);
+    Route::post('/research-tb5/bulk', [ResearchTb5Controller::class, 'bulkStore']);
+    Route::apiResource('/research-tbc', ResearchTbcController::class);
+    Route::post('/research-tbc/bulk', [ResearchTbcController::class, 'bulkStore']);
+    Route::get('/research/all/{hei_id}', [ResearchTbcController::class, 'getAllResearch']);
 });

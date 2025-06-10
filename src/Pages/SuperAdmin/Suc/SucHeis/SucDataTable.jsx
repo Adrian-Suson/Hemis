@@ -44,7 +44,8 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
             programs: `/super-admin/institutions/suc/programs/${SucDetailId}`,
             formE1: `/super-admin/institutions/suc/form-e1/${SucDetailId}`,
             formE2: `/super-admin/institutions/suc/form-e2/${SucDetailId}`,
-            formGH: `/super-admin/institutions/suc/form-gh/${SucDetailId}`
+            formGH: `/super-admin/institutions/suc/form-gh/${SucDetailId}`,
+            research: `/super-admin/institutions/suc/research/${suc.hei_uiid}`
         };
 
         navigate(routes[type], {
@@ -390,6 +391,14 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                             >
                                                 <FileText className="w-4 h-4 mr-3 text-amber-500 group-hover:text-amber-600" />
                                                 Financial Data (Form G-H)
+                                            </button>
+                                            <button
+                                                onClick={() => handleView(suc, 'research')}
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                role="menuitem"
+                                            >
+                                                <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                Manage Research
                                             </button>
                                             <button
                                                 onClick={() => handleViewDetails(suc)}
