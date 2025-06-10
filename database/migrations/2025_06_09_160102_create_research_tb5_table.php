@@ -17,8 +17,8 @@ return new class extends Migration
             $table->foreign('hei_uiid')->references('uiid')->on('heis');
             $table->text('name_of_researcher');
             $table->text('title_of_research_output_award');
-            $table->string('year_published_accepted_presented_received');
-            $table->text('publisher_conference_organizer_confering_body');
+            $table->string('year_published_accepted_presented_received')->nullable();
+            $table->text('publisher_conference_organizer_confering_body')->nullable();
             $table->timestamps();
         });
     }

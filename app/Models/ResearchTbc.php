@@ -29,7 +29,8 @@ class ResearchTbc extends Model
         'number_of_trainees_beneficiaries',
         'citation_title',
         'citation_confering_agency_body',
-        'citation_year_received'
+        'citation_year_received',
+        'points'
     ];
 
     /**

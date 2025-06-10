@@ -14,7 +14,8 @@ class ResearchTb5 extends Model
         'name_of_researcher',
         'title_of_research_output_award',
         'year_published_accepted_presented_received',
-        'publisher_conference_organizer_confering_body'
+        'publisher_conference_organizer_confering_body',
+        'points'
     ];
 
     public function hei(): BelongsTo

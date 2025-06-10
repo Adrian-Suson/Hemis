@@ -16,14 +16,10 @@ class ResearchTb3 extends Model
         'date_of_issue',
         'utilization_development',
         'utilization_service',
+        'utilization_end_product',
         'name_of_commercial_product',
-        'points'
-    ];
-
-    protected $casts = [
-        'date_of_issue' => 'date',
-        'utilization_development' => 'boolean',
-        'utilization_service' => 'boolean'
+        'points_invention',
+        'points_commercial'
     ];
 
     public function hei(): BelongsTo

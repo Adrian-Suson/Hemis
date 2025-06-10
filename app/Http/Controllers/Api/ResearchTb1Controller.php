@@ -24,8 +24,8 @@ class ResearchTb1Controller extends Controller
             'name_of_book_journal' => 'nullable|string',
             'editors' => 'nullable|string',
             'vol_no_issue_no' => 'nullable|string',
-            'no_of_pages' => 'nullable|numeric',
-            'year_of_publication' => 'nullable|numeric'
+            'no_of_pages' => 'nullable|string',
+            'year_of_publication' => 'nullable|string'
         ]);
 
         $researchTb1 = ResearchTb1::create($validated);
@@ -47,8 +47,8 @@ class ResearchTb1Controller extends Controller
             'name_of_book_journal' => 'string',
             'editors' => 'string',
             'vol_no_issue_no' => 'string',
-            'no_of_pages' => 'numeric',
-            'year_of_publication' => 'numeric'
+            'no_of_pages' => 'string',
+            'year_of_publication' => 'string'
         ]);
 
         $researchTb1->update($validated);
@@ -72,8 +72,8 @@ class ResearchTb1Controller extends Controller
             'records.*.name_of_book_journal' => 'nullable|string',
             'records.*.editors' => 'nullable|string',
             'records.*.vol_no_issue_no' => 'nullable|string',
-            'records.*.no_of_pages' => 'nullable|numeric',
-            'records.*.year_of_publication' => 'nullable|numeric'
+            'records.*.no_of_pages' => 'nullable|string',
+            'records.*.year_of_publication' => 'nullable|string'
         ]);
 
         $records = collect($validated['records'])->map(function ($record) {

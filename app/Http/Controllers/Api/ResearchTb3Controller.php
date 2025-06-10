@@ -20,11 +20,11 @@ class ResearchTb3Controller extends Controller
             'hei_uiid' => 'required|string',
             'inventions' => 'required|string',
             'patent_number' => 'required|string',
-            'date_of_issue' => 'nullable|date',
-            'utilization_development' => 'nullable|boolean',
-            'utilization_service' => 'nullable|boolean',
+            'date_of_issue' => 'nullable|string',
+            'utilization_development' => 'nullable|string',
+            'utilization_service' => 'nullable|string',
             'name_of_commercial_product' => 'nullable|string',
-            'points' => 'nullable|numeric'
+            'points' => 'nullable|string'
         ]);
 
         $researchTb3 = ResearchTb3::create($validated);
@@ -42,11 +42,11 @@ class ResearchTb3Controller extends Controller
             'hei_uiid' => 'string',
             'inventions' => 'string',
             'patent_number' => 'string',
-            'date_of_issue' => 'date',
-            'utilization_development' => 'boolean',
-            'utilization_service' => 'boolean',
+            'date_of_issue' => 'string',
+            'utilization_development' => 'string',
+            'utilization_service' => 'string',
             'name_of_commercial_product' => 'string',
-            'points' => 'numeric'
+            'points' => 'string'
         ]);
 
         $researchTb3->update($validated);
@@ -66,11 +66,11 @@ class ResearchTb3Controller extends Controller
             'records.*.hei_uiid' => 'required|string',
             'records.*.inventions' => 'required|string',
             'records.*.patent_number' => 'required|string',
-            'records.*.date_of_issue' => 'nullable|date',
-            'records.*.utilization_development' => 'nullable|boolean',
-            'records.*.utilization_service' => 'nullable|boolean',
+            'records.*.date_of_issue' => 'nullable|string',
+            'records.*.utilization_development' => 'nullable|string',
+            'records.*.utilization_service' => 'nullable|string',
             'records.*.name_of_commercial_product' => 'nullable|string',
-            'records.*.points' => 'nullable|numeric'
+            'records.*.points' => 'nullable|string'
         ]);
 
         $records = collect($validated['records'])->map(function ($record) {

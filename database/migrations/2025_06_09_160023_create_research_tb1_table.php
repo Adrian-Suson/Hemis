@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('title_of_article');
             $table->text('keywords')->nullable();
             $table->text('authors');
-            $table->text('name_of_book_journal');
+            $table->text('name_of_book_journal')->nullable();
             $table->string('editors')->nullable();
             $table->string('vol_no_issue_no')->nullable();
             $table->string('no_of_pages')->nullable();

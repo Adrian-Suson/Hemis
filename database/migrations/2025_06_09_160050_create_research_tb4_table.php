@@ -16,13 +16,13 @@ return new class extends Migration
             $table->string('hei_uiid', 36);
             $table->foreign('hei_uiid')->references('uiid')->on('heis');
             $table->text('keywords')->nullable();
-            $table->text('researchers');
+            $table->text('researchers')->nullable();
             $table->text('citing_authors');
             $table->text('citing_article_title');
-            $table->text('journal_title');
-            $table->string('vol_issue_page_no');
-            $table->string('city_year_published');
-            $table->string('publisher_name');
+            $table->text('journal_title')->nullable();
+            $table->string('vol_issue_page_no')->nullable();
+            $table->string('city_year_published')->nullable();
+            $table->string('publisher_name')->nullable();
             $table->timestamps();
         });
     }

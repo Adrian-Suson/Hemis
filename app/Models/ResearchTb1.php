@@ -18,7 +18,8 @@ class ResearchTb1 extends Model
         'editors',
         'vol_no_issue_no',
         'no_of_pages',
-        'year_of_publication'
+        'year_of_publication',
+        'points'
     ];
 
     public function hei(): BelongsTo

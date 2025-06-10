@@ -18,7 +18,8 @@ class ResearchTb4 extends Model
         'journal_title',
         'vol_issue_page_no',
         'city_year_published',
-        'publisher_name'
+        'publisher_name',
+        'points'
     ];
 
     public function hei(): BelongsTo

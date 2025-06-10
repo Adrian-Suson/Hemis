@@ -67,21 +67,9 @@ function ResearchUploadModal({
     };
 
     // Parsing helper functions
-    const toNullableInteger = (value) => {
-        if (
-            !value ||
-            value === "N/A" ||
-            value === "" ||
-            value === null ||
-            value === undefined
-        )
-            return null;
-        const parsed = Number.parseInt(value, 10);
-        return isNaN(parsed) ? null : parsed;
-    };
-
     const parseString = (value) => {
         if (value === undefined || value === "" || value === null) return null;
+        // Convert everything to string, including booleans and numbers
         const str = String(value).trim();
         return str.length > 0 ? str : null;
     };
@@ -122,7 +110,17 @@ function ResearchUploadModal({
         "Research T-B3": {
             type: "OTHER_OUTPUTS",
             description: "Other Research Outputs",
-            fields: [] // Will be determined dynamically
+            fields: [
+                "inventions",
+                "patent_number",
+                "date_of_issue",
+                "points_invention",
+                "utilization_development",
+                "utilization_service",
+                "utilization_end_product",
+                "name_of_commercial_product",
+                "points_commercial"
+            ]
         },
         "Research T-B4": {
             type: "CITATIONS",
@@ -154,7 +152,15 @@ function ResearchUploadModal({
         "Extension T-C": {
             type: "EXTENSION",
             description: "Extension Activities",
-            fields: [] // Will be determined dynamically
+            fields: [
+                "title",
+                "keywords",
+                "duration_number_of_hours",
+                "number_of_trainees_beneficiaries",
+                "citation_title",
+                "citation_confering_agency_body",
+                "citation_year_received"
+            ]
         }
     };
 
@@ -290,15 +296,20 @@ function ResearchUploadModal({
 
             console.log(`Parsed JSON data from ${sheetInfo.name} sheet:`, jsonData);
 
-            // Find the header row (usually contains column names like "Title")
+            // Find the header row (row containing ")" characters)
             let headerRowIndex = -1;
             for (let i = 0; i < Math.min(jsonData.length, 15); i++) {
                 const row = jsonData[i];
-                if (row && row.length > 2 && row.some(cell =>
-                    cell && cell.toString().toLowerCase().includes("title")
-                )) {
-                    headerRowIndex = i;
-                    break;
+                if (row && row.length > 2) {
+                    // Check if row contains ")" character
+                    const hasClosingParenthesis = row.some(cell =>
+                        cell && cell.toString().includes(")")
+                    );
+
+                    if (hasClosingParenthesis) {
+                        headerRowIndex = i;
+                        break;
+                    }
                 }
             }
 
@@ -306,10 +317,11 @@ function ResearchUploadModal({
 
             if (headerRowIndex === -1) {
                 throw new Error(
-                    `Could not find header row in the ${sheetInfo.name} sheet.`
+                    `Could not find header row in the ${sheetInfo.name} sheet. Please ensure the sheet has appropriate column headers.`
                 );
             }
 
+            // Start reading data from the row after the header
             const dataStartRow = headerRowIndex + 1;
 
             if (dataStartRow >= jsonData.length) {
@@ -324,17 +336,16 @@ function ResearchUploadModal({
             const processedRecords = jsonData
                 .slice(dataStartRow)
                 .filter((row) => {
-                    // First check if row has any data
                     if (!row || row.length === 0) return false;
 
-                    // Check for two required fields based on sheet type
+                    // UPDATED: Enhanced data filtering logic
                     switch (sheetInfo.type) {
                         case "PUBLICATIONS":
                             return row[0] && row[2]; // title_of_article and authors
                         case "CONFERENCES":
                             return row[0] && row[2]; // title_of_research_paper and researchers
                         case "OTHER_OUTPUTS":
-                            return row[0] && row[1]; // inventions and patent_number
+                            return row[0]; // Just check if inventions field has data
                         case "CITATIONS":
                             return row[2] && row[3]; // citing_authors and citing_article_title
                         case "AWARDS":
@@ -373,8 +384,9 @@ function ResearchUploadModal({
                                 record.name_of_book_journal = parseString(row[3]);
                                 record.editors = parseString(row[4]);
                                 record.vol_no_issue_no = parseString(row[5]);
-                                record.no_of_pages = toNullableInteger(row[6]);
-                                record.year_of_publication = toNullableInteger(row[7]);
+                                record.no_of_pages = parseString(row[6]);
+                                record.year_of_publication = parseString(row[7]);
+                                record.points = parseString(row[8]);
                                 break;
 
                             case "CONFERENCES": // ResearchTb2
@@ -386,41 +398,44 @@ function ResearchUploadModal({
                                 record.conference_date = parseString(row[5]);
                                 record.conference_organizer = parseString(row[6]);
                                 record.type_of_conference = parseString(row[7]);
+                                record.points = parseString(row[8]);
                                 break;
 
                             case "OTHER_OUTPUTS": // ResearchTb3
                                 record.inventions = parseString(row[0]);
                                 record.patent_number = parseString(row[1]);
                                 record.date_of_issue = parseString(row[2]);
-                                record.utilization_development = row[3]?.toString().toLowerCase() === 'true';
-                                record.utilization_service = row[4]?.toString().toLowerCase() === 'true';
-                                record.name_of_commercial_product = parseString(row[5]);
-                                record.points = toNullableInteger(row[6]);
+                                record.points_invention = parseString(row[3]);
+                                record.utilization_development = parseString(row[4]);
+                                record.utilization_service = parseString(row[5]);
+                                record.utilization_end_product = parseString(row[6]);
+                                record.name_of_commercial_product = parseString(row[7]);
+                                record.points_commercial = parseString(row[8]);
                                 break;
 
                             case "CITATIONS": // ResearchTb4
-                                record.keywords = parseString(row[0]);
-                                record.researchers = parseString(row[1]);
-                                record.citing_authors = parseString(row[2]);
-                                record.citing_article_title = parseString(row[3]);
-                                record.journal_title = parseString(row[4]);
-                                record.vol_issue_page_no = parseString(row[5]);
-                                record.city_year_published = parseString(row[6]);
-                                record.publisher_name = parseString(row[7]);
+                                record.citing_authors = parseString(row[0]);
+                                record.citing_article_title = parseString(row[1]);
+                                record.journal_title = parseString(row[2]);
+                                record.vol_issue_page_no = parseString(row[3]);
+                                record.city_year_published = parseString(row[4]);
+                                record.publisher_name = parseString(row[5]);
+                                record.points = parseString(row[6]);
                                 break;
 
                             case "AWARDS": // ResearchTb5
                                 record.name_of_researcher = parseString(row[0]);
                                 record.title_of_research_output_award = parseString(row[1]);
-                                record.year_published_accepted_presented_received = toNullableInteger(row[2]);
+                                record.year_published_accepted_presented_received = parseString(row[2]);
                                 record.publisher_conference_organizer_confering_body = parseString(row[3]);
+                                record.points = parseString(row[4]);
                                 break;
 
                             case "EXTENSION": // ResearchTbc
                                 record.title = parseString(row[0]);
                                 record.keywords = parseString(row[1]);
                                 record.duration_number_of_hours = parseString(row[2]);
-                                record.number_of_trainees_beneficiaries = toNullableInteger(row[3]);
+                                record.number_of_trainees_beneficiaries = parseString(row[3]);
                                 record.citation_title = parseString(row[4]);
                                 record.citation_confering_agency_body = parseString(row[5]);
                                 record.citation_year_received = parseString(row[6]);
@@ -430,7 +445,7 @@ function ResearchUploadModal({
                                 throw new Error(`Unknown sheet type: ${sheetInfo.type}`);
                         }
 
-                        // Additional validation after mapping - only check the two required fields
+                        // UPDATED: Enhanced validation after mapping
                         switch (sheetInfo.type) {
                             case "PUBLICATIONS":
                                 if (!record.title_of_article || !record.authors) return null;
@@ -439,7 +454,14 @@ function ResearchUploadModal({
                                 if (!record.title_of_research_paper || !record.researchers) return null;
                                 break;
                             case "OTHER_OUTPUTS":
-                                if (!record.inventions || !record.patent_number) return null;
+                                if (!record.inventions) return null;
+                                if (!record.patent_number &&
+                                    !record.utilization_development &&
+                                    !record.utilization_service &&
+                                    !record.utilization_end_product &&
+                                    !record.name_of_commercial_product) {
+                                    return null;
+                                }
                                 break;
                             case "CITATIONS":
                                 if (!record.citing_authors || !record.citing_article_title) return null;

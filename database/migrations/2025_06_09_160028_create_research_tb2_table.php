@@ -18,11 +18,11 @@ return new class extends Migration
             $table->text('title_of_research_paper');
             $table->text('keywords')->nullable();
             $table->text('researchers');
-            $table->text('conference_title');
-            $table->string('conference_venue');
-            $table->string('conference_date');
-            $table->string('conference_organizer');
-            $table->string('type_of_conference');
+            $table->text('conference_title')->nullable();
+            $table->string('conference_venue')->nullable();
+            $table->string('conference_date')->nullable();
+            $table->string('conference_organizer')->nullable();
+            $table->string('type_of_conference')->nullable();
             $table->timestamps();
         });
     }

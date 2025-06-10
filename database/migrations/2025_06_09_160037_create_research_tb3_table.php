@@ -17,11 +17,11 @@ return new class extends Migration
             $table->foreign('hei_uiid')->references('uiid')->on('heis');
             $table->text('inventions');
             $table->string('patent_number');
-            $table->string('date_of_issue');
-            $table->string('utilization_development');
-            $table->string('utilization_service');
-            $table->text('name_of_commercial_product');
-            $table->string('points');
+            $table->string('date_of_issue')->nullable();
+            $table->string('utilization_development')->nullable();
+            $table->string('utilization_service')->nullable();
+            $table->text('name_of_commercial_product')->nullable();
+            $table->string('points')->nullable();
             $table->timestamps();
         });
     }

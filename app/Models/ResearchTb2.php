@@ -18,11 +18,8 @@ class ResearchTb2 extends Model
         'conference_venue',
         'conference_date',
         'conference_organizer',
-        'type_of_conference'
-    ];
-
-    protected $casts = [
-        'conference_date' => 'date'
+        'type_of_conference',
+        'points'
     ];
 
     public function hei(): BelongsTo
