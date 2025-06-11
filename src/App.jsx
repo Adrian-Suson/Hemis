@@ -19,13 +19,13 @@ import SucFormE2 from "./Pages/SuperAdmin/Suc/SucFormE2/SucFormE2";
 import SucFormGH from "./Pages/SuperAdmin/Suc/SucFormGH/SucFormGH";
 import HeiManagement from "./Pages/SuperAdmin/HeisManagement/HeiManagement";
 import ResearchManagement from "./Pages/SuperAdmin/Suc/Research/ResearchManagement";
-import GraduateList from "./Pages/SuperAdmin/Suc/GraduateList/GraduateList";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
 import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
 import UserManagement from "./Pages/SuperAdmin/UserManagment/UserManagement";
+import SucPcrGraduates from "./Pages/SuperAdmin/Suc/SucPcrGraduates/SucPcrGraduates";
 
 
 function ExternalRedirect({ to }) {
@@ -68,7 +68,7 @@ function App() {
                         <Route path="/super-admin/institutions/private" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/institutions/suc/campuses/:SucDetailId" element={<SucCampuses />} />
                         <Route path="/super-admin/institutions/suc/programs/:SucDetailId" element={<SucPrograms />} />
-                        <Route path="/super-admin/institutions/suc/graduates/:SucDetailId" element={<GraduateList />} />
+                        <Route path="/super-admin/institutions/suc/graduates/:SucDetailId" element={<SucPcrGraduates />} />
                         <Route path="/super-admin/institutions/suc/form-e1/:SucDetailId" element={<SucFormE1 />} />
                         <Route path="/super-admin/institutions/suc/form-e2/:SucDetailId" element={<SucFormE2 />} />
                         <Route path="/super-admin/institutions/suc/form-gh/:SucDetailId" element={<SucFormGH />} />

@@ -45,7 +45,8 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
             formE1: `/super-admin/institutions/suc/form-e1/${SucDetailId}`,
             formE2: `/super-admin/institutions/suc/form-e2/${SucDetailId}`,
             formGH: `/super-admin/institutions/suc/form-gh/${SucDetailId}`,
-            research: `/super-admin/institutions/suc/research/${suc.hei_uiid}`
+            research: `/super-admin/institutions/suc/research/${SucDetailId}`,
+            graduates: `/super-admin/institutions/suc/graduates/${SucDetailId}`
         };
 
         navigate(routes[type], {
@@ -399,6 +400,14 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                             >
                                                 <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
                                                 Manage Research
+                                            </button>
+                                            <button
+                                                onClick={() => handleView(suc, 'graduates')}
+                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 focus:outline-none focus:bg-emerald-50 transition-colors duration-150 group"
+                                                role="menuitem"
+                                            >
+                                                <GraduationCap className="w-4 h-4 mr-3 text-emerald-500 group-hover:text-emerald-600" />
+                                                View Graduates
                                             </button>
                                             <button
                                                 onClick={() => handleViewDetails(suc)}
