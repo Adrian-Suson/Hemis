@@ -1,26 +1,24 @@
 import { useState, useEffect } from "react";
 import {
     MoreHorizontal,
-    X,
     Eye,
     Search,
-    Filter,
     Plus,
-    TrendingUp,
     Edit,
     Trash,
     Building2,
+    MapPin,
 } from "lucide-react";
 import axios from "axios";
 import config from "../../../utils/config";
 import Popper from "../../../Components/Popper";
-import HeiDetailsModal from "./HeiDetailsModal"; // New component
-import AddHeiForm from "./AddHeiForm"; // New component
-import EditHeiForm from "./EditHeiForm"; // New component
-
+import HeiDetailsModal from "./HeiDetailsModal";
+import AddHeiForm from "./AddHeiForm";
+import EditHeiForm from "./EditHeiForm";
 
 function HeiManagement() {
     const [heis, setHeis] = useState([]);
+    const [clusters, setClusters] = useState([]);
     const [filteredHeis, setFilteredHeis] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -31,10 +29,12 @@ function HeiManagement() {
     const [addLoading, setAddLoading] = useState(false);
     const [editLoading, setEditLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterType, setFilterType] = useState("ALL"); // For HEI type filter
+    const [filterType, setFilterType] = useState("ALL");
+    const [filterCluster, setFilterCluster] = useState("ALL");
 
     useEffect(() => {
         fetchHeis();
+        fetchClusters();
     }, []);
 
     useEffect(() => {
@@ -43,12 +43,8 @@ function HeiManagement() {
         if (searchTerm) {
             filtered = filtered.filter(
                 (hei) =>
-                    hei.name
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    hei.uiid
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase())
+                    hei.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    hei.uiid?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
@@ -56,8 +52,27 @@ function HeiManagement() {
             filtered = filtered.filter((hei) => hei.type === filterType);
         }
 
+        if (filterCluster !== "ALL") {
+            filtered = filtered.filter((hei) => hei.cluster_id === parseInt(filterCluster));
+        }
+
         setFilteredHeis(filtered);
-    }, [heis, searchTerm, filterType]);
+    }, [heis, searchTerm, filterType, filterCluster]);
+
+    const fetchClusters = async () => {
+        try {
+            const response = await axios.get(`${config.API_URL}/clusters`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    Accept: "application/json",
+                },
+            });
+            setClusters(response.data);
+        } catch (err) {
+            console.error("Error fetching clusters:", err);
+            setError("Failed to load clusters. Please try again.");
+        }
+    };
 
     const fetchHeis = async () => {
         setLoading(true);
@@ -233,7 +248,6 @@ function HeiManagement() {
         }
     };
 
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
             <div className="p-6 max-w-7xl mx-auto">
@@ -248,259 +262,183 @@ function HeiManagement() {
                                 Manage Higher Education Institutions
                             </p>
                         </div>
-                    </div>
-
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-sm mb-6">
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
-                                <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full xl:w-auto">
-                                    <div className="relative flex-1 sm:flex-initial">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search HEIs..."
-                                            value={searchTerm}
-                                            onChange={(e) =>
-                                                setSearchTerm(e.target.value)
-                                            }
-                                            className="pl-10 pr-4 py-2 w-full sm:w-60 lg:w-80 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
-                                        />
-                                    </div>
-
-                                    <div className="relative w-full sm:w-auto">
-                                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <select
-                                            value={filterType}
-                                            onChange={(e) =>
-                                                setFilterType(e.target.value)
-                                            }
-                                            className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
-                                        >
-                                            <option value="ALL">All Types</option>
-                                            <option value="SUC">SUC</option>
-                                            <option value="LUC">LUC</option>
-                                            <option value="Private">Private</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
-                                    <button
-                                        onClick={handleAddHei}
-                                        className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add HEI
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center text-sm text-gray-500">
-                                <TrendingUp className="w-4 h-4 mr-1" />
-                                Showing {filteredHeis.length} of {heis.length}{" "}
-                                HEIs
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-800 rounded-xl shadow-sm">
-                        <div className="flex items-center">
-                            <X className="w-5 h-5 mr-2" />
-                            {error}
-                        </div>
-                    </div>
-                )}
-
-                {loading ? (
-                    <div className="flex items-center justify-center p-12">
-                        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-8 shadow-sm">
-                            <div className="flex flex-col items-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-                                <span className="text-gray-600 font-medium">
-                                    Loading HEIs...
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full table-fixed">
-                                <thead className="bg-gradient-to-r from-gray-50/80 to-blue-50/50 border-b border-gray-200/50 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="w-[300px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            HEI Information
-                                        </th>
-                                        <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Type
-                                        </th>
-                                        <th className="w-[250px] px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Contact
-                                        </th>
-                                        <th className="w-[120px] px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
-
-                        <div
-                            className="max-h-[400px] overflow-y-auto overflow-x-hidden"
-                            style={{
-                                scrollBehavior: "smooth",
-                                scrollbarWidth: "thin",
-                                scrollbarColor: "#CBD5E1 #F1F5F9",
-                            }}
+                        <button
+                            onClick={handleAddHei}
+                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         >
-                            <table className="min-w-full table-fixed">
-                                <tbody className="divide-y divide-gray-200/30">
-                                    {filteredHeis.map((hei, index) => (
-                                        <tr
-                                            key={`hei-${hei.id}-${index}`}
-                                            className={`hover:bg-blue-50/30 transition-all duration-200 ${
-                                                index % 2 === 0
-                                                    ? "bg-white/30"
-                                                    : "bg-gray-50/30"
-                                            }`}
-                                        >
-                                            <td className="w-[300px] px-4 py-4">
-                                                <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10">
-                                                        <div className="h-10 w-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                                                                <Building2 className="w-5 h-5 text-blue-600" />
-                                                            </div>
+                            <Plus className="w-5 h-5 mr-2" />
+                            Add HEI
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="flex-1">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search HEIs..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                            </div>
+                        </div>
+                        <div className="flex gap-4">
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="ALL">All Types</option>
+                                <option value="SUC">SUC</option>
+                                <option value="LUC">LUC</option>
+                                <option value="Private">Private</option>
+                            </select>
+                            <select
+                                value={filterCluster}
+                                onChange={(e) => setFilterCluster(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="ALL">All Clusters</option>
+                                {clusters.map((cluster) => (
+                                    <option key={cluster.id} value={cluster.id}>
+                                        {cluster.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="mt-4 text-gray-600">Loading HEIs...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-8 text-red-600">{error}</div>
+                    ) : (
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                HEI Name
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                UIID
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Type
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Cluster
+                                            </th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {filteredHeis.map((hei) => (
+                                            <tr key={hei.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {hei.name}
                                                     </div>
-                                                    <div className="ml-3 min-w-0 flex-1">
-                                                        <div className="text-sm font-semibold text-gray-900 leading-tight break-words">
-                                                            {hei.name}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500 mt-1">
-                                                            UIID: {hei.uiid}
-                                                        </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-500">
+                                                        {hei.uiid}
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="w-[200px] px-4 py-4">
-                                                <div className="space-y-2">
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
                                                     <span
-                                                        className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full shadow-sm ${getTypeColor(
+                                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(
                                                             hei.type
                                                         )}`}
                                                     >
-                                                        <span className="ml-1 capitalize">
-                                                            {hei.type}
-                                                        </span>
+                                                        {hei.type}
                                                     </span>
-                                                </div>
-                                            </td>
-                                            <td className="w-[250px] px-4 py-4">
-                                                <div className="space-y-1">
-                                                    <div className="text-xs font-medium text-gray-900 flex items-start">
-                                                        {hei.email && (
-                                                            <>
-                                                                <Building2 className="w-3 h-3 mr-1 text-gray-400 flex-shrink-0 mt-0.5" />
-                                                                <span className="break-words leading-tight">
-                                                                    {hei.email}
-                                                                </span>
-                                                            </>
-                                                        )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center text-sm text-gray-500">
+                                                        <MapPin className="w-4 h-4 mr-1" />
+                                                        {clusters.find(c => c.id === hei.cluster_id)?.name || 'N/A'}
                                                     </div>
-                                                    <div className="text-xs text-gray-600 break-words leading-tight ml-4">
-                                                        Created:{" "}
-                                                        {hei.created_at
-                                                            ? new Date(
-                                                                  hei.created_at
-                                                              ).toLocaleDateString()
-                                                            : "N/A"}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="w-[120px] px-4 py-4 text-center">
-                                                <Popper
-                                                    trigger={
-                                                        <button
-                                                            className="text-gray-600 hover:text-gray-900 hover:bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-lg p-2 transition-all duration-200"
-                                                            title="More Actions"
-                                                        >
-                                                            <MoreHorizontal className="w-4 h-4" />
-                                                        </button>
-                                                    }
-                                                    className="w-40 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg right-0 top-full mt-1"
-                                                >
-                                                    <div className="py-2">
-                                                        <button
-                                                            onClick={() =>
-                                                                handleViewDetails(
-                                                                    hei
-                                                                )
-                                                            }
-                                                            className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                        >
-                                                            <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                            View Details
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleEdit(hei)
-                                                            }
-                                                            className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
-                                                        >
-                                                            <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
-                                                            Edit HEI
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleDelete(
-                                                                    hei.id
-                                                                )
-                                                            }
-                                                            className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
-                                                        >
-                                                            <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
-                                                            Delete HEI
-                                                        </button>
-                                                    </div>
-                                                </Popper>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <Popper
+                                                        trigger={
+                                                            <button
+                                                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-lg p-2 transition-all duration-200"
+                                                                title="More Actions"
+                                                            >
+                                                                <MoreHorizontal className="w-5 h-5" />
+                                                            </button>
+                                                        }
+                                                        className="w-40 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg right-0 top-full mt-1"
+                                                    >
+                                                        <div className="py-2">
+                                                            <button
+                                                                onClick={() => handleViewDetails(hei)}
+                                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                            >
+                                                                <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                                View Details
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleEdit(hei)}
+                                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
+                                                            >
+                                                                <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
+                                                                Edit HEI
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(hei.id)}
+                                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
+                                                            >
+                                                                <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
+                                                                Delete HEI
+                                                            </button>
+                                                        </div>
+                                                    </Popper>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                )}
-
-                <HeiDetailsModal
-                    isOpen={isDetailModalOpen}
-                    onClose={closeDetailModal}
-                    heiData={selectedHei}
-                />
-
-                <AddHeiForm
-                    isOpen={isAddModalOpen}
-                    onClose={closeAddModal}
-                    onSave={handleSaveHei}
-                    loading={addLoading}
-                />
-
-                <EditHeiForm
-                    isOpen={isEditModalOpen}
-                    onClose={closeEditModal}
-                    onSave={handleUpdateHei}
-                    heiData={selectedHei}
-                    loading={editLoading}
-                />
+                    )}
+                </div>
             </div>
+
+            <HeiDetailsModal
+                isOpen={isDetailModalOpen}
+                onClose={closeDetailModal}
+                hei={selectedHei}
+            />
+
+            <AddHeiForm
+                isOpen={isAddModalOpen}
+                onClose={closeAddModal}
+                onSave={handleSaveHei}
+                loading={addLoading}
+                clusters={clusters}
+            />
+
+            <EditHeiForm
+                isOpen={isEditModalOpen}
+                onClose={closeEditModal}
+                onSave={handleUpdateHei}
+                hei={selectedHei}
+                loading={editLoading}
+                clusters={clusters}
+            />
         </div>
     );
 }
-
-HeiManagement.propTypes = {
-    // Since this is a page component that doesn't receive any props,
-    // we don't need to define any prop types
-};
 
 export default HeiManagement;

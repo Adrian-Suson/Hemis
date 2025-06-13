@@ -5,77 +5,121 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Hei;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class HeiController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     *
+     * Display a listing of the HEIs.
      */
-
-    public function index(Request $request)
+    public function index()
     {
-        $type = $request->query('type'); // Retrieve the 'type' query parameter
-        if ($type) {
-            return Hei::where('type', $type)->get(); // Filter by type
-        }
-        return Hei::all(); // Return all HEIs if no type is specified
+        $heis = Hei::with(['cluster', 'lucDetails', 'privateDetails', 'sucDetails'])->get();
+        return response()->json($heis);
     }
 
     /**
-     * Display a listing of the resource.
-     */
-
-
-    /**
-     * Store a newly created resource in storage.
+     * Store a newly created HEI in storage.
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'uiid' => 'required|string|unique:heis,uiid',
+        $validator = Validator::make($request->all(), [
+            'uiid' => 'required|string|max:36|unique:heis',
             'name' => 'required|string|max:255',
-            'type' => 'required|string',
+            'type' => 'required|in:SUC,LUC,Private',
+            'cluster_id' => 'required|exists:clusters,id'
         ]);
 
-        $hei = Hei::create($validatedData);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $hei = Hei::create($request->all());
         return response()->json($hei, 201);
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified HEI.
      */
-    public function show($id)
+    public function show(Hei $hei)
     {
-        $hei = Hei::findOrFail($id);
-        return response()->json($hei);
+        return response()->json($hei->load(['cluster', 'lucDetails', 'privateDetails', 'sucDetails']));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified HEI in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Hei $hei)
     {
-        $hei = Hei::findOrFail($id);
-
-        $validatedData = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'type' => 'sometimes|required|string',
+        $validator = Validator::make($request->all(), [
+            'name' => 'string|max:255',
+            'type' => 'in:SUC,LUC,Private',
+            'cluster_id' => 'exists:clusters,id'
         ]);
 
-        $hei->update($validatedData);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $hei->update($request->all());
         return response()->json($hei);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified HEI from storage.
      */
-    public function destroy($id)
+    public function destroy(Hei $hei)
     {
-        $hei = Hei::findOrFail($id);
         $hei->delete();
+        return response()->json(null, 204);
+    }
 
-        return response()->json(['message' => 'Hei deleted successfully']);
+    /**
+     * Get HEIs by type.
+     */
+    public function getByType($type)
+    {
+        $validator = Validator::make(['type' => $type], [
+            'type' => 'required|in:SUC,LUC,Private'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $heis = Hei::where('type', $type)
+            ->with(['cluster', 'lucDetails', 'privateDetails', 'sucDetails'])
+            ->get();
+        return response()->json($heis);
+    }
+
+    /**
+     * Get HEIs by cluster.
+     */
+    public function getByCluster($clusterId)
+    {
+        $heis = Hei::where('cluster_id', $clusterId)
+            ->with(['cluster', 'lucDetails', 'privateDetails', 'sucDetails'])
+            ->get();
+        return response()->json($heis);
+    }
+
+    /**
+     * Search HEIs by name.
+     */
+    public function search(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'query' => 'required|string|min:3'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $heis = Hei::where('name', 'like', '%' . $request->query . '%')
+            ->with(['cluster', 'lucDetails', 'privateDetails', 'sucDetails'])
+            ->get();
+        return response()->json($heis);
     }
 }

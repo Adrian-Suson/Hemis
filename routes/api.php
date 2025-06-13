@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\ResearchTb4Controller;
 use App\Http\Controllers\Api\ResearchTb5Controller;
 use App\Http\Controllers\Api\ResearchTbcController;
 use App\Http\Controllers\Api\SucPcrGraduateListController;
+use App\Http\Controllers\Api\ClusterController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -51,6 +52,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // HEI Routes
     Route::apiResource('/admin/heis', HeiController::class);
+    Route::get('heis/type/{type}', [HeiController::class, 'getByType']);
+    Route::get('heis/cluster/{clusterId}', [HeiController::class, 'getByCluster']);
+    Route::get('heis/search', [HeiController::class, 'search']);
 
     // SUC Details Routes
     Route::apiResource('/suc-details', SucDetailsController::class);
@@ -140,4 +144,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('suc-pcr-graduate-list', SucPcrGraduateListController::class);
     Route::post('suc-pcr-graduate-list/bulk', [SucPcrGraduateListController::class, 'bulkStore']);
     Route::post('suc-pcr-graduate-list/{id}/restore', [SucPcrGraduateListController::class, 'restore']);
+
+    // Cluster routes
+    Route::apiResource('clusters', ClusterController::class);
+    Route::get('clusters/{cluster}/heis', [ClusterController::class, 'getHeis']);
 });
