@@ -51,7 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/admin/users/{id}', [AdminUserController::class, 'destroy']);
 
     // HEI Routes
-    Route::apiResource('/admin/heis', HeiController::class);
+    Route::apiResource('/heis', HeiController::class);
     Route::get('heis/type/{type}', [HeiController::class, 'getByType']);
     Route::get('heis/cluster/{clusterId}', [HeiController::class, 'getByCluster']);
     Route::get('heis/search', [HeiController::class, 'search']);

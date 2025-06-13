@@ -78,7 +78,7 @@ function HeiManagement() {
         setLoading(true);
         setError("");
         try {
-            const response = await axios.get(`${config.API_URL}/admin/heis`, {
+            const response = await axios.get(`${config.API_URL}/heis`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                     Accept: "application/json",
@@ -113,7 +113,7 @@ function HeiManagement() {
         setEditLoading(true);
         try {
             const response = await axios.put(
-                `${config.API_URL}/admin/heis/${updatedHeiData.id}`,
+                `${config.API_URL}/heis/${updatedHeiData.id}`,
                 updatedHeiData,
                 {
                     headers: {
@@ -157,7 +157,7 @@ function HeiManagement() {
 
         try {
             const response = await axios.delete(
-                `${config.API_URL}/admin/heis/${heiId}`,
+                `${config.API_URL}/heis/${heiId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem(
@@ -191,7 +191,7 @@ function HeiManagement() {
         setAddLoading(true);
         try {
             const response = await axios.post(
-                `${config.API_URL}/admin/heis`, // Assuming this is the correct endpoint for adding HEIs
+                `${config.API_URL}/heis`, // Assuming this is the correct endpoint for adding HEIs
                 heiData,
                 {
                     headers: {

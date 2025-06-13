@@ -30,7 +30,7 @@ class Hei extends Model
      */
     public function lucDetails()
     {
-        return $this->hasMany(LucDetail::class, 'hei_id');
+        return $this->hasMany(LucDetail::class, 'hei_uiid', 'uiid');
     }
 
     /**
@@ -38,7 +38,7 @@ class Hei extends Model
      */
     public function privateDetails()
     {
-        return $this->hasMany(PrivateDetail::class, 'hei_id');
+        return $this->hasMany(PrivateDetail::class, 'hei_uiid', 'uiid');
     }
 
     /**
@@ -46,6 +46,6 @@ class Hei extends Model
      */
     public function sucDetails()
     {
-        return $this->hasMany(SucDetails::class, 'hei_id');
+        return $this->hasMany(SucDetails::class, 'hei_uiid', 'uiid');
     }
 }
