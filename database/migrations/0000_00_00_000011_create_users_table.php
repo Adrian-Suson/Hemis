@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 return new class extends Migration {
     /**
@@ -18,13 +20,25 @@ return new class extends Migration {
             $table->string('password');
             $table->enum('role', ['super-admin', 'hei-admin', 'hei-staff'])->default('hei-staff');
             $table->enum('status', ['Active', 'Inactive'])->default('Active');
-                $table->string('hei_uiid', 36)->nullable(); // Updated to reference the `uiid` in `heis`
+            $table->string('hei_uiid', 36)->nullable(); // Updated to reference the `uiid` in `heis`
             $table->foreign('hei_uiid')
                 ->references('uiid')
                 ->on('heis')
                 ->onDelete('set null');
             $table->timestamps();
         });
+
+        // Insert admin user
+        DB::table('users')->insert([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('admin123'),
+            'role' => 'super-admin',
+            'status' => 'Active',
+            'profile_image' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

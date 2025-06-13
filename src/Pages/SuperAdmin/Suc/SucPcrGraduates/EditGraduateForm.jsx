@@ -3,7 +3,6 @@ import {
     User,
     Award,
     BookOpen,
-    Save,
     Edit,
 } from "lucide-react";
 import PropTypes from "prop-types";
@@ -20,7 +19,7 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
         date_graduated: "",
         program_name: "",
         program_major: "",
-        program_authority_to_operate_graduate: "",
+        authority_number: "",
         year_granted: "",
         report_year: new Date().getFullYear(),
     });
@@ -29,35 +28,50 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
 
     useEffect(() => {
         if (graduateData) {
+            // Format dates to yyyy-MM-dd
+            const formatDate = (dateString) => {
+                if (!dateString) return "";
+                const date = new Date(dateString);
+                return date.toISOString().split('T')[0];
+            };
+
+            // Handle year_granted object
+            const getYearGranted = (yearData) => {
+                if (!yearData) return "";
+                if (typeof yearData === 'object' && yearData.year) {
+                    return yearData.year;
+                }
+                return yearData;
+            };
+
             setFormData({
-                id: graduateData.id,
                 student_id: graduateData.student_id || "",
                 last_name: graduateData.last_name || "",
                 first_name: graduateData.first_name || "",
                 middle_name: graduateData.middle_name || "",
-                date_of_birth: graduateData.date_of_birth || "",
+                date_of_birth: formatDate(graduateData.date_of_birth),
                 sex: graduateData.sex || "",
-                date_graduated: graduateData.date_graduated || "",
+                date_graduated: formatDate(graduateData.date_graduated),
                 program_name: graduateData.program_name || "",
                 program_major: graduateData.program_major || "",
-                program_authority_to_operate_graduate: graduateData.program_authority_to_operate_graduate || "",
-                year_granted: graduateData.year_granted || "",
+                authority_number: graduateData.authority_number || "",
+                year_granted: getYearGranted(graduateData.year_granted),
                 report_year: graduateData.report_year || new Date().getFullYear(),
             });
         }
     }, [graduateData]);
 
     const handleInputChange = (field, value) => {
-        setFormData((prev) => ({
+        setFormData(prev => ({
             ...prev,
-            [field]: value,
+            [field]: value
         }));
 
         // Clear error when user starts typing
         if (errors[field]) {
-            setErrors((prev) => ({
+            setErrors(prev => ({
                 ...prev,
-                [field]: "",
+                [field]: ""
             }));
         }
     };
@@ -77,6 +91,9 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
         }
         if (!formData.program_name.trim()) {
             newErrors.program_name = "Program name is required";
+        }
+        if (!formData.program_major.trim()) {
+            newErrors.program_major = "Program major is required";
         }
         if (!formData.report_year) {
             newErrors.report_year = "Report year is required";
@@ -101,11 +118,30 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
 
     const handleSubmit = () => {
         if (validateForm()) {
-            onSave(formData);
+            const graduateData = {
+                ...formData,
+                report_year: parseInt(formData.report_year),
+                year_granted: formData.year_granted ? parseInt(formData.year_granted) : null,
+            };
+            onSave(graduateData);
         }
     };
 
     const handleClose = () => {
+        setFormData({
+            student_id: "",
+            last_name: "",
+            first_name: "",
+            middle_name: "",
+            date_of_birth: "",
+            sex: "",
+            date_graduated: "",
+            program_name: "",
+            program_major: "",
+            authority_number: "",
+            year_granted: "",
+            report_year: new Date().getFullYear(),
+        });
         setErrors({});
         onClose();
     };
@@ -114,8 +150,8 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
-            title={`Edit ${graduateData?.first_name || "Graduate"}'s Information`}
-            subtitle="Update graduate information and details"
+            title="Edit Graduate"
+            subtitle="Update graduate information"
             icon={Edit}
             variant="default"
             size="xl"
@@ -127,11 +163,9 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                         <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
                             <User className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">
-                            Student Information
-                        </h3>
+                        <h3 className="text-base font-semibold text-gray-900">Student Information</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Student ID <span className="text-red-500">*</span>
@@ -144,9 +178,7 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                     errors.student_id ? "border-red-300 bg-red-50" : "border-gray-300"
                                 }`}
                             />
-                            {errors.student_id && (
-                                <p className="text-red-500 text-xs mt-1">{errors.student_id}</p>
-                            )}
+                            {errors.student_id && <p className="text-red-500 text-xs mt-1">{errors.student_id}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -160,9 +192,7 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                     errors.last_name ? "border-red-300 bg-red-50" : "border-gray-300"
                                 }`}
                             />
-                            {errors.last_name && (
-                                <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
-                            )}
+                            {errors.last_name && <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -176,9 +206,7 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                     errors.first_name ? "border-red-300 bg-red-50" : "border-gray-300"
                                 }`}
                             />
-                            {errors.first_name && (
-                                <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
-                            )}
+                            {errors.first_name && <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -193,7 +221,7 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Date of Birth
+                                Date of Birth <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="date"
@@ -203,23 +231,24 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                     errors.date_of_birth ? "border-red-300 bg-red-50" : "border-gray-300"
                                 }`}
                             />
-                            {errors.date_of_birth && (
-                                <p className="text-red-500 text-xs mt-1">{errors.date_of_birth}</p>
-                            )}
+                            {errors.date_of_birth && <p className="text-red-500 text-xs mt-1">{errors.date_of_birth}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Sex
+                                Sex <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={formData.sex}
                                 onChange={(e) => handleInputChange("sex", e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 ${
+                                    errors.sex ? "border-red-300 bg-red-50" : "border-gray-300"
+                                }`}
                             >
                                 <option value="">Select Sex</option>
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
                             </select>
+                            {errors.sex && <p className="text-red-500 text-xs mt-1">{errors.sex}</p>}
                         </div>
                     </div>
                 </div>
@@ -230,11 +259,9 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                         <div className="p-2 bg-emerald-500 rounded-lg shadow-sm">
                             <BookOpen className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">
-                            Program Information
-                        </h3>
+                        <h3 className="text-base font-semibold text-gray-900">Program Information</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Program Name <span className="text-red-500">*</span>
@@ -247,29 +274,30 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                     errors.program_name ? "border-red-300 bg-red-50" : "border-gray-300"
                                 }`}
                             />
-                            {errors.program_name && (
-                                <p className="text-red-500 text-xs mt-1">{errors.program_name}</p>
-                            )}
+                            {errors.program_name && <p className="text-red-500 text-xs mt-1">{errors.program_name}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Program Major
+                                Program Major <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 value={formData.program_major}
                                 onChange={(e) => handleInputChange("program_major", e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200"
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200 ${
+                                    errors.program_major ? "border-red-300 bg-red-50" : "border-gray-300"
+                                }`}
                             />
+                            {errors.program_major && <p className="text-red-500 text-xs mt-1">{errors.program_major}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Authority to Operate
+                                Authority Number
                             </label>
                             <input
                                 type="text"
-                                value={formData.program_authority_to_operate_graduate}
-                                onChange={(e) => handleInputChange("program_authority_to_operate_graduate", e.target.value)}
+                                value={formData.authority_number}
+                                onChange={(e) => handleInputChange("authority_number", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors duration-200"
                             />
                         </div>
@@ -282,11 +310,9 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                         <div className="p-2 bg-purple-500 rounded-lg shadow-sm">
                             <Award className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">
-                            Graduation Information
-                        </h3>
+                        <h3 className="text-base font-semibold text-gray-900">Graduation Information</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Date Graduated
@@ -295,13 +321,8 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                 type="date"
                                 value={formData.date_graduated}
                                 onChange={(e) => handleInputChange("date_graduated", e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 ${
-                                    errors.date_graduated ? "border-red-300 bg-red-50" : "border-gray-300"
-                                }`}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200"
                             />
-                            {errors.date_graduated && (
-                                <p className="text-red-500 text-xs mt-1">{errors.date_graduated}</p>
-                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -311,70 +332,45 @@ function EditGraduateForm({ isOpen, onClose, onSave, graduateData, loading = fal
                                 type="number"
                                 value={formData.year_granted}
                                 onChange={(e) => handleInputChange("year_granted", e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200"
                                 min="1900"
                                 max={new Date().getFullYear()}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 ${
-                                    errors.year_granted ? "border-red-300 bg-red-50" : "border-gray-300"
-                                }`}
                             />
-                            {errors.year_granted && (
-                                <p className="text-red-500 text-xs mt-1">{errors.year_granted}</p>
-                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Report Year <span className="text-red-500">*</span>
                             </label>
-                            <select
+                            <input
+                                type="number"
                                 value={formData.report_year}
                                 onChange={(e) => handleInputChange("report_year", e.target.value)}
                                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 ${
                                     errors.report_year ? "border-red-300 bg-red-50" : "border-gray-300"
                                 }`}
-                            >
-                                {Array.from({ length: 10 }, (_, i) => {
-                                    const year = new Date().getFullYear() - i;
-                                    return (
-                                        <option key={year} value={year}>
-                                            {year}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                            {errors.report_year && (
-                                <p className="text-red-500 text-xs mt-1">{errors.report_year}</p>
-                            )}
+                                min="1900"
+                                max={new Date().getFullYear()}
+                            />
+                            {errors.report_year && <p className="text-red-500 text-xs mt-1">{errors.report_year}</p>}
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
-                    <button
-                        onClick={handleClose}
-                        disabled={loading}
-                        className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center"
-                    >
-                        {loading ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Updating...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4 mr-2" />
-                                Update Graduate
-                            </>
-                        )}
-                    </button>
-                </div>
+            <div className="flex justify-end space-x-3 p-4 border-t">
+                <button
+                    onClick={handleClose}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {loading ? "Saving..." : "Update Graduate"}
+                </button>
             </div>
         </Dialog>
     );
@@ -395,7 +391,7 @@ EditGraduateForm.propTypes = {
         date_graduated: PropTypes.string,
         program_name: PropTypes.string,
         program_major: PropTypes.string,
-        program_authority_to_operate_graduate: PropTypes.string,
+        authority_number: PropTypes.string,
         year_granted: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         report_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }),

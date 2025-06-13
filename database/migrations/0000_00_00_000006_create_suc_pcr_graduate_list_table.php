@@ -14,22 +14,31 @@ return new class extends Migration {
                 ->references('id')
                 ->on('suc_details')
                 ->onDelete('cascade'); // Delete research form if associated details are deleted
-            $table->string('student_id')->unique(); // Unique student ID
-            $table->date('date_of_birth'); // Date of birth
-            $table->string('last_name'); // Last name
-            $table->string('first_name'); // First name
-            $table->string('middle_name')->nullable(); // Middle name (optional)
-            $table->enum('sex', ['M', 'F']); // Sex (M/F)
-            $table->date('date_graduated')->nullable(); // Date graduated (optional)
-            $table->string('program_name'); // Program name
-            $table->string('program_major')->nullable(); // Program major (optional)
-            $table->string('program_authority_to_operate_graduate')->nullable(); // Program authority (optional)
-            $table->integer('year_granted')->nullable(); // Year granted (optional)
-            $table->integer('report_year'); // Changed to integer to reference report_years.year
+            // Student Identification
+            $table->string('student_id')->unique();
+
+            // Personal Information
+            $table->date('date_of_birth');
+            $table->string('last_name');
+            $table->string('first_name');
+            $table->string('middle_name')->nullable();
+            $table->enum('sex', ['M', 'F', 'Male', 'Female'])->nullable();
+
+            // Graduation Information
+            $table->date('date_graduated')->nullable();
+
+            // Program Information
+            $table->string('program_name');
+            $table->string('program_major');
+
+            // PRC License Information
+            $table->string('authority_number')->nullable();
+            $table->year('year_granted')->nullable();
+            $table->integer('report_year');
             $table->foreign('report_year')
                 ->references('year')
                 ->on('report_years')
-                ->onDelete('cascade'); // Foreign key to report_years table
+                ->onDelete('cascade');
             $table->timestamps(); // Created_at and updated_at timestamps
             $table->softDeletes(); // added soft delete support
 

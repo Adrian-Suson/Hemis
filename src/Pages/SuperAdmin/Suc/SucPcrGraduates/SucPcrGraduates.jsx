@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
     GraduationCap,
@@ -23,7 +23,6 @@ import GraduateDetailsView from "./GraduateDetailsView";
 import AddGraduateForm from "./AddGraduateForm";
 import EditGraduateForm from "./EditGraduateForm";
 import GraduateUploadModal from "./GraduateUploadModal";
-import Pagination from "../../../../Components/Pagination";
 import config from "../../../../utils/config";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -49,10 +48,6 @@ function SucPcrGraduates() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterYear, setFilterYear] = useState("ALL");
 
-    // Pagination states
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-
     // Fetch graduates when component mounts
     useEffect(() => {
         fetchGraduates();
@@ -60,7 +55,7 @@ function SucPcrGraduates() {
 
     // Filter graduates based on search and filters
     useEffect(() => {
-        let filtered = graduates;
+        let filtered = Array.isArray(graduates) ? [...graduates] : [];
 
         if (searchTerm) {
             filtered = filtered.filter(
@@ -79,18 +74,7 @@ function SucPcrGraduates() {
         }
 
         setFilteredGraduates(filtered);
-        setCurrentPage(1);
     }, [graduates, searchTerm, filterYear]);
-
-    // Calculate paginated data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return filteredGraduates.slice(startIndex, endIndex);
-    }, [filteredGraduates, currentPage, pageSize]);
-
-    // Calculate total pages
-    const totalPages = Math.ceil(filteredGraduates.length / pageSize);
 
     const fetchGraduates = async () => {
         if (!SucDetailId) {
@@ -103,7 +87,7 @@ function SucPcrGraduates() {
         setLoading(true);
         setError("");
         try {
-            const response = await axios.get(`${config.API_URL}/suc-pcr-graduates`, {
+            const response = await axios.get(`${config.API_URL}/suc-pcr-graduate-list`, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                     Accept: "application/json",
@@ -113,9 +97,7 @@ function SucPcrGraduates() {
                 }
             });
 
-            const graduateData = Array.isArray(response.data)
-                ? response.data
-                : response.data.data || [];
+            const graduateData = response.data.data || [];
             setGraduates(graduateData);
             setFilteredGraduates(graduateData);
             console.log("Fetched graduates:", graduateData);
@@ -196,7 +178,7 @@ function SucPcrGraduates() {
         setAddLoading(true);
         try {
             const response = await axios.post(
-                `${config.API_URL}/suc-pcr-graduates`,
+                `${config.API_URL}/suc-pcr-graduate-list`,
                 { ...graduateData, suc_details_id: SucDetailId },
                 {
                     headers: {
@@ -208,7 +190,7 @@ function SucPcrGraduates() {
             );
 
             if (response.status === 201) {
-                const newGraduate = response.data;
+                const newGraduate = response.data.data;
                 setGraduates((prev) => [...prev, newGraduate]);
                 setIsAddModalOpen(false);
                 console.log("Graduate created successfully:", newGraduate);
@@ -225,7 +207,7 @@ function SucPcrGraduates() {
         setEditLoading(true);
         try {
             const response = await axios.put(
-                `${config.API_URL}/suc-pcr-graduates/${updatedGraduateData.id}`,
+                `${config.API_URL}/suc-pcr-graduate-list/${updatedGraduateData.id}`,
                 updatedGraduateData,
                 {
                     headers: {
@@ -237,7 +219,7 @@ function SucPcrGraduates() {
             );
 
             if (response.status === 200) {
-                const updatedGraduate = response.data;
+                const updatedGraduate = response.data.data;
                 setGraduates((prev) =>
                     prev.map((graduate) =>
                         graduate.id === updatedGraduate.id
@@ -259,25 +241,37 @@ function SucPcrGraduates() {
 
     const handleDelete = async (graduateId) => {
         try {
-            const response = await axios.delete(
-                `${config.API_URL}/suc-pcr-graduates/${graduateId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        Accept: "application/json",
-                    },
-                }
-            );
+            const result = await Swal.fire({
+                title: "Are you sure?",
+                text: "You won't be able to revert this!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, delete it!",
+            });
 
-            if (response.status === 200) {
-                setGraduates((prev) =>
-                    prev.filter((graduate) => graduate.id !== graduateId)
+            if (result.isConfirmed) {
+                const response = await axios.delete(
+                    `${config.API_URL}/suc-pcr-graduate-list/${graduateId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            Accept: "application/json",
+                        },
+                    }
                 );
-                console.log("Graduate deleted successfully.");
+
+                if (response.status === 200) {
+                    setGraduates((prev) =>
+                        prev.filter((graduate) => graduate.id !== graduateId)
+                    );
+                    Swal.fire("Deleted!", "Graduate has been deleted.", "success");
+                }
             }
         } catch (err) {
             console.error("Error deleting graduate:", err);
-            setError("Failed to delete graduate. Please try again.");
+            Swal.fire("Error!", "Failed to delete graduate.", "error");
         }
     };
 
@@ -305,34 +299,14 @@ function SucPcrGraduates() {
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
-        return new Date(dateString).toLocaleDateString("en-PH", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
-    };
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return "N/A";
 
-    // Pagination handlers
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
-
-    const handlePageSizeChange = (newPageSize) => {
-        setPageSize(newPageSize);
-        setCurrentPage(1);
-    };
-
-    // Calculate display range for current page
-    const getDisplayRange = () => {
-        const startIndex = (currentPage - 1) * pageSize + 1;
-        const endIndex = Math.min(
-            currentPage * pageSize,
-            filteredGraduates.length
-        );
-        return { startIndex, endIndex };
-    };
-
-    const { startIndex, endIndex } = getDisplayRange();
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
@@ -426,17 +400,8 @@ function SucPcrGraduates() {
                                     <TrendingUp className="w-4 h-4 mr-1" />
                                     Showing{" "}
                                     {filteredGraduates.length > 0
-                                        ? startIndex
-                                        : 0}{" "}
-                                    to {endIndex} of {filteredGraduates.length}{" "}
-                                    graduates
-                                    {filteredGraduates.length !==
-                                        graduates.length && (
-                                        <span className="text-blue-600 ml-1">
-                                            (filtered from {graduates.length}{" "}
-                                            total)
-                                        </span>
-                                    )}
+                                        ? "1 to " + filteredGraduates.length
+                                        : "No graduates available"}
                                 </div>
                             </div>
                         </div>
@@ -504,8 +469,67 @@ function SucPcrGraduates() {
                                     >
                                         <table className="min-w-full table-fixed">
                                             <tbody className="divide-y divide-gray-200/30">
-                                                {paginatedData.map(
-                                                    (graduate, index) => (
+                                                {loading ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="px-6 py-12 text-center">
+                                                            <div className="text-gray-500">
+                                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                                                                <span className="text-gray-600 font-medium">
+                                                                    Loading...
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ) : error ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="px-6 py-12 text-center text-red-500">
+                                                            {error}
+                                                        </td>
+                                                    </tr>
+                                                ) : filteredGraduates.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="px-6 py-12 text-center">
+                                                            <div className="text-gray-500">
+                                                                <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                                                                    <GraduationCap className="w-10 h-10 text-gray-400" />
+                                                                </div>
+
+                                                                <div className="mb-4">
+                                                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                                                        {searchTerm || filterYear !== "ALL"
+                                                                            ? "No graduates found"
+                                                                            : "No graduates available"}
+                                                                    </h3>
+                                                                    <p className="text-gray-600">
+                                                                        {searchTerm || filterYear !== "ALL"
+                                                                            ? "Try adjusting your search or filter criteria"
+                                                                            : "Get started by adding your first graduate"}
+                                                                    </p>
+                                                                </div>
+
+                                                                {!searchTerm && filterYear === "ALL" && (
+                                                                    <div className="space-y-3">
+                                                                        <button
+                                                                            onClick={handleAddGraduate}
+                                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 mr-3"
+                                                                        >
+                                                                            <Plus className="w-4 h-4 mr-2" />
+                                                                            Add Graduate
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={handleUploadGraduates}
+                                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all duration-200"
+                                                                        >
+                                                                            <Upload className="w-4 h-4 mr-2" />
+                                                                            Upload Excel
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredGraduates.map((graduate, index) => (
                                                         <tr
                                                             key={graduate.id}
                                                             className={`hover:bg-blue-50/30 transition-all duration-200 ${
@@ -545,7 +569,7 @@ function SucPcrGraduates() {
                                                                         </div>
                                                                     )}
                                                                     <div className="text-xs text-gray-600">
-                                                                        ATO: {graduate.program_authority_to_operate_graduate || "N/A"}
+                                                                    Authority Number: {graduate.authority_number || "N/A"}
                                                                     </div>
                                                                 </div>
                                                             </td>
@@ -561,7 +585,7 @@ function SucPcrGraduates() {
                                                                         Year Granted: {graduate.year_granted || "N/A"}
                                                                     </div>
                                                                     <div className="text-xs text-gray-600">
-                                                                        Report Year: {graduate.report_year}
+                                                                        Report Year: {graduate.report_year?.year || "N/A"}
                                                                     </div>
                                                                 </div>
                                                             </td>
@@ -615,50 +639,7 @@ function SucPcrGraduates() {
                                                                 </Popper>
                                                             </td>
                                                         </tr>
-                                                    )
-                                                )}
-                                                {paginatedData.length === 0 && (
-                                                    <tr>
-                                                        <td colSpan="4" className="px-6 py-12 text-center">
-                                                            <div className="text-gray-500">
-                                                                <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                                                                    <GraduationCap className="w-10 h-10 text-gray-400" />
-                                                                </div>
-
-                                                                <div className="mb-4">
-                                                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                                                        {searchTerm || filterYear !== "ALL"
-                                                                            ? "No graduates found"
-                                                                            : "No graduates available"}
-                                                                    </h3>
-                                                                    <p className="text-gray-600">
-                                                                        {searchTerm || filterYear !== "ALL"
-                                                                            ? "Try adjusting your search or filter criteria"
-                                                                            : "Get started by adding your first graduate"}
-                                                                    </p>
-                                                                </div>
-
-                                                                {!searchTerm && filterYear === "ALL" && (
-                                                                    <div className="space-y-3">
-                                                                        <button
-                                                                            onClick={handleAddGraduate}
-                                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 mr-3"
-                                                                        >
-                                                                            <Plus className="w-4 h-4 mr-2" />
-                                                                            Add Graduate
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={handleUploadGraduates}
-                                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all duration-200"
-                                                                        >
-                                                                            <Upload className="w-4 h-4 mr-2" />
-                                                                            Upload Excel
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
+                                                    ))
                                                 )}
                                             </tbody>
                                         </table>
@@ -666,37 +647,6 @@ function SucPcrGraduates() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Pagination */}
-                        {filteredGraduates.length > 0 && (
-                            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-sm">
-                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                                    <div className="text-sm text-gray-700">
-                                        Showing {startIndex} to {endIndex} of{" "}
-                                        {filteredGraduates.length} results
-                                        {filteredGraduates.length !==
-                                            graduates.length && (
-                                            <span className="text-blue-600 ml-1">
-                                                (filtered from {graduates.length}{" "}
-                                                total)
-                                            </span>
-                                        )}
-                                    </div>
-                                    <Pagination
-                                        currentPage={currentPage}
-                                        totalPages={totalPages}
-                                        onPageChange={handlePageChange}
-                                        pageSize={pageSize}
-                                        onPageSizeChange={handlePageSizeChange}
-                                        pageSizeOptions={[5, 10, 20, 50]}
-                                        showFirstLast={true}
-                                        showPageSize={true}
-                                        maxPageButtons={5}
-                                        className="flex-shrink-0"
-                                    />
-                                </div>
-                            </div>
-                        )}
                     </>
                 )}
 

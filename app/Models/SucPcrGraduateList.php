@@ -2,15 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class SucPcrGraduate extends Model
+class SucPcrGraduateList extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
     protected $table = 'suc_pcr_graduate_list';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<string>
+     */
     protected $fillable = [
         'suc_details_id',
         'student_id',
@@ -22,24 +33,34 @@ class SucPcrGraduate extends Model
         'date_graduated',
         'program_name',
         'program_major',
-        'program_authority_to_operate_graduate',
+        'authority_number',
         'year_granted',
         'report_year',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'date_of_birth' => 'date',
         'date_graduated' => 'date',
-        'sex' => 'string',
         'year_granted' => 'integer',
         'report_year' => 'integer',
     ];
 
-    public function sucDetail()
+    /**
+     * Get the SUC details that owns the graduate.
+     */
+    public function sucDetails()
     {
         return $this->belongsTo(SucDetails::class, 'suc_details_id');
     }
 
+    /**
+     * Get the report year that owns the graduate.
+     */
     public function reportYear()
     {
         return $this->belongsTo(ReportYear::class, 'report_year', 'year');

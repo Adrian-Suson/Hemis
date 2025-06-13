@@ -65,10 +65,15 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      setHeis(response.data);
+      // Ensure we're setting an array
+      const heisData = Array.isArray(response.data) ? response.data :
+                      response.data.data ? response.data.data :
+                      response.data.heis ? response.data.heis : [];
+      setHeis(heisData);
     } catch (error) {
       console.error("Error fetching HEIs:", error);
       setErrors(prev => ({ ...prev, heis: "Failed to load institutions. Please try again." }));
+      setHeis([]); // Set empty array on error
     } finally {
       setLoadingHeis(false);
     }
@@ -127,12 +132,12 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
   };
 
   // Format HEIs for react-select
-  const uiidOptions = heis.map((hei) => ({
+  const uiidOptions = Array.isArray(heis) ? heis.map((hei) => ({
     value: hei.uiid,
     label: `${hei.name} (${hei.uiid})`,
     name: hei.name,
     uiid: hei.uiid,
-  }));
+  })) : [];
 
   // Format regions for react-select
   const regionOptions = regions.map((region) => ({

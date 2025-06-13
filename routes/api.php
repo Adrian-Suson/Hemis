@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\SucFormBController;
 use App\Http\Controllers\Api\SucFormE1Controller;
 use App\Http\Controllers\Api\SucFormE2Controller;
 use App\Http\Controllers\Api\SucNfResearchFormController;
-use App\Http\Controllers\Api\SucPcrGraduateController;
 use App\Http\Controllers\Api\LucFormBCController;
 use App\Http\Controllers\Api\LucFormE5Controller;
 use App\Http\Controllers\Api\LucPrcGraduateController;
@@ -31,7 +30,7 @@ use App\Http\Controllers\Api\ResearchTb3Controller;
 use App\Http\Controllers\Api\ResearchTb4Controller;
 use App\Http\Controllers\Api\ResearchTb5Controller;
 use App\Http\Controllers\Api\ResearchTbcController;
-use App\Http\Controllers\Api\GraduateController;
+use App\Http\Controllers\Api\SucPcrGraduateListController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -74,8 +73,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/suc-form-e2/bulk', [SucFormE2Controller::class, 'bulk']);
     // SUC Non-Faculty Research Form Routes
     Route::apiResource('/suc-nf-research-form', SucNfResearchFormController::class);
-    // SUC PCR Graduate Routes
-    Route::apiResource('/suc-pcr-graduate', SucPcrGraduateController::class);
 
     // LUC Details Routes
     Route::apiResource('/luc-details', LucDetailsController::class);
@@ -139,8 +136,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/research-tbc/bulk', [ResearchTbcController::class, 'bulkStore']);
     Route::get('/research/all/{hei_id}', [ResearchTbcController::class, 'getAllResearch']);
 
-    // Graduate Routes
-    Route::apiResource('/graduates', GraduateController::class);
-    Route::post('/graduates/bulk', [GraduateController::class, 'bulkStore']);
-    Route::get('/graduates/search', [GraduateController::class, 'search']);
+    // SUC PCR Graduate List Routes
+    Route::apiResource('suc-pcr-graduate-list', SucPcrGraduateListController::class);
+    Route::post('suc-pcr-graduate-list/bulk', [SucPcrGraduateListController::class, 'bulkStore']);
+    Route::post('suc-pcr-graduate-list/{id}/restore', [SucPcrGraduateListController::class, 'restore']);
 });

@@ -4,12 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Hei extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $fillable = ['uiid', 'name', 'type'];
+    protected $fillable = [
+        'uiid',
+        'name',
+        'type',
+        'cluster_id'
+    ];
+
+    /**
+     * Relationship with Cluster.
+     */
+    public function cluster()
+    {
+        return $this->belongsTo(Cluster::class);
+    }
 
     /**
      * Relationship with LucDetail.
@@ -32,6 +46,6 @@ class Hei extends Model
      */
     public function sucDetails()
     {
-        return $this->hasMany(SucDetail::class, 'hei_id');
+        return $this->hasMany(SucDetails::class, 'hei_id');
     }
 }

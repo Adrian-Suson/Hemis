@@ -8,6 +8,7 @@ import ExcelJS from "exceljs";
 import Swal from "sweetalert2";
 import axios from "axios";
 import config from "../../../../utils/config";
+import Pagination from "../../../../Components/Pagination";
 
 // Mapping for head titles
 const HEAD_TITLE_MAPPING = {
@@ -31,6 +32,23 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
     const [selectedSuc, setSelectedSuc] = useState(null);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [loading, setLoading] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(data.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const currentData = data.slice(startIndex, endIndex);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (size) => {
+        setPageSize(size);
+        setCurrentPage(1); // Reset to first page when changing page size
+    };
 
     const handleView = (suc, type) => {
         const SucDetailId = suc.id || suc.id;
@@ -260,215 +278,246 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
 
     return (
         <>
-            <div className="overflow-x-auto overflow-y-visible">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Institution
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Location
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Leadership
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Contact
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Established
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {data.map((suc) => (
-                            <tr key={suc.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center">
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {suc.institution_name ||
-                                                    suc.hei_name}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {suc.institution_uiid ||
-                                                    suc.hei_uiid}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="text-sm text-gray-900">
-                                        {suc.municipality}, {suc.province}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                        {suc.region}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="text-sm font-medium text-gray-900">
-                                        {suc.head_name}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                        {getHeadTitle(suc.head_title)}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="text-sm text-gray-900 flex items-center">
-                                        <Phone className="w-3 h-3 mr-1" />
-                                        {suc.institutional_telephone}
-                                    </div>
-                                    <div className="text-sm text-gray-500 flex items-center">
-                                        <Mail className="w-3 h-3 mr-1" />
-                                        {suc.institutional_email}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="text-sm text-gray-900">
-                                        {suc.year_established}
-                                    </div>
-                                    {suc.year_converted_university && (
-                                        <div className="text-sm text-gray-500">
-                                            Univ:{" "}
-                                            {suc.year_converted_university}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                                    <Popper
-                                        trigger={
-                                            <button
-                                                className="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md p-1"
-                                                title="More Actions"
-                                            >
-                                                <MoreHorizontal className="w-5 h-5" />
-                                            </button>
-                                        }
-                                        placement="bottom-end"
-                                        className="w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]"
-                                        offset={[0, 4]}
-                                    >
-                                        <div className="py-1">
-                                            <button
-                                                onClick={() => handleView(suc, 'campuses')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <Building2 className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                View Campuses
-                                            </button>
-                                            <button
-                                                onClick={() => handleView(suc, 'programs')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 focus:outline-none focus:bg-purple-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <BookOpen className="w-4 h-4 mr-3 text-purple-500 group-hover:text-purple-600" />
-                                                View Programs
-                                            </button>
-                                            <button
-                                                onClick={() => handleView(suc, 'formE1')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <Users className="w-4 h-4 mr-3 text-indigo-500 group-hover:text-indigo-600" />
-                                                Manage Faculty (Form E1)
-                                            </button>
-                                            <button
-                                                onClick={() => handleView(suc, 'formE2')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 focus:outline-none focus:bg-teal-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <FileText className="w-4 h-4 mr-3 text-teal-500 group-hover:text-teal-600" />
-                                                Manage Faculty (Form E2)
-                                            </button>
-                                            <button
-                                                onClick={() => handleView(suc, 'formGH')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-amber-50 focus:outline-none focus:bg-amber-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <FileText className="w-4 h-4 mr-3 text-amber-500 group-hover:text-amber-600" />
-                                                Financial Data (Form G-H)
-                                            </button>
-                                            <button
-                                                onClick={() => handleView(suc, 'research')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                Manage Research
-                                            </button>
-                                            <button
-                                                onClick={() => handleView(suc, 'graduates')}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 focus:outline-none focus:bg-emerald-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <GraduationCap className="w-4 h-4 mr-3 text-emerald-500 group-hover:text-emerald-600" />
-                                                View Graduates
-                                            </button>
-                                            <button
-                                                onClick={() => handleViewDetails(suc)}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <GraduationCap className="w-4 h-4 mr-3 text-gray-500 group-hover:text-gray-600" />
-                                                View Details
-                                            </button>
-                                            <div className="border-t border-gray-100 my-1"></div>
-                                            <button
-                                                onClick={() => onEdit(suc)}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                 <Edit className="w-4 h-4 mr-3 text-green-700 group-hover:text-green-600" />
-                                                Edit Institution
-                                            </button>
-                                            <button
-                                                onClick={() => handleExportToFormA(suc)}
-                                                disabled={loading.exportFormA}
-                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 group disabled:opacity-50 disabled:cursor-not-allowed"
-                                                role="menuitem"
-                                            >
-                                                <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-gray-600" />
-                                                {loading.exportFormA ? "Exporting..." : "Export to Excel"}
-                                            </button>
-                                            <button
-                                                onClick={() => onDelete(suc.id)}
-                                               className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150 group"
-                                                role="menuitem"
-                                            >
-                                                <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
-                                                Delete Institution
-                                            </button>
-                                        </div>
-                                    </Popper>
-                                </td>
-                            </tr>
-                        ))}
-                        {data.length === 0 && (
+            <div className="relative w-full p-4">
+                <div className="overflow-x-auto overflow-y-auto max-h-[55vh] rounded-lg border border-gray-200 shadow-sm">
+                    <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
-                                <td
-                                    colSpan="6"
-                                    className="px-6 py-12 text-center"
-                                >
-                                    <div className="text-gray-500">
-                                        <GraduationCap className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                                        <p className="text-lg font-medium">
-                                            No SUCs found
-                                        </p>
-                                        <p className="text-sm">
-                                            Try adjusting your search terms or
-                                            add a new SUC.
-                                        </p>
-                                    </div>
-                                </td>
+                                <th className="w-[25%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                    Institution
+                                </th>
+                                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                    Location
+                                </th>
+                                <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                    Leadership
+                                </th>
+                                <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                    Contact
+                                </th>
+                                <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                    Established
+                                </th>
+                                <th className="w-[10%] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                    Actions
+                                </th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {currentData.map((suc) => (
+                                <tr key={suc.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-start">
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-medium text-gray-900 break-words">
+                                                    {suc.institution_name ||
+                                                        suc.hei_name}
+                                                </div>
+                                                <div className="text-sm text-gray-500 truncate">
+                                                    {suc.institution_uiid ||
+                                                        suc.hei_uiid}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 truncate">
+                                            {suc.municipality}, {suc.province}
+                                        </div>
+                                        <div className="text-sm text-gray-500 truncate">
+                                            {suc.region}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900 truncate">
+                                            {suc.head_name}
+                                        </div>
+                                        <div className="text-sm text-gray-500 truncate">
+                                            {getHeadTitle(suc.head_title)}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900 flex items-center">
+                                            <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
+                                            <span className="truncate">{suc.institutional_telephone}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-500 flex items-center">
+                                            <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
+                                            <span className="truncate">{suc.institutional_email}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm text-gray-900">
+                                            {suc.year_established}
+                                        </div>
+                                        {suc.year_converted_university && (
+                                            <div className="text-sm text-gray-500">
+                                                Univ:{" "}
+                                                {suc.year_converted_university}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                                        <Popper
+                                            trigger={
+                                                <button
+                                                    className="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md p-1"
+                                                    title="More Actions"
+                                                >
+                                                    <MoreHorizontal className="w-5 h-5" />
+                                                </button>
+                                            }
+                                            placement="bottom-end"
+                                            className="w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]"
+                                            offset={[0, 4]}
+                                        >
+                                            <div className="py-1">
+
+
+                                                <div className="border-t border-gray-100 my-1"></div>
+
+                                                {/* Forms Section */}
+                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">Forms</div>
+                                                <button
+                                                    onClick={() => handleView(suc, 'campuses')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Building2 className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                    Campuses (Form A2)
+                                                </button>
+                                                <button
+                                                    onClick={() => handleView(suc, 'programs')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 focus:outline-none focus:bg-purple-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <BookOpen className="w-4 h-4 mr-3 text-purple-500 group-hover:text-purple-600" />
+                                                    Curricular Programs (Form B)
+                                                </button>
+                                                <button
+                                                    onClick={() => handleView(suc, 'formE1')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Users className="w-4 h-4 mr-3 text-indigo-500 group-hover:text-indigo-600" />
+                                                    Manage Faculty (Form E1)
+                                                </button>
+                                                <button
+                                                    onClick={() => handleView(suc, 'formE2')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 focus:outline-none focus:bg-teal-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-3 text-teal-500 group-hover:text-teal-600" />
+                                                    Manage Faculty (Form E2)
+                                                </button>
+                                                <button
+                                                    onClick={() => handleView(suc, 'formGH')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-amber-50 focus:outline-none focus:bg-amber-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-3 text-amber-500 group-hover:text-amber-600" />
+                                                    Financial Data (Form G-H)
+                                                </button>
+
+                                                <div className="border-t border-gray-100 my-1"></div>
+
+                                                {/* Additional Data Section */}
+                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">Additional Data</div>
+                                                <button
+                                                    onClick={() => handleView(suc, 'research')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                    Manage Research
+                                                </button>
+                                                <button
+                                                    onClick={() => handleView(suc, 'graduates')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 focus:outline-none focus:bg-emerald-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <GraduationCap className="w-4 h-4 mr-3 text-emerald-500 group-hover:text-emerald-600" />
+                                                    View Graduates
+                                                </button>
+
+                                                <div className="border-t border-gray-100 my-1"></div>
+
+                                                {/* Actions Section */}
+                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">Actions</div>
+                                                {/* View Details Section */}
+                                                <button
+                                                    onClick={() => handleViewDetails(suc)}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <GraduationCap className="w-4 h-4 mr-3 text-gray-500 group-hover:text-gray-600" />
+                                                    View Details
+                                                </button>
+                                                <button
+                                                    onClick={() => onEdit(suc)}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-green-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Edit className="w-4 h-4 mr-3 text-green-700 group-hover:text-green-600" />
+                                                    Edit Institution
+                                                </button>
+                                                <button
+                                                    onClick={() => handleExportToFormA(suc)}
+                                                    disabled={loading.exportFormA}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 group disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    role="menuitem"
+                                                >
+                                                    <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-gray-600" />
+                                                    {loading.exportFormA ? "Exporting..." : "Export to Excel"}
+                                                </button>
+                                                <button
+                                                    onClick={() => onDelete(suc.id)}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
+                                                    Delete Institution
+                                                </button>
+                                            </div>
+                                        </Popper>
+                                    </td>
+                                </tr>
+                            ))}
+                            {currentData.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan="6"
+                                        className="px-6 py-12 text-center"
+                                    >
+                                        <div className="text-gray-500">
+                                            <GraduationCap className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                                            <p className="text-lg font-medium">
+                                                No SUCs found
+                                            </p>
+                                            <p className="text-sm">
+                                                Try adjusting your search terms or
+                                                add a new SUC.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="m-2 flex justify-end">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                        pageSize={pageSize}
+                        onPageSizeChange={handlePageSizeChange}
+                        pageSizeOptions={[10, 20, 50, 100]}
+                        showFirstLast={true}
+                        showPageSize={true}
+                        maxPageButtons={5}
+                    />
+                </div>
             </div>
 
             {/* Details Modal */}

@@ -17,8 +17,10 @@ import config from "../../../../utils/config";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
 import AlertComponent from "../../../../Components/AlertComponent";
+import * as XLSX from 'xlsx';
 
 function GraduateUploadModal({ isOpen, onClose, institutionId, onUploadSuccess }) {
+
     const [uploadStatus, setUploadStatus] = useState(null); // null, 'loading', 'success', 'error'
     const [uploadMessage, setUploadMessage] = useState("");
     const [isUploading, setIsUploading] = useState(false);
@@ -58,6 +60,238 @@ function GraduateUploadModal({ isOpen, onClose, institutionId, onUploadSuccess }
         setUploadMessage("");
     };
 
+    const parseExcelFile = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    console.log('Total rows in Excel:', jsonData.length);
+
+                    // Find the header row (row with Student ID)
+                    const headerRowIndex = jsonData.findIndex(row =>
+                        row && row.some(cell => cell && cell.toString().toLowerCase().includes('student id'))
+                    );
+
+                    if (headerRowIndex === -1) {
+                        throw new Error('Could not find header row with "Student ID" in Excel file');
+                    }
+
+                    console.log('Header row found at index:', headerRowIndex);
+
+                    // Get the headers
+                    const headers = jsonData[headerRowIndex];
+                    console.log('Headers:', headers);
+
+                    // Get the data rows (skip header and any format rows)
+                    const dataRows = jsonData.slice(headerRowIndex + 1).filter(row => {
+                        // Skip empty rows and format description rows
+                        if (!row || row.length === 0) return false;
+                        if (!row[0] || row[0].toString().includes('(mm/dd/yyyy)')) return false;
+                        if (row[0].toString().includes('HEMIS DATA COLLECTION')) return false;
+                        // Check if first cell looks like a student ID (has some alphanumeric content)
+                        const firstCell = row[0].toString().trim();
+                        return firstCell.length > 0 && /[A-Za-z0-9]/.test(firstCell);
+                    });
+
+                    console.log('Filtered data rows:', dataRows.length);
+
+                    // Find column indices for required fields
+                    const getColumnIndex = (searchTerms) => {
+                        for (const term of searchTerms) {
+                            const index = headers.findIndex(h =>
+                                h && h.toString().toLowerCase().includes(term.toLowerCase())
+                            );
+                            if (index !== -1) return index;
+                        }
+                        return -1;
+                    };
+
+                    const columnIndices = {
+                        studentId: getColumnIndex(['Student ID', 'student id']),
+                        dob: getColumnIndex(['Date of Birth', 'date of birth', 'birth date']),
+                        lastName: getColumnIndex(['Last Name', 'last name', 'surname']),
+                        firstName: getColumnIndex(['First Name', 'first name', 'given name']),
+                        middleName: getColumnIndex(['Middle Name', 'middle name']),
+                        sex: getColumnIndex(['Sex', 'gender']),
+                        dateGraduated: getColumnIndex(['Date Graduated', 'date graduated', 'graduation date'])
+                    };
+
+                    console.log('Column indices:', columnIndices);
+
+                    // Validate that we found all required columns
+                    const requiredColumns = ['studentId', 'dob', 'lastName', 'firstName', 'sex', 'dateGraduated'];
+                    const missingColumns = requiredColumns.filter(col => columnIndices[col] === -1);
+
+                    if (missingColumns.length > 0) {
+                        throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+                    }
+
+                    // Convert Excel date numbers to proper date format
+                    const convertExcelDate = (value) => {
+                        if (!value) return null;
+
+                        try {
+                            let date;
+                            if (typeof value === 'number') {
+                                // Convert Excel date number to JavaScript date
+                                date = new Date((value - 25569) * 86400 * 1000);
+                            } else if (typeof value === 'string') {
+                                // If it's already a string, try to parse it
+                                date = new Date(value);
+                            } else {
+                                return null;
+                            }
+
+                            // Check if date is valid
+                            if (isNaN(date.getTime())) {
+                                console.warn('Invalid date value:', value);
+                                return null;
+                            }
+
+                            // Format as YYYY-MM-DD
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        } catch (error) {
+                            console.warn('Error converting date:', value, error);
+                            return null;
+                        }
+                    };
+
+                    // Log raw data for debugging
+                    console.log("Raw Excel Data (first 5 rows):", dataRows.slice(0, 5).map(row => ({
+                        student_id: row[columnIndices.studentId],
+                        last_name: row[columnIndices.lastName],
+                        first_name: row[columnIndices.firstName],
+                        middle_name: row[columnIndices.middleName],
+                        sex: row[columnIndices.sex],
+                        date_of_birth: row[columnIndices.dob],
+                        date_graduated: row[columnIndices.dateGraduated],
+                        program_name: row[7],
+                        program_major: row[8],
+                        authority_number: row[9],
+                        year_granted: row[10]
+                    })));
+
+                    // Process each data row
+                    const graduates = dataRows.map((row, index) => {
+                        try {
+                            // For each graduate, we'll extract the program name from the same row
+                            // Based on the Excel structure, program name appears to be in column 7 (index 7)
+                            const programNameIndex = 7; // Adjust this based on your Excel structure
+                            const programName = row[programNameIndex] ? row[programNameIndex].toString().trim() : '';
+                            const programMajorIndex = 8; // Add program major index
+                            const programMajor = row[programMajorIndex] ? row[programMajorIndex].toString().trim() : '';
+                            const authorityNumberIndex = 9; // Add authority number index
+                            const authorityNumber = row[authorityNumberIndex] ? row[authorityNumberIndex].toString().trim() : '';
+                            const yearGrantedIndex = 10; // Add year granted index
+
+                            // Handle year_granted - ensure it's a number
+                            let yearGranted = null;
+                            if (row[yearGrantedIndex]) {
+                                const yearValue = row[yearGrantedIndex];
+                                if (typeof yearValue === 'number') {
+                                    yearGranted = Math.floor(yearValue); // Ensure it's a whole number
+                                } else if (typeof yearValue === 'string') {
+                                    // Try to extract year from date string or parse as number
+                                    const yearMatch = yearValue.match(/\d{4}/);
+                                    if (yearMatch) {
+                                        yearGranted = parseInt(yearMatch[0], 10);
+                                    } else {
+                                        const parsedYear = parseInt(yearValue, 10);
+                                        if (!isNaN(parsedYear)) {
+                                            yearGranted = parsedYear;
+                                        }
+                                    }
+                                }
+                            }
+
+                            const graduate = {
+                                student_id: row[columnIndices.studentId] ? row[columnIndices.studentId].toString().trim() : '',
+                                last_name: row[columnIndices.lastName] ? row[columnIndices.lastName].toString().trim() : '',
+                                first_name: row[columnIndices.firstName] ? row[columnIndices.firstName].toString().trim() : '',
+                                middle_name: row[columnIndices.middleName] ? row[columnIndices.middleName].toString().trim() : '',
+                                date_of_birth: convertExcelDate(row[columnIndices.dob]),
+                                sex: row[columnIndices.sex] ? row[columnIndices.sex].toString().trim().toUpperCase() : '',
+                                program_name: programName,
+                                program_major: programMajor || 'Not Specified', // Ensure program_major is never null
+                                authority_number: authorityNumber,
+                                date_graduated: convertExcelDate(row[columnIndices.dateGraduated]),
+                                year_granted: yearGranted, // Now properly handled as a number
+                                suc_details_id: institutionId,
+                                report_year: selectedYear
+                            };
+
+                            // Log each processed graduate for debugging
+                            console.log(`Processed graduate ${index + 1}:`, graduate);
+
+                            // Validate required fields
+                            const requiredFields = [
+                                'student_id',
+                                'last_name',
+                                'first_name',
+                                'date_of_birth',
+                                'sex',
+                                'date_graduated',
+                                'program_name',
+                                'program_major'
+                            ];
+                            const missingFields = requiredFields.filter(field => !graduate[field]);
+
+                            if (missingFields.length > 0) {
+                                console.warn(`Row ${index + headerRowIndex + 2}: Missing required fields: ${missingFields.join(', ')}`, graduate);
+                                return null;
+                            }
+
+                            // Validate sex field
+                            if (!['M', 'F', 'MALE', 'FEMALE'].includes(graduate.sex.toUpperCase())) {
+                                console.warn(`Row ${index + headerRowIndex + 2}: Invalid sex value: ${graduate.sex}`);
+                                graduate.sex = graduate.sex.charAt(0).toUpperCase(); // Take first character
+                            }
+
+                            // Normalize sex to M/F
+                            if (graduate.sex.toUpperCase().startsWith('M')) {
+                                graduate.sex = 'M';
+                            } else if (graduate.sex.toUpperCase().startsWith('F')) {
+                                graduate.sex = 'F';
+                            }
+
+                            return graduate;
+                        } catch (error) {
+                            console.error(`Error processing row ${index + headerRowIndex + 2}:`, error, row);
+                            return null;
+                        }
+                    }).filter(graduate => graduate !== null);
+
+                    console.log(`Successfully processed ${graduates.length} graduates out of ${dataRows.length} data rows`);
+
+                    if (graduates.length === 0) {
+                        throw new Error('No valid graduate records found in the Excel file');
+                    }
+
+                    // Log first few graduates for verification
+                    console.log('Sample processed graduates:', graduates.slice(0, 3));
+
+                    resolve(graduates);
+                } catch (error) {
+                    console.error('Error parsing Excel file:', error);
+                    reject(error);
+                }
+            };
+            reader.onerror = (error) => {
+                console.error('Error reading file:', error);
+                reject(new Error('Failed to read the Excel file'));
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    };
+
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -92,35 +326,46 @@ function GraduateUploadModal({ isOpen, onClose, institutionId, onUploadSuccess }
         setUploadStatus("loading");
         setUploadMessage("Processing file...");
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("suc_details_id", institutionId);
-        formData.append("report_year", selectedYear);
-
         try {
+            // Parse the Excel file
+            const graduates = await parseExcelFile(file);
+
+            setUploadMessage(`Parsed ${graduates.length} graduates. Uploading to server...`);
+
+            // Prepare the request data
+            const requestData = {
+                graduates: graduates
+            };
+
             const response = await axios.post(
-                `${config.API_URL}/suc-pcr-graduates/upload`,
-                formData,
+                `${config.API_URL}/suc-pcr-graduate-list/bulk`,
+                requestData,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        "Content-Type": "multipart/form-data",
+                        "Content-Type": "application/json",
                     },
                 }
             );
 
-            if (response.status === 200) {
+            if (response.status === 201) {
                 setUploadStatus("success");
-                setUploadMessage("Graduates uploaded successfully.");
+                setUploadMessage(`Successfully uploaded ${graduates.length} graduates.`);
                 onUploadSuccess();
+                onClose();
             }
         } catch (err) {
             console.error("Error uploading file:", err);
             setUploadStatus("error");
-            setUploadMessage(
-                err.response?.data?.message ||
-                "Failed to upload file. Please try again."
-            );
+
+            let errorMessage = "Failed to upload file. Please try again.";
+            if (err.message) {
+                errorMessage = err.message;
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            }
+
+            setUploadMessage(errorMessage);
         } finally {
             setIsUploading(false);
             e.target.value = "";
@@ -267,12 +512,16 @@ function GraduateUploadModal({ isOpen, onClose, institutionId, onUploadSuccess }
                             <FileText className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <div>
                                 <p className="font-medium mb-1">
-                                    Required Columns:
+                                    Required Columns (must be exact matches):
                                 </p>
                                 <ul className="space-y-1 ml-2">
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
                                         Student ID (Required)
+                                    </li>
+                                    <li className="flex items-center">
+                                        <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
+                                        Date of Birth (Required - Excel date format)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
@@ -284,23 +533,19 @@ function GraduateUploadModal({ isOpen, onClose, institutionId, onUploadSuccess }
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Middle Name
+                                        Middle Name (Optional)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Date of Birth (YYYY-MM-DD)
+                                        Sex (Required - M/F)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Sex (M/F)
+                                        Date Graduated (Required - Excel date format)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Program Name
-                                    </li>
-                                    <li className="flex items-center">
-                                        <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Date Graduated (YYYY-MM-DD)
+                                        Program Name (Usually in column H)
                                     </li>
                                 </ul>
                             </div>
@@ -309,12 +554,14 @@ function GraduateUploadModal({ isOpen, onClose, institutionId, onUploadSuccess }
                             <Database className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <p>
                                 The system will automatically validate and process the graduate data.
+                                Dates should be in Excel date format (numbers).
                             </p>
                         </div>
                         <div className="flex items-start space-x-3">
                             <BookOpen className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <p>
-                                Supported formats: .xlsx, .xls, and .csv files with graduate information
+                                Supported formats: .xlsx, .xls, and .csv files.
+                                Rows with missing required data will be skipped.
                             </p>
                         </div>
                     </div>

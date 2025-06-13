@@ -3,7 +3,16 @@ import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
 
 function GraduateDetailsView({ isOpen, onClose, graduateData }) {
-    if (!graduateData) return null;
+    const safeValue = (value, defaultValue = "N/A") => {
+        if (!value) return defaultValue;
+        if (typeof value === 'object') {
+            // If it's an object with a year property, use that
+            if (value.year) return value.year;
+            // Otherwise stringify the object
+            return JSON.stringify(value);
+        }
+        return value;
+    };
 
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -14,28 +23,17 @@ function GraduateDetailsView({ isOpen, onClose, graduateData }) {
         });
     };
 
-    // Safe value conversion function
-    const safeValue = (value, defaultValue = "Not specified") => {
-        if (value === null || value === undefined || value === '') {
-            return defaultValue;
-        }
-        if (typeof value === 'object') {
-            return String(value) || defaultValue;
-        }
-        return String(value);
-    };
-
     return (
         <Dialog
             isOpen={isOpen}
             onClose={onClose}
-            title={`${safeValue(graduateData.last_name)}, ${safeValue(graduateData.first_name)}`}
-            subtitle="Graduate Information"
+            title="Graduate Details"
+            subtitle="View detailed information about the graduate"
             icon={User}
-            variant="view"
-            size="lg"
+            variant="default"
+            size="xl"
         >
-            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto p-4">
                 {/* Student Information */}
                 <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
                     <div className="flex items-center space-x-3 mb-3">
@@ -48,25 +46,25 @@ function GraduateDetailsView({ isOpen, onClose, graduateData }) {
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Full Name</label>
                             <p className="text-sm text-gray-900 font-semibold">
-                                {`${safeValue(graduateData.last_name)}, ${safeValue(graduateData.first_name)} ${
-                                    safeValue(graduateData.middle_name, "")
+                                {`${safeValue(graduateData?.last_name)}, ${safeValue(graduateData?.first_name)} ${
+                                    safeValue(graduateData?.middle_name, "")
                                 }`}
                             </p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Student ID</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.student_id)}</p>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.student_id)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
                                 <Calendar className="w-4 h-4 inline mr-1" />
                                 Date of Birth
                             </label>
-                            <p className="text-sm text-gray-900">{formatDate(graduateData.date_of_birth)}</p>
+                            <p className="text-sm text-gray-900">{formatDate(graduateData?.date_of_birth)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Sex</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.sex)}</p>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.sex)}</p>
                         </div>
                     </div>
                 </div>
@@ -82,15 +80,15 @@ function GraduateDetailsView({ isOpen, onClose, graduateData }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Program Name</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.program_name)}</p>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.program_name)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Program Major</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.program_major)}</p>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.program_major)}</p>
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Authority to Operate</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.program_authority_to_operate_graduate)}</p>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Authority Number</label>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.authority_number)}</p>
                         </div>
                     </div>
                 </div>
@@ -109,18 +107,27 @@ function GraduateDetailsView({ isOpen, onClose, graduateData }) {
                                 <Calendar className="w-4 h-4 inline mr-1" />
                                 Date Graduated
                             </label>
-                            <p className="text-sm text-gray-900">{formatDate(graduateData.date_graduated)}</p>
+                            <p className="text-sm text-gray-900">{formatDate(graduateData?.date_graduated)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Year Granted</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.year_granted)}</p>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.year_granted)}</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Report Year</label>
-                            <p className="text-sm text-gray-900">{safeValue(graduateData.report_year)}</p>
+                            <p className="text-sm text-gray-900">{safeValue(graduateData?.report_year)}</p>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="flex justify-end p-4 border-t">
+                <button
+                    onClick={onClose}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    Close
+                </button>
             </div>
         </Dialog>
     );
@@ -140,7 +147,7 @@ GraduateDetailsView.propTypes = {
         date_graduated: PropTypes.string,
         program_name: PropTypes.string,
         program_major: PropTypes.string,
-        program_authority_to_operate_graduate: PropTypes.string,
+        authority_number: PropTypes.string,
         year_granted: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         report_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }),
