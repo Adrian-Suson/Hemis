@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            HeiSeeder::class,
             SucDetailsSeeder::class,
         ]);
     }

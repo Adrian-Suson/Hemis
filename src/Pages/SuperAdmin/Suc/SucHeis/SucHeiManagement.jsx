@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import axios from "axios"; // Import axios
 import { Plus, Search, GraduationCap, X, Upload, RefreshCw } from "lucide-react";
 import SucDataTable from "./SucDataTable";
-import SucForm from "./SucForm";
+import AddSucForm from "./AddSucForm"; // Import AddSucForm
+import EditSucForm from "./EditSucForm"; // Import EditSucForm
 import SucUploadModal from "./SucUploadModal";
 import config from "../../../../utils/config";
 import AlertComponent from "../../../../Components/AlertComponent"; // Import AlertComponent
@@ -17,7 +18,7 @@ function SucHeiManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedReportYear, setSelectedReportYear] = useState(new Date().getFullYear()); // New state for report year
+    const [selectedReportYear, setSelectedReportYear] = useState(null); // Changed to null
 
     // Fetch SUC data from API
     useEffect(() => {
@@ -37,7 +38,7 @@ function SucHeiManagement() {
             });
 
             setSucData(response.data);
-            console.log('response.data:', response.data)
+            console.log('response.data after fetchSucData:', response.data)
         } catch (error) {
             console.error('Error fetching SUC data:', error);
             setError('Failed to load SUC data. Please try again.');
@@ -155,19 +156,16 @@ function SucHeiManagement() {
                     return;
                 }
 
-                const newSuc = await createSucDetail(sucDetailsPayload);
-                setSucData([...sucData, newSuc]);
+                await createSucDetail(sucDetailsPayload);
                 AlertComponent.showAlert('SUC record created successfully!', 'success');
             } else {
-                const updatedSuc = await updateSucDetail(currentRecord.id, sucDetailsPayload);
-                setSucData(
-                    sucData.map((item) =>
-                        item.id === currentRecord.id ? updatedSuc : item
-                    )
-                );
+                await updateSucDetail(currentRecord.id, sucDetailsPayload);
                 AlertComponent.showAlert('SUC record updated successfully!', 'success');
             }
             closeModal();
+            setSearchTerm(""); // Clear search term after save/update
+            setSelectedReportYear(null); // Reset year filter after save/update
+            fetchSucData(); // Re-fetch data to ensure table is updated
         } catch (error) {
             AlertComponent.showAlert(`Error ${modalType === 'add' ? 'creating' : 'updating'} SUC record: ${error.message}`, 'error');
         }
@@ -192,11 +190,12 @@ function SucHeiManagement() {
         );
     };
 
-    const handleDataImported = (importedData) => {
-        // Add the imported data to the existing data
-        setSucData(prevData => [...prevData, ...importedData]);
+    const handleDataImported = () => {
         // Close the upload modal after successful import
         setIsUploadModalOpen(false);
+        setSearchTerm(""); // Clear search term after import
+        setSelectedReportYear(null); // Reset year filter after import
+        fetchSucData(); // Re-fetch data to ensure table is updated
     };
 
     const handleRefresh = () => {
@@ -216,6 +215,8 @@ function SucHeiManagement() {
             (selectedReportYear === null || // If no year is selected, show all
              String(item.report_year) === String(selectedReportYear))
     );
+
+    console.log("filteredData passed to DataTable:", filteredData);
 
     if (loading) {
         return (
@@ -284,24 +285,24 @@ function SucHeiManagement() {
 
                                 {/* Report Year Filter */}
                                 <div className="relative flex items-center">
-                                     <label htmlFor="reportYearFilter" className="block text-sm font-medium text-gray-700 mr-2">Year:</label>
-                                     <select
-                                         id="reportYearFilter"
-                                         value={selectedReportYear}
-                                         onChange={(e) => setSelectedReportYear(parseInt(e.target.value, 10))}
-                                         className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                     >
-                                         {/* <option value={null}>All Years</option> */}
-                                         {Array.from({ length: 10 }, (_, i) => {
-                                             const year = new Date().getFullYear() - i;
-                                             return (
-                                                 <option key={year} value={year}>
-                                                     {year}
-                                                 </option>
-                                             );
-                                         })}
-                                     </select>
-                                 </div>
+                                    <label htmlFor="reportYear" className="text-sm font-medium text-gray-700">Report Year:</label>
+                                    <select
+                                        id="reportYear"
+                                        value={selectedReportYear || ""} // Use empty string for null to show placeholder
+                                        onChange={(e) => setSelectedReportYear(e.target.value === "" ? null : Number(e.target.value))}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                    >
+                                        <option value="">All Years</option>
+                                        {Array.from({ length: new Date().getFullYear() - 2000 + 1 }, (_, i) => {
+                                            const year = new Date().getFullYear() - i;
+                                            return (
+                                                <option key={year} value={year}>
+                                                    {year}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
 
                                 <div className="text-sm text-gray-500 flex items-center">
                                     Total SUCs:{" "}
@@ -360,14 +361,20 @@ function SucHeiManagement() {
 
             {/* Form Modal */}
             {isModalOpen && (
-                        <SucForm
-                            initialData={currentRecord}
-                            onSave={handleSave}
-                            onCancel={closeModal}
-                            modalType={modalType}
-                            closeModal={closeModal}
-                        />
-
+                modalType === "add" ? (
+                    <AddSucForm
+                        onSave={handleSave}
+                        onCancel={closeModal}
+                        closeModal={closeModal}
+                    />
+                ) : (
+                    <EditSucForm
+                        initialData={currentRecord}
+                        onSave={handleSave}
+                        onCancel={closeModal}
+                        closeModal={closeModal}
+                    />
+                )
             )}
         </div>
     );

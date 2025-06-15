@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPopper } from "@popperjs/core";
 import { createPortal } from "react-dom";
@@ -13,16 +14,24 @@ function Popper({
     closeOnItemClick = true,
     disabled = false,
     usePortal = true,
-    smartPositioning = true // New prop for smart positioning
+    smartPositioning = true,
+    isOpen = false,
+    onOpenChange = null
 }) {
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(isOpen);
     const [position, setPosition] = useState({ top: 0, left: 0, placement: placement });
     const triggerRef = useRef(null);
     const popperRef = useRef(null);
     const popperInstanceRef = useRef(null);
 
+    // Update isVisible when isOpen prop changes
+    useEffect(() => {
+        setIsVisible(isOpen);
+    }, [isOpen]);
+
+    // Memoize the smart position calculation to prevent infinite renders
     const calculateSmartPosition = useCallback(() => {
-        if (!triggerRef.current || !popperRef.current) return;
+        if (!triggerRef.current || !popperRef.current || !isVisible) return;
 
         const triggerRect = triggerRef.current.getBoundingClientRect();
         const popperRect = popperRef.current.getBoundingClientRect();
@@ -61,178 +70,249 @@ function Popper({
             left = 10;
         }
 
-        setPosition({ top, left, placement: newPlacement });
-    }, [placement, offset]);
+        // Only update position if it actually changed to prevent unnecessary re-renders
+        setPosition(prev => {
+            if (prev.top !== top || prev.left !== left || prev.placement !== newPlacement) {
+                return { top, left, placement: newPlacement };
+            }
+            return prev;
+        });
+    }, [placement, offset, isVisible]); // Added isVisible to dependencies
 
-    // Handle click outside to close popper
+    // Handle click outside to close popper - Fixed dependency array
     useEffect(() => {
+        if (!isVisible) return;
+
         const handleClickOutside = (event) => {
             if (
-                isVisible &&
                 popperRef.current &&
                 !popperRef.current.contains(event.target) &&
                 triggerRef.current &&
                 !triggerRef.current.contains(event.target)
             ) {
                 setIsVisible(false);
+                if (onOpenChange) {
+                    onOpenChange(false);
+                }
+                if (onToggle) {
+                    onToggle(false);
+                }
             }
         };
 
         const handleEscapeKey = (event) => {
-            if (event.key === "Escape" && isVisible) {
+            if (event.key === "Escape") {
                 setIsVisible(false);
+                if (onOpenChange) {
+                    onOpenChange(false);
+                }
+                if (onToggle) {
+                    onToggle(false);
+                }
             }
         };
 
-        if (isVisible) {
-            document.addEventListener("mousedown", handleClickOutside);
-            document.addEventListener("keydown", handleEscapeKey);
-        }
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleEscapeKey);
 
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
             document.removeEventListener("keydown", handleEscapeKey);
         };
-    }, [isVisible]);
+    }, [isVisible, onOpenChange, onToggle]); // Fixed dependencies
 
     // Initialize/destroy Popper.js instance or calculate smart position
     useEffect(() => {
-        if (isVisible && triggerRef.current && popperRef.current) {
-            if (smartPositioning) {
-                calculateSmartPosition();
-            } else {
-                popperInstanceRef.current = createPopper(
-                    triggerRef.current,
-                    popperRef.current,
-                    {
-                        placement,
-                        strategy: usePortal ? 'fixed' : 'absolute',
-                        modifiers: [
-                            {
-                                name: "offset",
-                                options: {
-                                    offset,
-                                },
-                            },
-                            {
-                                name: "preventOverflow",
-                                options: {
-                                    boundary: "viewport",
-                                    padding: 8,
-                                },
-                            },
-                            {
-                                name: "flip",
-                                options: {
-                                    fallbackPlacements: ["top-end", "bottom-start", "top-start"],
-                                },
-                            },
-                        ],
-                    }
-                );
-            }
-        }
-
-        return () => {
+        if (!isVisible || !triggerRef.current || !popperRef.current) {
+            // Clean up popper instance if it exists
             if (popperInstanceRef.current) {
                 popperInstanceRef.current.destroy();
                 popperInstanceRef.current = null;
             }
-        };
-    }, [isVisible, placement, offset, usePortal, smartPositioning, calculateSmartPosition]);
+            return;
+        }
 
-    // Handle window resize and scroll for smart positioning
-    useEffect(() => {
-        if (isVisible && smartPositioning) {
-            const handleResize = () => calculateSmartPosition();
-            const handleScroll = () => calculateSmartPosition();
+        if (smartPositioning) {
+            // Use setTimeout to ensure DOM is ready
+            const timeoutId = setTimeout(() => {
+                calculateSmartPosition();
+            }, 0);
 
-            window.addEventListener('resize', handleResize);
-            window.addEventListener('scroll', handleScroll, true);
+            return () => clearTimeout(timeoutId);
+        } else {
+            popperInstanceRef.current = createPopper(
+                triggerRef.current,
+                popperRef.current,
+                {
+                    placement,
+                    strategy: usePortal ? 'fixed' : 'absolute',
+                    modifiers: [
+                        {
+                            name: "offset",
+                            options: { offset },
+                        },
+                        {
+                            name: "preventOverflow",
+                            options: {
+                                boundary: "viewport",
+                                padding: 8,
+                            },
+                        },
+                        {
+                            name: "flip",
+                            options: {
+                                fallbackPlacements: ["top-end", "bottom-start", "top-start"],
+                            },
+                        },
+                    ],
+                }
+            );
 
             return () => {
-                window.removeEventListener('resize', handleResize);
-                window.removeEventListener('scroll', handleScroll, true);
+                if (popperInstanceRef.current) {
+                    popperInstanceRef.current.destroy();
+                    popperInstanceRef.current = null;
+                }
             };
         }
+    }, [isVisible, placement, usePortal, smartPositioning]); // Removed calculateSmartPosition from deps
+
+    // Handle window resize and scroll for smart positioning - Throttled for performance
+    useEffect(() => {
+        if (!isVisible || !smartPositioning) return;
+
+        let timeoutId = null;
+
+        const throttledCalculate = () => {
+            if (timeoutId) return;
+            timeoutId = setTimeout(() => {
+                calculateSmartPosition();
+                timeoutId = null;
+            }, 16); // ~60fps
+        };
+
+        window.addEventListener('resize', throttledCalculate);
+        window.addEventListener('scroll', throttledCalculate, true);
+
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            window.removeEventListener('resize', throttledCalculate);
+            window.removeEventListener('scroll', throttledCalculate, true);
+        };
     }, [isVisible, smartPositioning, calculateSmartPosition]);
 
-    // Call onToggle callback when visibility changes
-    useEffect(() => {
+    // Memoized handlers to prevent unnecessary re-renders
+    const handleToggle = useCallback(() => {
+        if (disabled) return;
+        const newIsVisible = !isVisible;
+        setIsVisible(newIsVisible);
+        if (onOpenChange) {
+            onOpenChange(newIsVisible);
+        }
         if (onToggle) {
-            onToggle(isVisible);
+            onToggle(newIsVisible);
         }
-    }, [isVisible, onToggle]);
+    }, [disabled, isVisible, onOpenChange, onToggle]);
 
-    const togglePopper = () => {
-        if (!disabled) {
-            setIsVisible(!isVisible);
-        }
-    };
-
-    const closePopper = () => {
+    const handleClose = useCallback(() => {
         setIsVisible(false);
-    };
+        if (onOpenChange) {
+            onOpenChange(false);
+        }
+        if (onToggle) {
+            onToggle(false);
+        }
+    }, [onOpenChange, onToggle]);
 
     // Handle clicks on popper content
-    const handlePopperClick = (event) => {
+    const handlePopperClick = useCallback((event) => {
         if (closeOnItemClick) {
             const clickedElement = event.target.closest('[data-no-close]');
             if (!clickedElement) {
-                setIsVisible(false);
+                handleClose();
             }
         }
-    };
-
-    // Render popper content
-    const popperContent = isVisible && (
-        <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 z-[9998]"
-                onClick={closePopper}
-            />
-
-            {/* Popper content */}
-            <div
-                ref={popperRef}
-                className={`z-[9999] transition-opacity duration-200 ease-in-out ${className}`}
-                onClick={handlePopperClick}
-                role="menu"
-                aria-orientation="vertical"
-                style={{
-                    position: usePortal ? 'fixed' : 'absolute',
-                    zIndex: 9999,
-                    ...(smartPositioning && {
-                        top: `${position.top}px`,
-                        left: `${position.left}px`,
-                    })
-                }}
-            >
-                {typeof children === "function"
-                    ? children({ isOpen: isVisible, toggle: togglePopper, close: closePopper })
-                    : children
-                }
-            </div>
-        </>
-    );
+    }, [closeOnItemClick, handleClose]);
 
     return (
         <div className="relative inline-block">
             {/* Trigger Element */}
             <div
                 ref={triggerRef}
-                onClick={togglePopper}
+                onClick={handleToggle}
                 className={disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
             >
-                {typeof trigger === "function" ? trigger({ isOpen: isVisible, toggle: togglePopper, close: closePopper }) : trigger}
+                {typeof trigger === "function" ? trigger({ isOpen: isVisible, toggle: handleToggle, close: handleClose }) : trigger}
             </div>
 
-            {/* Popper Content - Use portal for better positioning */}
-            {usePortal ? (
-                typeof document !== 'undefined' && createPortal(popperContent, document.body)
-            ) : (
-                popperContent
+            {/* Popper Content - Conditionally render createPortal itself */}
+            {isVisible && (
+                usePortal ? (
+                    typeof document !== 'undefined' && createPortal(
+                        <>
+                            {/* Backdrop */}
+                            <div
+                                className="fixed inset-0 z-[9998]"
+                                onClick={handleClose}
+                            />
+
+                            {/* Popper content */}
+                            <div
+                                ref={popperRef}
+                                className={`z-[9999] transition-opacity duration-200 ease-in-out ${className}`}
+                                onClick={handlePopperClick}
+                                role="menu"
+                                aria-orientation="vertical"
+                                style={{
+                                    position: usePortal ? 'fixed' : 'absolute',
+                                    zIndex: 9999,
+                                    ...(smartPositioning && {
+                                        top: `${position.top}px`,
+                                        left: `${position.left}px`,
+                                    })
+                                }}
+                            >
+                                {typeof children === "function"
+                                    ? children({ isOpen: isVisible, toggle: handleToggle, close: handleClose })
+                                    : children
+                                }
+                            </div>
+                        </>,
+                        document.body
+                    )
+                ) : (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 z-[9998]"
+                            onClick={handleClose}
+                        />
+
+                        {/* Popper content */}
+                        <div
+                            ref={popperRef}
+                            className={`z-[9999] transition-opacity duration-200 ease-in-out ${className}`}
+                            onClick={handlePopperClick}
+                            role="menu"
+                            aria-orientation="vertical"
+                            style={{
+                                position: usePortal ? 'fixed' : 'absolute',
+                                zIndex: 9999,
+                                ...(smartPositioning && {
+                                    top: `${position.top}px`,
+                                    left: `${position.left}px`,
+                                })
+                            }}
+                        >
+                            {typeof children === "function"
+                                ? children({ isOpen: isVisible, toggle: handleToggle, close: handleClose })
+                                : children
+                            }
+                        </div>
+                    </>
+                )
             )}
         </div>
     );
@@ -255,6 +335,8 @@ Popper.propTypes = {
     disabled: PropTypes.bool,
     usePortal: PropTypes.bool,
     smartPositioning: PropTypes.bool,
+    isOpen: PropTypes.bool,
+    onOpenChange: PropTypes.func
 };
 
 export default Popper;

@@ -11,7 +11,6 @@ import {
   Award,
   FileText,
   Plus,
-  Edit,
 } from 'lucide-react';
 import Select from 'react-select';
 import axios from 'axios';
@@ -19,30 +18,32 @@ import config from '../../../../utils/config';
 import PropTypes from 'prop-types';
 import useLocationData from '../../../../Hooks/useLocationData';
 import Dialog from '../../../../Components/Dialog';
+import AlertComponent from '../../../../Components/AlertComponent';
+import { HEAD_TITLE_MAPPING, EDUCATIONAL_LEVEL_MAPPING } from '../../../../utils/constants';
 
-function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) {
+function AddSucForm({ onSave, onCancel, loading = false }) {
   const [formData, setFormData] = useState({
-    institution_uiid: initialData?.institution_uiid || '',
-    institution_name: initialData?.institution_name || '',
-    region: initialData?.region || 'Region IX (Zamboanga Peninsula)',
-    province: initialData?.province || '',
-    municipality: initialData?.municipality || '',
-    address_street: initialData?.address_street || '',
-    postal_code: initialData?.postal_code || '',
-    institutional_telephone: initialData?.institutional_telephone || '',
-    institutional_fax: initialData?.institutional_fax || '',
-    head_telephone: initialData?.head_telephone || '',
-    institutional_email: initialData?.institutional_email || '',
-    institutional_website: initialData?.institutional_website || '',
-    year_established: initialData?.year_established || '',
-    report_year: initialData?.report_year || new Date().getFullYear(),
-    head_name: initialData?.head_name || '',
-    head_title: initialData?.head_title || '',
-    head_education: initialData?.head_education || '',
-    sec_registration: initialData?.sec_registration || '',
-    year_granted_approved: initialData?.year_granted_approved || '',
-    year_converted_college: initialData?.year_converted_college || '',
-    year_converted_university: initialData?.year_converted_university || ''
+    institution_uiid: '',
+    institution_name: '',
+    region: 'Region IX (Zamboanga Peninsula)',
+    province: '',
+    municipality: '',
+    address_street: '',
+    postal_code: '',
+    institutional_telephone: '',
+    institutional_fax: '',
+    head_telephone: '',
+    institutional_email: '',
+    institutional_website: '',
+    year_established: '',
+    report_year: new Date().getFullYear(),
+    head_name: '',
+    head_title: '',
+    head_education: '',
+    sec_registration: '',
+    year_granted_approved: '',
+    year_converted_college: '',
+    year_converted_university: ''
   });
 
   const [heis, setHeis] = useState([]);
@@ -51,6 +52,18 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
 
   // Use the location hook
   const { regions, provinces, municipalities, loading: locationLoading, error: locationFetchError, getMunicipalityPostalCode } = useLocationData();
+
+  // Format HEAD_TITLE_MAPPING for react-select
+  const headTitleOptions = Object.entries(HEAD_TITLE_MAPPING).map(([value, label]) => ({
+    value: Number(value),
+    label,
+  }));
+
+  // Format EDUCATIONAL_LEVEL_MAPPING for react-select
+  const educationalLevelOptions = Object.entries(EDUCATIONAL_LEVEL_MAPPING).map(([value, label]) => ({
+    value: Number(value),
+    label,
+  }));
 
   // Fetch HEIs when component mounts
   useEffect(() => {
@@ -65,15 +78,14 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      // Ensure we're setting an array
       const heisData = Array.isArray(response.data) ? response.data :
                       response.data.data ? response.data.data :
                       response.data.heis ? response.data.heis : [];
-      setHeis(heisData);
+      setHeis(heisData.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error("Error fetching HEIs:", error);
       setErrors(prev => ({ ...prev, heis: "Failed to load institutions. Please try again." }));
-      setHeis([]); // Set empty array on error
+      setHeis([]);
     } finally {
       setLoadingHeis(false);
     }
@@ -85,7 +97,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
       [field]: value
     }));
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -97,7 +108,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
   const validateForm = () => {
     const newErrors = {};
 
-    // Required fields
     if (!formData.institution_uiid.trim()) {
       newErrors.institution_uiid = "Institution UIID is required";
     }
@@ -108,17 +118,10 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
       newErrors.report_year = "Report year is required";
     }
 
-    // Email validation
     if (formData.institutional_email && !/\S+@\S+\.\S+/.test(formData.institutional_email)) {
       newErrors.institutional_email = "Please enter a valid email address";
     }
 
-    // Website validation
-    if (formData.institutional_website && !formData.institutional_website.startsWith('http')) {
-      newErrors.institutional_website = "Website must start with http:// or https://";
-    }
-
-    // Year validations
     const currentYear = new Date().getFullYear();
     if (formData.year_established && (isNaN(formData.year_established) || formData.year_established < 1800 || formData.year_established > currentYear)) {
       newErrors.year_established = "Please enter a valid year";
@@ -131,7 +134,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
     return Object.keys(newErrors).length === 0;
   };
 
-  // Format HEIs for react-select
   const uiidOptions = Array.isArray(heis) ? heis.map((hei) => ({
     value: hei.uiid,
     label: `${hei.name} (${hei.uiid})`,
@@ -139,14 +141,12 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
     uiid: hei.uiid,
   })) : [];
 
-  // Format regions for react-select
   const regionOptions = regions.map((region) => ({
     value: region.name,
     label: region.name,
     id: region.id,
   }));
 
-  // Format provinces for react-select, filtered by selected region
   const getProvinceOptions = () => {
     if (!formData.region) return [];
     const regionId = regions.find((r) => r.name === formData.region)?.id;
@@ -160,7 +160,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
       }));
   };
 
-  // Format municipalities for react-select, filtered by selected province
   const getMunicipalityOptions = () => {
     if (!formData.province) return [];
     const provinceId = provinces.find((p) => p.name === formData.province)?.id;
@@ -182,9 +181,9 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
     setFormData({
       ...formData,
       region: selectedOption ? selectedOption.value : '',
-      province: '', // Reset province when region changes
-      municipality: '', // Reset municipality when region changes
-      postal_code: '', // Reset postal code
+      province: '',
+      municipality: '',
+      postal_code: '',
     });
   };
 
@@ -192,8 +191,8 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
     setFormData({
       ...formData,
       province: selectedOption ? selectedOption.value : '',
-      municipality: '', // Reset municipality when province changes
-      postal_code: '', // Reset postal code
+      municipality: '',
+      postal_code: '',
     });
   };
 
@@ -201,25 +200,107 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
     const municipalityName = selectedOption ? selectedOption.value : '';
     const postalCode = selectedOption ? getMunicipalityPostalCode(municipalityName) : '';
 
-    setFormData({
-      ...formData,
+    let selectedRegionName = '';
+    let selectedProvinceName = '';
+
+    if (selectedOption) {
+      const selectedMunicipality = municipalities.find(m => m.name === municipalityName);
+      if (selectedMunicipality) {
+        const correspondingProvince = provinces.find(p => p.id === selectedMunicipality.province_id);
+        if (correspondingProvince) {
+          selectedProvinceName = correspondingProvince.name;
+          const correspondingRegion = regions.find(r => r.id === correspondingProvince.region_id);
+          if (correspondingRegion) {
+            selectedRegionName = correspondingRegion.name;
+          }
+        }
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      region: selectedRegionName,
+      province: selectedProvinceName,
       municipality: municipalityName,
       postal_code: postalCode,
-    });
+    }));
   };
 
   const handleSubmit = async () => {
     if (validateForm()) {
-      onSave(formData);
+      try {
+        // Check if record already exists for this HEI and year
+        const token = localStorage.getItem("token");
+        console.log('Checking for existing records:', {
+          hei_uiid: formData.institution_uiid,
+          report_year: formData.report_year,
+          hei_name: formData.institution_name
+        });
+
+        const checkResponse = await axios.get(
+          `${config.API_URL}/suc-details?hei_uiid=${formData.institution_uiid}&report_year=${formData.report_year}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log('SUC Details API Response:', checkResponse.data);
+
+        // Ensure we're properly handling the response data structure
+        const existingRecords = Array.isArray(checkResponse.data) 
+          ? checkResponse.data 
+          : checkResponse.data?.data 
+            ? checkResponse.data.data 
+            : [];
+
+        console.log('Existing SUC records found:', existingRecords);
+
+        // Check if any of the existing records are actually for this HEI and year
+        const duplicateRecord = existingRecords.find(record => 
+          record.hei_uiid === formData.institution_uiid && 
+          record.report_year === formData.report_year &&
+          !record.deleted_at // Also check if the record is not soft-deleted
+        );
+
+        console.log('Duplicate record check:', {
+          found: !!duplicateRecord,
+          record: duplicateRecord,
+          hei_uiid: formData.institution_uiid,
+          report_year: formData.report_year
+        });
+
+        if (duplicateRecord) {
+          console.log('Duplicate record found:', duplicateRecord);
+          AlertComponent.showAlert(
+            `A record for ${formData.institution_name} (UIID: ${formData.institution_uiid}) already exists for the year ${formData.report_year}. Please select a different institution or year.`, 
+            'error'
+          );
+          return;
+        }
+
+        await onSave(formData);
+        AlertComponent.showAlert('SUC institution created successfully!', 'success');
+      } catch (error) {
+        AlertComponent.showAlert(error.message || 'Failed to create SUC institution. Please try again.', 'error');
+      }
+    } else {
+      AlertComponent.showAlert('Please fill in all required fields correctly.', 'error');
     }
   };
 
   const handleClose = () => {
-    setErrors({});
-    onCancel();
+    AlertComponent.showConfirmation(
+      'Are you sure you want to cancel? Any unsaved changes will be lost.',
+      () => {
+        setErrors({});
+        onCancel();
+      }
+    );
   };
 
-  // Custom select styles to match the campus forms
   const customSelectStyles = {
     control: (base, state) => ({
       ...base,
@@ -234,22 +315,20 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
       backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : '',
       color: state.isSelected ? 'white' : '#374151',
     }),
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   };
-
-  const isEdit = modalType === "edit";
 
   return (
     <Dialog
       isOpen={true}
       onClose={handleClose}
-      title={`${isEdit ? "Edit" : "Add New"} SUC Institution`}
+      title="Add New SUC Institution"
       subtitle="State University & College Details - Region IX"
-      icon={isEdit ? Edit : Plus}
+      icon={Plus}
       variant="default"
       size="xl"
     >
       <div className="space-y-4 p-4">
-        {/* Error Messages */}
         {(errors.heis || locationFetchError) && (
           <div className="p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-800 rounded-xl shadow-sm">
             <div className="flex items-center">
@@ -257,9 +336,8 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
               {errors.heis || locationFetchError}
             </div>
           </div>
-        )}
+        )}n  
 
-        {/* Basic Information */}
         <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
           <div className="flex items-center space-x-3 mb-3">
             <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
@@ -340,9 +418,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
           </div>
         </div>
 
-        {/* Location & Contact Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Location Information */}
           <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-xl p-4 border border-emerald-200/60 shadow-sm">
             <div className="flex items-center space-x-3 mb-3">
               <div className="p-2 bg-emerald-500 rounded-lg shadow-sm">
@@ -362,7 +438,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
                   ) : (
                     <Select
                       options={regionOptions}
-                      value={regionOptions.find((option) => option.value === formData.region) || null}
+                      value={regionOptions.find((option) => String(option.value) === String(formData.region)) || null}
                       onChange={handleRegionChange}
                       placeholder="Select region..."
                       isClearable
@@ -377,7 +453,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
                   <Select
                     options={getProvinceOptions()}
-                    value={getProvinceOptions().find((option) => option.value === formData.province) || null}
+                    value={getProvinceOptions().find((option) => String(option.value) === String(formData.province)) || null}
                     onChange={handleProvinceChange}
                     placeholder="Select province..."
                     isClearable
@@ -392,7 +468,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Municipality/City</label>
                   <Select
                     options={getMunicipalityOptions()}
-                    value={getMunicipalityOptions().find((option) => option.value === formData.municipality) || null}
+                    value={getMunicipalityOptions().find((option) => String(option.value) === String(formData.municipality)) || null}
                     onChange={handleMunicipalityChange}
                     placeholder="Select municipality..."
                     isClearable
@@ -427,7 +503,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
             </div>
           </div>
 
-          {/* Contact Information */}
           <div className="bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-100 rounded-xl p-4 border border-purple-200/60 shadow-sm">
             <div className="flex items-center space-x-3 mb-3">
               <div className="p-2 bg-purple-500 rounded-lg shadow-sm">
@@ -489,9 +564,7 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
           </div>
         </div>
 
-        {/* Leadership & Legal Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Leadership Information */}
           <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 rounded-xl p-4 border border-amber-200/60 shadow-sm">
             <div className="flex items-center space-x-3 mb-3">
               <div className="p-2 bg-amber-500 rounded-lg shadow-sm">
@@ -512,12 +585,18 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={formData.head_title}
-                  onChange={(e) => handleInputChange("head_title", e.target.value)}
-                  placeholder="e.g., University President"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                <Select
+                  options={headTitleOptions}
+                  value={headTitleOptions.find((option) => Number(option.value) === Number(formData.head_title)) || null}
+                  onChange={(selectedOption) => handleInputChange("head_title", selectedOption ? selectedOption.value : '')}
+                  placeholder="Select title..."
+                  isClearable
+                  isSearchable
+                  className="text-sm"
+                  classNamePrefix="select"
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                 />
               </div>
               <div>
@@ -525,12 +604,18 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
                   <GraduationCap className="w-4 h-4 inline mr-1" />
                   Educational Background
                 </label>
-                <input
-                  type="text"
-                  value={formData.head_education}
-                  onChange={(e) => handleInputChange("head_education", e.target.value)}
-                  placeholder="e.g., PhD in Education"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                <Select
+                  options={educationalLevelOptions}
+                  value={educationalLevelOptions.find((option) => Number(option.value) === Number(formData.head_education)) || null}
+                  onChange={(selectedOption) => handleInputChange("head_education", selectedOption ? selectedOption.value : '')}
+                  placeholder="Select educational level..."
+                  isClearable
+                  isSearchable
+                  className="text-sm"
+                  classNamePrefix="select"
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                 />
               </div>
               <div>
@@ -546,7 +631,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
             </div>
           </div>
 
-          {/* Legal & Historical Information */}
           <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 rounded-xl p-4 border border-slate-200/60 shadow-sm">
             <div className="flex items-center space-x-3 mb-3">
               <div className="p-2 bg-slate-600 rounded-lg shadow-sm">
@@ -608,7 +692,6 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
           <button
             type="button"
@@ -622,21 +705,17 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className={`w-full sm:w-auto px-6 py-2.5 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center ${
-              isEdit
-                ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:ring-green-500"
-                : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500"
-            }`}
+            className="w-full sm:w-auto px-6 py-2.5 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500"
           >
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isEdit ? "Updating..." : "Creating..."}
+                Creating...
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                {isEdit ? "Update SUC" : "Create SUC"}
+                Create SUC
               </>
             )}
           </button>
@@ -646,35 +725,11 @@ function SucForm({ initialData, onSave, onCancel, modalType, loading = false }) 
   );
 }
 
-SucForm.propTypes = {
-  initialData: PropTypes.shape({
-    institution_uiid: PropTypes.string,
-    institution_name: PropTypes.string,
-    region: PropTypes.string,
-    province: PropTypes.string,
-    municipality: PropTypes.string,
-    address_street: PropTypes.string,
-    postal_code: PropTypes.string,
-    institutional_telephone: PropTypes.string,
-    institutional_fax: PropTypes.string,
-    head_telephone: PropTypes.string,
-    institutional_email: PropTypes.string,
-    institutional_website: PropTypes.string,
-    year_established: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    report_year: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    head_name: PropTypes.string,
-    head_title: PropTypes.string,
-    head_education: PropTypes.string,
-    sec_registration: PropTypes.string,
-    year_granted_approved: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    year_converted_college: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    year_converted_university: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  }),
+AddSucForm.propTypes = {
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
-  modalType: PropTypes.string.isRequired,
   closeModal: PropTypes.func.isRequired,
   loading: PropTypes.bool,
 };
 
-export default SucForm;
+export default AddSucForm; 

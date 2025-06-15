@@ -1,14 +1,26 @@
-import { GraduationCap, Phone, Mail, MoreHorizontal, Building2, BookOpen, Users, Download, Edit, Trash, FileText } from "lucide-react";
+import {
+    GraduationCap,
+    Phone,
+    Mail,
+    MoreHorizontal,
+    Building2,
+    BookOpen,
+    Users,
+    Download,
+    Edit,
+    Trash,
+    FileText,
+} from "lucide-react";
 import PropTypes from "prop-types";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Popper from "../../../../Components/Popper";
 import { useNavigate } from "react-router-dom";
 import SucDetailsView from "./SucDetailsView"; // Adjust path as needed
 import ExcelJS from "exceljs";
-import Swal from "sweetalert2";
 import axios from "axios";
 import config from "../../../../utils/config";
 import Pagination from "../../../../Components/Pagination";
+import AlertComponent from "../../../../Components/AlertComponent";
 
 // Mapping for head titles
 const HEAD_TITLE_MAPPING = {
@@ -35,11 +47,23 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
+    // Reset currentPage to 1 whenever data prop changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [data]);
+
+    // Sort data alphabetically by institution name
+    const sortedData = [...data].sort((a, b) => {
+        const nameA = a.institution_name || a.hei_name || "";
+        const nameB = b.institution_name || b.hei_name || "";
+        return nameA.localeCompare(nameB);
+    });
+
     // Calculate pagination
-    const totalPages = Math.ceil(data.length / pageSize);
+    const totalPages = Math.ceil(sortedData.length / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    const currentData = data.slice(startIndex, endIndex);
+    const currentData = sortedData.slice(startIndex, endIndex);
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
@@ -64,11 +88,14 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
             formE2: `/super-admin/institutions/suc/form-e2/${SucDetailId}`,
             formGH: `/super-admin/institutions/suc/form-gh/${SucDetailId}`,
             research: `/super-admin/institutions/suc/research/${SucDetailId}`,
-            graduates: `/super-admin/institutions/suc/graduates/${SucDetailId}`
+            graduates: `/super-admin/institutions/suc/graduates/${SucDetailId}`,
         };
 
         navigate(routes[type], {
-            state: { heiName: suc.hei_name || suc.institution_name, heiUiid: suc.hei_uiid },
+            state: {
+                heiName: suc.hei_name || suc.institution_name,
+                heiUiid: suc.hei_uiid,
+            },
         });
     };
 
@@ -93,22 +120,9 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                 "handleExportToFormA confirmation triggered for",
                 institution.institution_name || institution.hei_name
             );
-            Swal.fire({
-                title: "Confirm Export",
-                text: `Do you want to export Form A for ${institution.institution_name || institution.hei_name}?`,
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Export",
-                cancelButtonText: "Cancel",
-                customClass: {
-                    popup: "swal2-popup",
-                    title: "text-lg font-semibold text-gray-900",
-                    content: "text-gray-600",
-                },
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+            AlertComponent.showConfirmation(
+                `Do you want to export Form A for ${institution.institution_name || institution.hei_name}?`,
+                async () => {
                     setLoading((prev) => ({ ...prev, exportFormA: true }));
                     try {
                         updateProgress && updateProgress(10);
@@ -129,13 +143,22 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
 
                         // Map SUC data fields to Form A1 structure (based on the template image)
                         const a1Fields = [
-                            { row: 4, cell: 3, key: "institution_name", altKey: "hei_name" }, // Institution Name
+                            {
+                                row: 4,
+                                cell: 3,
+                                key: "institution_name",
+                                altKey: "hei_name",
+                            }, // Institution Name
                             { row: 7, cell: 3, key: "address_street" }, // Street
                             { row: 8, cell: 3, key: "municipality" }, // Municipality/City
                             { row: 9, cell: 3, key: "province" }, // Province
                             { row: 10, cell: 3, key: "region" }, // Region
                             { row: 11, cell: 3, key: "postal_code" }, // Postal or Zip Code
-                            { row: 12, cell: 3, key: "institutional_telephone" }, // Institutional Telephone
+                            {
+                                row: 12,
+                                cell: 3,
+                                key: "institutional_telephone",
+                            }, // Institutional Telephone
                             { row: 13, cell: 3, key: "institutional_fax" }, // Institutional Fax No.
                             { row: 14, cell: 3, key: "head_telephone" }, // Institutional Head's Telephone
                             { row: 15, cell: 3, key: "institutional_email" }, // Institutional E-mail Address
@@ -144,19 +167,33 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                             { row: 18, cell: 3, key: "sec_registration" }, // Latest SEC Registration/Enabling Law or Charter
                             { row: 19, cell: 3, key: "year_granted_approved" }, // Year Granted or Approved
                             { row: 20, cell: 3, key: "year_converted_college" }, // Year Converted to College Status
-                            { row: 21, cell: 3, key: "year_converted_university" }, // Year Converted to University Status
+                            {
+                                row: 21,
+                                cell: 3,
+                                key: "year_converted_university",
+                            }, // Year Converted to University Status
                             { row: 22, cell: 3, key: "head_name" }, // Name of Institutional Head
-                            { row: 23, cell: 3, key: "head_title", transform: getHeadTitle }, // Title of Head of Institution
+                            {
+                                row: 23,
+                                cell: 3,
+                                key: "head_title",
+                                transform: getHeadTitle,
+                            }, // Title of Head of Institution
                             { row: 24, cell: 3, key: "head_education" }, // Highest Educational Attainment of the Head
                         ];
 
-                        a1Fields.forEach(({ row, cell, key, altKey, transform }) => {
-                            let value = institution[key] || (altKey ? institution[altKey] : "") || "";
-                            if (transform && value) {
-                                value = transform(value);
+                        a1Fields.forEach(
+                            ({ row, cell, key, altKey, transform }) => {
+                                let value =
+                                    institution[key] ||
+                                    (altKey ? institution[altKey] : "") ||
+                                    "";
+                                if (transform && value) {
+                                    value = transform(value);
+                                }
+                                sheetA1.getRow(row).getCell(cell).value = value;
                             }
-                            sheetA1.getRow(row).getCell(cell).value = value;
-                        });
+                        );
 
                         updateProgress && updateProgress(20);
                         const token = localStorage.getItem("token");
@@ -170,9 +207,15 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                         let campuses = [];
                         if (Array.isArray(campusData)) {
                             campuses = campusData;
-                        } else if (campusData.campuses && Array.isArray(campusData.campuses)) {
+                        } else if (
+                            campusData.campuses &&
+                            Array.isArray(campusData.campuses)
+                        ) {
                             campuses = campusData.campuses;
-                        } else if (campusData.data && Array.isArray(campusData.data)) {
+                        } else if (
+                            campusData.data &&
+                            Array.isArray(campusData.data)
+                        ) {
                             campuses = campusData.data;
                         }
 
@@ -183,7 +226,11 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                         sheetA2.eachRow((row, rowNumber) => {
                             let foundMarker = false;
                             row.eachCell((cell) => {
-                                if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
+                                if (
+                                    cell.value &&
+                                    String(cell.value).trim() ===
+                                        "START BELOW THIS ROW"
+                                ) {
                                     foundMarker = true;
                                     return false; // Stop iterating cells in this row
                                 }
@@ -195,7 +242,9 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                         });
 
                         if (a2StartRow === -1) {
-                            console.error("Could not find 'START BELOW THIS ROW' marker in FORM A2. Campus data will not be exported.");
+                            console.error(
+                                "Could not find 'START BELOW THIS ROW' marker in FORM A2. Campus data will not be exported."
+                            );
                             // Optionally throw an error or handle this case appropriately
                         } else {
                             // Form A2 - Campus data
@@ -206,18 +255,29 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                 row.getCell(1).value = index + 1; // Seq No.
                                 row.getCell(2).value = campus.name || ""; // NAME OF THE SUC CAMPUS
                                 row.getCell(3).value = campus.campus_type || ""; // MAIN OR SATELLITE
-                                row.getCell(4).value = campus.institutional_code || ""; // INSTITUTIONAL CODE
+                                row.getCell(4).value =
+                                    campus.institutional_code || ""; // INSTITUTIONAL CODE
                                 row.getCell(5).value = campus.region || ""; // REGION
-                                row.getCell(6).value = campus.province_municipality || ""; // MUNICIPALITY/CITY AND PROVINCE
-                                row.getCell(7).value = campus.year_first_operation || ""; // YEAR OF FIRST OPERATION
-                                row.getCell(8).value = campus.land_area_hectares || "0.0"; // LAND AREA IN HECTARES
-                                row.getCell(9).value = campus.distance_from_main || "0.0"; // DISTANCE FROM MAIN CAMPUS (KM)
-                                row.getCell(10).value = campus.autonomous_code || ""; // AUTONOMOUS FROM THE MAIN CAMPUS
-                                row.getCell(11).value = campus.position_title || ""; // POSITION TITLE OF HIGHEST OFFICIAL
-                                row.getCell(12).value = campus.head_full_name || ""; // FULL NAME OF HIGHEST OFFICIAL
-                                row.getCell(13).value = campus.former_name || ""; // FORMER NAME OF THE CAMPUS
-                                row.getCell(14).value = campus.latitude_coordinates || "0.0"; // LATITUDE COORDINATES
-                                row.getCell(15).value = campus.longitude_coordinates || "0.0"; // LONGITUDE COORDINATES
+                                row.getCell(6).value =
+                                    campus.province_municipality || ""; // MUNICIPALITY/CITY AND PROVINCE
+                                row.getCell(7).value =
+                                    campus.year_first_operation || ""; // YEAR OF FIRST OPERATION
+                                row.getCell(8).value =
+                                    campus.land_area_hectares || "0.0"; // LAND AREA IN HECTARES
+                                row.getCell(9).value =
+                                    campus.distance_from_main || "0.0"; // DISTANCE FROM MAIN CAMPUS (KM)
+                                row.getCell(10).value =
+                                    campus.autonomous_code || ""; // AUTONOMOUS FROM THE MAIN CAMPUS
+                                row.getCell(11).value =
+                                    campus.position_title || ""; // POSITION TITLE OF HIGHEST OFFICIAL
+                                row.getCell(12).value =
+                                    campus.head_full_name || ""; // FULL NAME OF HIGHEST OFFICIAL
+                                row.getCell(13).value =
+                                    campus.former_name || ""; // FORMER NAME OF THE CAMPUS
+                                row.getCell(14).value =
+                                    campus.latitude_coordinates || "0.0"; // LATITUDE COORDINATES
+                                row.getCell(15).value =
+                                    campus.longitude_coordinates || "0.0"; // LONGITUDE COORDINATES
 
                                 row.commit();
                             });
@@ -225,10 +285,14 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
 
                         updateProgress && updateProgress(100);
                         const fileName = `${
-                            institution.institution_uiid || institution.hei_uiid || "0000"
-                        }_${institution.institution_name || institution.hei_name || "Unknown"}_SUC_${
-                            new Date().toISOString().split("T")[0]
-                        }.xlsx`;
+                            institution.institution_uiid ||
+                            institution.hei_uiid ||
+                            "0000"
+                        }_${
+                            institution.institution_name ||
+                            institution.hei_name ||
+                            "Unknown"
+                        }_SUC_${new Date().toISOString().split("T")[0]}.xlsx`;
 
                         const buffer = await workbook.xlsx.writeBuffer();
                         const blob = new Blob([buffer], {
@@ -247,38 +311,29 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                         if (createLog) {
                             await createLog({
                                 action: "Export Institution",
-                                description: `Exported Form A for institution: ${institution.institution_name || institution.hei_name}`,
+                                description: `Exported Form A for institution: ${
+                                    institution.institution_name ||
+                                    institution.hei_name
+                                }`,
                             });
                         }
 
-                        Swal.fire({
-                            title: "Success!",
-                            text: "Form A exported successfully.",
-                            icon: "success",
-                            timer: 2000,
-                            showConfirmButton: false,
-                        });
-
+                        AlertComponent.showAlert("Form A exported successfully.", "success");
                     } catch (error) {
                         console.error("Error exporting Form A:", error);
-                        Swal.fire({
-                            title: "Error!",
-                            text: "Failed to export Form A. Please try again.",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                        });
+                        AlertComponent.showAlert("Failed to export Form A. Please try again.", "error");
                     } finally {
                         setLoading((prev) => ({ ...prev, exportFormA: false }));
                     }
                 }
-            });
+            );
         },
         [updateProgress, createLog]
     );
 
     return (
         <>
-            <div className="relative w-full p-4">
+            <div className="relative w-full px-4 py-2">
                 <div className="overflow-x-auto overflow-y-auto max-h-[55vh] rounded-lg border border-gray-200 shadow-sm">
                     <table className="min-w-full divide-y divide-gray-200 table-fixed">
                         <thead className="bg-gray-50 sticky top-0 z-10">
@@ -339,11 +394,15 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-gray-900 flex items-center">
                                             <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
-                                            <span className="truncate">{suc.institutional_telephone}</span>
+                                            <span className="truncate">
+                                                {suc.institutional_telephone}
+                                            </span>
                                         </div>
                                         <div className="text-sm text-gray-500 flex items-center">
                                             <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
-                                            <span className="truncate">{suc.institutional_email}</span>
+                                            <span className="truncate">
+                                                {suc.institutional_email}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -372,81 +431,15 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                             offset={[0, 4]}
                                         >
                                             <div className="py-1">
-
-
-                                                <div className="border-t border-gray-100 my-1"></div>
-
-                                                {/* Forms Section */}
-                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">Forms</div>
-                                                <button
-                                                    onClick={() => handleView(suc, 'campuses')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <Building2 className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                    Campuses (Form A2)
-                                                </button>
-                                                <button
-                                                    onClick={() => handleView(suc, 'programs')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 focus:outline-none focus:bg-purple-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <BookOpen className="w-4 h-4 mr-3 text-purple-500 group-hover:text-purple-600" />
-                                                    Curricular Programs (Form B)
-                                                </button>
-                                                <button
-                                                    onClick={() => handleView(suc, 'formE1')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <Users className="w-4 h-4 mr-3 text-indigo-500 group-hover:text-indigo-600" />
-                                                    Manage Faculty (Form E1)
-                                                </button>
-                                                <button
-                                                    onClick={() => handleView(suc, 'formE2')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 focus:outline-none focus:bg-teal-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <FileText className="w-4 h-4 mr-3 text-teal-500 group-hover:text-teal-600" />
-                                                    Manage Faculty (Form E2)
-                                                </button>
-                                                <button
-                                                    onClick={() => handleView(suc, 'formGH')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-amber-50 focus:outline-none focus:bg-amber-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <FileText className="w-4 h-4 mr-3 text-amber-500 group-hover:text-amber-600" />
-                                                    Financial Data (Form G-H)
-                                                </button>
-
-                                                <div className="border-t border-gray-100 my-1"></div>
-
-                                                {/* Additional Data Section */}
-                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">Additional Data</div>
-                                                <button
-                                                    onClick={() => handleView(suc, 'research')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                    Manage Research
-                                                </button>
-                                                <button
-                                                    onClick={() => handleView(suc, 'graduates')}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 focus:outline-none focus:bg-emerald-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <GraduationCap className="w-4 h-4 mr-3 text-emerald-500 group-hover:text-emerald-600" />
-                                                    View Graduates
-                                                </button>
-
-                                                <div className="border-t border-gray-100 my-1"></div>
-
                                                 {/* Actions Section */}
-                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">Actions</div>
+                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">
+                                                    Actions
+                                                </div>
                                                 {/* View Details Section */}
                                                 <button
-                                                    onClick={() => handleViewDetails(suc)}
+                                                    onClick={() =>
+                                                        handleViewDetails(suc)
+                                                    }
                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition-colors duration-150 group"
                                                     role="menuitem"
                                                 >
@@ -462,22 +455,137 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                                     Edit Institution
                                                 </button>
                                                 <button
-                                                    onClick={() => handleExportToFormA(suc)}
-                                                    disabled={loading.exportFormA}
+                                                    onClick={() =>
+                                                        handleExportToFormA(suc)
+                                                    }
+                                                    disabled={
+                                                        loading.exportFormA
+                                                    }
                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 group disabled:opacity-50 disabled:cursor-not-allowed"
                                                     role="menuitem"
                                                 >
                                                     <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-gray-600" />
-                                                    {loading.exportFormA ? "Exporting..." : "Export to Excel"}
+                                                    {loading.exportFormA
+                                                        ? "Exporting..."
+                                                        : "Export to Excel"}
                                                 </button>
                                                 <button
-                                                    onClick={() => onDelete(suc.id)}
+                                                    onClick={() =>
+                                                        onDelete(suc.id)
+                                                    }
                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150 group"
                                                     role="menuitem"
                                                 >
                                                     <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
                                                     Delete Institution
                                                 </button>
+
+                                                <div className="border-t border-gray-100 my-1"></div>
+
+                                                {/* Forms Section */}
+                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">
+                                                    Forms
+                                                </div>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "campuses"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Building2 className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                    Campuses (Form A2)
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "programs"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-purple-50 focus:outline-none focus:bg-purple-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <BookOpen className="w-4 h-4 mr-3 text-purple-500 group-hover:text-purple-600" />
+                                                    Curricular Programs (Form B)
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "formE1"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Users className="w-4 h-4 mr-3 text-indigo-500 group-hover:text-indigo-600" />
+                                                    Manage Faculty (Form E1)
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "formE2"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 focus:outline-none focus:bg-teal-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-3 text-teal-500 group-hover:text-teal-600" />
+                                                    Manage Faculty (Form E2)
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "formGH"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-amber-50 focus:outline-none focus:bg-amber-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-3 text-amber-500 group-hover:text-amber-600" />
+                                                    Financial Data (Form G-H)
+                                                </button>
+
+                                                <div className="border-t border-gray-100 my-1"></div>
+
+                                                {/* Additional Data Section */}
+                                                <div className="px-2 py-1 text-xs font-medium text-gray-500">
+                                                    Additional Data
+                                                </div>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "research"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                    Manage Research
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleView(
+                                                            suc,
+                                                            "graduates"
+                                                        )
+                                                    }
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-emerald-50 focus:outline-none focus:bg-emerald-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <GraduationCap className="w-4 h-4 mr-3 text-emerald-500 group-hover:text-emerald-600" />
+                                                    View Graduates
+                                                </button>
+
+                                                <div className="border-t border-gray-100 my-1"></div>
                                             </div>
                                         </Popper>
                                     </td>
@@ -495,8 +603,8 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                                                 No SUCs found
                                             </p>
                                             <p className="text-sm">
-                                                Try adjusting your search terms or
-                                                add a new SUC.
+                                                Try adjusting your search terms
+                                                or add a new SUC.
                                             </p>
                                         </div>
                                     </td>
@@ -505,7 +613,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
                         </tbody>
                     </table>
                 </div>
-                <div className="m-2 flex justify-end">
+                <div className="mt-2 flex justify-end">
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -549,7 +657,10 @@ SucDataTable.propTypes = {
                 PropTypes.number,
             ]),
             head_name: PropTypes.string,
-            head_title: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            head_title: PropTypes.oneOfType([
+                PropTypes.string,
+                PropTypes.number,
+            ]),
             year_converted_university: PropTypes.oneOfType([
                 PropTypes.string,
                 PropTypes.number,

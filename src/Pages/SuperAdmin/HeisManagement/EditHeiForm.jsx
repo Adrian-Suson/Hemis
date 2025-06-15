@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Dialog from '../../../Components/Dialog';
+import { Building2 } from 'lucide-react';
 
 function EditHeiForm({ isOpen, onClose, onSave, hei, loading, clusters }) {
     const [formData, setFormData] = useState({
@@ -59,10 +60,38 @@ function EditHeiForm({ isOpen, onClose, onSave, hei, loading, clusters }) {
         }
     };
 
+    const footer = (
+        <div className="flex justify-end space-x-3">
+            <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+                Cancel
+            </button>
+            <button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {loading ? "Saving..." : "Save Changes"}
+            </button>
+        </div>
+    );
+
     return (
-        <Dialog isOpen={isOpen} onClose={onClose} title="Edit HEI">
-            <form onSubmit={handleSubmit} className="p-4">
-                <div className="space-y-4">
+        <Dialog
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Edit HEI"
+            subtitle="Update the details of the Higher Education Institution"
+            icon={Building2}
+            footer={footer}
+            size="sm"
+        >
+            <div className="p-6">
+                <form className="space-y-4">
                     <div>
                         <label
                             htmlFor="uiid"
@@ -160,25 +189,8 @@ function EditHeiForm({ isOpen, onClose, onSave, hei, loading, clusters }) {
                             <p className="mt-1 text-sm text-red-600">{errors.cluster_id}</p>
                         )}
                     </div>
-                </div>
-
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? "Saving..." : "Save Changes"}
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </Dialog>
     );
 }

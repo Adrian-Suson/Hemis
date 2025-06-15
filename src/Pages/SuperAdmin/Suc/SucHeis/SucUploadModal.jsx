@@ -1,43 +1,32 @@
 import { useState, useEffect } from "react";
 import {
-  X,
   Upload,
   FileSpreadsheet,
   AlertCircle,
-  CheckCircle,
   Building2,
-  MapPin,
   Calendar,
   Info,
   FileText,
   Database,
-  Globe,
-  Plus
+  Globe
 } from "lucide-react";
 import Select from "react-select";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import config from "../../../../utils/config";
 import PropTypes from "prop-types";
-import useLocationData from "../../../../Hooks/useLocationData";
 import Dialog from "../../../../Components/Dialog";
 import AlertComponent from "../../../../Components/AlertComponent";
+import { useLoading } from "../../../../Context/LoadingContext";
 
 function SucUploadModal({ isOpen, onClose, onDataImported }) {
-  const [uploadStatus, setUploadStatus] = useState(null); // null, 'loading', 'success', 'error'
-  const [uploadMessage, setUploadMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [heis, setHeis] = useState([]);
   const [selectedHei, setSelectedHei] = useState(null);
   const [loadingHeis, setLoadingHeis] = useState(false);
   const [errors, setErrors] = useState({});
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedRegion, setSelectedRegion] = useState(null);
-  const [selectedProvince, setSelectedProvince] = useState(null);
-  const [selectedMunicipality, setSelectedMunicipality] = useState(null);
-
-  // Use the custom hook to fetch location data
-  const { regions, provinces, municipalities, loading, error } = useLocationData();
+  const { showLoading, hideLoading, updateProgress } = useLoading();
 
   // Create heiOptions from heis state for react-select
   const heiOptions = Array.isArray(heis)
@@ -59,12 +48,13 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const fetchHeis = async () => {
     setLoadingHeis(true);
     try {
-      const response = await axios.get(`${config.API_URL}/admin/heis?type=SUC`, {
+      const response = await axios.get(`${config.API_URL}/heis?type=SUC`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      setHeis(response.data);
+      const heiData = Array.isArray(response.data) ? response.data : response.data.data || [];
+      setHeis(heiData.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error("Error fetching HEIs:", error);
       setErrors(prev => ({ ...prev, heis: "Failed to load institutions. Please try again." }));
@@ -89,56 +79,6 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     }
   };
 
-  // Format regions for react-select
-  const regionOptions = Array.isArray(regions)
-    ? regions.map((region) => ({
-        value: region.name,
-        label: region.name,
-        id: region.id,
-      }))
-    : [];
-
-  // Format provinces for react-select based on selected region
-  const provinceOptions = Array.isArray(provinces)
-    ? provinces
-        .filter((province) => province.region.name === selectedRegion)
-        .map((province) => ({
-          value: province.name,
-          label: province.name,
-          id: province.id,
-        }))
-    : [];
-
-  // Format municipalities for react-select based on selected province
-  const municipalityOptions = Array.isArray(municipalities)
-    ? municipalities
-        .filter((municipality) => municipality.province.name === selectedProvince)
-        .map((municipality) => ({
-          value: municipality.name,
-          label: municipality.name,
-        }))
-    : [];
-
-  const handleRegionChange = (selectedOption) => {
-    setSelectedRegion(selectedOption ? selectedOption.value : null);
-    setSelectedProvince(null);
-    setSelectedMunicipality(null);
-  };
-
-  const handleProvinceChange = (selectedOption) => {
-    setSelectedProvince(selectedOption ? selectedOption.value : null);
-    setSelectedMunicipality(null);
-  };
-
-  const handleMunicipalityChange = (selectedOption) => {
-    setSelectedMunicipality(selectedOption ? selectedOption.value : null);
-  };
-
-  // Function to clear upload status
-  const clearUploadStatus = () => {
-    setUploadStatus(null);
-    setUploadMessage("");
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -209,8 +149,6 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     "99": "Not known or not indicated",
   };
 
-
-
   // Parsing helper functions
   const toNullableInteger = (value) => {
     if (!value || value === "N/A" || value === "") return null;
@@ -247,6 +185,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     // Validate form before processing
     if (!validateForm()) {
       AlertComponent.showAlert("Please fill in all required fields before uploading.", "error");
+      onClose(); // Close the modal
       return;
     }
 
@@ -258,15 +197,17 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     ];
     if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
         AlertComponent.showAlert("Please upload a valid Excel file (.xlsx, .xls) or CSV file.", "error");
+        onClose(); // Close the modal
         return;
     }
 
     setIsUploading(true);
-    setUploadStatus("loading");
-    setUploadMessage("Processing Excel file...");
+    showLoading();
+    updateProgress(10);
 
     try {
         const buffer = await file.arrayBuffer();
+        updateProgress(30);
         const workbook = XLSX.read(buffer, {
             cellStyles: true,
             cellFormulas: true,
@@ -275,6 +216,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
             sheetStubs: true,
             type: "array",
         });
+        updateProgress(50);
 
         // Identify HEMIS sheets
         const hemisSheets = workbook.SheetNames.filter(
@@ -296,10 +238,11 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
         await processAllHemisSheets(workbook, hemisSheets);
     } catch (error) {
         console.error("Excel upload error:", error);
-        setUploadStatus("error");
-        setUploadMessage(`Error processing Excel file: ${error.message}`);
+        AlertComponent.showAlert(error.message || "Failed to process Excel file. Please try again.", "error");
+        onClose(); // Close the modal on error
     } finally {
         setIsUploading(false);
+        hideLoading();
         event.target.value = "";
     }
   };
@@ -314,9 +257,16 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
     const formA1Sheets = hemisSheets.filter((sheet) => sheet.type === "A1");
     for (const sheet of formA1Sheets) {
         try {
-            setUploadMessage(`Processing ${sheet.description} from ${sheet.name}...`);
             const worksheet = workbook.Sheets[sheet.name];
             const a1Records = await processFormA1(worksheet);
+            
+            // If processFormA1 returns empty array, it means there was an error (like duplicate record)
+            // and we should stop processing
+            if (a1Records.length === 0) {
+                onClose(); // Close the modal when there's an error
+                return; // Exit early, error message is already shown by processFormA1
+            }
+            
             if (a1Records.length > 0) {
                 institutionId = a1Records[0].institution.id;
                 createdRecords.push(...a1Records);
@@ -325,44 +275,97 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
         } catch (error) {
             console.error(`Error processing sheet ${sheet.name}:`, error);
             errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
+            onClose(); // Close the modal on error
+            return;
         }
     }
 
-    // Process Form A2 with the obtained institution_id
-    const formA2Sheets = hemisSheets.filter((sheet) => sheet.type === "A2");
-    for (const sheet of formA2Sheets) {
-        try {
-            setUploadMessage(`Processing ${sheet.description} from ${sheet.name}...`);
-            const worksheet = workbook.Sheets[sheet.name];
-            const a2Records = await processFormA2(worksheet, institutionId);
-            createdRecords.push(...a2Records);
-            successMessage += `Imported ${a2Records.length} campus records from ${sheet.name}. `;
-        } catch (error) {
-            console.error(`Error processing sheet ${sheet.name}:`, error);
-            errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
+    // Only process Form A2 if we successfully processed Form A1
+    if (institutionId) {
+        const formA2Sheets = hemisSheets.filter((sheet) => sheet.type === "A2");
+        for (const sheet of formA2Sheets) {
+            try {
+                const worksheet = workbook.Sheets[sheet.name];
+                const a2Records = await processFormA2(worksheet, institutionId);
+                createdRecords.push(...a2Records);
+                successMessage += `Imported ${a2Records.length} campus records from ${sheet.name}. `;
+            } catch (error) {
+                console.error(`Error processing sheet ${sheet.name}:`, error);
+                errors.push(`Error in ${sheet.name}: ${error.response?.data?.error || error.message}`);
+                onClose(); // Close the modal on error
+                return;
+            }
         }
     }
 
     if (createdRecords.length > 0) {
         onDataImported(createdRecords);
-        setUploadStatus("success");
-        setUploadMessage(successMessage.trim());
-
-        // Reset state
-        setSelectedHei(null);
-        setSelectedRegion(null);
-        setSelectedProvince(null);
-        setSelectedMunicipality(null);
-        setErrors({});
-    } else {
-        setUploadStatus("error");
-        setUploadMessage(`No valid data imported. Errors: ${errors.join("; ")}`);
+        AlertComponent.showAlert(successMessage.trim(), 'success');
+        onClose(); // Close the modal on success
+    } else if (errors.length > 0) {
+        AlertComponent.showAlert(`No valid data imported. Errors: ${errors.join("; ")}`, 'error');
+        onClose(); // Close the modal on error
     }
   };
 
   const processFormA1 = async (worksheet) => {
     try {
-      setUploadMessage("Processing Form A1 data and saving to database...");
+      // Check if record already exists for this HEI and year
+      const token = localStorage.getItem("token");
+      console.log('Checking for existing records:', {
+        hei_uiid: selectedHei?.uiid,
+        report_year: selectedYear,
+        hei_name: selectedHei?.name
+      });
+
+      // Check for existing SUC details
+      const checkResponse = await axios.get(
+        `${config.API_URL}/suc-details?hei_uiid=${selectedHei?.uiid}&report_year=${selectedYear}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log('SUC Details API Response:', checkResponse.data);
+
+      // Ensure we're properly handling the response data structure
+      const existingRecords = Array.isArray(checkResponse.data) 
+        ? checkResponse.data 
+        : checkResponse.data?.data 
+          ? checkResponse.data.data 
+          : [];
+
+      console.log('Existing SUC records found:', existingRecords);
+
+      // Check if any of the existing records are actually for this HEI and year
+      const duplicateRecord = existingRecords.find(record => 
+        record.hei_uiid === selectedHei?.uiid && 
+        record.report_year === selectedYear &&
+        !record.deleted_at // Also check if the record is not soft-deleted
+      );
+
+      console.log('Duplicate record check:', {
+        found: !!duplicateRecord,
+        record: duplicateRecord,
+        hei_uiid: selectedHei?.uiid,
+        report_year: selectedYear
+      });
+
+      if (duplicateRecord) {
+        console.log('Duplicate record found:', duplicateRecord);
+        AlertComponent.showAlert(
+          `A record for ${selectedHei?.name} (UIID: ${selectedHei?.uiid}) already exists for the year ${selectedYear}. Please select a different institution or year.`, 
+          'error'
+        );
+        setSelectedHei(null); // Clear the selected HEI
+        onClose(); // Close the modal
+        return []; // Return empty array to prevent further processing
+      }
+
+      updateProgress(60); // Update progress after checking for existing records
 
       const jsonData = XLSX.utils.sheet_to_json(worksheet, {
         header: 1,
@@ -372,10 +375,11 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
 
       const extractedInstitution = {
         hei_uiid: selectedHei?.uiid || "",
-        region: parseString(selectedRegion) || null,
-        province: parseString(selectedProvince) || null,
-        municipality: parseString(selectedMunicipality) || null,
+        cluster_id: selectedHei?.cluster?.id || null,
         address_street: parseString(jsonData[7]?.[2] || ""),
+        municipality: parseString(jsonData[8]?.[2] || ""),
+        province: parseString(jsonData[9]?.[2] || ""),
+        region: parseString(jsonData[10]?.[2] || ""),
         postal_code: parseString(jsonData[11]?.[2] || ""),
         institutional_telephone: parseString(jsonData[12]?.[2] || ""),
         institutional_fax: parseString(jsonData[13]?.[2] || ""),
@@ -394,7 +398,8 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
         report_year: parseInteger(selectedYear, 1800, new Date().getFullYear()),
       };
 
-      const token = localStorage.getItem("token");
+      updateProgress(80); // Update progress before saving to database
+
       const institutionResponse = await axios.post(
         `${config.API_URL}/suc-details`,
         extractedInstitution,
@@ -411,17 +416,19 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
         throw new Error("Invalid institution ID received from server.");
       }
 
+      updateProgress(90); // Update progress after successful save
+
       return [{ institution: { id: institutionId, ...extractedInstitution } }];
     } catch (error) {
       console.error("Form A1 processing error:", error);
-      throw new Error(error.response?.data?.error || `Failed to process Form A1: ${error.message}`);
+      AlertComponent.showAlert(error.response?.data?.error || `Failed to process Form A1: ${error.message}`, 'error');
+      onClose(); // Close the modal on error
+      throw error;
     }
   };
 
   const processFormA2 = async (worksheet, institutionId) => {
     try {
-        setUploadMessage("Processing Form A2 data and saving to database...");
-
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             header: 1,
             defval: "",
@@ -483,12 +490,8 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
 
   const handleClose = () => {
     setErrors({});
-    setUploadStatus(null);
-    setUploadMessage("");
     setSelectedHei(null);
-    setSelectedRegion(null);
-    setSelectedProvince(null);
-    setSelectedMunicipality(null);
+    setSelectedYear(new Date().getFullYear());
     onClose();
   };
 
@@ -505,32 +508,6 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
       size="xl"
     >
       <div className="space-y-4 p-4">
-        {/* Upload Status Alert */}
-        {uploadStatus && (
-          <div className={`p-4 rounded-xl border shadow-sm ${
-            uploadStatus === "success"
-              ? "bg-green-50/80 border-green-200 text-green-800"
-              : uploadStatus === "error"
-              ? "bg-red-50/80 border-red-200 text-red-800"
-              : "bg-blue-50/80 border-blue-200 text-blue-800"
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                {uploadStatus === "success" && <CheckCircle className="w-5 h-5 mr-2" />}
-                {uploadStatus === "error" && <AlertCircle className="w-5 h-5 mr-2" />}
-                {uploadStatus === "loading" && (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-800 mr-2"></div>
-                )}
-                <span className="font-medium">{uploadMessage}</span>
-              </div>
-              {uploadStatus !== "loading" && (
-                <button onClick={clearUploadStatus} className="text-gray-500 hover:text-gray-700 transition-colors duration-200">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Institution & Year Selection */}
         <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
@@ -605,76 +582,6 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
           </div>
         </div>
 
-        {/* Location Selection */}
-        <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 rounded-xl p-4 border border-emerald-200/60 shadow-sm">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="p-2 bg-emerald-500 rounded-lg shadow-sm">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-base font-semibold text-gray-900">Location (Optional)</h3>
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-emerald-600 mr-2"></div>
-              <span className="text-sm text-gray-500">Loading location data...</span>
-            </div>
-          ) : error ? (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1" />
-                {error}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
-                <Select
-                  options={regionOptions}
-                  value={regionOptions.find((option) => option.value === selectedRegion) || null}
-                  onChange={handleRegionChange}
-                  placeholder="Select region..."
-                  isClearable
-                  isSearchable
-                  className="text-sm"
-                  classNamePrefix="select"
-                  styles={customSelectStyles}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                <Select
-                  options={provinceOptions}
-                  value={provinceOptions.find((option) => option.value === selectedProvince) || null}
-                  onChange={handleProvinceChange}
-                  placeholder={selectedRegion ? "Select province..." : "Select region first"}
-                  isClearable
-                  isSearchable
-                  isDisabled={!selectedRegion}
-                  className="text-sm"
-                  classNamePrefix="select"
-                  styles={customSelectStyles}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Municipality</label>
-                <Select
-                  options={municipalityOptions}
-                  value={municipalityOptions.find((option) => option.value === selectedMunicipality) || null}
-                  onChange={handleMunicipalityChange}
-                  placeholder={selectedProvince ? "Select municipality..." : "Select province first"}
-                  isClearable
-                  isSearchable
-                  isDisabled={!selectedProvince}
-                  className="text-sm"
-                  classNamePrefix="select"
-                  styles={customSelectStyles}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Upload Instructions */}
         <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 rounded-xl p-4 border border-amber-200/60 shadow-sm">
           <div className="flex items-center space-x-3 mb-3">
@@ -728,55 +635,51 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
               disabled={isUploading || !selectedHei}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             />
-            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+            <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-all duration-200 ${
               !selectedHei || isUploading
                 ? "border-gray-200 bg-gray-50/50"
                 : "border-slate-300 hover:border-slate-400 hover:bg-slate-50/50 bg-white"
             }`}>
-              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                !selectedHei || isUploading
-                  ? "bg-gray-100"
-                  : "bg-gradient-to-br from-slate-100 to-slate-200"
-              }`}>
-                {isUploading ? (
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
-                ) : (
-                  <Upload className={`w-8 h-8 ${!selectedHei ? "text-gray-300" : "text-slate-600"}`} />
-                )}
+              <div className="flex items-center justify-center space-x-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  !selectedHei || isUploading
+                    ? "bg-gray-100"
+                    : "bg-gradient-to-br from-slate-100 to-slate-200"
+                }`}>
+                  {isUploading ? (
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600"></div>
+                  ) : (
+                    <Upload className={`w-5 h-5 ${!selectedHei ? "text-gray-300" : "text-slate-600"}`} />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className={`text-sm font-medium ${
+                    !selectedHei || isUploading ? "text-gray-400" : "text-gray-900"
+                  }`}>
+                    {isUploading ? "Processing File..." : "Choose Excel File to Upload"}
+                  </p>
+                  <p className={`text-xs ${
+                    !selectedHei || isUploading ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                    Drag and drop or click to browse
+                  </p>
+                </div>
               </div>
-              <p className={`text-lg font-semibold mb-2 ${
-                !selectedHei || isUploading ? "text-gray-400" : "text-gray-900"
-              }`}>
-                {isUploading ? "Processing File..." : "Choose Excel File to Upload"}
-              </p>
-              <p className={`text-sm mb-2 ${
-                !selectedHei || isUploading ? "text-gray-400" : "text-gray-600"
-              }`}>
-                Drag and drop or click to browse
-              </p>
-              <div className="flex flex-wrap justify-center gap-2 mb-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <div className="flex flex-wrap justify-center gap-1 mt-2">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   .xlsx
                 </span>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                   .xls
                 </span>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                   .csv
                 </span>
               </div>
               {!selectedHei && (
-                <div className="flex items-center justify-center mt-3">
-                  <AlertCircle className="w-4 h-4 text-red-500 mr-1" />
-                  <span className="text-sm text-red-500 font-medium">Select an institution first</span>
-                </div>
-              )}
-              {uploadStatus === "loading" && (
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-pulse" style={{width: "60%"}}></div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">{uploadMessage}</p>
+                <div className="flex items-center justify-center mt-2">
+                  <AlertCircle className="w-3.5 h-3.5 text-red-500 mr-1" />
+                  <span className="text-xs text-red-500 font-medium">Select an institution first</span>
                 </div>
               )}
             </div>
@@ -788,26 +691,10 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
           <button
             onClick={handleClose}
             disabled={isUploading}
-            className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           >
             {isUploading ? "Processing..." : "Close"}
           </button>
-          {uploadStatus === "success" && (
-            <button
-              onClick={() => {
-                setUploadStatus(null);
-                setUploadMessage("");
-                setSelectedHei(null);
-                setSelectedRegion(null);
-                setSelectedProvince(null);
-                setSelectedMunicipality(null);
-              }}
-              className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm hover:shadow-md transition-all duration-200 font-medium flex items-center justify-center"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Upload Another File
-            </button>
-          )}
         </div>
       </div>
     </Dialog>

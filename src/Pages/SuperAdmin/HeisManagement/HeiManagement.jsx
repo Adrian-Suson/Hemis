@@ -15,6 +15,7 @@ import Popper from "../../../Components/Popper";
 import HeiDetailsModal from "./HeiDetailsModal";
 import AddHeiForm from "./AddHeiForm";
 import EditHeiForm from "./EditHeiForm";
+import Pagination from "../../../Components/Pagination";
 
 function HeiManagement() {
     const [heis, setHeis] = useState([]);
@@ -31,6 +32,9 @@ function HeiManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
     const [filterCluster, setFilterCluster] = useState("ALL");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [paginatedHeis, setPaginatedHeis] = useState([]);
 
     useEffect(() => {
         fetchHeis();
@@ -56,8 +60,17 @@ function HeiManagement() {
             filtered = filtered.filter((hei) => hei.cluster_id === parseInt(filterCluster));
         }
 
+        filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
         setFilteredHeis(filtered);
+
+        setCurrentPage(1);
     }, [heis, searchTerm, filterType, filterCluster]);
+
+    useEffect(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        setPaginatedHeis(filteredHeis.slice(startIndex, endIndex));
+    }, [filteredHeis, currentPage, pageSize]);
 
     const fetchClusters = async () => {
         try {
@@ -88,9 +101,10 @@ function HeiManagement() {
             const heiData = Array.isArray(response.data)
                 ? response.data
                 : response.data.data || [];
-            setHeis(heiData);
-            setFilteredHeis(heiData);
-            console.log("Fetched HEIs:", heiData);
+            const sortedHeiData = heiData.sort((a, b) => a.name.localeCompare(b.name));
+            setHeis(sortedHeiData);
+            setFilteredHeis(sortedHeiData);
+            console.log("Fetched HEIs:", sortedHeiData);
         } catch (err) {
             console.error("Error fetching HEIs:", err);
             setError("Failed to load HEIs. Please try again.");
@@ -191,7 +205,7 @@ function HeiManagement() {
         setAddLoading(true);
         try {
             const response = await axios.post(
-                `${config.API_URL}/heis`, // Assuming this is the correct endpoint for adding HEIs
+                `${config.API_URL}/heis`,
                 heiData,
                 {
                     headers: {
@@ -246,6 +260,15 @@ function HeiManagement() {
             default:
                 return "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300";
         }
+    };
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (size) => {
+        setPageSize(size);
+        setCurrentPage(1);
     };
 
     return (
@@ -318,99 +341,120 @@ function HeiManagement() {
                     ) : error ? (
                         <div className="text-center py-8 text-red-600">{error}</div>
                     ) : (
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                HEI Name
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                UIID
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Type
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Cluster
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredHeis.map((hei) => (
-                                            <tr key={hei.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {hei.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">
-                                                        {hei.uiid}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span
-                                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(
-                                                            hei.type
-                                                        )}`}
-                                                    >
-                                                        {hei.type}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center text-sm text-gray-500">
-                                                        <MapPin className="w-4 h-4 mr-1" />
-                                                        {clusters.find(c => c.id === hei.cluster_id)?.name || 'N/A'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <Popper
-                                                        trigger={
-                                                            <button
-                                                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-lg p-2 transition-all duration-200"
-                                                                title="More Actions"
-                                                            >
-                                                                <MoreHorizontal className="w-5 h-5" />
-                                                            </button>
-                                                        }
-                                                        className="w-40 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg right-0 top-full mt-1"
-                                                    >
-                                                        <div className="py-2">
-                                                            <button
-                                                                onClick={() => handleViewDetails(hei)}
-                                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                            >
-                                                                <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                                View Details
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleEdit(hei)}
-                                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
-                                                            >
-                                                                <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
-                                                                Edit HEI
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(hei.id)}
-                                                                className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
-                                                            >
-                                                                <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
-                                                                Delete HEI
-                                                            </button>
-                                                        </div>
-                                                    </Popper>
-                                                </td>
+                        <>
+                            <div className="bg-white rounded-lg shadow overflow-hidden">
+                                <div className="shadow-sm overflow-x-auto max-h-[600px] overflow-y-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50 sticky top-0 z-10">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    HEI Name
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    UIID
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Type
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Cluster
+                                                </th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {paginatedHeis.map((hei) => (
+                                                <tr key={hei.uiid} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {hei.name}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-500">
+                                                            {hei.uiid}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span
+                                                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(
+                                                                hei.type
+                                                            )}`}
+                                                        >
+                                                            {hei.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center text-sm text-gray-500">
+                                                            <MapPin className="w-4 h-4 mr-1" />
+                                                            {clusters.find(c => c.id === hei.cluster_id)?.name || 'N/A'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <Popper
+                                                            trigger={
+                                                                <button
+                                                                    type="button"
+                                                                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-lg p-2 transition-all duration-200"
+                                                                    title="More Actions"
+                                                                >
+                                                                    <MoreHorizontal className="w-5 h-5" />
+                                                                </button>
+                                                            }
+                                                            className="w-40 bg-white/90 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg right-0 top-full mt-1"
+                                                        >
+                                                            <div className="py-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleViewDetails(hei)}
+                                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                                >
+                                                                    <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                                    View Details
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleEdit(hei)}
+                                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
+                                                                >
+                                                                    <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
+                                                                    Edit HEI
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDelete(hei.id)}
+                                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
+                                                                >
+                                                                    <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
+                                                                    Delete HEI
+                                                                </button>
+                                                            </div>
+                                                        </Popper>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="mt-2 flex justify-end  ">
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={Math.ceil(filteredHeis.length / pageSize)}
+                                    onPageChange={handlePageChange}
+                                    pageSize={pageSize}
+                                    onPageSizeChange={handlePageSizeChange}
+                                    pageSizeOptions={[10, 20, 50, 100]}
+                                    showFirstLast={true}
+                                    showPageSize={true}
+                                    maxPageButtons={5}
+                                />
                             </div>
-                        </div>
+                            </div>
+
+
+                        </>
                     )}
                 </div>
             </div>
