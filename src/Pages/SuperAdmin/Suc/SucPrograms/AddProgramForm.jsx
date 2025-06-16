@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
+import AlertComponent from "../../../../Components/AlertComponent";
 
 function AddProgramForm({ isOpen, onClose, onSave, institutionId, loading = false }) {
     const [formData, setFormData] = useState({
@@ -173,106 +174,114 @@ function AddProgramForm({ isOpen, onClose, onSave, institutionId, loading = fals
 
     const handleSubmit = () => {
         if (validateForm()) {
-            const programData = {
-                ...formData,
-                suc_details_id: parseInt(institutionId),
-                // Convert numeric fields
-                program_code: formData.program_code ? parseInt(formData.program_code) : null,
-                major_code: formData.major_code ? parseInt(formData.major_code) : null,
-                aop_year: formData.aop_year ? parseInt(formData.aop_year) : null,
-                program_normal_length_in_years: formData.program_normal_length_in_years ? parseInt(formData.program_normal_length_in_years) : null,
-                lab_units: formData.lab_units ? parseInt(formData.lab_units) : null,
-                lecture_units: formData.lecture_units ? parseInt(formData.lecture_units) : null,
-                total_units: formData.total_units ? parseInt(formData.total_units) : null,
-                tuition_per_unit: formData.tuition_per_unit ? parseFloat(formData.tuition_per_unit) : null,
-                program_fee: formData.program_fee ? parseFloat(formData.program_fee) : null,
-                // Convert enrollment fields
-                new_students_freshmen_male: formData.new_students_freshmen_male ? parseInt(formData.new_students_freshmen_male) : null,
-                new_students_freshmen_female: formData.new_students_freshmen_female ? parseInt(formData.new_students_freshmen_female) : null,
-                '1st_year_male': formData['1st_year_male'] ? parseInt(formData['1st_year_male']) : null,
-                '1st_year_female': formData['1st_year_female'] ? parseInt(formData['1st_year_female']) : null,
-                '2nd_year_male': formData['2nd_year_male'] ? parseInt(formData['2nd_year_male']) : null,
-                '2nd_year_female': formData['2nd_year_female'] ? parseInt(formData['2nd_year_female']) : null,
-                '3rd_year_male': formData['3rd_year_male'] ? parseInt(formData['3rd_year_male']) : null,
-                '3rd_year_female': formData['3rd_year_female'] ? parseInt(formData['3rd_year_female']) : null,
-                '4th_year_male': formData['4th_year_male'] ? parseInt(formData['4th_year_male']) : null,
-                '4th_year_female': formData['4th_year_female'] ? parseInt(formData['4th_year_female']) : null,
-                '5th_year_male': formData['5th_year_male'] ? parseInt(formData['5th_year_male']) : null,
-                '5th_year_female': formData['5th_year_female'] ? parseInt(formData['5th_year_female']) : null,
-                '6th_year_male': formData['6th_year_male'] ? parseInt(formData['6th_year_male']) : null,
-                '6th_year_female': formData['6th_year_female'] ? parseInt(formData['6th_year_female']) : null,
-                '7th_year_male': formData['7th_year_male'] ? parseInt(formData['7th_year_male']) : null,
-                '7th_year_female': formData['7th_year_female'] ? parseInt(formData['7th_year_female']) : null,
-                subtotal_male: formData.subtotal_male ? parseInt(formData.subtotal_male) : null,
-                subtotal_female: formData.subtotal_female ? parseInt(formData.subtotal_female) : null,
-                grand_total: formData.grand_total ? parseInt(formData.grand_total) : null,
-                lecture_units_actual: formData.lecture_units_actual ? parseInt(formData.lecture_units_actual) : null,
-                laboratory_units_actual: formData.laboratory_units_actual ? parseInt(formData.laboratory_units_actual) : null,
-                total_units_actual: formData.total_units_actual ? parseInt(formData.total_units_actual) : null,
-                graduates_males: formData.graduates_males ? parseInt(formData.graduates_males) : null,
-                graduates_females: formData.graduates_females ? parseInt(formData.graduates_females) : null,
-                graduates_total: formData.graduates_total ? parseInt(formData.graduates_total) : null,
-                externally_funded_merit_scholars: formData.externally_funded_merit_scholars ? parseInt(formData.externally_funded_merit_scholars) : null,
-                internally_funded_grantees: formData.internally_funded_grantees ? parseInt(formData.internally_funded_grantees) : null,
-                funded_grantees: formData.funded_grantees ? parseInt(formData.funded_grantees) : null,
-                report_year: parseInt(formData.report_year),
+            // Helper function to safely convert to integer
+            const toInt = (value) => {
+                if (value === null || value === undefined || value === "") {
+                    return null;
+                }
+                const stringValue = String(value).trim();
+                if (stringValue === "") {
+                    return null;
+                }
+                const parsed = parseInt(stringValue, 10);
+                return isNaN(parsed) ? null : parsed;
             };
-            onSave(programData);
+
+            // Helper function to safely convert to float
+            const toFloat = (value) => {
+                if (value === null || value === undefined || value === "") {
+                    return null;
+                }
+                const stringValue = String(value).trim();
+                if (stringValue === "") {
+                    return null;
+                }
+                const parsed = parseFloat(stringValue);
+                return isNaN(parsed) ? null : parsed;
+            };
+
+            const newProgramData = {
+                ...formData,
+                suc_details_id: toInt(formData.suc_details_id),
+                program_code: toInt(formData.program_code),
+                major_code: toInt(formData.major_code),
+                aop_year: toInt(formData.aop_year),
+                program_normal_length_in_years: toInt(
+                    formData.program_normal_length_in_years
+                ),
+                lab_units: toInt(formData.lab_units),
+                lecture_units: toInt(formData.lecture_units),
+                total_units: toInt(formData.total_units),
+                tuition_per_unit: toFloat(formData.tuition_per_unit),
+                program_fee: toFloat(formData.program_fee),
+                new_students_freshmen_male: toInt(
+                    formData.new_students_freshmen_male
+                ),
+                new_students_freshmen_female: toInt(
+                    formData.new_students_freshmen_female
+                ),
+                "1st_year_male": toInt(formData["1st_year_male"]),
+                "1st_year_female": toInt(formData["1st_year_female"]),
+                "2nd_year_male": toInt(formData["2nd_year_male"]),
+                "2nd_year_female": toInt(formData["2nd_year_female"]),
+                "3rd_year_male": toInt(formData["3rd_year_male"]),
+                "3rd_year_female": toInt(formData["3rd_year_female"]),
+                "4th_year_male": toInt(formData["4th_year_male"]),
+                "4th_year_female": toInt(formData["4th_year_female"]),
+                "5th_year_male": toInt(formData["5th_year_male"]),
+                "5th_year_female": toInt(formData["5th_year_female"]),
+                "6th_year_male": toInt(formData["6th_year_male"]),
+                "6th_year_female": toInt(formData["6th_year_female"]),
+                "7th_year_male": toInt(formData["7th_year_male"]),
+                "7th_year_female": toInt(formData["7th_year_female"]),
+                subtotal_male: toInt(formData.subtotal_male),
+                subtotal_female: toInt(formData.subtotal_female),
+                grand_total: toInt(formData.grand_total),
+                lecture_units_actual: toInt(formData.lecture_units_actual),
+                laboratory_units_actual: toInt(
+                    formData.laboratory_units_actual
+                ),
+                total_units_actual: toInt(formData.total_units_actual),
+                graduates_males: toInt(formData.graduates_males),
+                graduates_females: toInt(formData.graduates_females),
+                graduates_total: toInt(formData.graduates_total),
+                externally_funded_merit_scholars: toInt(
+                    formData.externally_funded_merit_scholars
+                ),
+                internally_funded_grantees: toInt(
+                    formData.internally_funded_grantees
+                ),
+                funded_grantees: toInt(formData.funded_grantees),
+                report_year: toInt(formData.report_year),
+            };
+
+            AlertComponent.showConfirmation(
+                "Are you sure you want to add this program?",
+                () => {
+                    onSave(newProgramData);
+                }
+            );
+        } else {
+            AlertComponent.showAlert(
+                "Please fix the validation errors before submitting.",
+                "error"
+            );
         }
     };
 
     const handleClose = () => {
-        setFormData({
-            suc_details_id: institutionId || '',
-            program_name: '',
-            program_code: '',
-            major_name: '',
-            major_code: '',
-            aop_category: '',
-            aop_serial: '',
-            aop_year: '',
-            is_thesis_dissertation_required: false,
-            program_status: 'ACTIVE',
-            calendar_use_code: 'SEM',
-            program_normal_length_in_years: '',
-            lab_units: '',
-            lecture_units: '',
-            total_units: '',
-            tuition_per_unit: '',
-            program_fee: '',
-            program_type: 'undergraduate',
-            new_students_freshmen_male: '',
-            new_students_freshmen_female: '',
-            '1st_year_male': '',
-            '1st_year_female': '',
-            '2nd_year_male': '',
-            '2nd_year_female': '',
-            '3rd_year_male': '',
-            '3rd_year_female': '',
-            '4th_year_male': '',
-            '4th_year_female': '',
-            '5th_year_male': '',
-            '5th_year_female': '',
-            '6th_year_male': '',
-            '6th_year_female': '',
-            '7th_year_male': '',
-            '7th_year_female': '',
-            subtotal_male: '',
-            subtotal_female: '',
-            grand_total: '',
-            lecture_units_actual: '',
-            laboratory_units_actual: '',
-            total_units_actual: '',
-            graduates_males: '',
-            graduates_females: '',
-            graduates_total: '',
-            externally_funded_merit_scholars: '',
-            internally_funded_grantees: '',
-            funded_grantees: '',
-            report_year: new Date().getFullYear(),
-        });
-        setErrors({});
-        onClose();
+        if (Object.keys(errors).length > 0) {
+            AlertComponent.showConfirmation(
+                "You have unsaved changes. Are you sure you want to close?",
+                () => {
+                    setErrors({});
+                    onClose();
+                }
+            );
+        } else {
+            setErrors({});
+            onClose();
+        }
     };
 
     return (
@@ -324,14 +333,21 @@ function AddProgramForm({ isOpen, onClose, onSave, institutionId, loading = fals
                             <label className="block text-sm font-medium text-gray-700 mb-1">Program Type</label>
                             <select
                                 value={formData.program_type}
-                                onChange={(e) => handleInputChange("program_type", e.target.value)}
+                                onChange={(e) =>
+                                    handleInputChange(
+                                        "program_type",
+                                        e.target.value
+                                    )
+                                }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                             >
-                                <option value="undergraduate">Undergraduate</option>
-                                <option value="graduate">Graduate</option>
-                                <option value="doctoral">Doctoral</option>
-                                <option value="certificate">Certificate</option>
-                                <option value="diploma">Diploma</option>
+                                <option value="Baccalaureate">Baccalaureate</option>
+                                <option value="Masters">Masters</option>
+                                <option value="Doctoral">Doctoral</option>
+                                <option value="Post-Baccalaureate">Post-Baccalaureate</option>
+                                <option value="Pre-Baccalaureate">Pre-Baccalaureate</option>
+                                <option value="VocTech">VocTech</option>
+                                <option value="Basic">Basic</option>
                             </select>
                         </div>
                         <div>

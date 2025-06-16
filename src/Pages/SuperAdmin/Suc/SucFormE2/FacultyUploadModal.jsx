@@ -1,10 +1,8 @@
 import { useState } from "react";
 import {
-    X,
     Upload,
     FileSpreadsheet,
     AlertCircle,
-    CheckCircle,
     Users,
     Calendar,
     Info,
@@ -20,6 +18,7 @@ import config from "../../../../utils/config";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
 import AlertComponent from "../../../../Components/AlertComponent";
+import { useLoading } from "../../../../Context/LoadingContext";
 
 function FacultyUploadModal({
     isOpen,
@@ -27,11 +26,10 @@ function FacultyUploadModal({
     onUploadSuccess,
     institutionId,
 }) {
-    const [uploadStatus, setUploadStatus] = useState(null); // null, 'loading', 'success', 'error'
-    const [uploadMessage, setUploadMessage] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const [errors, setErrors] = useState({});
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const { showLoading, hideLoading, updateProgress } = useLoading();
 
     const handleInputChange = (field, value) => {
         // Clear error when user makes a selection
@@ -62,11 +60,6 @@ function FacultyUploadModal({
         return Object.keys(newErrors).length === 0;
     };
 
-    // Function to clear upload status
-    const clearUploadStatus = () => {
-        setUploadStatus(null);
-        setUploadMessage("");
-    };
 
     // Parsing helper functions
     const toNullableInteger = (value) => {
@@ -138,16 +131,22 @@ function FacultyUploadModal({
 
     // Degree mapping
     const degreeMapping = {
-        "Bachelor": "Bachelor",
-        "Bachelors": "Bachelor",
-        "Bachelor's": "Bachelor",
-        "Masters": "Masters",
-        "Master's": "Masters",
-        "Master": "Masters",
-        "Doctorate": "Doctorate",
-        "PhD": "Doctorate",
-        "Ph.D.": "Doctorate",
-        "Doctoral": "Doctorate",
+        "Bachelor": 1,
+        "Bachelors": 1,
+        "Bachelor's": 1,
+        "Masters": 2,
+        "Master's": 2,
+        "Master": 2,
+        "Doctorate": 3,
+        "PhD": 3,
+        "Ph.D.": 3,
+        "Doctoral": 3,
+    };
+
+    const parseDegree = (value) => {
+        if (value === undefined || value === "" || value === null) return 1; // Default to Bachelor's
+        const str = String(value).trim();
+        return degreeMapping[str] || 1; // Default to Bachelor's if not found
     };
 
     const handleExcelUpload = async (event) => {
@@ -181,8 +180,7 @@ function FacultyUploadModal({
         }
 
         setIsUploading(true);
-        setUploadStatus("loading");
-        setUploadMessage("Processing Excel file...");
+        showLoading();
 
         try {
             const buffer = await file.arrayBuffer();
@@ -195,26 +193,33 @@ function FacultyUploadModal({
                 type: "array",
             });
 
-            // Process all sheets in the workbook
-            const facultySheets = workbook.SheetNames.map((name) => ({
-                name,
-                type: "FACULTY",
-                description: `Faculty Data from ${name}`,
-            }));
+            // Process all sheets in the workbook except Reference
+            const facultySheets = workbook.SheetNames
+                .filter(name => !name.toLowerCase().includes('reference'))
+                .map((name) => ({
+                    name,
+                    type: "FACULTY",
+                    description: `Faculty Data from ${name}`,
+                }));
 
             console.log("Found sheets:", facultySheets);
 
             if (facultySheets.length === 0) {
-                throw new Error("No sheets found in the Excel file.");
+                throw new Error("No valid faculty sheets found in the Excel file.");
             }
 
             await processAllFacultySheets(workbook, facultySheets);
+            AlertComponent.showAlert("Faculty data uploaded successfully!", "success");
+            onClose(); // Close modal after successful upload
         } catch (error) {
             console.error("Excel upload error:", error);
-            setUploadStatus("error");
-            setUploadMessage(`Error processing Excel file: ${error.message}`);
+            AlertComponent.showAlert(
+                error.response?.data?.message || error.message || "Failed to upload faculty data",
+                "error"
+            );
         } finally {
             setIsUploading(false);
+            hideLoading();
             event.target.value = "";
         }
     };
@@ -222,13 +227,10 @@ function FacultyUploadModal({
     const processAllFacultySheets = async (workbook, facultySheets) => {
         const createdRecords = [];
         const errors = [];
-        let successMessage = "";
+        let processedSheets = 0;
 
         for (const sheet of facultySheets) {
             try {
-                setUploadMessage(
-                    `Processing ${sheet.description} from ${sheet.name}...`
-                );
                 const worksheet = workbook.Sheets[sheet.name];
                 const facultyRecords = await processFacultySheet(
                     worksheet,
@@ -236,10 +238,12 @@ function FacultyUploadModal({
                 );
                 if (facultyRecords && facultyRecords.length > 0) {
                     createdRecords.push(...facultyRecords);
-                    successMessage += `Imported ${facultyRecords.length} faculty members from ${sheet.name}. `;
                 } else {
                     console.log(`No valid faculty records found in sheet ${sheet.name}`);
                 }
+                processedSheets++;
+                // Update progress to 80% after all sheets are processed
+                updateProgress((processedSheets / facultySheets.length) * 80);
             } catch (error) {
                 console.error(`Error processing sheet ${sheet.name}:`, error);
                 errors.push(
@@ -251,26 +255,44 @@ function FacultyUploadModal({
         }
 
         if (createdRecords.length > 0) {
-            onUploadSuccess();
-            setUploadStatus("success");
-            setUploadMessage(successMessage.trim());
+            try {
+                // Update progress to 90% before API request
+                updateProgress(90);
+                
+                // Send to API
+                const token = localStorage.getItem("token");
+                const response = await axios.post(
+                    `${config.API_URL}/suc-form-e2/bulk`,
+                    {
+                        operation: 'create',
+                        records: createdRecords
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
 
-            // Reset state
-            setErrors({});
-        } else {
-            setUploadStatus("error");
-            setUploadMessage(
-                `No valid data imported. Errors: ${errors.join("; ")}`
-            );
+                console.log(
+                    `Faculty upload response:`,
+                    response.data
+                );
+                
+                // Update progress to 100% after successful API request
+                updateProgress(100);
+                onUploadSuccess();
+                setErrors({});
+            } catch (error) {
+                console.error("API request error:", error);
+                throw error;
+            }
         }
     };
 
     const processFacultySheet = async (worksheet, sheetName) => {
         try {
-            setUploadMessage(
-                `Processing faculty data from ${sheetName} and saving to database...`
-            );
-
             // Extract faculty type from sheet name
             const facultyType = sheetName.match(/[A-E][1-3]?/)?.[0] || "A1";
             if (!facultyTypeMapping[facultyType]) {
@@ -360,7 +382,7 @@ function FacultyUploadModal({
                             on_leave_without_pay: parseBoolean(row[8]),
                             full_time_equivalent: parseNumeric(row[9], 0, 1) || 1.0,
                             gender: genderMapping[row[10]] || parseNumeric(row[10]) || 0,
-                            highest_degree_attained: degreeMapping[row[11]] || parseString(row[11]) || "",
+                            highest_degree_attained: parseDegree(row[11]),
                             pursuing_next_degree: parseBoolean(row[12]),
                             discipline_teaching_load_1: parseString(row[13]),
                             discipline_teaching_load_2: parseString(row[14]),
@@ -470,28 +492,7 @@ function FacultyUploadModal({
                 processedFaculty
             );
 
-            // Send to API
-            const token = localStorage.getItem("token");
-            const response = await axios.post(
-                `${config.API_URL}/suc-form-e2/bulk`,
-                {
-                    operation: 'create',
-                    records: processedFaculty
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            console.log(
-                `Faculty upload response from ${sheetName}:`,
-                response.data
-            );
-            onClose();
-            return processedFaculty.map((faculty) => ({ faculty }));
+            return processedFaculty;
         } catch (error) {
             console.error(
                 `Faculty sheet processing error in ${sheetName}:`,
@@ -516,8 +517,7 @@ function FacultyUploadModal({
 
     const handleClose = () => {
         setErrors({});
-        setUploadStatus(null);
-        setUploadMessage("");
+
         onClose();
     };
 
@@ -533,44 +533,7 @@ function FacultyUploadModal({
             variant="default"
             size="xl"
         >
-            <div className="space-y-4">
-                {/* Upload Status Alert */}
-                {uploadStatus && (
-                    <div
-                        className={`p-4 rounded-xl border shadow-sm ${
-                            uploadStatus === "success"
-                                ? "bg-green-50/80 border-green-200 text-green-800"
-                                : uploadStatus === "error"
-                                ? "bg-red-50/80 border-red-200 text-red-800"
-                                : "bg-blue-50/80 border-blue-200 text-blue-800"
-                        }`}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                {uploadStatus === "success" && (
-                                    <CheckCircle className="w-5 h-5 mr-2" />
-                                )}
-                                {uploadStatus === "error" && (
-                                    <AlertCircle className="w-5 h-5 mr-2" />
-                                )}
-                                {uploadStatus === "loading" && (
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-800 mr-2"></div>
-                                )}
-                                <span className="font-medium">
-                                    {uploadMessage}
-                                </span>
-                            </div>
-                            {uploadStatus !== "loading" && (
-                                <button
-                                    onClick={clearUploadStatus}
-                                    className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
+            <div className="space-y-4 p-4">
 
                 {/* Institution & Year Selection */}
                 <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
@@ -811,19 +774,7 @@ function FacultyUploadModal({
                                     </span>
                                 </div>
                             )}
-                            {uploadStatus === "loading" && (
-                                <div className="mt-4">
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-pulse"
-                                            style={{ width: "60%" }}
-                                        ></div>
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-2">
-                                        {uploadMessage}
-                                    </p>
-                                </div>
-                            )}
+
                         </div>
                     </div>
                 </div>
@@ -879,18 +830,7 @@ function FacultyUploadModal({
                     >
                         {isUploading ? "Processing..." : "Close"}
                     </button>
-                    {uploadStatus === "success" && (
-                        <button
-                            onClick={() => {
-                                setUploadStatus(null);
-                                setUploadMessage("");
-                            }}
-                            className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm hover:shadow-md transition-all duration-200 font-medium flex items-center justify-center"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Another File
-                        </button>
-                    )}
+
                 </div>
             </div>
         </Dialog>

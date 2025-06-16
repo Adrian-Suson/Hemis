@@ -334,7 +334,7 @@ function SucDataTable({ data, onEdit, onDelete, createLog, updateProgress }) {
     return (
         <>
             <div className="relative w-full px-4 py-2">
-                <div className="overflow-x-auto overflow-y-auto max-h-[55vh] rounded-lg border border-gray-200 shadow-sm">
+                <div className="overflow-x-auto overflow-y-auto max-h-[50vh] rounded-lg border border-gray-200 shadow-sm">
                     <table className="min-w-full divide-y divide-gray-200 table-fixed">
                         <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>

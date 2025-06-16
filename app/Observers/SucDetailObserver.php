@@ -54,10 +54,10 @@ class SucDetailObserver
             "Other Business Income",
         ];
 
-        // Get the current year
-        $currentYear = ReportYear::where('is_active', true)->first();
+        // Use the report year from the SUC details
+        $reportYear = $sucDetail->report_year;
 
-        if (!$currentYear) {
+        if (!$reportYear) {
             return;
         }
 
@@ -79,7 +79,7 @@ class SucDetailObserver
                 'total_mooe' => 0,
                 'total_co' => 0,
                 'total_allot' => 0,
-                'report_year' => $currentYear->year
+                'report_year' => $reportYear
             ]);
         }
 
@@ -101,7 +101,7 @@ class SucDetailObserver
                 'total_mooe' => 0,
                 'total_co' => 0,
                 'total_expend' => 0,
-                'report_year' => $currentYear->year
+                'report_year' => $reportYear
             ]);
         }
 
@@ -115,7 +115,7 @@ class SucDetailObserver
                 'miscellaneous_fees' => 0,
                 'other_income' => 0,
                 'total_income' => 0,
-                'report_year' => $currentYear->year
+                'report_year' => $reportYear
             ]);
         }
     }

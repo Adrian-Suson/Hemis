@@ -30,7 +30,7 @@ import Pagination from "../../../../Components/Pagination";
 import config from "../../../../utils/config";
 import axios from "axios";
 import ExcelJS from "exceljs";
-import Swal from "sweetalert2";
+import AlertComponent from "../../../../Components/AlertComponent";
 
 function SucPrograms() {
     const { SucDetailId } = useParams();
@@ -148,22 +148,9 @@ function SucPrograms() {
         try {
             setExportLoading(true);
 
-            Swal.fire({
-                title: "Confirm Export",
-                text: `Do you want to export Form B for ${heiName}?`,
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Export",
-                cancelButtonText: "Cancel",
-                customClass: {
-                    popup: "swal2-popup",
-                    title: "text-lg font-semibold text-gray-900",
-                    content: "text-gray-600",
-                },
-            }).then(async (result) => {
-                if (result.isConfirmed) {
+            AlertComponent.showConfirmation(
+                `Do you want to export Form B for ${heiName}?`,
+                async () => {
                     try {
                         // Fetch the Form B template
                         const response = await fetch("/templates/Form-B-Themeplate.xlsx");
@@ -215,114 +202,122 @@ function SucPrograms() {
                         let populatedSheets = 0;
                         let skippedTypes = [];
 
+                        // Debug: Log available worksheets
+                        console.log("Available worksheets:", workbook.worksheets.map(ws => ws.name));
+
+                        // Map program types to sheet names
+                        const programTypeToSheetMap = {
+                            "Baccalaureate": "Baccalaureate",
+                            "Masters": "Masters",
+                            "Doctoral": "Doctoral",
+                            "Post-Baccalaureate": "Post-Baccalaureate",
+                            "Pre-Baccalaureate": "Pre-Baccalaureate",
+                            "VocTech": "VocTech",
+                            "Basic": "Basic"
+                        };
+
                         programTypes.forEach(programType => {
-                            // Look for existing worksheet with this program type name
-                            const existingWorksheet = workbook.worksheets.find(ws =>
-                                ws.name.toLowerCase() === programType.toLowerCase() ||
-                                ws.name.toLowerCase().includes(programType.toLowerCase())
-                            );
+                            // Get the corresponding sheet name from the map
+                            const sheetName = programTypeToSheetMap[programType];
 
-                            if (existingWorksheet) {
-                                console.log(`Found existing worksheet "${existingWorksheet.name}" for program type "${programType}"`);
+                            if (!sheetName) {
+                                console.warn(`No sheet mapping found for program type: ${programType}`);
+                                skippedTypes.push(programType);
+                                return;
+                            }
 
-                                // Find starting row for this worksheet
-                                const worksheetStartRow = findStartRow(existingWorksheet);
+                            // Find the worksheet with the exact name
+                            const worksheet = workbook.getWorksheet(sheetName);
 
-                                // Log state of O18 before clearing
-                                console.log(`Cell O18 before clearing: formula=${existingWorksheet.getCell('O18').formula}, sharedFormula=${existingWorksheet.getCell('O18').isPartOfSharedFormula}, value=${existingWorksheet.getCell('O18').value}`);
+                            if (!worksheet) {
+                                console.warn(`Worksheet "${sheetName}" not found in template`);
+                                skippedTypes.push(programType);
+                                return;
+                            }
 
-                                // Clear existing data rows but preserve formulas
-                                const maxRows = existingWorksheet.rowCount;
-                                for (let rowNum = worksheetStartRow; rowNum <= maxRows; rowNum++) {
-                                    const row = existingWorksheet.getRow(rowNum);
-                                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                                        if (colNumber <= 45) {
-                                            // Skip cells with formulas or shared formulas
-                                            if (cell.formula || cell.isPartOfSharedFormula) {
-                                                return;
-                                            }
-                                            cell.value = null; // Clear non-formula cells
+                            console.log(`Found matching worksheet "${sheetName}" for program type "${programType}"`);
+
+                            // Find starting row for this worksheet
+                            const worksheetStartRow = findStartRow(worksheet);
+
+                            // Clear existing data rows but preserve formulas
+                            const maxRows = worksheet.rowCount;
+                            for (let rowNum = worksheetStartRow; rowNum <= maxRows; rowNum++) {
+                                const row = worksheet.getRow(rowNum);
+                                row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                                    if (colNumber <= 45) {
+                                        // Skip cells with formulas or shared formulas
+                                        if (cell.formula || cell.isPartOfSharedFormula) {
+                                            return;
                                         }
-                                    });
-                                }
-
-                                // Populate with program data
-                                const programList = programsByType[programType];
-                                programList.forEach((program, index) => {
-                                    const rowNumber = worksheetStartRow + index;
-                                    const row = existingWorksheet.getRow(rowNumber);
-
-                                    // Helper function to set cell value only if not a formula
-                                    const setCellValue = (cell, value) => {
-                                        if (!cell.formula && !cell.isPartOfSharedFormula) {
-                                            cell.value = value;
-                                        }
-                                    };
-
-                                    // Debug O18 before population
-                                    if (rowNumber === 18) {
-                                        console.log(`Cell O18 before population: formula=${existingWorksheet.getCell('O18').formula}, sharedFormula=${existingWorksheet.getCell('O18').isPartOfSharedFormula}, value=${existingWorksheet.getCell('O18').value}`);
-                                    }
-
-                                    // Map program data to Excel columns (aligned with template)
-                                    setCellValue(row.getCell(1), index + 1); // A1: SEQ
-                                    setCellValue(row.getCell(2), program.program_name || null); // A2: PROGRAM NAME
-                                    setCellValue(row.getCell(3), program.program_code || null); // A3: PROGRAM CODE
-                                    setCellValue(row.getCell(4), program.major_name || null); // A4: MAJOR NAME
-                                    setCellValue(row.getCell(5), program.major_code || null); // A5: MAJOR CODE
-                                    setCellValue(row.getCell(6), program.aop_category || null); // A6: Category
-                                    setCellValue(row.getCell(7), program.serial || null); // A7: Serial
-                                    setCellValue(row.getCell(8), program.Year || null); // A8: Year
-                                    setCellValue(row.getCell(9), program.is_thesis_dissertation_required || null); // A9: IS THESIS/DISSERTATION REQUIRED
-                                    setCellValue(row.getCell(10), program.program_status || null); // A10: PROGRAM STATUS
-                                    setCellValue(row.getCell(11), program.calendar_use_code || null); // A12: PROGRAM CALENDAR
-                                    setCellValue(row.getCell(12), program.program_normal_length_in_years || 0); // B1: PROGRAM NORMAL LENGTH
-                                    setCellValue(row.getCell(13), program.lab_units || 0); // B2: LAB UNITS
-                                    setCellValue(row.getCell(14), program.lecture_units || 0); // B3: LECTURE UNITS
-                                    // Skip B4 (column 15, TOTAL UNITS) as it likely has a formula
-                                    setCellValue(row.getCell(16), program.tuition_per_unit || 0); // B5: TUITION PER UNIT
-                                    setCellValue(row.getCell(17), program.program_fee || 0); // B6: PROGRAM FEE
-                                    setCellValue(row.getCell(18), program.new_students_freshmen_male || 0); // E1: NEW STUDENTS MALE
-                                    setCellValue(row.getCell(19), program.new_students_freshmen_female || 0); // E2: NEW STUDENTS FEMALE
-                                    setCellValue(row.getCell(20), program["1st_year_male"] || 0); // E4: 1st Year Male
-                                    setCellValue(row.getCell(21), program["1st_year_female"] || 0); // E5: 1st Year Female
-                                    setCellValue(row.getCell(22), program["2nd_year_male"] || 0); // E6: 2nd Year Male
-                                    setCellValue(row.getCell(23), program["2nd_year_female"] || 0); // E7: 2nd Year Female
-                                    setCellValue(row.getCell(24), program["3rd_year_male"] || 0); // E8: 3rd Year Male
-                                    setCellValue(row.getCell(25), program["3rd_year_female"] || 0); // E9: 3rd Year Female
-                                    setCellValue(row.getCell(26), program["4th_year_male"] || 0); // E10: 4th Year Male
-                                    setCellValue(row.getCell(27), program["4th_year_female"] || 0); // E11: 4th Year Female
-                                    setCellValue(row.getCell(28), program["5th_year_male"] || 0); // E12: 5th Year Male
-                                    setCellValue(row.getCell(29), program["5th_year_female"] || 0); // E13: 5th Year Female
-                                    setCellValue(row.getCell(30), program["6th_year_male"] || 0); // E14: 6th Year Male
-                                    setCellValue(row.getCell(31), program["6th_year_female"] || 0); // E15: 6th Year Female
-                                    setCellValue(row.getCell(32), program["7th_year_male"] || 0); // E16: 7th Year Male
-                                    setCellValue(row.getCell(33), program["7th_year_female"] || 0); // E17: 7th Year Female
-                                    // Skip E16 (column 34, SUBTOTAL MALE) if it has a formula
-                                    // Skip E17 (column 35, SUBTOTAL FEMALE) if it has a formula
-                                    // Skip E18 (column 36, GRAND TOTAL) if it has a formula
-                                    setCellValue(row.getCell(37), program.lecture_units_actual || 0); // E19: LECTURE UNITS ACTUAL
-                                    setCellValue(row.getCell(38), program.laboratory_units_actual || 0); // E20: LABORATORY UNITS ACTUAL
-                                    // Skip F1 (column 39, TOTAL UNITS ACTUAL) if it has a formula
-                                    setCellValue(row.getCell(40), program.graduates_males || 0); // F2: GRADUATES MALES
-                                    setCellValue(row.getCell(41), program.graduates_females || 0); // F3: GRADUATES FEMALES
-                                    // Skip G1 (column 42, GRADUATES TOTAL) if it has a formula
-                                    setCellValue(row.getCell(43), program.externally_funded_merit_scholars || 0); // G2: EXTERNAL-FUNDED SCHOLARS
-                                    setCellValue(row.getCell(44), program.suc_funded_grantees || 0); // G3: SUC-FUNDED GRANTEES
-                                    // Skip H1-H3 (columns 45-47) as they contain formulas
-                                    row.commit();
-
-                                    // Debug O18 after population
-                                    if (rowNumber === 18) {
-                                        console.log(`Cell O18 after population: formula=${existingWorksheet.getCell('O18').formula}, sharedFormula=${existingWorksheet.getCell('O18').isPartOfSharedFormula}, value=${existingWorksheet.getCell('O18').value}`);
+                                        cell.value = null; // Clear non-formula cells
                                     }
                                 });
-
-                                populatedSheets++;
-                            } else {
-                                console.warn(`No existing worksheet found for program type: ${programType}`);
-                                skippedTypes.push(programType);
                             }
+
+                            // Populate with program data
+                            const programList = programsByType[programType];
+                            programList.forEach((program, index) => {
+                                const rowNumber = worksheetStartRow + index;
+                                const row = worksheet.getRow(rowNumber);
+
+                                // Helper function to set cell value only if not a formula
+                                const setCellValue = (cell, value) => {
+                                    if (!cell.formula && !cell.isPartOfSharedFormula) {
+                                        cell.value = value;
+                                    }
+                                };
+
+                                // Map program data to Excel columns (aligned with template)
+                                setCellValue(row.getCell(1), index + 1); // A1: SEQ
+                                setCellValue(row.getCell(2), program.program_name || null); // A2: PROGRAM NAME
+                                setCellValue(row.getCell(3), program.program_code || null); // A3: PROGRAM CODE
+                                setCellValue(row.getCell(4), program.major_name || null); // A4: MAJOR NAME
+                                setCellValue(row.getCell(5), program.major_code || null); // A5: MAJOR CODE
+                                setCellValue(row.getCell(6), program.aop_category || null); // A6: Category
+                                setCellValue(row.getCell(7), program.aop_serial || null); // A7: Serial
+                                setCellValue(row.getCell(8), program.aop_year || null); // A8: Year
+                                setCellValue(row.getCell(9), program.is_thesis_dissertation_required || null); // A9: IS THESIS/DISSERTATION REQUIRED
+                                setCellValue(row.getCell(10), program.program_status || null); // A10: PROGRAM STATUS
+                                setCellValue(row.getCell(11), program.calendar_use_code || null); // A12: PROGRAM CALENDAR
+                                setCellValue(row.getCell(12), program.program_normal_length_in_years || 0); // B1: PROGRAM NORMAL LENGTH
+                                setCellValue(row.getCell(13), program.lab_units || 0); // B2: LAB UNITS
+                                setCellValue(row.getCell(14), program.lecture_units || 0); // B3: LECTURE UNITS
+                                // Skip B4 (column 15, TOTAL UNITS) as it likely has a formula
+                                setCellValue(row.getCell(16), program.tuition_per_unit || 0); // B5: TUITION PER UNIT
+                                setCellValue(row.getCell(17), program.program_fee || 0); // B6: PROGRAM FEE
+                                setCellValue(row.getCell(18), program.new_students_freshmen_male || 0); // E1: NEW STUDENTS MALE
+                                setCellValue(row.getCell(19), program.new_students_freshmen_female || 0); // E2: NEW STUDENTS FEMALE
+                                setCellValue(row.getCell(20), program["1st_year_male"] || 0); // E4: 1st Year Male
+                                setCellValue(row.getCell(21), program["1st_year_female"] || 0); // E5: 1st Year Female
+                                setCellValue(row.getCell(22), program["2nd_year_male"] || 0); // E6: 2nd Year Male
+                                setCellValue(row.getCell(23), program["2nd_year_female"] || 0); // E7: 2nd Year Female
+                                setCellValue(row.getCell(24), program["3rd_year_male"] || 0); // E8: 3rd Year Male
+                                setCellValue(row.getCell(25), program["3rd_year_female"] || 0); // E9: 3rd Year Female
+                                setCellValue(row.getCell(26), program["4th_year_male"] || 0); // E10: 4th Year Male
+                                setCellValue(row.getCell(27), program["4th_year_female"] || 0); // E11: 4th Year Female
+                                setCellValue(row.getCell(28), program["5th_year_male"] || 0); // E12: 5th Year Male
+                                setCellValue(row.getCell(29), program["5th_year_female"] || 0); // E13: 5th Year Female
+                                setCellValue(row.getCell(30), program["6th_year_male"] || 0); // E14: 6th Year Male
+                                setCellValue(row.getCell(31), program["6th_year_female"] || 0); // E15: 6th Year Female
+                                setCellValue(row.getCell(32), program["7th_year_male"] || 0); // E16: 7th Year Male
+                                setCellValue(row.getCell(33), program["7th_year_female"] || 0); // E17: 7th Year Female
+                                // Skip E16 (column 34, SUBTOTAL MALE) if it has a formula
+                                // Skip E17 (column 35, SUBTOTAL FEMALE) if it has a formula
+                                // Skip E18 (column 36, GRAND TOTAL) if it has a formula
+                                setCellValue(row.getCell(37), program.lecture_units_actual || 0); // E19: LECTURE UNITS ACTUAL
+                                setCellValue(row.getCell(38), program.laboratory_units_actual || 0); // E20: LABORATORY UNITS ACTUAL
+                                // Skip F1 (column 39, TOTAL UNITS ACTUAL) if it has a formula
+                                setCellValue(row.getCell(40), program.graduates_males || 0); // F2: GRADUATES MALES
+                                setCellValue(row.getCell(41), program.graduates_females || 0); // F3: GRADUATES FEMALES
+                                // Skip G1 (column 42, GRADUATES TOTAL) if it has a formula
+                                setCellValue(row.getCell(43), program.externally_funded_merit_scholars || 0); // G2: EXTERNAL-FUNDED SCHOLARS
+                                setCellValue(row.getCell(44), program.suc_funded_grantees || 0); // G3: SUC-FUNDED GRANTEES
+                                // Skip H1-H3 (columns 45-47) as they contain formulas
+                                row.commit();
+                            });
+
+                            populatedSheets++;
                         });
 
                         // Log export summary
@@ -348,26 +343,20 @@ function SucPrograms() {
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
 
-                        Swal.fire({
-                            title: "Success!",
-                            text: `Form B exported successfully. ${populatedSheets} sheets populated${skippedTypes.length > 0 ? `, ${skippedTypes.length} program types skipped (no matching sheets found)` : ''}.`,
-                            icon: "success",
-                            timer: 4000,
-                            showConfirmButton: false,
-                        });
+                        AlertComponent.showAlert(`Form B exported successfully. ${populatedSheets} sheets populated${skippedTypes.length > 0 ? `, ${skippedTypes.length} program types skipped (no matching sheets found)` : ''}.`, "success");
+                        setExportLoading(false);
 
                     } catch (error) {
                         console.error("Error exporting Form B:", error);
-                        Swal.fire({
-                            title: "Error!",
-                            text: "Failed to export Form B. Please try again.",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                        });
+                        AlertComponent.showAlert("Failed to export Form B. Please try again.", "error");
+                        setExportLoading(false);
                     }
+                },
+                () => {
+                    // Reset loading state if user cancels the export
+                    setExportLoading(false);
                 }
-                setExportLoading(false);
-            });
+            );
         } catch (error) {
             console.error("Error in export function:", error);
             setExportLoading(false);
@@ -400,9 +389,7 @@ function SucPrograms() {
                 programData,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "token"
-                        )}`,
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
                         Accept: "application/json",
                         "Content-Type": "application/json",
                     },
@@ -413,11 +400,15 @@ function SucPrograms() {
                 const newProgram = response.data;
                 setPrograms((prev) => [...prev, newProgram]);
                 setIsAddModalOpen(false);
+                AlertComponent.showAlert("Program created successfully!", "success");
                 console.log("Program created successfully:", newProgram);
             }
         } catch (err) {
             console.error("Error creating program:", err);
-            setError("Failed to create program. Please try again.");
+            AlertComponent.showAlert(
+                err.response?.data?.message || "Failed to create program. Please try again.",
+                "error"
+            );
         } finally {
             setAddLoading(false);
         }
@@ -431,9 +422,7 @@ function SucPrograms() {
                 updatedProgramData,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "token"
-                        )}`,
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
                         Accept: "application/json",
                         "Content-Type": "application/json",
                     },
@@ -444,47 +433,56 @@ function SucPrograms() {
                 const updatedProgram = response.data;
                 setPrograms((prev) =>
                     prev.map((program) =>
-                        program.id === updatedProgram.id
-                            ? updatedProgram
-                            : program
+                        program.id === updatedProgram.id ? updatedProgram : program
                     )
                 );
                 setIsEditModalOpen(false);
                 setSelectedProgram(null);
+                AlertComponent.showAlert("Program updated successfully!", "success");
                 console.log("Program updated successfully:", updatedProgram);
             }
         } catch (err) {
             console.error("Error updating program:", err);
-            setError("Failed to update program. Please try again.");
+            AlertComponent.showAlert(
+                err.response?.data?.message || "Failed to update program. Please try again.",
+                "error"
+            );
         } finally {
             setEditLoading(false);
         }
     };
 
     const handleDelete = async (programId) => {
-        try {
-            const response = await axios.delete(
-                `${config.API_URL}/suc-form-b/${programId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "token"
-                        )}`,
-                        Accept: "application/json",
-                    },
-                }
-            );
+        AlertComponent.showConfirmation(
+            "Are you sure you want to delete this program?",
+            async () => {
+                try {
+                    const response = await axios.delete(
+                        `${config.API_URL}/suc-form-b/${programId}`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                Accept: "application/json",
+                            },
+                        }
+                    );
 
-            if (response.status === 200) {
-                setPrograms((prev) =>
-                    prev.filter((program) => program.id !== programId)
-                );
-                console.log("Program deleted successfully.");
+                    if (response.status === 200) {
+                        setPrograms((prev) =>
+                            prev.filter((program) => program.id !== programId)
+                        );
+                        AlertComponent.showAlert("Program deleted successfully!", "success");
+                        console.log("Program deleted successfully.");
+                    }
+                } catch (err) {
+                    console.error("Error deleting program:", err);
+                    AlertComponent.showAlert(
+                        err.response?.data?.message || "Failed to delete program. Please try again.",
+                        "error"
+                    );
+                }
             }
-        } catch (err) {
-            console.error("Error deleting program:", err);
-            setError("Failed to delete program. Please try again.");
-        }
+        );
     };
 
     const handleBack = () => {
@@ -542,12 +540,20 @@ function SucPrograms() {
 
     const getProgramTypeColor = (type) => {
         switch (type?.toLowerCase()) {
-            case "undergraduate":
+            case "baccalaureate":
                 return "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300";
-            case "graduate":
+            case "masters":
                 return "bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-300";
             case "doctoral":
                 return "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-300";
+            case "post-baccalaureate":
+                return "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border-indigo-300";
+            case "pre-baccalaureate":
+                return "bg-gradient-to-r from-cyan-100 to-cyan-200 text-cyan-800 border-cyan-300";
+            case "voctech":
+                return "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300";
+            case "basic":
+                return "bg-gradient-to-r from-teal-100 to-teal-200 text-teal-800 border-teal-300";
             default:
                 return "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border-gray-300";
         }
@@ -633,17 +639,17 @@ function SucPrograms() {
                                             <option value="ALL">
                                                 All Types
                                             </option>
-                                            <option value="Doctorate">
-                                                Doctorate
+                                            <option value="Baccalaureate">
+                                                Baccalaureate
                                             </option>
                                             <option value="Masters">
                                                 Masters
                                             </option>
+                                            <option value="Doctoral">
+                                                Doctoral
+                                            </option>
                                             <option value="Post-Baccalaureate">
                                                 Post-Baccalaureate
-                                            </option>
-                                            <option value="Baccalaureate">
-                                                Baccalaureate
                                             </option>
                                             <option value="Pre-Baccalaureate">
                                                 Pre-Baccalaureate

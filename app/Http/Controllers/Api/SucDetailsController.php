@@ -15,8 +15,10 @@ class SucDetailsController extends Controller
     public function index()
     {
         $sucDetails = SucDetails::all()->map(function ($sucDetail) {
-            $hei = Hei::where('uiid', $sucDetail->hei_uiid)->first();
+            $hei = Hei::with('cluster')->where('uiid', $sucDetail->hei_uiid)->first();
             $sucDetail->hei_name = $hei ? $hei->name : null; // Add HEI name to the response
+            $sucDetail->cluster_id = $hei ? $hei->cluster_id : null; // Add cluster_id to the response
+            $sucDetail->cluster_name = $hei && $hei->cluster ? $hei->cluster->name : null; // Add cluster name to the response
             return $sucDetail;
         });
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
+import AlertComponent from "../../../../Components/AlertComponent";
 
 function EditProgramForm({
     isOpen,
@@ -420,8 +421,6 @@ function EditProgramForm({
                 return isNaN(parsed) ? null : parsed;
             };
 
-            // Special handling for report_year - should never be null if it has a value
-
             const updatedProgramData = {
                 ...formData,
                 id: programData.id,
@@ -477,22 +476,36 @@ function EditProgramForm({
                     formData.internally_funded_grantees
                 ),
                 funded_grantees: toInt(formData.funded_grantees),
-                report_year: toInt(formData.report_year), // Special handling for report_year
+                report_year: toInt(formData.report_year),
             };
 
-            console.log("Form data report_year:", formData.report_year);
-            console.log(
-                "Final processed report_year:",
-                updatedProgramData.report_year
+            AlertComponent.showConfirmation(
+                "Are you sure you want to update this program?",
+                () => {
+                    onSave(updatedProgramData);
+                }
             );
-            console.log("Submitting data:", updatedProgramData); // For debugging
-            onSave(updatedProgramData);
+        } else {
+            AlertComponent.showAlert(
+                "Please fix the validation errors before submitting.",
+                "error"
+            );
         }
     };
 
     const handleClose = () => {
-        setErrors({});
-        onClose();
+        if (Object.keys(errors).length > 0) {
+            AlertComponent.showConfirmation(
+                "You have unsaved changes. Are you sure you want to close?",
+                () => {
+                    setErrors({});
+                    onClose();
+                }
+            );
+        } else {
+            setErrors({});
+            onClose();
+        }
     };
 
     return (
@@ -575,13 +588,13 @@ function EditProgramForm({
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                             >
-                                <option value="undergraduate">
-                                    Undergraduate
-                                </option>
-                                <option value="graduate">Graduate</option>
-                                <option value="doctoral">Doctoral</option>
-                                <option value="certificate">Certificate</option>
-                                <option value="diploma">Diploma</option>
+                                <option value="Baccalaureate">Baccalaureate</option>
+                                <option value="Masters">Masters</option>
+                                <option value="Doctoral">Doctoral</option>
+                                <option value="Post-Baccalaureate">Post-Baccalaureate</option>
+                                <option value="Pre-Baccalaureate">Pre-Baccalaureate</option>
+                                <option value="VocTech">VocTech</option>
+                                <option value="Basic">Basic</option>
                             </select>
                         </div>
                         <div>

@@ -111,7 +111,7 @@ const EnhancedLoadingScreen = ({
 
     return (
         <div
-            className={`fixed inset-0 w-screen h-screen flex flex-col justify-center items-center z-50 transition-all duration-300 overflow-hidden bg-gradient-to-b ${currentTheme.background}`}
+            className={`fixed inset-0 w-screen h-screen flex flex-col justify-center items-center z-50 transition-all duration-300 overflow-hidden backdrop-blur-3xl`}
         >
             <div className="flex flex-col items-center justify-center z-10 px-4 transition-all duration-700">
                 {/* Enhanced logo container with dynamic effects */}

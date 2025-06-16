@@ -1,10 +1,8 @@
 import { useState } from "react";
 import {
-    X,
     Upload,
     FileSpreadsheet,
     AlertCircle,
-    CheckCircle,
     GraduationCap,
     Calendar,
     Info,
@@ -18,6 +16,7 @@ import config from "../../../../utils/config";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
 import AlertComponent from "../../../../Components/AlertComponent";
+import { useLoading } from "../../../../Context/LoadingContext";
 
 function ProgramUploadModal({
     isOpen,
@@ -25,8 +24,7 @@ function ProgramUploadModal({
     onUploadSuccess,
     institutionId,
 }) {
-    const [uploadStatus, setUploadStatus] = useState(null); // null, 'loading', 'success', 'error'
-    const [uploadMessage, setUploadMessage] = useState("");
+    const { showLoading, hideLoading, updateProgress } = useLoading();
     const [isUploading, setIsUploading] = useState(false);
     const [errors, setErrors] = useState({});
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -58,12 +56,6 @@ function ProgramUploadModal({
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
-
-    // Function to clear upload status
-    const clearUploadStatus = () => {
-        setUploadStatus(null);
-        setUploadMessage("");
     };
 
     // Parsing helper functions
@@ -174,11 +166,13 @@ function ProgramUploadModal({
         }
 
         setIsUploading(true);
-        setUploadStatus("loading");
-        setUploadMessage("Processing Excel file...");
+        showLoading();
+        updateProgress(10); // Start progress
 
         try {
             const buffer = await file.arrayBuffer();
+            updateProgress(30); // File read progress
+
             const workbook = XLSX.read(buffer, {
                 cellStyles: true,
                 cellFormulas: true,
@@ -187,6 +181,7 @@ function ProgramUploadModal({
                 sheetStubs: true,
                 type: "array",
             });
+            updateProgress(50); // File parsing progress
 
             // Use actual sheet names from the Excel file
             const programSheets = workbook.SheetNames.filter((name) =>
@@ -218,13 +213,18 @@ function ProgramUploadModal({
                 }
             }
 
+            updateProgress(70); // Sheet processing progress
             await processAllProgramSheets(workbook, programSheets);
+            updateProgress(100); // Complete
         } catch (error) {
             console.error("Excel upload error:", error);
-            setUploadStatus("error");
-            setUploadMessage(`Error processing Excel file: ${error.message}`);
+            AlertComponent.showAlert(
+                error.message || "Failed to process Excel file. Please try again.",
+                "error"
+            );
         } finally {
             setIsUploading(false);
+            hideLoading();
             event.target.value = "";
         }
     };
@@ -232,20 +232,22 @@ function ProgramUploadModal({
     const processAllProgramSheets = async (workbook, programSheets) => {
         const createdRecords = [];
         const errors = [];
-        let successMessage = "";
+        const totalSheets = programSheets.length;
+        let processedSheets = 0;
 
         for (const sheet of programSheets) {
             try {
-                setUploadMessage(
-                    `Processing ${sheet.description} from ${sheet.name}...`
-                );
                 const worksheet = workbook.Sheets[sheet.name];
                 const programRecords = await processProgramSheet(
                     worksheet,
                     sheet.name
                 );
                 createdRecords.push(...programRecords);
-                successMessage += `Imported ${programRecords.length} programs from ${sheet.name}. `;
+
+                // Update progress based on sheets processed
+                processedSheets++;
+                const progress = 70 + (processedSheets / totalSheets) * 20; // 70-90% range for sheet processing
+                updateProgress(Math.floor(progress));
             } catch (error) {
                 console.error(`Error processing sheet ${sheet.name}:`, error);
                 errors.push(
@@ -258,25 +260,12 @@ function ProgramUploadModal({
 
         if (createdRecords.length > 0) {
             onUploadSuccess();
-            setUploadStatus("success");
-            setUploadMessage(successMessage.trim());
-
-            // Reset state
             setErrors({});
-        } else {
-            setUploadStatus("error");
-            setUploadMessage(
-                `No valid data imported. Errors: ${errors.join("; ")}`
-            );
         }
     };
 
     const processProgramSheet = async (worksheet, sheetName) => {
         try {
-            setUploadMessage(
-                `Processing program data from ${sheetName} and saving to database...`
-            );
-
             const jsonData = XLSX.utils.sheet_to_json(worksheet, {
                 header: 1,
                 defval: "",
@@ -337,7 +326,7 @@ function ProgramUploadModal({
                         // Map columns to program fields
                         const program = {
                             suc_details_id: parseInt(institutionId),
-                            program_name: parseString(row[1] || null) ,
+                            program_name: parseString(row[1] || null),
                             program_code: toNullableInteger(row[2] || null),
                             program_type:
                                 programTypeMapping[sheetName] ||
@@ -348,7 +337,9 @@ function ProgramUploadModal({
                             aop_category: parseString(row[5]),
                             aop_serial: parseString(row[6]),
                             aop_year: toNullableInteger(row[7]),
-                            is_thesis_dissertation_required: parseBoolean(row[8]),
+                            is_thesis_dissertation_required: parseBoolean(
+                                row[8]
+                            ),
                             program_status:
                                 statusMapping[row[9]] ||
                                 parseString(row[9]) ||
@@ -367,7 +358,9 @@ function ProgramUploadModal({
                             program_fee: parseNumeric(row[16], 0),
 
                             // Enrollment data
-                            new_students_freshmen_male: toNullableInteger(row[17]),
+                            new_students_freshmen_male: toNullableInteger(
+                                row[17]
+                            ),
                             new_students_freshmen_female: toNullableInteger(
                                 row[18]
                             ),
@@ -405,7 +398,9 @@ function ProgramUploadModal({
                             externally_funded_merit_scholars: toNullableInteger(
                                 row[42]
                             ),
-                            internally_funded_grantees: toNullableInteger(row[43]),
+                            internally_funded_grantees: toNullableInteger(
+                                row[43]
+                            ),
                             funded_grantees: toNullableInteger(row[44]),
 
                             report_year: parseInt(selectedYear),
@@ -470,8 +465,6 @@ function ProgramUploadModal({
 
     const handleClose = () => {
         setErrors({});
-        setUploadStatus(null);
-        setUploadMessage("");
         onClose();
     };
 
@@ -487,45 +480,7 @@ function ProgramUploadModal({
             variant="default"
             size="xl"
         >
-            <div className="space-y-4">
-                {/* Upload Status Alert */}
-                {uploadStatus && (
-                    <div
-                        className={`p-4 rounded-xl border shadow-sm ${
-                            uploadStatus === "success"
-                                ? "bg-green-50/80 border-green-200 text-green-800"
-                                : uploadStatus === "error"
-                                ? "bg-red-50/80 border-red-200 text-red-800"
-                                : "bg-blue-50/80 border-blue-200 text-blue-800"
-                        }`}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                {uploadStatus === "success" && (
-                                    <CheckCircle className="w-5 h-5 mr-2" />
-                                )}
-                                {uploadStatus === "error" && (
-                                    <AlertCircle className="w-5 h-5 mr-2" />
-                                )}
-                                {uploadStatus === "loading" && (
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-800 mr-2"></div>
-                                )}
-                                <span className="font-medium">
-                                    {uploadMessage}
-                                </span>
-                            </div>
-                            {uploadStatus !== "loading" && (
-                                <button
-                                    onClick={clearUploadStatus}
-                                    className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
+            <div className="space-y-4 p-4">
                 {/* Institution & Year Selection */}
                 <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
                     <div className="flex items-center space-x-3 mb-3">
@@ -756,19 +711,6 @@ function ProgramUploadModal({
                                     </span>
                                 </div>
                             )}
-                            {uploadStatus === "loading" && (
-                                <div className="mt-4">
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full animate-pulse"
-                                            style={{ width: "60%" }}
-                                        ></div>
-                                    </div>
-                                    <p className="text-sm text-gray-600 mt-2">
-                                        {uploadMessage}
-                                    </p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -782,18 +724,6 @@ function ProgramUploadModal({
                     >
                         {isUploading ? "Processing..." : "Close"}
                     </button>
-                    {uploadStatus === "success" && (
-                        <button
-                            onClick={() => {
-                                setUploadStatus(null);
-                                setUploadMessage("");
-                            }}
-                            className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm hover:shadow-md transition-all duration-200 font-medium flex items-center justify-center"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Another File
-                        </button>
-                    )}
                 </div>
             </div>
         </Dialog>

@@ -18,12 +18,14 @@ function SucHeiManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedReportYear, setSelectedReportYear] = useState(null); // Changed to null
+    const [selectedReportYear, setSelectedReportYear] = useState(null);
+    const [selectedCluster, setSelectedCluster] = useState(null);
+    const [clusters, setClusters] = useState([]); // Add clusters state
 
     // Fetch SUC data from API
     useEffect(() => {
         fetchSucData();
-
+        fetchClusters();
     }, []);
 
     const fetchSucData = async () => {
@@ -44,6 +46,21 @@ function SucHeiManagement() {
             setError('Failed to load SUC data. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchClusters = async () => {
+        try {
+            const response = await axios.get(`${config.API_URL}/clusters`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Accept': 'application/json',
+                },
+            });
+            setClusters(response.data);
+        } catch (error) {
+            console.error('Error fetching clusters:', error);
+            setError('Failed to load clusters. Please try again.');
         }
     };
 
@@ -213,7 +230,10 @@ function SucHeiManagement() {
             item.municipality?.toLowerCase().includes(searchTerm.toLowerCase())) &&
             // Filter by report year
             (selectedReportYear === null || // If no year is selected, show all
-             String(item.report_year) === String(selectedReportYear))
+             String(item.report_year) === String(selectedReportYear)) &&
+            // Filter by cluster
+            (selectedCluster === null || // If no cluster is selected, show all
+             String(item.cluster_id) === String(selectedCluster))
     );
 
     console.log("filteredData passed to DataTable:", filteredData);
@@ -265,34 +285,32 @@ function SucHeiManagement() {
                 )}
 
                 {/* Main Content */}
-                <div className="bg-white rounded-lg shadow-sm mb-6">
+                <div className="bg-white rounded-lg shadow-sm mb-4">
                     {/* Filters and Actions */}
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="p-4 border-b border-gray-200">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3 flex-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                     <input
                                         type="text"
-                                        placeholder="Search by institution name, head, or location..."
+                                        placeholder="Search institutions..."
                                         value={searchTerm}
-                                        onChange={(e) =>
-                                            setSearchTerm(e.target.value)
-                                        }
-                                        className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
                                     />
                                 </div>
 
                                 {/* Report Year Filter */}
-                                <div className="relative flex items-center">
-                                    <label htmlFor="reportYear" className="text-sm font-medium text-gray-700">Report Year:</label>
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="reportYear" className="text-sm text-gray-600">Year:</label>
                                     <select
                                         id="reportYear"
-                                        value={selectedReportYear || ""} // Use empty string for null to show placeholder
+                                        value={selectedReportYear || ""}
                                         onChange={(e) => setSelectedReportYear(e.target.value === "" ? null : Number(e.target.value))}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
                                     >
-                                        <option value="">All Years</option>
+                                        <option value="">All</option>
                                         {Array.from({ length: new Date().getFullYear() - 2000 + 1 }, (_, i) => {
                                             const year = new Date().getFullYear() - i;
                                             return (
@@ -304,39 +322,54 @@ function SucHeiManagement() {
                                     </select>
                                 </div>
 
-                                <div className="text-sm text-gray-500 flex items-center">
-                                    Total SUCs:{" "}
-                                    <span className="font-semibold ml-1">
-                                        {filteredData.length}
-                                    </span>
+                                {/* Cluster Filter */}
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="cluster" className="text-sm text-gray-600">Cluster:</label>
+                                    <select
+                                        id="cluster"
+                                        value={selectedCluster || ""}
+                                        onChange={(e) => setSelectedCluster(e.target.value === "" ? null : e.target.value)}
+                                        className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    >
+                                        <option value="">All</option>
+                                        {clusters.map((cluster) => (
+                                            <option key={cluster.id} value={cluster.id}>
+                                                {cluster.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="text-sm text-gray-500">
+                                    Total: <span className="font-semibold">{filteredData.length}</span>
                                 </div>
                             </div>
+
                             <div className="flex gap-2">
                                 {/* Refresh Button */}
                                 <button
                                     onClick={handleRefresh}
                                     disabled={loading}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-2 border border-gray-300 text-sm rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                                    Refresh
+                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                                 </button>
 
                                 {/* Upload Excel Button */}
                                 <button
                                     onClick={openUploadModal}
-                                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    className="flex items-center px-3 py-2 border border-gray-300 text-sm rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    Upload Excel
+                                    <Upload className="w-4 h-4 mr-1" />
+                                    Upload
                                 </button>
 
                                 <button
                                     onClick={() => openModal("add")}
-                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    className="flex items-center px-3 py-2 border border-transparent text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add New SUC
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Add SUC
                                 </button>
                             </div>
                         </div>

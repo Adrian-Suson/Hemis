@@ -331,11 +331,11 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
             const facultyData = {
                 ...formData,
                 suc_details_id: parseInt(institutionId),
-                is_tenured: formData.is_tenured === "true" || formData.is_tenured === true,
-                on_leave_without_pay: formData.on_leave_without_pay === "true" || formData.on_leave_without_pay === true,
-                actively_pursuing_next_degree: formData.actively_pursuing_next_degree === "true" || formData.actively_pursuing_next_degree === true,
-                masters_with_thesis: formData.masters_with_thesis === "true" || formData.masters_with_thesis === true,
-                doctorate_with_dissertation: formData.doctorate_with_dissertation === "true" || formData.doctorate_with_dissertation === true,
+                is_tenured: String(formData.is_tenured),
+                on_leave_without_pay: String(formData.on_leave_without_pay),
+                actively_pursuing_next_degree: String(formData.actively_pursuing_next_degree),
+                masters_with_thesis: String(formData.masters_with_thesis),
+                doctorate_with_dissertation: String(formData.doctorate_with_dissertation),
                 annual_basic_salary: formData.annual_basic_salary ? parseFloat(formData.annual_basic_salary) : null,
                 full_time_equivalent: formData.full_time_equivalent ? parseFloat(formData.full_time_equivalent) : null,
                 ...Object.fromEntries(

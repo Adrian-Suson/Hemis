@@ -48,13 +48,15 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
   const fetchHeis = async () => {
     setLoadingHeis(true);
     try {
-      const response = await axios.get(`${config.API_URL}/heis?type=SUC`, {
+      const response = await axios.get(`${config.API_URL}/heis`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       const heiData = Array.isArray(response.data) ? response.data : response.data.data || [];
-      setHeis(heiData.sort((a, b) => a.name.localeCompare(b.name)));
+      // Filter for only SUC type institutions
+      const sucHeis = heiData.filter(hei => hei.type === "SUC");
+      setHeis(sucHeis.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error("Error fetching HEIs:", error);
       setErrors(prev => ({ ...prev, heis: "Failed to load institutions. Please try again." }));
