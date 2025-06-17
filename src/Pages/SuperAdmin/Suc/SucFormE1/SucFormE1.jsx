@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
     Users,
@@ -20,11 +20,14 @@ import {
     Clock,
     Award,
     PhilippinePeso,
+    Upload,
 } from "lucide-react";
 import Popper from "../../../../Components/Popper";
 import FacultyDetailsView from "./FacultyDetailsView"; // Import the separate component
 import AddFacultyForm from "./AddFacultyForm"; // Import the add faculty form
 import EditFacultyForm from "./EditFacultyForm"; // Import the edit faculty form
+import FacultyUploadModal from "./FacultyUploadModal";
+import Pagination from "../../../../Components/Pagination";
 import config from "../../../../utils/config";
 import axios from "axios"; // Ensure axios is imported
 import ExcelJS from "exceljs";
@@ -44,10 +47,17 @@ function SucFormE1() {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [addLoading, setAddLoading] = useState(false);
     const [editLoading, setEditLoading] = useState(false);
+    const [exportLoading, setExportLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
+    const [filterDegree, setFilterDegree] = useState("ALL");
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     // Fetch faculties when component mounts
     useEffect(() => {
@@ -81,15 +91,49 @@ function SucFormE1() {
 
         if (filterType !== "ALL") {
             filtered = filtered.filter(
-                (faculty) => faculty.highest_degree_attained === filterType
+                (faculty) => faculty.faculty_type === filterType
+            );
+        }
+
+        if (filterDegree !== "ALL") {
+            filtered = filtered.filter(
+                (faculty) => faculty.highest_degree_attained === filterDegree
             );
         }
 
         setFilteredFaculties(filtered);
-    }, [faculties, searchTerm, filterType]);
+        // Reset to first page when filters change
+        setCurrentPage(1);
+    }, [faculties, searchTerm, filterType, filterDegree]);
+
+    // Calculate paginated data
+    const paginatedData = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        return filteredFaculties.slice(startIndex, endIndex);
+    }, [filteredFaculties, currentPage, pageSize]);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(filteredFaculties.length / pageSize);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (newPageSize) => {
+        setPageSize(newPageSize);
+        setCurrentPage(1);
+    };
+
+    const getDisplayRange = () => {
+        const start = (currentPage - 1) * pageSize + 1;
+        const end = Math.min(start + pageSize - 1, filteredFaculties.length);
+        return `${start}-${end}`;
+    };
 
     const handleExportToFormE1 = useCallback(async () => {
         try {
+            setExportLoading(true);
 
             Swal.fire({
                 title: "Confirm Export",
@@ -158,9 +202,6 @@ function SucFormE1() {
                                     // Only clear values, not formulas
                                     if (!cell.formula && !cell.sharedFormula) {
                                         cell.value = null;
-                                    } else if (cell.formula || cell.sharedFormula) {
-                                        // For formula cells, just clear the cached value but keep the formula
-                                        cell.result = null;
                                     }
                                 }
                             });
@@ -236,11 +277,16 @@ function SucFormE1() {
                             icon: "error",
                             confirmButtonText: "OK",
                         });
+                    } finally {
+                        setExportLoading(false);
                     }
+                } else {
+                    setExportLoading(false);
                 }
             });
         } catch (error) {
             console.error("Error in export function:", error);
+            setExportLoading(false);
         }
     }, [faculties, heiName]);
 
@@ -419,8 +465,6 @@ function SucFormE1() {
         setSelectedFaculty(null);
     };
 
-
-
     const getDegreeColor = (degree) => {
         switch (degree?.toLowerCase()) {
             case 'doctorate':
@@ -493,6 +537,30 @@ function SucFormE1() {
                                             className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
                                         >
                                             <option value="ALL">
+                                                All Types
+                                            </option>
+                                            <option value="Full Time">
+                                                Full Time
+                                            </option>
+                                            <option value="Part Time">
+                                                Part Time
+                                            </option>
+                                            <option value="Contractual">
+                                                Contractual
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div className="relative w-full sm:w-auto">
+                                        <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                        <select
+                                            value={filterDegree}
+                                            onChange={(e) =>
+                                                setFilterDegree(e.target.value)
+                                            }
+                                            className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
+                                        >
+                                            <option value="ALL">
                                                 All Degrees
                                             </option>
                                             <option value="Doctorate">
@@ -510,10 +578,19 @@ function SucFormE1() {
 
                                 <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
                                     <button
-                                    onClick={handleExportToFormE1}
-                                    className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        onClick={handleExportToFormE1}
+                                        disabled={exportLoading}
+                                        className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                         <Download className="w-4 h-4 mr-2" />
-                                        Export
+                                        {exportLoading ? "Exporting..." : "Export"}
+                                    </button>
+                                    <button
+                                        onClick={() => setIsUploadModalOpen(true)}
+                                        className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload
                                     </button>
                                     <button
                                         onClick={handleAddFaculty}
@@ -525,10 +602,23 @@ function SucFormE1() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center text-sm text-gray-500">
-                                <TrendingUp className="w-4 h-4 mr-1" />
-                                Showing {filteredFaculties.length} of{" "}
-                                {faculties.length} faculty members
+                            <div className="flex items-center justify-between text-sm text-gray-500">
+                                <div className="flex items-center">
+                                    <TrendingUp className="w-4 h-4 mr-1" />
+                                    Showing {getDisplayRange()} of {filteredFaculties.length} faculty members
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        value={pageSize}
+                                        onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                                        className="px-2 py-1 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm"
+                                    >
+                                        <option value={5}>5 per page</option>
+                                        <option value={10}>10 per page</option>
+                                        <option value={20}>20 per page</option>
+                                        <option value={50}>50 per page</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -591,7 +681,7 @@ function SucFormE1() {
                             <div className="overflow-x-auto">
                                 <table className="min-w-full">
                                     <tbody className="divide-y divide-gray-200/30">
-                                        {filteredFaculties.map(
+                                        {paginatedData.map(
                                             (faculty, index) => (
                                                 <tr
                                                     key={faculty.id}
@@ -761,19 +851,21 @@ function SucFormE1() {
                                                         </div>
                                                         <p className="text-lg font-semibold text-gray-900 mb-2">
                                                             {searchTerm ||
-                                                            filterType !== "ALL"
+                                                            filterType !== "ALL" ||
+                                                            filterDegree !== "ALL"
                                                                 ? "No matching faculty found"
                                                                 : "No Faculty Records Found"}
                                                         </p>
                                                         <p className="text-sm text-gray-600 mb-4">
                                                             {searchTerm ||
-                                                            filterType !== "ALL"
+                                                            filterType !== "ALL" ||
+                                                            filterDegree !== "ALL"
                                                                 ? "Try adjusting your search terms or filters."
                                                                 : "This institution has no faculty records yet."}
                                                         </p>
                                                         {!searchTerm &&
-                                                            filterType ===
-                                                                "ALL" && (
+                                                            filterType === "ALL" &&
+                                                            filterDegree === "ALL" && (
                                                                 <button
                                                                     onClick={handleAddFaculty}
                                                                     className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200"
@@ -790,6 +882,17 @@ function SucFormE1() {
                                 </table>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {filteredFaculties.length > 0 && (
+                    <div className="mt-4 flex justify-center">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
                     </div>
                 )}
 
@@ -816,6 +919,14 @@ function SucFormE1() {
                     onSave={handleUpdateFaculty}
                     facultyData={selectedFaculty}
                     loading={editLoading}
+                />
+
+                {/* Upload Faculty Modal */}
+                <FacultyUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onUpload={fetchFaculties}
+                    institutionId={SucDetailId}
                 />
             </div>
         </div>

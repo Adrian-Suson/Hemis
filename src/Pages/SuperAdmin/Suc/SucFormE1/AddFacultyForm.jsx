@@ -13,52 +13,52 @@ import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
 
 const facultyRankOptions = [
-    { code: "10", label: "TEACHER, MASTER TEACHER" },
-    { code: "20", label: "INSTRUCTOR" },
-    { code: "30", label: "ASSISTANT PROFESSOR" },
-    { code: "40", label: "ASSOCIATE PROFESSOR" },
-    { code: "50", label: "FULL PROFESSOR (including UNIVERSITY PROFESSOR)" },
-    { code: "09", label: "TEACHING FELLOW OR TEACHING ASSOCIATE" },
-    { code: "11", label: "LECTURER, SENIOR LECTURER, PROFESSORIAL LECTURER" },
-    { code: "12", label: "PROFESSOR EMERITUS" },
-    { code: "13", label: "VISITING PROFESSOR (WHATEVER THE ACTUAL RANK)" },
-    { code: "14", label: "ADJUNCT OR AFFILIATE FACULTY" },
-    { code: "90", label: "OTHERS" },
+    { code: "10", label: "Master Teacher" },
+    { code: "20", label: "Instructor" },
+    { code: "30", label: "Assistant Professor" },
+    { code: "40", label: "Associate Professor" },
+    { code: "50", label: "Full Professor" },
+    { code: "09", label: "Teaching Fellow" },
+    { code: "11", label: "Lecturer" },
+    { code: "12", label: "Professor Emeritus" },
+    { code: "13", label: "Visiting Professor" },
+    { code: "14", label: "Adjunct Faculty" },
+    { code: "90", label: "Others" },
 ];
 
 const degreeOptions = [
-    { code: "000", label: "No formal education at all" },
-    { code: "101", label: "Partial elementary schooling but did not complete Grade 4" },
-    { code: "102", label: "Completed Grade 4 but did not graduate from elementary school" },
-    { code: "103", label: "Completed Elementary School" },
-    { code: "201", label: "Partial completion of High School" },
-    { code: "202", label: "Secondary school graduate or equivalent" },
-    { code: "301", label: "Partial completion of High School" },
-    { code: "302", label: "Completed Tech/Voc" },
-    { code: "401", label: "Partial completion of pre-baccalaureate certificate, diploma or associateship" },
-    { code: "402", label: "Completed pre-bacc certificate, diploma or associateship" },
-    { code: "501", label: "Completed Year 1 of baccalaureate level or equivalent" },
-    { code: "502", label: "Completed Year 2 of baccalaureate level or equivalent" },
-    { code: "503", label: "Completed Year 3 of baccalaureate level or equivalent" },
-    { code: "504", label: "Completed Year 4 of baccalaureate level or equivalent" },
-    { code: "505", label: "Completed Year 5 of baccalaureate level or equivalent" },
-    { code: "506", label: "Completed Year 6 of baccalaureate level or equivalent" },
-    { code: "507", label: "Completed a baccalaureate degree (including DVM, DDM, D Opt)" },
-    { code: "601", label: "Partial Completion of postgraduate certificate or diploma program" },
-    { code: "602", label: "Completed post-grad certificate or diploma program" },
-    { code: "701", label: "Completed Year 1 of MD or LLB (or equivalent)" },
-    { code: "702", label: "Completed Year 2 of MD or LLB (or equivalent)" },
-    { code: "703", label: "Completed Year 3 of MD or LLB (or equivalent)" },
-    { code: "704", label: "Completed Year 4 of MD or LLB (or equivalent)" },
-    { code: "705", label: "Completed MD or LLB (or equivalent)" },
-    { code: "801", label: "Partial completion of masters degree" },
-    { code: "802", label: "Completed all masters requirements except masters thesis" },
-    { code: "803", label: "Completed masters degree or equivalent" },
-    { code: "901", label: "Partial completion of doctorate degree" },
-    { code: "902", label: "Completed all doctorate requirements except dissertation" },
-    { code: "903", label: "Completed doctorate degree" },
-    { code: "980", label: "NOT A FACULTY MEMBER" },
-    { code: "999", label: "No record" },
+    { code: "000", label: "No formal education" },
+    { code: "101", label: "Partial elementary (Grade 1-3)" },
+    { code: "102", label: "Completed Grade 4" },
+    { code: "103", label: "Elementary Graduate" },
+    { code: "201", label: "Partial High School" },
+    { code: "202", label: "High School Graduate" },
+    { code: "301", label: "Partial High School" },
+    { code: "302", label: "Tech/Voc Graduate" },
+    { code: "401", label: "Partial Pre-baccalaureate" },
+    { code: "402", label: "Pre-baccalaureate Graduate" },
+    { code: "501", label: "1st Year College" },
+    { code: "502", label: "2nd Year College" },
+    { code: "503", label: "3rd Year College" },
+    { code: "504", label: "4th Year College" },
+    { code: "505", label: "5th Year College" },
+    { code: "506", label: "6th Year College" },
+    { code: "507", label: "Bachelor's Degree" },
+    { code: "601", label: "Partial Post-grad Certificate" },
+    { code: "602", label: "Post-grad Certificate" },
+    { code: "701", label: "1st Year MD/LLB" },
+    { code: "702", label: "2nd Year MD/LLB" },
+    { code: "703", label: "3rd Year MD/LLB" },
+    { code: "704", label: "4th Year MD/LLB" },
+    { code: "705", label: "MD/LLB Graduate" },
+    { code: "801", label: "Partial Master's" },
+    { code: "802", label: "Master's (No Thesis)" },
+    { code: "803", label: "Master's Degree" },
+    { code: "901", label: "Partial Doctorate" },
+    { code: "902", label: "Doctorate (No Dissertation)" },
+    { code: "903", label: "Doctorate Degree" },
+    { code: "980", label: "Not a Faculty" },
+    { code: "999", label: "No Record" },
 ];
 
 const genderOptions = [
@@ -67,73 +67,73 @@ const genderOptions = [
 ];
 
 const tenureOptions = [
-    { code: "1", label: "Faculty member is tenured" },
-    { code: "2", label: "Faculty member has his own plantilla item but is NOT TENURED" },
-    { code: "3", label: "Faculty member has no plantilla item" },
-    { code: "4", label: "No information on the matter" },
+    { code: "1", label: "Tenured" },
+    { code: "2", label: "Not Tenured (Has Plantilla)" },
+    { code: "3", label: "No Plantilla Item" },
+    { code: "4", label: "No Information" },
 ];
 
 const salaryGradeOptions = [
-    { code: "1", label: "Salary Grade 1 - 33" },
-    { code: "90", label: "No salary grade to speak of (part-time, lecturer, emeritus, adjunct)" },
-    { code: "99", label: "No information on the matter" },
+    { code: "1", label: "Salary Grade 1-33" },
+    { code: "90", label: "No Salary Grade" },
+    { code: "99", label: "No Information" },
 ];
 
 const salaryRangeOptions = [
-    { code: "1", label: "60,000 below" },
-    { code: "2", label: "60,000 - 69,999" },
-    { code: "3", label: "70,000 - 79,999" },
-    { code: "4", label: "80,000 - 89,999" },
-    { code: "5", label: "90,000 - 99,999" },
-    { code: "6", label: "100,000 - 149,999" },
-    { code: "7", label: "150,000 - 249,999" },
-    { code: "8", label: "250,000 - 499,999" },
-    { code: "9", label: "500,000 - UP" },
+    { code: "1", label: "Below ₱60,000" },
+    { code: "2", label: "₱60,000 - ₱69,999" },
+    { code: "3", label: "₱70,000 - ₱79,999" },
+    { code: "4", label: "₱80,000 - ₱89,999" },
+    { code: "5", label: "₱90,000 - ₱99,999" },
+    { code: "6", label: "₱100,000 - ₱149,999" },
+    { code: "7", label: "₱150,000 - ₱249,999" },
+    { code: "8", label: "₱250,000 - ₱499,999" },
+    { code: "9", label: "₱500,000 and above" },
 ];
 
 const leaveStatusOptions = [
-    { code: "1", label: "The faculty member is on OFFICIAL LEAVE WITHOUT PAY" },
-    { code: "2", label: "The faculty member is in ACTIVE DUTY OR ON OFFICIAL LEAVE WITH PAY" },
-    { code: "3", label: "No information on the matter" },
+    { code: "1", label: "On Leave Without Pay" },
+    { code: "2", label: "Active Duty/Leave With Pay" },
+    { code: "3", label: "No Information" },
 ];
 
 const fteOptions = [
-    { code: "1", label: "FTEF = 1.00" },
-    { code: "2", label: "FTEF = 0.50" },
-    { code: "3", label: "FTEF = 0.250" },
+    { code: "1", label: "Full Time (1.00)" },
+    { code: "2", label: "Half Time (0.50)" },
+    { code: "3", label: "Quarter Time (0.25)" },
 ];
 
 const pursuingDegreeOptions = [
-    { code: "1", label: "Faculty has already completed doctorate degree in the field where he is teaching" },
-    { code: "2", label: "Masters degree holder with some PhD units actively pursuing doctorate degree" },
-    { code: "3", label: "Masters degree holder with some PhD units but no longer actively pursuing PhD" },
-    { code: "4", label: "Masters degree holder with no PhD units in the discipline where he is teaching" },
-    { code: "5", label: "Bachelors degree holder with some masters units actively pursuing masters degree" },
-    { code: "6", label: "Bachelors degree holder with some masters units but no longer in active pursuit" },
-    { code: "7", label: "Bachelors degree holder with no masters units in the discipline where he is teaching" },
-    { code: "8", label: "Not a faculty member" },
-    { code: "9", label: "No information on the matter" },
+    { code: "1", label: "Completed Doctorate" },
+    { code: "2", label: "Pursuing Doctorate" },
+    { code: "3", label: "Stopped Pursuing Doctorate" },
+    { code: "4", label: "Master's Only" },
+    { code: "5", label: "Pursuing Master's" },
+    { code: "6", label: "Stopped Pursuing Master's" },
+    { code: "7", label: "Bachelor's Only" },
+    { code: "8", label: "Not a Faculty" },
+    { code: "9", label: "No Information" },
 ];
 
 const thesisOptions = [
-    { code: "1", label: "YES. IN OBTAINING MASTERS DEGREE, THE FACULTY MEMBER WROTE A THESIS" },
-    { code: "2", label: "NO. IN OBTAINING HIS MASTERS, FACULTY MEMBER DID NOT WRITE A THESIS" },
-    { code: "3", label: "NO INFORMATION ON THE MATTER" },
+    { code: "1", label: "With Thesis" },
+    { code: "2", label: "Without Thesis" },
+    { code: "3", label: "No Information" },
 ];
 
 const dissertationOptions = [
-    { code: "1", label: "YES. IN OBTAINING DOCTORATE, THE FACULTY MEMBER WROTE A DISSERTATION" },
-    { code: "2", label: "NO. IN OBTAINING DOCTORATE, FACULTY MEMBER DID NOT WRITE DISSERTATION" },
-    { code: "3", label: "NO INFORMATION ON THE MATTER" },
+    { code: "1", label: "With Dissertation" },
+    { code: "2", label: "Without Dissertation" },
+    { code: "3", label: "No Information" },
 ];
 
 const facultyTypeOptions = [
-    { code: "A1", label: "GROUP A1: FULL-TIME FACULTY MEMBERS WITH THEIR OWN FACULTY PLANTILLA ITEMS TEACHING AT ELEM, SECONDARY AND TECH/VOC" },
-    { code: "B", label: "GROUP B: FULL-TIME FACULTY MEMBERS WITH NO PS ITEMS BUT DRAWING SALARIES FROM THE PS ITEMS OF FACULTY ON LEAVE WITHOUT PAY" },
-    { code: "C1", label: "GROUP C1: FULL-TIME FACULTY MEMBERS WITH NO PS ITEMS DRAWING SALARIES FROM GAA PS LUMP SUMS" },
-    { code: "C2", label: "GROUP C2: FULL-TIME FACULTY MEMBERS WITH NO PS ITEMS DRAWING SALARIES FROM SUC INCOME" },
-    { code: "C3", label: "GROUP C3: FULL-TIME FACULTY MEMBERS WITH NO PS ITEMS DRAWING SALARIES FROM LGU FUNDS" },
-    { code: "E", label: "GROUP E: LECTURERS AND OTHER PART-TIME FACULTY WITH NO ITEMS TEACHING AT ELEMENTARY, SECONDARY OR TECH/VOC LEVELS" },
+    { code: "A1", label: "Full-time with Plantilla (Elem/Sec/Tech)" },
+    { code: "B", label: "Full-time (Salary from Leave)" },
+    { code: "C1", label: "Full-time (GAA PS Lump Sum)" },
+    { code: "C2", label: "Full-time (SUC Income)" },
+    { code: "C3", label: "Full-time (LGU Funds)" },
+    { code: "E", label: "Part-time Lecturer" },
 ];
 
 // Define hourFields constant at the top level
@@ -147,6 +147,51 @@ const hourFields = [
     'official_load_for_production', 'official_administrative_load', 'other_official_load_credits',
     'total_work_load'
 ];
+
+// Add mapping constants
+const genderMapping = {
+    M: "1",
+    F: "2",
+    Male: "1",
+    Female: "2",
+    MALE: "1",
+    FEMALE: "2",
+    "1": "1",
+    "2": "2",
+};
+
+const degreeMapping = {
+    "Bachelor": "507",
+    "Bachelors": "507",
+    "Bachelor's": "507",
+    "Masters": "803",
+    "Master's": "803",
+    "Master": "803",
+    "Doctorate": "903",
+    "PhD": "903",
+    "Ph.D.": "903",
+    "Doctoral": "903",
+};
+
+const tenureMapping = {
+    "Tenured": "1",
+    "Not Tenured": "2",
+    "No Plantilla": "3",
+    "No Info": "4",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+};
+
+const fteMapping = {
+    "Full Time": "1",
+    "Half Time": "2",
+    "Quarter Time": "3",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+};
 
 function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = false }) {
     const [formData, setFormData] = useState({
@@ -195,9 +240,29 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
     const [errors, setErrors] = useState({});
 
     const handleInputChange = (field, value) => {
+        let processedValue = value;
+
+        // Apply mappings based on field type
+        switch (field) {
+            case "gender":
+                processedValue = genderMapping[value] || value;
+                break;
+            case "highest_degree_attained":
+                processedValue = degreeMapping[value] || value;
+                break;
+            case "is_tenured":
+                processedValue = tenureMapping[value] || value;
+                break;
+            case "full_time_equivalent":
+                processedValue = fteMapping[value] || value;
+                break;
+            default:
+                processedValue = value;
+        }
+
         setFormData(prev => ({
             ...prev,
-            [field]: value
+            [field]: processedValue
         }));
 
         // Clear error when user starts typing
@@ -413,16 +478,16 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                         <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
                             <User className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">Personal Information</h3>
+                        <h3 className="text-base font-semibold text-gray-900">Basic Information</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Faculty Name</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                             <input
                                 type="text"
                                 value={formData.faculty_name}
                                 onChange={(e) => handleInputChange("faculty_name", e.target.value)}
-                                placeholder="Enter faculty name"
+                                placeholder="Enter name"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Faculty Name"
                             />
@@ -452,7 +517,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Faculty Type"
                             >
-                                <option value="">Select Faculty Type</option>
+                                <option value="">Select Type</option>
                                 {facultyTypeOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
                                         {option.label}
@@ -469,65 +534,65 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                         <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
                             <GraduationCap className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">Academic Information</h3>
+                        <h3 className="text-base font-semibold text-gray-900">Academic Details</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Faculty Rank</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Rank</label>
                             <select
                                 value={formData.generic_faculty_rank}
                                 onChange={(e) => handleInputChange("generic_faculty_rank", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Faculty Rank"
                             >
-                                <option value="">Select Faculty Rank</option>
+                                <option value="">Select Rank</option>
                                 {facultyRankOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Home College</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">College</label>
                             <input
                                 type="text"
                                 value={formData.home_college}
                                 onChange={(e) => handleInputChange("home_college", e.target.value)}
-                                placeholder="Enter home college"
+                                placeholder="Enter college"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Home College"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Home Department</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                             <input
                                 type="text"
                                 value={formData.home_dept}
                                 onChange={(e) => handleInputChange("home_dept", e.target.value)}
-                                placeholder="Enter home department"
+                                placeholder="Enter department"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Home Department"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Tenure Status</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tenure</label>
                             <select
                                 value={formData.is_tenured}
                                 onChange={(e) => handleInputChange("is_tenured", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Tenure Status"
                             >
-                                <option value="">Select Tenure Status</option>
+                                <option value="">Select Status</option>
                                 {tenureOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Highest Degree Attained</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Highest Degree</label>
                             <select
                                 value={formData.highest_degree_attained}
                                 onChange={(e) => handleInputChange("highest_degree_attained", e.target.value)}
@@ -537,13 +602,13 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 <option value="">Select Degree</option>
                                 {degreeOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Pursuing Next Degree</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Degree Progress</label>
                             <select
                                 value={formData.actively_pursuing_next_degree}
                                 onChange={(e) => handleInputChange("actively_pursuing_next_degree", e.target.value)}
@@ -553,72 +618,72 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 <option value="">Select Status</option>
                                 {pursuingDegreeOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Bachelor&#39;s Discipline</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Bachelor&apos;s Field</label>
                             <input
                                 type="text"
                                 value={formData.bachelors_discipline}
                                 onChange={(e) => handleInputChange("bachelors_discipline", e.target.value)}
-                                placeholder="Enter discipline"
+                                placeholder="Enter field"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Bachelor's Discipline"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Master&#39;s Discipline</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Master&apos;s Field</label>
                             <input
                                 type="text"
                                 value={formData.masters_discipline}
                                 onChange={(e) => handleInputChange("masters_discipline", e.target.value)}
-                                placeholder="Enter discipline"
+                                placeholder="Enter field"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Master's Discipline"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Doctorate Discipline</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Doctorate Field</label>
                             <input
                                 type="text"
                                 value={formData.doctorate_discipline}
                                 onChange={(e) => handleInputChange("doctorate_discipline", e.target.value)}
-                                placeholder="Enter discipline"
+                                placeholder="Enter field"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Doctorate Discipline"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Masters Thesis Status</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Master&apos;s Thesis</label>
                             <select
                                 value={formData.masters_with_thesis}
                                 onChange={(e) => handleInputChange("masters_with_thesis", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Masters Thesis Status"
                             >
-                                <option value="">Select Thesis Status</option>
+                                <option value="">Select Status</option>
                                 {thesisOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Doctorate Dissertation Status</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Doctorate Dissertation</label>
                             <select
                                 value={formData.doctorate_with_dissertation}
                                 onChange={(e) => handleInputChange("doctorate_with_dissertation", e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2Adapter Pattern focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
                                 aria-label="Doctorate Dissertation Status"
                             >
-                                <option value="">Select Dissertation Status</option>
+                                <option value="">Select Status</option>
                                 {dissertationOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
@@ -632,7 +697,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                         <div className="p-2 bg-green-500 rounded-lg shadow-sm">
                             <DollarSign className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">Employment Information</h3>
+                        <h3 className="text-base font-semibold text-gray-900">Employment Details</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
@@ -643,23 +708,23 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200"
                                 aria-label="Salary Grade"
                             >
-                                <option value="">Select Salary Grade</option>
+                                <option value="">Select Grade</option>
                                 {salaryGradeOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Annual Basic Salary</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Salary Range</label>
                             <select
                                 value={formData.annual_basic_salary}
                                 onChange={(e) => handleInputChange("annual_basic_salary", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200"
                                 aria-label="Annual Basic Salary"
                             >
-                                <option value="">Select Salary Range</option>
+                                <option value="">Select Range</option>
                                 {salaryRangeOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
                                         {option.label}
@@ -669,14 +734,14 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                             {errors.annual_basic_salary && <p className="text-red-500 text-xs mt-1">{errors.annual_basic_salary}</p>}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Time Equivalent (FTE)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Work Status</label>
                             <select
                                 value={formData.full_time_equivalent}
                                 onChange={(e) => handleInputChange("full_time_equivalent", e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200"
                                 aria-label="Full Time Equivalent"
                             >
-                                <option value="">Select FTE</option>
+                                <option value="">Select Status</option>
                                 {fteOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
                                         {option.label}
@@ -693,10 +758,10 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200"
                                 aria-label="Leave Status"
                             >
-                                <option value="">Select Leave Status</option>
+                                <option value="">Select Status</option>
                                 {leaveStatusOptions.map((option) => (
                                     <option key={option.code} value={option.code}>
-                                        {option.code} - {option.label}
+                                        {option.label}
                                     </option>
                                 ))}
                             </select>
@@ -710,27 +775,27 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                         <div className="p-2 bg-indigo-500 rounded-lg shadow-sm">
                             <Target className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">Teaching Disciplines</h3>
+                        <h3 className="text-base font-semibold text-gray-900">Teaching Fields</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Teaching Load Discipline 1</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Field 1</label>
                             <input
                                 type="text"
                                 value={formData.primary_teaching_load_discipline_1}
                                 onChange={(e) => handleInputChange("primary_teaching_load_discipline_1", e.target.value)}
-                                placeholder="Enter discipline"
+                                placeholder="Enter field"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
                                 aria-label="Primary Teaching Load Discipline 1"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Teaching Load Discipline 2</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Primary Field 2</label>
                             <input
                                 type="text"
                                 value={formData.primary_teaching_load_discipline_2}
                                 onChange={(e) => handleInputChange("primary_teaching_load_discipline_2", e.target.value)}
-                                placeholder="Enter discipline"
+                                placeholder="Enter field"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
                                 aria-label="Primary Teaching Load Discipline 2"
                             />
@@ -746,7 +811,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                             <div className="p-2 bg-cyan-500 rounded-lg shadow-sm">
                                 <Users className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="text-base font-semibold text-gray-900">Elementary/Secondary Load</h3>
+                            <h3 className="text-base font-semibold text-gray-900">Elementary/Secondary</h3>
                         </div>
                         <div className="space-y-3">
                             <div>
@@ -763,7 +828,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200 text-sm"
                                             aria-label="Lab Hours Elementary/Secondary"
                                         />
-                                        <label className="text-xs text-gray-600">Lab Hours</label>
+                                        <label className="text-xs text-gray-600">Lab</label>
                                         {errors.lab_hours_elem_sec && <p className="text-red-500 text-xs mt-1">{errors.lab_hours_elem_sec}</p>}
                                     </div>
                                     <div>
@@ -777,7 +842,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200 text-sm"
                                             aria-label="Lecture Hours Elementary/Secondary"
                                         />
-                                        <label className="text-xs text-gray-600">Lecture Hours</label>
+                                        <label className="text-xs text-gray-600">Lecture</label>
                                         {errors.lecture_hours_elem_sec && <p className="text-red-500 text-xs mt-1">{errors.lecture_hours_elem_sec}</p>}
                                     </div>
                                     <div>
@@ -789,12 +854,12 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             readOnly
                                             aria-label="Total Teaching Hours Elementary/Secondary"
                                         />
-                                        <label className="text-xs text-cyan-600">Total Hours</label>
+                                        <label className="text-xs text-cyan-600">Total</label>
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Student Contact Hours</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Hours</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
                                         <input
@@ -807,7 +872,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200 text-sm"
                                             aria-label="Student Lab Contact Hours Elementary/Secondary"
                                         />
-                                        <label className="text-xs text-gray-600">Lab Contact</label>
+                                        <label className="text-xs text-gray-600">Lab</label>
                                         {errors.student_lab_contact_hours_elem_sec && <p className="text-red-500 text-xs mt-1">{errors.student_lab_contact_hours_elem_sec}</p>}
                                     </div>
                                     <div>
@@ -821,7 +886,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200 text-sm"
                                             aria-label="Student Lecture Contact Hours Elementary/Secondary"
                                         />
-                                        <label className="text-xs text-gray-600">Lecture Contact</label>
+                                        <label className="text-xs text-gray-600">Lecture</label>
                                         {errors.student_lecture_contact_hours_elem_sec && <p className="text-red-500 text-xs mt-1">{errors.student_lecture_contact_hours_elem_sec}</p>}
                                     </div>
                                     <div>
@@ -833,7 +898,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             readOnly
                                             aria-label="Total Student Contact Hours Elementary/Secondary"
                                         />
-                                        <label className="text-xs text-cyan-600">Total Contact</label>
+                                        <label className="text-xs text-cyan-600">Total</label>
                                     </div>
                                 </div>
                             </div>
@@ -846,7 +911,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                             <div className="p-2 bg-teal-500 rounded-lg shadow-sm">
                                 <Target className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="text-base font-semibold text-gray-900">Technical/Vocational Load</h3>
+                            <h3 className="text-base font-semibold text-gray-900">Technical/Vocational</h3>
                         </div>
                         <div className="space-y-3">
                             <div>
@@ -863,7 +928,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200 text-sm"
                                             aria-label="Lab Hours Technical/Vocational"
                                         />
-                                        <label className="text-xs text-gray-600">Lab Hours</label>
+                                        <label className="text-xs text-gray-600">Lab</label>
                                         {errors.lab_hours_tech_voc && <p className="text-red-500 text-xs mt-1">{errors.lab_hours_tech_voc}</p>}
                                     </div>
                                     <div>
@@ -877,7 +942,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200 text-sm"
                                             aria-label="Lecture Hours Technical/Vocational"
                                         />
-                                        <label className="text-xs text-gray-600">Lecture Hours</label>
+                                        <label className="text-xs text-gray-600">Lecture</label>
                                         {errors.lecture_hours_tech_voc && <p className="text-red-500 text-xs mt-1">{errors.lecture_hours_tech_voc}</p>}
                                     </div>
                                     <div>
@@ -889,12 +954,12 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             readOnly
                                             aria-label="Total Teaching Hours Technical/Vocational"
                                         />
-                                        <label className="text-xs text-teal-600">Total Hours</label>
+                                        <label className="text-xs text-teal-600">Total</label>
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Student Contact Hours</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Hours</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
                                         <input
@@ -907,7 +972,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200 text-sm"
                                             aria-label="Student Lab Contact Hours Technical/Vocational"
                                         />
-                                        <label className="text-xs text-gray-600">Lab Contact</label>
+                                        <label className="text-xs text-gray-600">Lab</label>
                                         {errors.student_lab_contact_hours_tech_voc && <p className="text-red-500 text-xs mt-1">{errors.student_lab_contact_hours_tech_voc}</p>}
                                     </div>
                                     <div>
@@ -921,7 +986,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors duration-200 text-sm"
                                             aria-label="Student Lecture Contact Hours Technical/Vocational"
                                         />
-                                        <label className="text-xs text-gray-600">Lecture Contact</label>
+                                        <label className="text-xs text-gray-600">Lecture</label>
                                         {errors.student_lecture_contact_hours_tech_voc && <p className="text-red-500 text-xs mt-1">{errors.student_lecture_contact_hours_tech_voc}</p>}
                                     </div>
                                     <div>
@@ -933,7 +998,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                             readOnly
                                             aria-label="Total Student Contact Hours Technical/Vocational"
                                         />
-                                        <label className="text-xs text-teal-600">Total Contact</label>
+                                        <label className="text-xs text-teal-600">Total</label>
                                     </div>
                                 </div>
                             </div>
@@ -947,12 +1012,12 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                         <div className="p-2 bg-slate-600 rounded-lg shadow-sm">
                             <Clock className="w-5 h-5 text-white" />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">Official Load Distribution</h3>
+                        <h3 className="text-base font-semibold text-gray-900">Work Load</h3>
                     </div>
                     <div className="space-y-3">
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Research Load</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Research</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -966,7 +1031,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 {errors.official_research_load && <p className="text-red-500 text-xs mt-1">{errors.official_research_load}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Extension Services</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Extension</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -980,7 +1045,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 {errors.official_extension_services_load && <p className="text-red-500 text-xs mt-1">{errors.official_extension_services_load}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Study Load</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Study</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -994,7 +1059,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 {errors.official_study_load && <p className="text-red-500 text-xs mt-1">{errors.official_study_load}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Production Load</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Production</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -1008,7 +1073,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 {errors.official_load_for_production && <p className="text-red-500 text-xs mt-1">{errors.official_load_for_production}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Administrative Load</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Administrative</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -1022,7 +1087,7 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                                 {errors.official_administrative_load && <p className="text-red-500 text-xs mt-1">{errors.official_administrative_load}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Other Official Load</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Other</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -1040,9 +1105,9 @@ function AddFacultyForm({ isOpen, onClose, onSave, institutionId, loading = fals
                         {/* Total Work Load Display */}
                         <div className="bg-white/60 rounded-lg p-3 border border-slate-300">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-700">Total Work Load:</span>
+                                <span className="text-sm font-medium text-gray-700">Total Hours:</span>
                                 <div className="text-lg font-bold text-slate-900">
-                                    {formData.total_work_load || 0} hours
+                                    {formData.total_work_load || 0}
                                 </div>
                             </div>
                         </div>
