@@ -177,7 +177,7 @@ function SucFormE2() {
                 if (result.isConfirmed) {
                     try {
                         // Fetch the Form E2 template
-                        const response = await fetch("/templates/Form-E2-Template.xlsx");
+                        const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
                         }
@@ -186,10 +186,43 @@ function SucFormE2() {
                         const workbook = new ExcelJS.Workbook();
                         await workbook.xlsx.load(arrayBuffer);
 
-                        // Find the main worksheet
-                        const worksheet = workbook.worksheets[0] || workbook.addWorksheet('Faculty Data');
+                        // Helper to get an existing sheet by name (case-insensitive)
+                        const getExistingSheet = (workbook, typeName) => {
+                            const canonicalSheetName = `GROUP ${typeName}`; // Desired uppercase name
+                            let sheet = workbook.getWorksheet(canonicalSheetName); // Try exact match first
 
-                        // Find starting row for data
+                            if (!sheet) {
+                                // If exact match fails, search for a case-insensitive match
+                                for (let i = 0; i < workbook.worksheets.length; i++) {
+                                    const ws = workbook.worksheets[i];
+                                    if (ws.name.toUpperCase() === canonicalSheetName.toUpperCase()) {
+                                        sheet = ws;
+                                        break; // Found it, stop searching
+                                    }
+                                }
+                            }
+                            return sheet; // Returns the found sheet or null if not found
+                        };
+
+                        // Remove the default worksheet if it exists and is empty, or clear its content if it has the "START BELOW THIS ROW" marker
+                        const defaultWorksheet = workbook.worksheets[0];
+                        if (defaultWorksheet && defaultWorksheet.name === 'Faculty Data') {
+                            let hasContent = false;
+                            defaultWorksheet.eachRow((row) => {
+                                row.eachCell((cell) => {
+                                    if (cell.value) {
+                                        hasContent = true;
+                                        return false;
+                                    }
+                                });
+                                if (hasContent) return false;
+                            });
+
+                            if (!hasContent || findStartRow(defaultWorksheet) !== -1) {
+                                workbook.removeWorksheet(defaultWorksheet.id);
+                            }
+                        }
+
                         const findStartRow = (worksheet) => {
                             let startRow = -1;
                             worksheet.eachRow((row, rowNumber) => {
@@ -205,84 +238,155 @@ function SucFormE2() {
                                     return false;
                                 }
                             });
-                            return startRow !== -1 ? startRow : 11; // Fallback to row 11
+                            return startRow !== -1 ? startRow : 4; // Fallback to row 4 for data (after title, group name, and headers)
                         };
 
-                        const startRow = findStartRow(worksheet);
+                        // Populate with faculty data
+                        const facultyGrouped = {};
+                        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const sheetTitle = `FORM E-2: PROFILE OF EACH TERTIARY FACULTY IN AN SUC CAMPUS, as of ${currentDate}`;
 
-                        // Clear existing data
-                        const maxRows = worksheet.rowCount;
-                        for (let rowNum = startRow; rowNum <= maxRows; rowNum++) {
-                            const row = worksheet.getRow(rowNum);
-                            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                                if (colNumber <= 50) {
-                                    if (!cell.formula && !cell.isPartOfSharedFormula) {
-                                        cell.value = null;
-                                    }
+                        faculty.forEach((member) => {
+                            if (member.faculty_type && member.faculty_type !== "Reference") {
+                                const typeName = member.faculty_type.toUpperCase(); // Ensure consistent casing for grouping
+                                if (!facultyGrouped[typeName]) {
+                                    facultyGrouped[typeName] = [];
                                 }
+                                facultyGrouped[typeName].push(member);
+                            }
+                        });
+
+                        for (const typeName in facultyGrouped) {
+                            const currentWorksheet = getExistingSheet(workbook, typeName);
+
+                            if (!currentWorksheet) {
+                                console.warn(`Worksheet named 'GROUP ${typeName}' (or case variation) not found in the Excel template. Skipping data for this faculty type.`);
+                                continue; // Skip to the next faculty type
+                            }
+
+                            // Set general title in A1
+                            currentWorksheet.getCell('A1').value = sheetTitle;
+                            currentWorksheet.getCell('A1').font = { bold: true };
+                            currentWorksheet.getCell('A1').alignment = { horizontal: 'center' };
+
+                            // Set group name in A2
+                            currentWorksheet.getCell('A2').value = `GROUP ${typeName}`;
+                            currentWorksheet.getCell('A2').font = { bold: true };
+                            currentWorksheet.getCell('A2').alignment = { horizontal: 'center' };
+
+                            // Set column headers in Row 3
+                            currentWorksheet.getCell('A3').value = 'SEQ';
+                            currentWorksheet.getCell('B3').value = 'NAME';
+                            currentWorksheet.getCell('C3').value = 'RANK';
+                            currentWorksheet.getCell('D3').value = 'COLLEGE';
+                            currentWorksheet.getCell('E3').value = 'DEPARTMENT';
+                            currentWorksheet.getCell('F3').value = 'TENURED';
+                            currentWorksheet.getCell('G3').value = 'SALARY GRADE';
+                            currentWorksheet.getCell('H3').value = 'ANNUAL SALARY';
+                            currentWorksheet.getCell('I3').value = 'ON LEAVE';
+                            currentWorksheet.getCell('J3').value = 'FTE';
+                            currentWorksheet.getCell('K3').value = 'GENDER';
+                            currentWorksheet.getCell('L3').value = 'HIGHEST DEGREE';
+                            currentWorksheet.getCell('M3').value = 'PURSUING DEGREE';
+                            currentWorksheet.getCell('N3').value = 'DISCIPLINE 1';
+                            currentWorksheet.getCell('O3').value = 'DISCIPLINE 2';
+                            currentWorksheet.getCell('P3').value = 'BACHELORS DISCIPLINE';
+                            currentWorksheet.getCell('Q3').value = 'MASTERS DISCIPLINE';
+                            currentWorksheet.getCell('R3').value = 'DOCTORATE DISCIPLINE';
+                            currentWorksheet.getCell('S3').value = 'MASTERS WITH THESIS';
+                            currentWorksheet.getCell('T3').value = 'DOCTORATE WITH DISSERTATION';
+                            currentWorksheet.getCell('U3').value = 'UNDERGRAD LAB UNITS';
+                            currentWorksheet.getCell('V3').value = 'UNDERGRAD LECTURE UNITS';
+                            currentWorksheet.getCell('W3').value = 'UNDERGRAD TOTAL UNITS';
+                            currentWorksheet.getCell('X3').value = 'UNDERGRAD LAB HOURS';
+                            currentWorksheet.getCell('Y3').value = 'UNDERGRAD LECTURE HOURS';
+                            currentWorksheet.getCell('Z3').value = 'UNDERGRAD TOTAL HOURS';
+                            currentWorksheet.getCell('AA3').value = 'UNDERGRAD LAB CONTACT';
+                            currentWorksheet.getCell('AB3').value = 'UNDERGRAD LECTURE CONTACT';
+                            currentWorksheet.getCell('AC3').value = 'UNDERGRAD TOTAL CONTACT';
+                            currentWorksheet.getCell('AD3').value = 'GRADUATE LAB UNITS';
+                            currentWorksheet.getCell('AE3').value = 'GRADUATE LECTURE UNITS';
+                            currentWorksheet.getCell('AF3').value = 'GRADUATE TOTAL UNITS';
+                            currentWorksheet.getCell('AG3').value = 'GRADUATE LAB CONTACT';
+                            currentWorksheet.getCell('AH3').value = 'GRADUATE LECTURE CONTACT';
+                            currentWorksheet.getCell('AI3').value = 'GRADUATE TOTAL CONTACT';
+                            currentWorksheet.getCell('AJ3').value = 'RESEARCH LOAD';
+                            currentWorksheet.getCell('AK3').value = 'EXTENSION LOAD';
+                            currentWorksheet.getCell('AL3').value = 'STUDY LOAD';
+                            currentWorksheet.getCell('AM3').value = 'PRODUCTION LOAD';
+                            currentWorksheet.getCell('AN3').value = 'ADMIN LOAD';
+                            currentWorksheet.getCell('AO3').value = 'OTHER LOAD';
+                            currentWorksheet.getCell('AP3').value = 'TOTAL WORKLOAD';
+                            currentWorksheet.getCell('AQ3').value = 'REPORT YEAR';
+                            currentWorksheet.getCell('AR3').value = 'FACULTY TYPE';
+
+                            const startRow = findStartRow(currentWorksheet); // Each sheet will start data after the marker or at row 4 if no marker
+
+                            // Clear existing data (below startRow) in current worksheet
+                            for (let rowNum = currentWorksheet.rowCount; rowNum >= startRow; rowNum--) {
+                                currentWorksheet.spliceRows(rowNum, 1);
+                            }
+
+                            facultyGrouped[typeName].forEach((member, index) => {
+                                const rowNumber = startRow + index;
+                                const row = currentWorksheet.getRow(rowNumber);
+
+                                // Helper function to set cell value only if not a formula
+                                const setCellValue = (cell, value) => {
+                                    if (!cell.formula && !cell.isPartOfSharedFormula) {
+                                        cell.value = value;
+                                    }
+                                };
+
+                                // Map faculty data to Excel columns
+                                setCellValue(row.getCell(1), index + 1); // SEQ
+                                setCellValue(row.getCell(2), member.name || ""); // NAME
+                                setCellValue(row.getCell(3), member.generic_faculty_rank || ""); // RANK
+                                setCellValue(row.getCell(4), member.home_college || ""); // COLLEGE
+                                setCellValue(row.getCell(5), member.home_department || ""); // DEPARTMENT
+                                setCellValue(row.getCell(6), member.is_tenured || ""); // TENURED
+                                setCellValue(row.getCell(7), member.ssl_salary_grade || ""); // SALARY GRADE
+                                setCellValue(row.getCell(8), member.annual_basic_salary || 0); // ANNUAL SALARY
+                                setCellValue(row.getCell(9), member.on_leave_without_pay || 0); // ON LEAVE
+                                setCellValue(row.getCell(10), member.full_time_equivalent || 0); // FTE
+                                setCellValue(row.getCell(11), member.gender || ""); // GENDER
+                                setCellValue(row.getCell(12), member.highest_degree_attained || ""); // HIGHEST DEGREE
+                                setCellValue(row.getCell(13), member.pursuing_next_degree || 0); // PURSUING DEGREE
+                                setCellValue(row.getCell(14), member.discipline_teaching_load_1 || ""); // DISCIPLINE 1
+                                setCellValue(row.getCell(15), member.discipline_teaching_load_2 || ""); // DISCIPLINE 2
+                                setCellValue(row.getCell(16), member.discipline_bachelors || ""); // BACHELORS DISCIPLINE
+                                setCellValue(row.getCell(17), member.discipline_masters || ""); // MASTERS DISCIPLINE
+                                setCellValue(row.getCell(18), member.discipline_doctorate || ""); // DOCTORATE DISCIPLINE
+                                setCellValue(row.getCell(19), member.masters_with_thesis || 0); // MASTERS WITH THESIS
+                                setCellValue(row.getCell(20), member.doctorate_with_dissertation || 0); // DOCTORATE WITH DISSERTATION
+                                setCellValue(row.getCell(21), member.undergrad_lab_credit_units || 0); // UNDERGRAD LAB UNITS
+                                setCellValue(row.getCell(22), member.undergrad_lecture_credit_units || 0); // UNDERGRAD LECTURE UNITS
+                                setCellValue(row.getCell(23), member.undergrad_total_credit_units || 0); // UNDERGRAD TOTAL UNITS
+                                setCellValue(row.getCell(24), member.undergrad_lab_hours_per_week || 0); // UNDERGRAD LAB HOURS
+                                setCellValue(row.getCell(25), member.undergrad_lecture_hours_per_week || 0); // UNDERGRAD LECTURE HOURS
+                                setCellValue(row.getCell(26), member.undergrad_total_hours_per_week || 0); // UNDERGRAD TOTAL HOURS
+                                setCellValue(row.getCell(27), member.undergrad_lab_contact_hours || 0); // UNDERGRAD LAB CONTACT
+                                setCellValue(row.getCell(28), member.undergrad_lecture_contact_hours || 0); // UNDERGRAD LECTURE CONTACT
+                                setCellValue(row.getCell(29), member.undergrad_total_contact_hours || 0); // UNDERGRAD TOTAL CONTACT
+                                setCellValue(row.getCell(30), member.graduate_lab_credit_units || 0); // GRADUATE LAB UNITS
+                                setCellValue(row.getCell(31), member.graduate_lecture_credit_units || 0); // GRADUATE LECTURE UNITS
+                                setCellValue(row.getCell(32), member.graduate_total_credit_units || 0); // GRADUATE TOTAL UNITS
+                                setCellValue(row.getCell(33), member.graduate_lab_contact_hours || 0); // GRADUATE LAB CONTACT
+                                setCellValue(row.getCell(34), member.graduate_lecture_contact_hours || 0); // GRADUATE LECTURE CONTACT
+                                setCellValue(row.getCell(35), member.graduate_total_contact_hours || 0); // GRADUATE TOTAL CONTACT
+                                setCellValue(row.getCell(36), member.research_load || 0); // RESEARCH LOAD
+                                setCellValue(row.getCell(37), member.extension_services_load || 0); // EXTENSION LOAD
+                                setCellValue(row.getCell(38), member.study_load || 0); // STUDY LOAD
+                                setCellValue(row.getCell(39), member.production_load || 0); // PRODUCTION LOAD
+                                setCellValue(row.getCell(40), member.administrative_load || 0); // ADMIN LOAD
+                                setCellValue(row.getCell(41), member.other_load_credits || 0); // OTHER LOAD
+                                setCellValue(row.getCell(42), member.total_work_load || 0); // TOTAL WORKLOAD
+                                setCellValue(row.getCell(43), member.report_year || ""); // REPORT YEAR
+                                setCellValue(row.getCell(44), member.faculty_type || ""); // FACULTY TYPE
+
+                                row.commit();
                             });
                         }
-
-                        // Populate with faculty data
-                        faculty.forEach((member, index) => {
-                            const rowNumber = startRow + index;
-                            const row = worksheet.getRow(rowNumber);
-
-                            // Helper function to set cell value only if not a formula
-                            const setCellValue = (cell, value) => {
-                                if (!cell.formula && !cell.isPartOfSharedFormula) {
-                                    cell.value = value;
-                                }
-                            };
-
-                            // Map faculty data to Excel columns
-                            setCellValue(row.getCell(1), index + 1); // SEQ
-                            setCellValue(row.getCell(2), member.name || ""); // NAME
-                            setCellValue(row.getCell(3), member.generic_faculty_rank || ""); // RANK
-                            setCellValue(row.getCell(4), member.home_college || ""); // COLLEGE
-                            setCellValue(row.getCell(5), member.home_department || ""); // DEPARTMENT
-                            setCellValue(row.getCell(6), member.is_tenured || ""); // TENURED
-                            setCellValue(row.getCell(7), member.ssl_salary_grade || ""); // SALARY GRADE
-                            setCellValue(row.getCell(8), member.annual_basic_salary || 0); // ANNUAL SALARY
-                            setCellValue(row.getCell(9), member.on_leave_without_pay || 0); // ON LEAVE
-                            setCellValue(row.getCell(10), member.full_time_equivalent || 0); // FTE
-                            setCellValue(row.getCell(11), member.gender || ""); // GENDER
-                            setCellValue(row.getCell(12), member.highest_degree_attained || ""); // HIGHEST DEGREE
-                            setCellValue(row.getCell(13), member.pursuing_next_degree || 0); // PURSUING DEGREE
-                            setCellValue(row.getCell(14), member.discipline_teaching_load_1 || ""); // DISCIPLINE 1
-                            setCellValue(row.getCell(15), member.discipline_teaching_load_2 || ""); // DISCIPLINE 2
-                            setCellValue(row.getCell(16), member.discipline_bachelors || ""); // BACHELORS DISCIPLINE
-                            setCellValue(row.getCell(17), member.discipline_masters || ""); // MASTERS DISCIPLINE
-                            setCellValue(row.getCell(18), member.discipline_doctorate || ""); // DOCTORATE DISCIPLINE
-                            setCellValue(row.getCell(19), member.masters_with_thesis || 0); // MASTERS WITH THESIS
-                            setCellValue(row.getCell(20), member.doctorate_with_dissertation || 0); // DOCTORATE WITH DISSERTATION
-                            setCellValue(row.getCell(21), member.undergrad_lab_credit_units || 0); // UNDERGRAD LAB UNITS
-                            setCellValue(row.getCell(22), member.undergrad_lecture_credit_units || 0); // UNDERGRAD LECTURE UNITS
-                            setCellValue(row.getCell(23), member.undergrad_total_credit_units || 0); // UNDERGRAD TOTAL UNITS
-                            setCellValue(row.getCell(24), member.undergrad_lab_hours_per_week || 0); // UNDERGRAD LAB HOURS
-                            setCellValue(row.getCell(25), member.undergrad_lecture_hours_per_week || 0); // UNDERGRAD LECTURE HOURS
-                            setCellValue(row.getCell(26), member.undergrad_total_hours_per_week || 0); // UNDERGRAD TOTAL HOURS
-                            setCellValue(row.getCell(27), member.undergrad_lab_contact_hours || 0); // UNDERGRAD LAB CONTACT
-                            setCellValue(row.getCell(28), member.undergrad_lecture_contact_hours || 0); // UNDERGRAD LECTURE CONTACT
-                            setCellValue(row.getCell(29), member.undergrad_total_contact_hours || 0); // UNDERGRAD TOTAL CONTACT
-                            setCellValue(row.getCell(30), member.graduate_lab_credit_units || 0); // GRADUATE LAB UNITS
-                            setCellValue(row.getCell(31), member.graduate_lecture_credit_units || 0); // GRADUATE LECTURE UNITS
-                            setCellValue(row.getCell(32), member.graduate_total_credit_units || 0); // GRADUATE TOTAL UNITS
-                            setCellValue(row.getCell(33), member.graduate_lab_contact_hours || 0); // GRADUATE LAB CONTACT
-                            setCellValue(row.getCell(34), member.graduate_lecture_contact_hours || 0); // GRADUATE LECTURE CONTACT
-                            setCellValue(row.getCell(35), member.graduate_total_contact_hours || 0); // GRADUATE TOTAL CONTACT
-                            setCellValue(row.getCell(36), member.research_load || 0); // RESEARCH LOAD
-                            setCellValue(row.getCell(37), member.extension_services_load || 0); // EXTENSION LOAD
-                            setCellValue(row.getCell(38), member.study_load || 0); // STUDY LOAD
-                            setCellValue(row.getCell(39), member.production_load || 0); // PRODUCTION LOAD
-                            setCellValue(row.getCell(40), member.administrative_load || 0); // ADMIN LOAD
-                            setCellValue(row.getCell(41), member.other_load_credits || 0); // OTHER LOAD
-                            setCellValue(row.getCell(42), member.total_work_load || 0); // TOTAL WORKLOAD
-                            setCellValue(row.getCell(43), member.report_year || ""); // REPORT YEAR
-                            setCellValue(row.getCell(44), member.faculty_type || ""); // FACULTY TYPE
-
-                            row.commit();
-                        });
 
                         // Generate filename
                         const fileName = `${heiUiid}_${heiName.replace(/[^a-zA-Z0-9]/g, '_')}_FormE2_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -303,7 +407,7 @@ function SucFormE2() {
 
                         Swal.fire({
                             title: "Success!",
-                            text: `Form E2 exported successfully with ${faculty.length} faculty members.`,
+                            text: `Form E2 exported successfully with ${faculty.length} faculty members.`, // This count will be overall, not per sheet
                             icon: "success",
                             timer: 4000,
                             showConfirmButton: false,
