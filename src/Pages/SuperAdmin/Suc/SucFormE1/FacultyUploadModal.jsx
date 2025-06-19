@@ -114,7 +114,10 @@ function FacultyE1UploadModal({
             });
 
             const facultySheets = workbook.SheetNames.filter(
-                (name) => !name.toLowerCase().includes("reference")
+                (name) => {
+                    const lower = name.toLowerCase();
+                    return !lower.includes("reference") && !lower.includes("discipline");
+                }
             ).map((name) => ({
                 name,
                 type: "FACULTY",
@@ -289,12 +292,12 @@ function FacultyE1UploadModal({
                     try {
                         const faculty = {
                             suc_details_id: parseInt(institutionId),
-                            name: parseValue(row[1] || row[0]),
+                            faculty_name: parseValue(row[1] || row[0]),
                             generic_faculty_rank: parseValue(row[2]),
                             home_college: parseValue(row[3]),
                             home_department: parseValue(row[4]),
                             is_tenured: parseValue(row[5]),
-                            ssl_salary_grade: parseNumeric(row[6]),
+                            ssl_salary_grade: parseValue(row[6]),
                             annual_basic_salary: parseNumeric(row[7]),
                             on_leave_without_pay: parseValue(row[8]),
                             full_time_equivalent: parseNumeric(row[9]),

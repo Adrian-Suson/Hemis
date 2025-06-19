@@ -71,7 +71,11 @@ return new class extends Migration
             $table->decimal('official_administrative_load', 4, 2)->nullable()->comment('Credit Units');
             $table->decimal('other_official_load_credits', 4, 2)->nullable()->comment('Credit Units');
             $table->decimal('total_work_load', 4, 2)->nullable();
-
+            $table->integer('report_year')->nullable();
+            $table->foreign('report_year')
+                ->references('year')
+                ->on('report_years')
+                ->onDelete('set null');
             $table->string('faculty_type')->nullable();
             $table->timestamps();
 

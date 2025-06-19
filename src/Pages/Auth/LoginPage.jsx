@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import config from "../../utils/config";
 import { Eye, EyeOff, Lock, Mail, ExternalLink, Sparkles, Shield } from "lucide-react";
+import logo from "../../assets/ChedLogo.png"
+import BG from "../../assets/cover.jpg"
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -129,9 +131,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-stretch overflow-hidden relative bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/src/assets/cover.jpg')" }}>
+    <div className="min-h-screen w-full flex items-stretch overflow-hidden relative bg-cover bg-center bg-no-repeat font-sans" style={{ backgroundImage: `url(${BG})` }}>
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
 
       {/* Animated background particles */}
       {particles.map(particle => (
@@ -144,9 +146,9 @@ const LoginPage = () => {
             width: `${particle.size}px`,
             height: `${particle.size}px`,
             backgroundColor: particle.color,
-            opacity: particle.opacity * 0.5, // Reduced opacity for better visibility with image
+            opacity: particle.opacity * 0.4, // More subtle
             transition: 'opacity 2s ease-in-out',
-            filter: 'blur(1px)',
+            filter: 'blur(1.5px)',
           }}
         />
       ))}
@@ -157,14 +159,12 @@ const LoginPage = () => {
           mounted ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-indigo-900/10" />
-
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-indigo-900/20" />
         {/* Animated shapes */}
         <div className="absolute right-0 top-1/4 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-indigo-500/30 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"
              style={{animation: 'float 15s ease-in-out infinite'}}/>
         <div className="absolute right-1/4 bottom-1/4 w-48 h-48 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"
              style={{animation: 'float 18s ease-in-out infinite 2s'}}/>
-
         {/* Content with staggered animations */}
         <div className="relative z-10 max-w-xl">
           <div
@@ -178,10 +178,8 @@ const LoginPage = () => {
                 CHED Region IX
               </h1>
             </div>
-
             <div className="h-1 w-24 bg-gradient-to-r from-yellow-400 to-yellow-200 rounded-full mb-8" />
           </div>
-
           <div
             className={`transform transition-all duration-1000 delay-500 ${
               mounted ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
@@ -190,15 +188,6 @@ const LoginPage = () => {
             <h2 className="text-2xl font-semibold text-white/90 mb-4">Higher Education Management System</h2>
             <p className="text-xl font-light mb-8 text-blue-100">Zamboanga Peninsula&#39;s innovative platform for educational excellence</p>
           </div>
-
-          <div
-            className={`transform transition-all duration-1000 delay-700 ${
-              mounted ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-            }`}
-          >
-
-          </div>
-
           <div
             className={`mt-12 transform transition-all duration-1000 delay-1000 ${
               mounted ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
@@ -208,7 +197,7 @@ const LoginPage = () => {
               {['Efficiency', 'Innovation', 'Excellence', 'Collaboration'].map((value, i) => (
                 <div
                   key={value}
-                  className="px-4 py-2 bg-white/10 rounded-full text-sm text-white/90 border border-white/20 backdrop-blur-sm"
+                  className="px-4 py-2 bg-white/10 rounded-full text-sm text-white/90 border border-white/20 backdrop-blur-sm shadow-sm"
                   style={{
                     animation: animationComplete ? `pulse 3s infinite ${i * 0.7}s` : 'none',
                   }}
@@ -230,11 +219,10 @@ const LoginPage = () => {
         <div className="w-full max-w-md px-8 py-10 sm:px-12 sm:py-12 relative">
           {/* Floating card effect */}
           <div
-            className={`absolute inset-0 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl transform transition-all duration-500 ${
+            className={`absolute inset-0 bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl transform transition-all duration-500 ${
               formFocus ? "scale-[1.02] shadow-blue-500/20" : "scale-100"
             }`}
           />
-
           <div className="relative z-10">
             <div
               className="flex flex-col items-center mb-10 transition-all duration-700"
@@ -245,23 +233,22 @@ const LoginPage = () => {
                 style={{ animation: 'float 6s ease-in-out infinite' }}
               >
                 {/* Glowing effect */}
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-75 blur-md" />
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 opacity-60 blur-md" />
                 <div className="relative bg-gradient-to-br from-yellow-100 to-yellow-400 p-2 rounded-full border-2 border-white/30 shadow-xl backdrop-blur-sm">
-                  <div className="relative overflow-hidden rounded-full w-28 h-28 group">
+                  <div className="relative overflow-hidden rounded-full w-24 h-24 group">
                     <img
-                      src="/src/assets/ChedLogo.png"
+                      src={logo}
                       alt="CHED Region 9 Logo"
-                      className="w-full h-full object-contain transition-all duration-700 group-hover:scale-110"
+                      className="w-full h-full object-contain transition-all duration-700 group-hover:scale-110 bg-white"
+                      style={{ borderRadius: '50%', border: '2px solid #e0e7ef' }}
                     />
-
                   </div>
                 </div>
               </div>
-
-              <h2 className="mt-8 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 text-center transition-all duration-700 delay-200">
+              <h2 className="mt-8 text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-blue-400 text-center transition-all duration-700 delay-200">
                 Welcome Back
               </h2>
-              <p className="mt-2 text-blue-100/80 text-center transition-all duration-700 delay-300">
+              <p className="mt-2 text-blue-700/80 text-center transition-all duration-700 delay-300">
                 Sign in to your account to continue
               </p>
             </div>
@@ -313,7 +300,7 @@ const LoginPage = () => {
               >
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-blue-100 mb-1"
+                  className="block text-sm font-medium text-black mb-1"
                 >
                   Email Address
                 </label>
@@ -325,7 +312,7 @@ const LoginPage = () => {
                   <input
                     id="email"
                     type="email"
-                    className="bg-white/10 border border-white/30 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 block w-full pl-10 p-4 shadow-lg transition-all backdrop- placeholder-blue-200/50"
+                    className="bg-white/90 border border-white/30 text-black text-sm rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 block w-full pl-10 p-4 shadow-lg transition-all placeholder-black"
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -349,7 +336,7 @@ const LoginPage = () => {
                 <div className="flex justify-between">
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-blue-100 mb-1"
+                    className="block text-sm font-medium text-black mb-1"
                   >
                     Password
                   </label>
@@ -363,7 +350,7 @@ const LoginPage = () => {
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    className="bg-white/10 border border-white/30 text-white text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 block w-full pl-10 pr-10 p-4 shadow-lg transition-all placeholder-blue-200/50"
+                    className="bg-white/90 border border-white/30 text-black text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 block w-full pl-10 pr-10 p-4 shadow-lg transition-all placeholder-black"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -450,32 +437,37 @@ const LoginPage = () => {
             >
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/20"></div>
+                  <div className="w-full border-t border-black/20"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 text-blue-200/80 backdrop-blur-sm rounded-md">
+                  <span className="px-2 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 text-black backdrop-blur-sm rounded-md font-semibold">
                     System Information
                   </span>
                 </div>
               </div>
 
               <div className="mt-6 flex items-center justify-center">
-                <p className="text-sm text-blue-200/70">
+                <p className="text-sm text-black">
                   Powered by{" "}
                   <a
                     href="https://chedro9.ph"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-300 hover:text-blue-200 font-medium inline-flex items-center group transition-all duration-300"
+                    className="text-black hover:text-blue-700 font-medium inline-flex items-center group transition-all duration-300"
                   >
                     <span className="relative">
                       CHED Region 9
                       <span className="absolute -bottom-1 left-0 w-0 h-px bg-blue-300 transition-all duration-300 group-hover:w-full"></span>
                     </span>
-                    <ExternalLink className="ml-1 h-3.5 w-3.5 text-blue-300 group-hover:text-blue-200 transition-colors" />
+                    <ExternalLink className="ml-1 h-3.5 w-3.5 text-black group-hover:text-blue-700 transition-colors" />
                   </a>
                 </p>
               </div>
+            </div>
+
+            {/* Add a professional footer */}
+            <div className="mt-10 text-center text-xs text-black font-semibold">
+              &copy; {new Date().getFullYear()} CHED Region IX. All rights reserved.
             </div>
           </div>
         </div>
@@ -501,6 +493,10 @@ const LoginPage = () => {
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        html, body, .font-sans {
+          font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, 'sans-serif';
         }
       `}</style>
     </div>

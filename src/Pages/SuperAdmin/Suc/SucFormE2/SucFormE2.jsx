@@ -15,10 +15,11 @@ import {
     Plus,
     TrendingUp,
     Edit,
-
     Upload,
     Trash,
-    UserCheck,
+    User,
+    Award,
+    PhilippinePeso,
     Clock,
 } from "lucide-react";
 import Popper from "../../../../Components/Popper";
@@ -31,6 +32,14 @@ import config from "../../../../utils/config";
 import axios from "axios";
 import ExcelJS from "exceljs";
 import Swal from "sweetalert2";
+import {
+    GENERIC_FACULTY_RANK,
+    TENURED_STATUS,
+    SALARY_GRADE,
+    ANNUAL_SALARY,
+    GENDER,
+    HIGHEST_DEGREE,
+} from "../../../../utils/SucFormE2Constants";
 
 function SucFormE2() {
     const { SucDetailId } = useParams();
@@ -71,20 +80,14 @@ function SucFormE2() {
         if (searchTerm) {
             filtered = filtered.filter(
                 (member) =>
-                    member.name
-                        ?.toLowerCase()
+                    member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    member.home_college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    member.home_department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (GENERIC_FACULTY_RANK[member.generic_faculty_rank] || "")
+                        .toLowerCase()
                         .includes(searchTerm.toLowerCase()) ||
-                    member.home_college
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    member.home_department
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    member.generic_faculty_rank
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    member.highest_degree_attained
-                        ?.toLowerCase()
+                    (HIGHEST_DEGREE[member.highest_degree_attained] || "")
+                        .toLowerCase()
                         .includes(searchTerm.toLowerCase())
             );
         }
@@ -99,7 +102,8 @@ function SucFormE2() {
         // Filter by highest degree
         if (filterDegree !== "ALL") {
             filtered = filtered.filter(
-                (member) => member.highest_degree_attained === filterDegree
+                (member) =>
+                    (HIGHEST_DEGREE[member.highest_degree_attained] || "") === filterDegree
             );
         }
 
@@ -135,7 +139,9 @@ function SucFormE2() {
                 `${config.API_URL}/suc-form-e2/suc-detail/${SucDetailId}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
                         Accept: "application/json",
                     },
                 }
@@ -177,9 +183,13 @@ function SucFormE2() {
                 if (result.isConfirmed) {
                     try {
                         // Fetch the Form E2 template
-                        const response = await fetch("/templates/Form-E2-Themeplate.xlsx");
+                        const response = await fetch(
+                            "/templates/Form-E2-Themeplate.xlsx"
+                        );
                         if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
+                            throw new Error(
+                                `HTTP error! Status: ${response.status}`
+                            );
                         }
 
                         const arrayBuffer = await response.arrayBuffer();
@@ -189,13 +199,21 @@ function SucFormE2() {
                         // Helper to get an existing sheet by name (case-insensitive)
                         const getExistingSheet = (workbook, typeName) => {
                             const canonicalSheetName = `GROUP ${typeName}`; // Desired uppercase name
-                            let sheet = workbook.getWorksheet(canonicalSheetName); // Try exact match first
+                            let sheet =
+                                workbook.getWorksheet(canonicalSheetName); // Try exact match first
 
                             if (!sheet) {
                                 // If exact match fails, search for a case-insensitive match
-                                for (let i = 0; i < workbook.worksheets.length; i++) {
+                                for (
+                                    let i = 0;
+                                    i < workbook.worksheets.length;
+                                    i++
+                                ) {
                                     const ws = workbook.worksheets[i];
-                                    if (ws.name.toUpperCase() === canonicalSheetName.toUpperCase()) {
+                                    if (
+                                        ws.name.toUpperCase() ===
+                                        canonicalSheetName.toUpperCase()
+                                    ) {
                                         sheet = ws;
                                         break; // Found it, stop searching
                                     }
@@ -206,7 +224,10 @@ function SucFormE2() {
 
                         // Remove the default worksheet if it exists and is empty, or clear its content if it has the "START BELOW THIS ROW" marker
                         const defaultWorksheet = workbook.worksheets[0];
-                        if (defaultWorksheet && defaultWorksheet.name === 'Faculty Data') {
+                        if (
+                            defaultWorksheet &&
+                            defaultWorksheet.name === "Faculty Data"
+                        ) {
                             let hasContent = false;
                             defaultWorksheet.eachRow((row) => {
                                 row.eachCell((cell) => {
@@ -218,7 +239,10 @@ function SucFormE2() {
                                 if (hasContent) return false;
                             });
 
-                            if (!hasContent || findStartRow(defaultWorksheet) !== -1) {
+                            if (
+                                !hasContent ||
+                                findStartRow(defaultWorksheet) !== -1
+                            ) {
                                 workbook.removeWorksheet(defaultWorksheet.id);
                             }
                         }
@@ -228,7 +252,11 @@ function SucFormE2() {
                             worksheet.eachRow((row, rowNumber) => {
                                 let foundMarker = false;
                                 row.eachCell((cell) => {
-                                    if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
+                                    if (
+                                        cell.value &&
+                                        String(cell.value).trim() ===
+                                            "START BELOW THIS ROW"
+                                    ) {
                                         foundMarker = true;
                                         return false;
                                     }
@@ -243,12 +271,19 @@ function SucFormE2() {
 
                         // Populate with faculty data
                         const facultyGrouped = {};
-                        const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const currentDate = new Date().toLocaleDateString(
+                            "en-US",
+                            { year: "numeric", month: "long", day: "numeric" }
+                        );
                         const sheetTitle = `FORM E-2: PROFILE OF EACH TERTIARY FACULTY IN AN SUC CAMPUS, as of ${currentDate}`;
 
                         faculty.forEach((member) => {
-                            if (member.faculty_type && member.faculty_type !== "Reference") {
-                                const typeName = member.faculty_type.toUpperCase(); // Ensure consistent casing for grouping
+                            if (
+                                member.faculty_type &&
+                                member.faculty_type !== "Reference"
+                            ) {
+                                const typeName =
+                                    member.faculty_type.toUpperCase(); // Ensure consistent casing for grouping
                                 if (!facultyGrouped[typeName]) {
                                     facultyGrouped[typeName] = [];
                                 }
@@ -257,139 +292,332 @@ function SucFormE2() {
                         });
 
                         for (const typeName in facultyGrouped) {
-                            const currentWorksheet = getExistingSheet(workbook, typeName);
+                            const currentWorksheet = getExistingSheet(
+                                workbook,
+                                typeName
+                            );
 
                             if (!currentWorksheet) {
-                                console.warn(`Worksheet named 'GROUP ${typeName}' (or case variation) not found in the Excel template. Skipping data for this faculty type.`);
+                                console.warn(
+                                    `Worksheet named 'GROUP ${typeName}' (or case variation) not found in the Excel template. Skipping data for this faculty type.`
+                                );
                                 continue; // Skip to the next faculty type
                             }
 
                             // Set general title in A1
-                            currentWorksheet.getCell('A1').value = sheetTitle;
-                            currentWorksheet.getCell('A1').font = { bold: true };
-                            currentWorksheet.getCell('A1').alignment = { horizontal: 'center' };
+                            currentWorksheet.getCell("A1").value = sheetTitle;
+                            currentWorksheet.getCell("A1").font = {
+                                bold: true,
+                            };
+                            currentWorksheet.getCell("A1").alignment = {
+                                horizontal: "center",
+                            };
 
                             // Set group name in A2
-                            currentWorksheet.getCell('A2').value = `GROUP ${typeName}`;
-                            currentWorksheet.getCell('A2').font = { bold: true };
-                            currentWorksheet.getCell('A2').alignment = { horizontal: 'center' };
+                            currentWorksheet.getCell(
+                                "A2"
+                            ).value = `GROUP ${typeName}`;
+                            currentWorksheet.getCell("A2").font = {
+                                bold: true,
+                            };
+                            currentWorksheet.getCell("A2").alignment = {
+                                horizontal: "center",
+                            };
 
                             // Set column headers in Row 3
-                            currentWorksheet.getCell('A3').value = 'SEQ';
-                            currentWorksheet.getCell('B3').value = 'NAME';
-                            currentWorksheet.getCell('C3').value = 'RANK';
-                            currentWorksheet.getCell('D3').value = 'COLLEGE';
-                            currentWorksheet.getCell('E3').value = 'DEPARTMENT';
-                            currentWorksheet.getCell('F3').value = 'TENURED';
-                            currentWorksheet.getCell('G3').value = 'SALARY GRADE';
-                            currentWorksheet.getCell('H3').value = 'ANNUAL SALARY';
-                            currentWorksheet.getCell('I3').value = 'ON LEAVE';
-                            currentWorksheet.getCell('J3').value = 'FTE';
-                            currentWorksheet.getCell('K3').value = 'GENDER';
-                            currentWorksheet.getCell('L3').value = 'HIGHEST DEGREE';
-                            currentWorksheet.getCell('M3').value = 'PURSUING DEGREE';
-                            currentWorksheet.getCell('N3').value = 'DISCIPLINE 1';
-                            currentWorksheet.getCell('O3').value = 'DISCIPLINE 2';
-                            currentWorksheet.getCell('P3').value = 'BACHELORS DISCIPLINE';
-                            currentWorksheet.getCell('Q3').value = 'MASTERS DISCIPLINE';
-                            currentWorksheet.getCell('R3').value = 'DOCTORATE DISCIPLINE';
-                            currentWorksheet.getCell('S3').value = 'MASTERS WITH THESIS';
-                            currentWorksheet.getCell('T3').value = 'DOCTORATE WITH DISSERTATION';
-                            currentWorksheet.getCell('U3').value = 'UNDERGRAD LAB UNITS';
-                            currentWorksheet.getCell('V3').value = 'UNDERGRAD LECTURE UNITS';
-                            currentWorksheet.getCell('W3').value = 'UNDERGRAD TOTAL UNITS';
-                            currentWorksheet.getCell('X3').value = 'UNDERGRAD LAB HOURS';
-                            currentWorksheet.getCell('Y3').value = 'UNDERGRAD LECTURE HOURS';
-                            currentWorksheet.getCell('Z3').value = 'UNDERGRAD TOTAL HOURS';
-                            currentWorksheet.getCell('AA3').value = 'UNDERGRAD LAB CONTACT';
-                            currentWorksheet.getCell('AB3').value = 'UNDERGRAD LECTURE CONTACT';
-                            currentWorksheet.getCell('AC3').value = 'UNDERGRAD TOTAL CONTACT';
-                            currentWorksheet.getCell('AD3').value = 'GRADUATE LAB UNITS';
-                            currentWorksheet.getCell('AE3').value = 'GRADUATE LECTURE UNITS';
-                            currentWorksheet.getCell('AF3').value = 'GRADUATE TOTAL UNITS';
-                            currentWorksheet.getCell('AG3').value = 'GRADUATE LAB CONTACT';
-                            currentWorksheet.getCell('AH3').value = 'GRADUATE LECTURE CONTACT';
-                            currentWorksheet.getCell('AI3').value = 'GRADUATE TOTAL CONTACT';
-                            currentWorksheet.getCell('AJ3').value = 'RESEARCH LOAD';
-                            currentWorksheet.getCell('AK3').value = 'EXTENSION LOAD';
-                            currentWorksheet.getCell('AL3').value = 'STUDY LOAD';
-                            currentWorksheet.getCell('AM3').value = 'PRODUCTION LOAD';
-                            currentWorksheet.getCell('AN3').value = 'ADMIN LOAD';
-                            currentWorksheet.getCell('AO3').value = 'OTHER LOAD';
-                            currentWorksheet.getCell('AP3').value = 'TOTAL WORKLOAD';
-                            currentWorksheet.getCell('AQ3').value = 'REPORT YEAR';
-                            currentWorksheet.getCell('AR3').value = 'FACULTY TYPE';
+                            currentWorksheet.getCell("A3").value = "SEQ";
+                            currentWorksheet.getCell("B3").value = "NAME";
+                            currentWorksheet.getCell("C3").value = "RANK";
+                            currentWorksheet.getCell("D3").value = "COLLEGE";
+                            currentWorksheet.getCell("E3").value = "DEPARTMENT";
+                            currentWorksheet.getCell("F3").value = "TENURED";
+                            currentWorksheet.getCell("G3").value =
+                                "SALARY GRADE";
+                            currentWorksheet.getCell("H3").value =
+                                "ANNUAL SALARY";
+                            currentWorksheet.getCell("I3").value = "ON LEAVE";
+                            currentWorksheet.getCell("J3").value = "FTE";
+                            currentWorksheet.getCell("K3").value = "GENDER";
+                            currentWorksheet.getCell("L3").value =
+                                "HIGHEST DEGREE";
+                            currentWorksheet.getCell("M3").value =
+                                "PURSUING DEGREE";
+                            currentWorksheet.getCell("N3").value =
+                                "DISCIPLINE 1";
+                            currentWorksheet.getCell("O3").value =
+                                "DISCIPLINE 2";
+                            currentWorksheet.getCell("P3").value =
+                                "BACHELORS DISCIPLINE";
+                            currentWorksheet.getCell("Q3").value =
+                                "MASTERS DISCIPLINE";
+                            currentWorksheet.getCell("R3").value =
+                                "DOCTORATE DISCIPLINE";
+                            currentWorksheet.getCell("S3").value =
+                                "MASTERS WITH THESIS";
+                            currentWorksheet.getCell("T3").value =
+                                "DOCTORATE WITH DISSERTATION";
+                            currentWorksheet.getCell("U3").value =
+                                "UNDERGRAD LAB UNITS";
+                            currentWorksheet.getCell("V3").value =
+                                "UNDERGRAD LECTURE UNITS";
+                            currentWorksheet.getCell("W3").value =
+                                "UNDERGRAD TOTAL UNITS";
+                            currentWorksheet.getCell("X3").value =
+                                "UNDERGRAD LAB HOURS";
+                            currentWorksheet.getCell("Y3").value =
+                                "UNDERGRAD LECTURE HOURS";
+                            currentWorksheet.getCell("Z3").value =
+                                "UNDERGRAD TOTAL HOURS";
+                            currentWorksheet.getCell("AA3").value =
+                                "UNDERGRAD LAB CONTACT";
+                            currentWorksheet.getCell("AB3").value =
+                                "UNDERGRAD LECTURE CONTACT";
+                            currentWorksheet.getCell("AC3").value =
+                                "UNDERGRAD TOTAL CONTACT";
+                            currentWorksheet.getCell("AD3").value =
+                                "GRADUATE LAB UNITS";
+                            currentWorksheet.getCell("AE3").value =
+                                "GRADUATE LECTURE UNITS";
+                            currentWorksheet.getCell("AF3").value =
+                                "GRADUATE TOTAL UNITS";
+                            currentWorksheet.getCell("AG3").value =
+                                "GRADUATE LAB CONTACT";
+                            currentWorksheet.getCell("AH3").value =
+                                "GRADUATE LECTURE CONTACT";
+                            currentWorksheet.getCell("AI3").value =
+                                "GRADUATE TOTAL CONTACT";
+                            currentWorksheet.getCell("AJ3").value =
+                                "RESEARCH LOAD";
+                            currentWorksheet.getCell("AK3").value =
+                                "EXTENSION LOAD";
+                            currentWorksheet.getCell("AL3").value =
+                                "STUDY LOAD";
+                            currentWorksheet.getCell("AM3").value =
+                                "PRODUCTION LOAD";
+                            currentWorksheet.getCell("AN3").value =
+                                "ADMIN LOAD";
+                            currentWorksheet.getCell("AO3").value =
+                                "OTHER LOAD";
+                            currentWorksheet.getCell("AP3").value =
+                                "TOTAL WORKLOAD";
+                            currentWorksheet.getCell("AQ3").value =
+                                "REPORT YEAR";
+                            currentWorksheet.getCell("AR3").value =
+                                "FACULTY TYPE";
 
                             const startRow = findStartRow(currentWorksheet); // Each sheet will start data after the marker or at row 4 if no marker
 
                             // Clear existing data (below startRow) in current worksheet
-                            for (let rowNum = currentWorksheet.rowCount; rowNum >= startRow; rowNum--) {
+                            for (
+                                let rowNum = currentWorksheet.rowCount;
+                                rowNum >= startRow;
+                                rowNum--
+                            ) {
                                 currentWorksheet.spliceRows(rowNum, 1);
                             }
 
-                            facultyGrouped[typeName].forEach((member, index) => {
-                                const rowNumber = startRow + index;
-                                const row = currentWorksheet.getRow(rowNumber);
+                            facultyGrouped[typeName].forEach(
+                                (member, index) => {
+                                    const rowNumber = startRow + index;
+                                    const row =
+                                        currentWorksheet.getRow(rowNumber);
 
-                                // Helper function to set cell value only if not a formula
-                                const setCellValue = (cell, value) => {
-                                    if (!cell.formula && !cell.isPartOfSharedFormula) {
-                                        cell.value = value;
-                                    }
-                                };
+                                    // Helper function to set cell value only if not a formula
+                                    const setCellValue = (cell, value) => {
+                                        if (
+                                            !cell.formula &&
+                                            !cell.isPartOfSharedFormula
+                                        ) {
+                                            cell.value = value;
+                                        }
+                                    };
 
-                                // Map faculty data to Excel columns
-                                setCellValue(row.getCell(1), index + 1); // SEQ
-                                setCellValue(row.getCell(2), member.name || ""); // NAME
-                                setCellValue(row.getCell(3), member.generic_faculty_rank || ""); // RANK
-                                setCellValue(row.getCell(4), member.home_college || ""); // COLLEGE
-                                setCellValue(row.getCell(5), member.home_department || ""); // DEPARTMENT
-                                setCellValue(row.getCell(6), member.is_tenured || ""); // TENURED
-                                setCellValue(row.getCell(7), member.ssl_salary_grade || ""); // SALARY GRADE
-                                setCellValue(row.getCell(8), member.annual_basic_salary || 0); // ANNUAL SALARY
-                                setCellValue(row.getCell(9), member.on_leave_without_pay || 0); // ON LEAVE
-                                setCellValue(row.getCell(10), member.full_time_equivalent || 0); // FTE
-                                setCellValue(row.getCell(11), member.gender || ""); // GENDER
-                                setCellValue(row.getCell(12), member.highest_degree_attained || ""); // HIGHEST DEGREE
-                                setCellValue(row.getCell(13), member.pursuing_next_degree || 0); // PURSUING DEGREE
-                                setCellValue(row.getCell(14), member.discipline_teaching_load_1 || ""); // DISCIPLINE 1
-                                setCellValue(row.getCell(15), member.discipline_teaching_load_2 || ""); // DISCIPLINE 2
-                                setCellValue(row.getCell(16), member.discipline_bachelors || ""); // BACHELORS DISCIPLINE
-                                setCellValue(row.getCell(17), member.discipline_masters || ""); // MASTERS DISCIPLINE
-                                setCellValue(row.getCell(18), member.discipline_doctorate || ""); // DOCTORATE DISCIPLINE
-                                setCellValue(row.getCell(19), member.masters_with_thesis || 0); // MASTERS WITH THESIS
-                                setCellValue(row.getCell(20), member.doctorate_with_dissertation || 0); // DOCTORATE WITH DISSERTATION
-                                setCellValue(row.getCell(21), member.undergrad_lab_credit_units || 0); // UNDERGRAD LAB UNITS
-                                setCellValue(row.getCell(22), member.undergrad_lecture_credit_units || 0); // UNDERGRAD LECTURE UNITS
-                                setCellValue(row.getCell(23), member.undergrad_total_credit_units || 0); // UNDERGRAD TOTAL UNITS
-                                setCellValue(row.getCell(24), member.undergrad_lab_hours_per_week || 0); // UNDERGRAD LAB HOURS
-                                setCellValue(row.getCell(25), member.undergrad_lecture_hours_per_week || 0); // UNDERGRAD LECTURE HOURS
-                                setCellValue(row.getCell(26), member.undergrad_total_hours_per_week || 0); // UNDERGRAD TOTAL HOURS
-                                setCellValue(row.getCell(27), member.undergrad_lab_contact_hours || 0); // UNDERGRAD LAB CONTACT
-                                setCellValue(row.getCell(28), member.undergrad_lecture_contact_hours || 0); // UNDERGRAD LECTURE CONTACT
-                                setCellValue(row.getCell(29), member.undergrad_total_contact_hours || 0); // UNDERGRAD TOTAL CONTACT
-                                setCellValue(row.getCell(30), member.graduate_lab_credit_units || 0); // GRADUATE LAB UNITS
-                                setCellValue(row.getCell(31), member.graduate_lecture_credit_units || 0); // GRADUATE LECTURE UNITS
-                                setCellValue(row.getCell(32), member.graduate_total_credit_units || 0); // GRADUATE TOTAL UNITS
-                                setCellValue(row.getCell(33), member.graduate_lab_contact_hours || 0); // GRADUATE LAB CONTACT
-                                setCellValue(row.getCell(34), member.graduate_lecture_contact_hours || 0); // GRADUATE LECTURE CONTACT
-                                setCellValue(row.getCell(35), member.graduate_total_contact_hours || 0); // GRADUATE TOTAL CONTACT
-                                setCellValue(row.getCell(36), member.research_load || 0); // RESEARCH LOAD
-                                setCellValue(row.getCell(37), member.extension_services_load || 0); // EXTENSION LOAD
-                                setCellValue(row.getCell(38), member.study_load || 0); // STUDY LOAD
-                                setCellValue(row.getCell(39), member.production_load || 0); // PRODUCTION LOAD
-                                setCellValue(row.getCell(40), member.administrative_load || 0); // ADMIN LOAD
-                                setCellValue(row.getCell(41), member.other_load_credits || 0); // OTHER LOAD
-                                setCellValue(row.getCell(42), member.total_work_load || 0); // TOTAL WORKLOAD
-                                setCellValue(row.getCell(43), member.report_year || ""); // REPORT YEAR
-                                setCellValue(row.getCell(44), member.faculty_type || ""); // FACULTY TYPE
+                                    // Map faculty data to Excel columns
+                                    setCellValue(row.getCell(1), index + 1); // SEQ
+                                    setCellValue(
+                                        row.getCell(2),
+                                        member.name || ""
+                                    ); // NAME
+                                    setCellValue(
+                                        row.getCell(3),
+                                        member.generic_faculty_rank || ""
+                                    ); // RANK
+                                    setCellValue(
+                                        row.getCell(4),
+                                        member.home_college || ""
+                                    ); // COLLEGE
+                                    setCellValue(
+                                        row.getCell(5),
+                                        member.home_department || ""
+                                    ); // DEPARTMENT
+                                    setCellValue(
+                                        row.getCell(6),
+                                        member.is_tenured || ""
+                                    ); // TENURED
+                                    setCellValue(
+                                        row.getCell(7),
+                                        member.ssl_salary_grade || ""
+                                    ); // SALARY GRADE
+                                    setCellValue(
+                                        row.getCell(8),
+                                        member.annual_basic_salary || 0
+                                    ); // ANNUAL SALARY
+                                    setCellValue(
+                                        row.getCell(9),
+                                        member.on_leave_without_pay || 0
+                                    ); // ON LEAVE
+                                    setCellValue(
+                                        row.getCell(10),
+                                        member.full_time_equivalent || 0
+                                    ); // FTE
+                                    setCellValue(
+                                        row.getCell(11),
+                                        member.gender || ""
+                                    ); // GENDER
+                                    setCellValue(
+                                        row.getCell(12),
+                                        member.highest_degree_attained || ""
+                                    ); // HIGHEST DEGREE
+                                    setCellValue(
+                                        row.getCell(13),
+                                        member.pursuing_next_degree || 0
+                                    ); // PURSUING DEGREE
+                                    setCellValue(
+                                        row.getCell(14),
+                                        member.discipline_teaching_load_1 || ""
+                                    ); // DISCIPLINE 1
+                                    setCellValue(
+                                        row.getCell(15),
+                                        member.discipline_teaching_load_2 || ""
+                                    ); // DISCIPLINE 2
+                                    setCellValue(
+                                        row.getCell(16),
+                                        member.discipline_bachelors || ""
+                                    ); // BACHELORS DISCIPLINE
+                                    setCellValue(
+                                        row.getCell(17),
+                                        member.discipline_masters || ""
+                                    ); // MASTERS DISCIPLINE
+                                    setCellValue(
+                                        row.getCell(18),
+                                        member.discipline_doctorate || ""
+                                    ); // DOCTORATE DISCIPLINE
+                                    setCellValue(
+                                        row.getCell(19),
+                                        member.masters_with_thesis || 0
+                                    ); // MASTERS WITH THESIS
+                                    setCellValue(
+                                        row.getCell(20),
+                                        member.doctorate_with_dissertation || 0
+                                    ); // DOCTORATE WITH DISSERTATION
+                                    setCellValue(
+                                        row.getCell(21),
+                                        member.undergrad_lab_credit_units || 0
+                                    ); // UNDERGRAD LAB UNITS
+                                    setCellValue(
+                                        row.getCell(22),
+                                        member.undergrad_lecture_credit_units ||
+                                            0
+                                    ); // UNDERGRAD LECTURE UNITS
+                                    setCellValue(
+                                        row.getCell(23),
+                                        member.undergrad_total_credit_units || 0
+                                    ); // UNDERGRAD TOTAL UNITS
+                                    setCellValue(
+                                        row.getCell(24),
+                                        member.undergrad_lab_hours_per_week || 0
+                                    ); // UNDERGRAD LAB HOURS
+                                    setCellValue(
+                                        row.getCell(25),
+                                        member.undergrad_lecture_hours_per_week ||
+                                            0
+                                    ); // UNDERGRAD LECTURE HOURS
+                                    setCellValue(
+                                        row.getCell(26),
+                                        member.undergrad_total_hours_per_week ||
+                                            0
+                                    ); // UNDERGRAD TOTAL HOURS
+                                    setCellValue(
+                                        row.getCell(27),
+                                        member.undergrad_lab_contact_hours || 0
+                                    ); // UNDERGRAD LAB CONTACT
+                                    setCellValue(
+                                        row.getCell(28),
+                                        member.undergrad_lecture_contact_hours ||
+                                            0
+                                    ); // UNDERGRAD LECTURE CONTACT
+                                    setCellValue(
+                                        row.getCell(29),
+                                        member.undergrad_total_contact_hours ||
+                                            0
+                                    ); // UNDERGRAD TOTAL CONTACT
+                                    setCellValue(
+                                        row.getCell(30),
+                                        member.graduate_lab_credit_units || 0
+                                    ); // GRADUATE LAB UNITS
+                                    setCellValue(
+                                        row.getCell(31),
+                                        member.graduate_lecture_credit_units ||
+                                            0
+                                    ); // GRADUATE LECTURE UNITS
+                                    setCellValue(
+                                        row.getCell(32),
+                                        member.graduate_total_credit_units || 0
+                                    ); // GRADUATE TOTAL UNITS
+                                    setCellValue(
+                                        row.getCell(33),
+                                        member.graduate_lab_contact_hours || 0
+                                    ); // GRADUATE LAB CONTACT
+                                    setCellValue(
+                                        row.getCell(34),
+                                        member.graduate_lecture_contact_hours ||
+                                            0
+                                    ); // GRADUATE LECTURE CONTACT
+                                    setCellValue(
+                                        row.getCell(35),
+                                        member.graduate_total_contact_hours || 0
+                                    ); // GRADUATE TOTAL CONTACT
+                                    setCellValue(
+                                        row.getCell(36),
+                                        member.research_load || 0
+                                    ); // RESEARCH LOAD
+                                    setCellValue(
+                                        row.getCell(37),
+                                        member.extension_services_load || 0
+                                    ); // EXTENSION LOAD
+                                    setCellValue(
+                                        row.getCell(38),
+                                        member.study_load || 0
+                                    ); // STUDY LOAD
+                                    setCellValue(
+                                        row.getCell(39),
+                                        member.production_load || 0
+                                    ); // PRODUCTION LOAD
+                                    setCellValue(
+                                        row.getCell(40),
+                                        member.administrative_load || 0
+                                    ); // ADMIN LOAD
+                                    setCellValue(
+                                        row.getCell(41),
+                                        member.other_load_credits || 0
+                                    ); // OTHER LOAD
+                                    setCellValue(
+                                        row.getCell(42),
+                                        member.total_work_load || 0
+                                    ); // TOTAL WORKLOAD
 
-                                row.commit();
-                            });
+                                    row.commit();
+                                }
+                            );
                         }
 
                         // Generate filename
-                        const fileName = `${heiUiid}_${heiName.replace(/[^a-zA-Z0-9]/g, '_')}_FormE2_${new Date().toISOString().split('T')[0]}.xlsx`;
+                        const fileName = `${heiUiid}_${heiName.replace(
+                            /[^a-zA-Z0-9]/g,
+                            "_"
+                        )}_FormE2_${
+                            new Date().toISOString().split("T")[0]
+                        }.xlsx`;
 
                         // Save and download the file
                         const buffer = await workbook.xlsx.writeBuffer();
@@ -412,7 +640,6 @@ function SucFormE2() {
                             timer: 4000,
                             showConfirmButton: false,
                         });
-
                     } catch (error) {
                         console.error("Error exporting Form E2:", error);
                         Swal.fire({
@@ -457,7 +684,9 @@ function SucFormE2() {
                 facultyData,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
                         Accept: "application/json",
                         "Content-Type": "application/json",
                     },
@@ -486,7 +715,9 @@ function SucFormE2() {
                 updatedFacultyData,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
                         Accept: "application/json",
                         "Content-Type": "application/json",
                     },
@@ -497,7 +728,9 @@ function SucFormE2() {
                 const updatedFaculty = response.data;
                 setFaculty((prev) =>
                     prev.map((member) =>
-                        member.id === updatedFaculty.id ? updatedFaculty : member
+                        member.id === updatedFaculty.id
+                            ? updatedFaculty
+                            : member
                     )
                 );
                 setIsEditModalOpen(false);
@@ -518,7 +751,9 @@ function SucFormE2() {
                 `${config.API_URL}/suc-form-e2/${facultyId}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
                         Accept: "application/json",
                     },
                 }
@@ -558,55 +793,15 @@ function SucFormE2() {
         setIsUploadModalOpen(false);
     };
 
-
-    // Function to get salary range label based on the code (1-9)
-    const getSalaryRangeLabel = (rangeCode) => {
-        if (!rangeCode) return "No range data";
-
-        const salaryRanges = [
-            { value: "1", label: "₱60,000 below" },
-            { value: "2", label: "₱60,000 - ₱69,999" },
-            { value: "3", label: "₱70,000 - ₱79,999" },
-            { value: "4", label: "₱80,000 - ₱89,999" },
-            { value: "5", label: "₱90,000 - ₱99,999" },
-            { value: "6", label: "₱100,000 - ₱149,999" },
-            { value: "7", label: "₱150,000 - ₱249,999" },
-            { value: "8", label: "₱250,000 - ₱499,999" },
-            { value: "9", label: "₱500,000 - UP" }
-        ];
-
-        const range = salaryRanges.find(range => range.value === String(rangeCode));
-        return range ? range.label : "Invalid range code";
-    };
-
-    const getFacultyTypeColor = (type) => {
-        switch (type?.toUpperCase()) {
-            case "A1":
-                return "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300";
-            case "B":
-                return "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300";
-            case "C1":
-                return "bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-300";
-            case "C2":
-                return "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-orange-300";
-            case "C3":
-                return "bg-gradient-to-r from-pink-100 to-pink-200 text-pink-800 border-pink-300";
-            case "E":
-                return "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300";
-            default:
-                return "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border-gray-300";
-        }
-    };
-
     const getDegreeText = (degree) => {
         // Map degree codes to their basic level
         if (!degree) return "unknown";
 
-        const code = String(degree).padStart(3, '0');
+        const code = String(degree).padStart(3, "0");
 
-        if (code.startsWith('9')) return "doctorate";
-        if (code.startsWith('8')) return "master";
-        if (code.startsWith('5') || code.startsWith('7')) return "bachelor";
+        if (code.startsWith("9")) return "doctorate";
+        if (code.startsWith("8")) return "master";
+        if (code.startsWith("5") || code.startsWith("7")) return "bachelor";
         return "other";
     };
 
@@ -637,14 +832,17 @@ function SucFormE2() {
     // Calculate display range for current page
     const getDisplayRange = () => {
         const startIndex = (currentPage - 1) * pageSize + 1;
-        const endIndex = Math.min(currentPage * pageSize, filteredFaculty.length);
+        const endIndex = Math.min(
+            currentPage * pageSize,
+            filteredFaculty.length
+        );
         return { startIndex, endIndex };
     };
 
     const { startIndex, endIndex } = getDisplayRange();
 
     // Get unique degree options for filter
-    const degreeOptions = [...new Set(faculty.map(f => f.highest_degree_attained).filter(Boolean))];
+    const degreeOptions = Object.values(HIGHEST_DEGREE);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
@@ -681,7 +879,9 @@ function SucFormE2() {
                                             type="text"
                                             placeholder="Search faculty..."
                                             value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            onChange={(e) =>
+                                                setSearchTerm(e.target.value)
+                                            }
                                             className="pl-10 pr-4 py-2 w-full sm:w-60 lg:w-80 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200"
                                         />
                                     </div>
@@ -690,10 +890,14 @@ function SucFormE2() {
                                         <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <select
                                             value={filterType}
-                                            onChange={(e) => setFilterType(e.target.value)}
+                                            onChange={(e) =>
+                                                setFilterType(e.target.value)
+                                            }
                                             className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
                                         >
-                                            <option value="ALL">All Types</option>
+                                            <option value="ALL">
+                                                All Types
+                                            </option>
                                             <option value="A1">Group A1</option>
                                             <option value="B">Group B</option>
                                             <option value="C1">Group C1</option>
@@ -707,12 +911,21 @@ function SucFormE2() {
                                         <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                         <select
                                             value={filterDegree}
-                                            onChange={(e) => setFilterDegree(e.target.value)}
+                                            onChange={(e) =>
+                                                setFilterDegree(e.target.value)
+                                            }
                                             className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
                                         >
-                                            <option value="ALL">All Degrees</option>
-                                            {degreeOptions.map(degree => (
-                                                <option key={degree} value={degree}>{degree}</option>
+                                            <option value="ALL">
+                                                All Degrees
+                                            </option>
+                                            {degreeOptions.map((degree) => (
+                                                <option
+                                                    key={degree}
+                                                    value={degree}
+                                                >
+                                                    {degree}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -721,11 +934,16 @@ function SucFormE2() {
                                 <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
                                     <button
                                         onClick={handleExportToFormE2}
-                                        disabled={exportLoading || faculty.length === 0}
+                                        disabled={
+                                            exportLoading ||
+                                            faculty.length === 0
+                                        }
                                         className="inline-flex items-center justify-center px-4 py-2 bg-white/50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <Download className="w-4 h-4 mr-2" />
-                                        {exportLoading ? "Exporting..." : "Export Form E2"}
+                                        {exportLoading
+                                            ? "Exporting..."
+                                            : "Export Form E2"}
                                     </button>
                                     <button
                                         onClick={handleUploadFaculty}
@@ -747,10 +965,17 @@ function SucFormE2() {
                             <div className="flex items-center justify-between text-sm text-gray-500">
                                 <div className="flex items-center">
                                     <TrendingUp className="w-4 h-4 mr-1" />
-                                    Showing {filteredFaculty.length > 0 ? startIndex : 0} to {endIndex} of {filteredFaculty.length} faculty members
-                                    {filteredFaculty.length !== faculty.length && (
+                                    Showing{" "}
+                                    {filteredFaculty.length > 0
+                                        ? startIndex
+                                        : 0}{" "}
+                                    to {endIndex} of {filteredFaculty.length}{" "}
+                                    faculty members
+                                    {filteredFaculty.length !==
+                                        faculty.length && (
                                         <span className="text-blue-600 ml-1">
-                                            (filtered from {faculty.length} total)
+                                            (filtered from {faculty.length}{" "}
+                                            total)
                                         </span>
                                     )}
                                 </div>
@@ -783,52 +1008,41 @@ function SucFormE2() {
                     </div>
                 ) : (
                     <>
-                        {/* Faculty Table */}
+                        {/* Faculty Table with Fixed Height (copied and adapted from SucFormE1.jsx) */}
                         <div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-sm border border-white/20 overflow-hidden mb-6">
-                            {/* Table Container with fixed layout */}
-                            <div className="overflow-x-auto">
-                                <div className="min-w-full">
-                                    {/* Table Header - Fixed */}
-                                    <div className="bg-gradient-to-r from-gray-50/80 to-blue-50/50 border-b border-gray-200/50 sticky top-0 z-10">
-                                        <table className="min-w-full table-fixed">
-                                            <thead>
-                                                <tr>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Faculty Information
-                                                    </th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Position & Department
-                                                    </th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Academic Details
-                                                    </th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Workload & Status
-                                                    </th>
-                                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Actions
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                        </table>
-                                    </div>
-
-                                    {/* Table Body - Scrollable with max height */}
-                                    <div
-                                        className="max-h-[400px] overflow-y-auto overflow-x-hidden relative"
-                                        style={{
-                                            scrollBehavior: "smooth",
-                                            scrollbarWidth: "thin",
-                                            scrollbarColor: "#CBD5E1 #F1F5F9",
-                                        }}
-                                        key={`table-body-${filteredFaculty.length}-${filterType}-${filterDegree}-${searchTerm}`}
-                                    >
-                                        <table
-                                            className="min-w-full table-fixed"
-                                            style={{ width: "100%" }}
-                                        >
-                                            <tbody className="divide-y divide-gray-200/30">
-                                                {paginatedData.map((member, index) => (
+                            {/* Table Header - Fixed */}
+                            <div className="bg-gradient-to-r from-gray-50/80 to-blue-50/50 border-b border-gray-200/50">
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full">
+                                        <thead>
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Faculty Information
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Position & College
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Education & Status
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Work Load & Salary
+                                                </th>
+                                                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                            {/* Table Body - Scrollable */}
+                            <div className="max-h-96 overflow-y-auto">
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full">
+                                        <tbody className="divide-y divide-gray-200/30">
+                                            {paginatedData.map(
+                                                (member, index) => (
                                                     <tr
                                                         key={member.id}
                                                         className={`hover:bg-blue-50/30 transition-all duration-200 ${
@@ -837,10 +1051,7 @@ function SucFormE2() {
                                                                 : "bg-gray-50/30"
                                                         }`}
                                                     >
-                                                        <td
-                                                            className="px-4 py-4"
-                                                            style={{ width: "320px" }}
-                                                        >
+                                                        <td className="px-4 py-4">
                                                             <div className="flex items-center">
                                                                 <div className="flex-shrink-0 h-10 w-10">
                                                                     <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700">
@@ -850,140 +1061,125 @@ function SucFormE2() {
                                                                 <div className="ml-4 min-w-0 flex-1">
                                                                     <div
                                                                         className="text-sm font-semibold text-gray-900 text-wrap"
-                                                                        title={member.name}
+                                                                        title={
+                                                                            member.name
+                                                                        }
                                                                     >
-                                                                        {member.name}
+                                                                        {
+                                                                            member.name
+                                                                        }
                                                                     </div>
-                                                                    <div className="text-xs text-gray-500 truncate">
-                                                                        {member.gender && (
-                                                                            <span className="mr-2">
-                                                                                {member.gender}
-                                                                            </span>
-                                                                        )}
-                                                                        {member.ssl_salary_grade && (
-                                                                            <span className="text-blue-600">
-                                                                                SG {member.ssl_salary_grade}
-                                                                            </span>
-                                                                        )}
+                                                                    <div className="text-xs text-gray-500 flex items-center">
+                                                                        <User className="w-3 h-3 mr-1" />
+                                                                        {GENDER[
+                                                                            member
+                                                                                .gender
+                                                                        ] ||
+                                                                            member.gender}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 flex items-center mt-1">
+                                                                        <Award className="w-3 h-3 mr-1" />
+                                                                        {member.faculty_type ||
+                                                                            "Unknown"}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                                        <span className="font-mono">
+                                                                            ID:{" "}
+                                                                            {
+                                                                                member.id
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4">
+                                                            <div className="space-y-2">
+                                                                <div className="text-sm font-medium text-gray-900">
+                                                                    {GENERIC_FACULTY_RANK[
+                                                                        member
+                                                                            .generic_faculty_rank
+                                                                    ] ||
+                                                                        member.generic_faculty_rank ||
+                                                                        "Not assigned"}
+                                                                </div>
+                                                                <div className="text-xs text-gray-600">
+                                                                    <div className="flex items-center">
+                                                                        <BookOpen className="w-3 h-3 mr-1 text-blue-500" />
+                                                                        {member.home_college ||
+                                                                            "No college"}
                                                                     </div>
                                                                     <div className="flex items-center mt-1">
-                                                                        {member.is_tenured === 'Yes' && (
-                                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
-                                                                                <UserCheck className="w-3 h-3 mr-1" />
-                                                                                Tenured
-                                                                            </span>
-                                                                        )}
-                                                                        {member.on_leave_without_pay === 1 && (
-                                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                                                                <Clock className="w-3 h-3 mr-1" />
-                                                                                On Leave
-                                                                            </span>
-                                                                        )}
+                                                                        <Award className="w-3 h-3 mr-1 text-green-500" />
+                                                                        {member.home_department ||
+                                                                            "No department"}
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td
-                                                            className="px-4 py-4"
-                                                            style={{ width: "256px" }}
-                                                        >
+                                                        <td className="px-4 py-4">
                                                             <div className="space-y-2">
                                                                 <span
-                                                                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getFacultyTypeColor(
-                                                                        member.faculty_type
+                                                                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getDegreeColor(
+                                                                        member.highest_degree_attained
                                                                     )}`}
                                                                 >
-                                                                    {member.faculty_type || "Unknown"}
+                                                                    {HIGHEST_DEGREE[
+                                                                        member
+                                                                            .highest_degree_attained
+                                                                    ] ||
+                                                                        member.highest_degree_attained ||
+                                                                        "Not specified"}
                                                                 </span>
-                                                                <div className="text-xs text-gray-600">
-                                                                    <div
-                                                                        className="font-medium text-gray-900 truncate"
-                                                                        title={member.generic_faculty_rank}
-                                                                    >
-                                                                        {member.generic_faculty_rank || "No Rank"}
-                                                                    </div>
-                                                                    <div
-                                                                        className="truncate"
-                                                                        title={member.home_college}
-                                                                    >
-                                                                        {member.home_college || "No College"}
-                                                                    </div>
-                                                                    <div
-                                                                        className="truncate text-blue-600"
-                                                                        title={member.home_department}
-                                                                    >
-                                                                        {member.home_department || "No Department"}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td
-                                                            className="px-4 py-4"
-                                                            style={{ width: "224px" }}
-                                                        >
-                                                            <div className="space-y-1">
-                                                                <div className="flex items-center">
-                                                                    <span
-                                                                        className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getDegreeColor(
-                                                                            member.highest_degree_attained
-                                                                        )}`}
-                                                                    >
-                                                                        <GraduationCap className="w-3 h-3 mr-1" />
-                                                                        {member.highest_degree_attained || "N/A"}
-                                                                    </span>
-                                                                </div>
-                                                                {member.pursuing_next_degree === 1 && (
-                                                                    <div className="text-xs text-purple-600 flex items-center">
-                                                                        <BookOpen className="w-3 h-3 mr-1" />
-                                                                        Pursuing higher degree
-                                                                    </div>
-                                                                )}
-                                                                <div className="text-xs text-gray-600">
-                                                                    {member.masters_with_thesis === 1 && (
-                                                                        <div>✓ Masters with thesis</div>
-                                                                    )}
-                                                                    {member.doctorate_with_dissertation === 1 && (
-                                                                        <div>✓ Doctorate with dissertation</div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500 truncate">
-                                                                    FTE: {member.full_time_equivalent || 0}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td
-                                                            className="px-4 py-4"
-                                                            style={{ width: "192px" }}
-                                                        >
-                                                            <div className="space-y-1">
-                                                                {/* Display the salary range label based on the code from annual_basic_salary */}
-                                                                {member.annual_basic_salary && (
-                                                                    <div className="text-sm font-medium text-gray-900">
-                                                                        {getSalaryRangeLabel(member.annual_basic_salary)}
-                                                                    </div>
-                                                                )}
-                                                                <div className="text-xs text-gray-600">
-                                                                    <div>Total Load: {member.total_work_load || 0}</div>
-                                                                    <div className="text-blue-600">
-                                                                        Teaching: {(member.undergrad_total_credit_units || 0) + (member.graduate_total_credit_units || 0)} units
-                                                                    </div>
-                                                                    {member.research_load > 0 && (
-                                                                        <div className="text-green-600">
-                                                                            Research: {member.research_load}
+                                                                <div className="space-y-1">
+                                                                    {member.is_tenured && (
+                                                                        <div className="text-xs text-green-600 flex items-center">
+                                                                            <Award className="w-3 h-3 mr-1" />
+                                                                            {TENURED_STATUS[
+                                                                                member
+                                                                                    .is_tenured
+                                                                            ] ||
+                                                                                member.is_tenured}
                                                                         </div>
                                                                     )}
-                                                                    {member.administrative_load > 0 && (
-                                                                        <div className="text-purple-600">
-                                                                            Admin: {member.administrative_load}
+                                                                    {member.pursuing_next_degree && (
+                                                                        <div className="text-xs text-blue-600 flex items-center">
+                                                                            <GraduationCap className="w-3 h-3 mr-1" />
+                                                                            {
+                                                                                member.pursuing_next_degree
+                                                                            }
+                                                                        </div>
+                                                                    )}
+                                                                    {member.on_leave_without_pay && (
+                                                                        <div className="text-xs text-orange-600 flex items-center">
+                                                                            <Clock className="w-3 h-3 mr-1" />
+                                                                            {
+                                                                                member.on_leave_without_pay
+                                                                            }
                                                                         </div>
                                                                     )}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td
-                                                            className="px-4 py-4 text-center"
-                                                            style={{ width: "128px" }}
-                                                        >
+                                                        <td className="px-4 py-4">
+                                                            <div className="space-y-1">
+                                                                <div className="text-sm font-medium text-gray-900 flex items-center">
+                                                                <PhilippinePeso className="w-3 h-3 mr-1 text-green-500" />
+                                                                            {ANNUAL_SALARY[
+                                                                                member
+                                                                                    .annual_basic_salary
+                                                                            ] ||
+                                                                                member.annual_basic_salary}
+                                                                </div>
+                                                                <div className="text-xs text-gray-600">
+                                                                    <div className="text-xs text-gray-500 mt-1">
+                                                                        {" "}
+                                                                        {SALARY_GRADE[String(member.ssl_salary_grade)] || member.ssl_salary_grade || "Not specified"}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center">
                                                             <Popper
                                                                 trigger={
                                                                     <button
@@ -1000,80 +1196,101 @@ function SucFormE2() {
                                                             >
                                                                 <div className="py-2">
                                                                     <button
-                                                                        onClick={() => handleViewDetails(member)}
+                                                                        onClick={() =>
+                                                                            handleViewDetails(
+                                                                                member
+                                                                            )
+                                                                        }
                                                                         className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
                                                                         role="menuitem"
                                                                     >
                                                                         <Eye className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                                        View Details
+                                                                        View
+                                                                        Details
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleEdit(member)}
+                                                                        onClick={() =>
+                                                                            handleEdit(
+                                                                                member
+                                                                            )
+                                                                        }
                                                                         className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-green-50 focus:outline-none focus:bg-green-50 transition-colors duration-150 group"
                                                                         role="menuitem"
                                                                     >
                                                                         <Edit className="w-4 h-4 mr-3 text-green-500 group-hover:text-green-600" />
-                                                                        Edit Faculty
+                                                                        Edit
+                                                                        Faculty
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleDelete(member.id)}
-                                                                        className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150"
+                                                                        onClick={() =>
+                                                                            handleDelete(
+                                                                                member.id
+                                                                            )
+                                                                        }
+                                                                        className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150 group"
                                                                         role="menuitem"
                                                                     >
-                                                                        <Trash className="w-4 h-4 mr-3 text-red-700" />
-                                                                        Delete Faculty
+                                                                        <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-800" />
+                                                                        Delete
+                                                                        Faculty
                                                                     </button>
                                                                 </div>
                                                             </Popper>
                                                         </td>
                                                     </tr>
-                                                ))}
-                                                {paginatedData.length === 0 && (
-                                                    <tr>
-                                                        <td colSpan="5" className="px-6 py-12 text-center">
-                                                            <div className="text-gray-500">
-                                                                <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                                                                    <Users className="w-10 h-10 text-gray-400" />
-                                                                </div>
-
-                                                                <div className="mb-4">
-                                                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                                                        {searchTerm || filterType !== "ALL" || filterDegree !== "ALL"
-                                                                            ? "No faculty found"
-                                                                            : "No faculty available"}
-                                                                    </h3>
-                                                                    <p className="text-gray-600">
-                                                                        {searchTerm || filterType !== "ALL" || filterDegree !== "ALL"
-                                                                            ? "Try adjusting your search or filter criteria"
-                                                                            : "Get started by adding your first faculty member"}
-                                                                    </p>
-                                                                </div>
-
-                                                                {!searchTerm && filterType === "ALL" && filterDegree === "ALL" && (
-                                                                    <div className="space-y-3">
-                                                                        <button
-                                                                            onClick={handleAddFaculty}
-                                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200 mr-3"
-                                                                        >
-                                                                            <Plus className="w-4 h-4 mr-2" />
-                                                                            Add Faculty
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={handleUploadFaculty}
-                                                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-green-800 shadow-sm hover:shadow-md transition-all duration-200"
-                                                                        >
-                                                                            <Upload className="w-4 h-4 mr-2" />
-                                                                            Upload Excel
-                                                                        </button>
-                                                                    </div>
-                                                                )}
+                                                )
+                                            )}
+                                            {paginatedData.length === 0 && (
+                                                <tr>
+                                                    <td
+                                                        colSpan="5"
+                                                        className="px-6 py-12 text-center"
+                                                    >
+                                                        <div className="text-gray-500">
+                                                            <div className="mx-auto h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                                                                <Users className="w-10 h-10 text-gray-400" />
                                                             </div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                            <p className="text-lg font-semibold text-gray-900 mb-2">
+                                                                {searchTerm ||
+                                                                filterType !==
+                                                                    "ALL" ||
+                                                                filterDegree !==
+                                                                    "ALL"
+                                                                    ? "No matching faculty found"
+                                                                    : "No Faculty Records Found"}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600 mb-4">
+                                                                {searchTerm ||
+                                                                filterType !==
+                                                                    "ALL" ||
+                                                                filterDegree !==
+                                                                    "ALL"
+                                                                    ? "Try adjusting your search terms or filters."
+                                                                    : "This institution has no faculty records yet."}
+                                                            </p>
+                                                            {!searchTerm &&
+                                                                filterType ===
+                                                                    "ALL" &&
+                                                                filterDegree ===
+                                                                    "ALL" && (
+                                                                    <button
+                                                                        onClick={
+                                                                            handleAddFaculty
+                                                                        }
+                                                                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200"
+                                                                    >
+                                                                        <Plus className="w-4 h-4 mr-2" />
+                                                                        Add
+                                                                        First
+                                                                        Faculty
+                                                                    </button>
+                                                                )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -1083,10 +1300,13 @@ function SucFormE2() {
                             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-sm">
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                                     <div className="text-sm text-gray-700">
-                                        Showing {startIndex} to {endIndex} of {filteredFaculty.length} results
-                                        {filteredFaculty.length !== faculty.length && (
+                                        Showing {startIndex} to {endIndex} of{" "}
+                                        {filteredFaculty.length} results
+                                        {filteredFaculty.length !==
+                                            faculty.length && (
                                             <span className="text-blue-600 ml-1">
-                                                (filtered from {faculty.length} total)
+                                                (filtered from {faculty.length}{" "}
+                                                total)
                                             </span>
                                         )}
                                     </div>

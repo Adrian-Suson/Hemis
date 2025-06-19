@@ -16,31 +16,38 @@ import {
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
 import { useFacultyFormLogic } from "../../../../hooks/useFacultyFormLogic";
+import { 
+    facultyTypeOptions,
+    GENDER,
+    TENURED_STATUS,
+    ANNUAL_SALARY,
+    ON_LEAVE_PAY,
+    FULL_TIME_EQUIVALENT,
+    HIGHEST_DEGREE,
+    PURSUING_NEXT_DEGREE,
+    MASTERS_THESIS,
+    DOCTORATE_DISSERTATION,
+    GENERIC_FACULTY_RANK,
+    SALARY_GRADE
+} from "../../../../utils/SucFormE2Constants";
 
 const EditFacultyForm = ({ isOpen, onClose, onSave, facultyData, loading }) => {
     const {
         formData,
         errors,
         handleInputChange,
-        validateForm,
-        facultyRankOptions,
-        tenuredOptions,
-        annualSalaryOptions,
-        onLeavePayOptions,
-        fullTimeEquivalentOptions,
-        genderOptions,
-        highestDegreeOptions,
-        pursuingNextDegreeOptions,
-        thesisOptions,
-        dissertationOptions,
-        facultyTypeOptions,
+        validateForm
     } = useFacultyFormLogic(facultyData?.suc_details_id);
 
     // Initialize form data when facultyData changes
     useEffect(() => {
         if (facultyData && isOpen) {
             Object.entries(facultyData).forEach(([key, value]) => {
-                handleInputChange(key, value);
+                if (key === "report_year" && value && typeof value === "object" && value.year) {
+                    handleInputChange(key, value.year);
+                } else {
+                    handleInputChange(key, value);
+                }
             });
         }
     }, [facultyData, isOpen]);
@@ -152,6 +159,19 @@ const EditFacultyForm = ({ isOpen, onClose, onSave, facultyData, loading }) => {
 
     if (!facultyData) return null;
 
+    const genderOptions = Object.entries(GENDER).map(([value, label]) => ({ value, label }));
+    const facultyTypeOpts = facultyTypeOptions.map(opt => ({ value: opt.code, label: opt.label }));
+    const tenuredOptions = Object.entries(TENURED_STATUS).map(([value, label]) => ({ value, label }));
+    const annualSalaryOptions = Object.entries(ANNUAL_SALARY).map(([value, label]) => ({ value, label }));
+    const onLeavePayOptions = Object.entries(ON_LEAVE_PAY).map(([value, label]) => ({ value, label }));
+    const fullTimeEquivalentOptions = Object.entries(FULL_TIME_EQUIVALENT).map(([value, label]) => ({ value, label }));
+    const highestDegreeOptions = Object.entries(HIGHEST_DEGREE).map(([value, label]) => ({ value, label }));
+    const pursuingNextDegreeOptions = Object.entries(PURSUING_NEXT_DEGREE).map(([value, label]) => ({ value, label }));
+    const thesisOptions = Object.entries(MASTERS_THESIS).map(([value, label]) => ({ value, label }));
+    const dissertationOptions = Object.entries(DOCTORATE_DISSERTATION).map(([value, label]) => ({ value, label }));
+    const facultyRankOptions = Object.entries(GENERIC_FACULTY_RANK).map(([value, label]) => ({ value, label }));
+    const salaryGradeOptions = Object.entries(SALARY_GRADE).map(([value, label]) => ({ value, label }));
+
     return (
         <Dialog
             isOpen={isOpen}
@@ -200,22 +220,20 @@ const EditFacultyForm = ({ isOpen, onClose, onSave, facultyData, loading }) => {
                             options={facultyRankOptions}
                         />
                         <InputField
-                            label="Salary Grade"
-                            field="ssl_salary_grade"
-                            type="number"
-                            min="1"
-                            max="33"
-                        />
-                        <InputField
                             label="Faculty Type"
                             field="faculty_type"
                             required={true}
-                            options={facultyTypeOptions}
+                            options={facultyTypeOpts}
                         />
                         <InputField
                             label="Tenure Status"
                             field="is_tenured"
                             options={tenuredOptions}
+                        />
+                        <InputField
+                            label="Salary Grade"
+                            field="ssl_salary_grade"
+                            options={salaryGradeOptions}
                         />
                     </div>
                 </div>

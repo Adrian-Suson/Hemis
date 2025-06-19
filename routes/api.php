@@ -71,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // SUC Form E1 Routes
     Route::apiResource('/suc-form-e1', SucFormE1Controller::class);
+    Route::post('/suc-form-e1/bulk', [SucFormE1Controller::class, 'bulk']);
+
     // SUC Form E2 Routes
     Route::apiResource('/suc-form-e2', SucFormE2Controller::class);
     Route::get('/suc-form-e2/suc-detail/{sucDetailId}', [SucFormE2Controller::class, 'getBySucDetailId']);

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SucFormE1;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class SucFormE1Controller extends Controller
 {
@@ -140,5 +142,116 @@ class SucFormE1Controller extends Controller
         $sucFormE1 = SucFormE1::findOrFail($id);
         $sucFormE1->delete();
         return response()->json(['message' => 'Resource deleted successfully']);
+    }
+
+    /**
+     * Handle bulk operations for Form E1 records
+     */
+    public function bulk(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'operation' => 'required|string|in:create,update,delete',
+            'records' => 'required|array',
+            'records.*.id' => 'required_if:operation,update,delete|exists:suc_form_e1s,id',
+            'records.*.suc_details_id' => 'required|exists:suc_details,id',
+            'records.*.faculty_name' => 'required|string|max:255',
+            'records.*.generic_faculty_rank' => 'nullable|string|max:255',
+            'records.*.home_college' => 'nullable|string|max:255',
+            'records.*.home_dept' => 'nullable|string|max:255',
+            'records.*.is_tenured' => 'nullable|string|max:10',
+            'records.*.ssl_salary_grade' => 'nullable|string|max:255',
+            'records.*.annual_basic_salary' => 'nullable|numeric',
+            'records.*.on_leave_without_pay' => 'nullable|string|max:10',
+            'records.*.full_time_equivalent' => 'nullable|numeric',
+            'records.*.gender' => 'nullable|string|max:10',
+            'records.*.highest_degree_attained' => 'nullable|string|max:255',
+            'records.*.actively_pursuing_next_degree' => 'nullable|string|max:10',
+            'records.*.primary_teaching_load_discipline_1' => 'nullable|string|max:255',
+            'records.*.primary_teaching_load_discipline_2' => 'nullable|string|max:255',
+            'records.*.bachelors_discipline' => 'nullable|string|max:255',
+            'records.*.masters_discipline' => 'nullable|string|max:255',
+            'records.*.doctorate_discipline' => 'nullable|string|max:255',
+            'records.*.masters_with_thesis' => 'nullable|string|max:10',
+            'records.*.doctorate_with_dissertation' => 'nullable|string|max:10',
+            'records.*.lab_hours_elem_sec' => 'nullable|numeric',
+            'records.*.lecture_hours_elem_sec' => 'nullable|numeric',
+            'records.*.total_teaching_hours_elem_sec' => 'nullable|numeric',
+            'records.*.student_lab_contact_hours_elem_sec' => 'nullable|numeric',
+            'records.*.student_lecture_contact_hours_elem_sec' => 'nullable|numeric',
+            'records.*.total_student_contact_hours_elem_sec' => 'nullable|numeric',
+            'records.*.lab_hours_tech_voc' => 'nullable|numeric',
+            'records.*.lecture_hours_tech_voc' => 'nullable|numeric',
+            'records.*.total_teaching_hours_tech_voc' => 'nullable|numeric',
+            'records.*.student_lab_contact_hours_tech_voc' => 'nullable|numeric',
+            'records.*.student_lecture_contact_hours_tech_voc' => 'nullable|numeric',
+            'records.*.total_student_contact_hours_tech_voc' => 'nullable|numeric',
+            'records.*.official_research_load' => 'nullable|numeric',
+            'records.*.official_extension_services_load' => 'nullable|numeric',
+            'records.*.official_study_load' => 'nullable|numeric',
+            'records.*.official_load_for_production' => 'nullable|numeric',
+            'records.*.official_administrative_load' => 'nullable|numeric',
+            'records.*.other_official_load_credits' => 'nullable|numeric',
+            'records.*.total_work_load' => 'nullable|numeric',
+            'records.*.faculty_type' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $operation = $request->input('operation');
+            $records = $request->input('records');
+            $results = [];
+
+            switch ($operation) {
+                case 'create':
+                    foreach ($records as $record) {
+                        $faculty = SucFormE1::create($record);
+                        $results[] = $faculty->load(['sucDetail']);
+                    }
+                    $message = 'Records created successfully';
+                    break;
+
+                case 'update':
+                    foreach ($records as $record) {
+                        $faculty = SucFormE1::findOrFail($record['id']);
+                        $faculty->update($record);
+                        $results[] = $faculty->load(['sucDetail']);
+                    }
+                    $message = 'Records updated successfully';
+                    break;
+
+                case 'delete':
+                    foreach ($records as $record) {
+                        $faculty = SucFormE1::findOrFail($record['id']);
+                        $faculty->delete();
+                        $results[] = ['id' => $record['id'], 'deleted' => true];
+                    }
+                    $message = 'Records deleted successfully';
+                    break;
+
+                default:
+                    throw new \InvalidArgumentException('Invalid operation specified');
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => $message,
+                'data' => $results
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Operation failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

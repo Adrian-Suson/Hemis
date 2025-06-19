@@ -64,7 +64,6 @@ function SucFormE1() {
     const [exportLoading, setExportLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("ALL");
-    const [filterDegree, setFilterDegree] = useState("ALL");
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -106,16 +105,10 @@ function SucFormE1() {
             );
         }
 
-        if (filterDegree !== "ALL") {
-            filtered = filtered.filter(
-                (faculty) => faculty.highest_degree_attained === filterDegree
-            );
-        }
-
         setFilteredFaculties(filtered);
         // Reset to first page when filters change
         setCurrentPage(1);
-    }, [faculties, searchTerm, filterType, filterDegree]);
+    }, [faculties, searchTerm, filterType]);
 
     // Calculate paginated data
     const paginatedData = useMemo(() => {
@@ -173,139 +166,110 @@ function SucFormE1() {
                         const workbook = new ExcelJS.Workbook();
                         await workbook.xlsx.load(arrayBuffer);
 
-                        // Get the template worksheet
-                        const templateWorksheet = workbook.getWorksheet("FORM E1") || workbook.getWorksheet(1);
-                        if (!templateWorksheet) {
-                            throw new Error("Could not find Form E-1 worksheet in template");
-                        }
-
-                        // Find the starting row for data dynamically by searching for 'START BELOW THIS ROW'
-                        let dataStartRow = -1;
-                        templateWorksheet.eachRow((row, rowNumber) => {
-                            let foundMarker = false;
-                            row.eachCell((cell) => {
-                                if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
-                                    foundMarker = true;
-                                    return false; // Stop iterating cells in this row
-                                }
-                            });
-                            if (foundMarker) {
-                                dataStartRow = rowNumber + 1;
-                                return false; // Stop iterating rows once marker found
-                            }
-                        });
-
-                        if (dataStartRow === -1) {
-                            console.error("Could not find 'START BELOW THIS ROW' marker in template. Using default row 11.");
-                            dataStartRow = 11; // Fallback to default row
-                        }
-
-                        if (faculties.length === 0) {
-                            throw new Error("No faculty records found to export");
-                        }
-
-                        // Clear existing data rows first but preserve formulas
-                        const maxRows = templateWorksheet.rowCount;
-                        for (let rowNum = dataStartRow; rowNum <= maxRows; rowNum++) {
-                            const row = templateWorksheet.getRow(rowNum);
-                            row.eachCell((cell, colNumber) => {
-                                if (colNumber <= 50) { // Clear only data columns (adjust as needed)
-                                    // Only clear values, not formulas
-                                    if (!cell.formula && !cell.sharedFormula) {
-                                        cell.value = null;
+                        // Helper to get or create a sheet by name (case-insensitive)
+                        const getOrCreateSheet = (workbook, sheetName) => {
+                            let sheet = workbook.getWorksheet(sheetName);
+                            if (!sheet) {
+                                for (let i = 0; i < workbook.worksheets.length; i++) {
+                                    const ws = workbook.worksheets[i];
+                                    if (ws.name.toUpperCase() === sheetName.toUpperCase()) {
+                                        sheet = ws;
+                                        break;
                                     }
                                 }
+                            }
+                            // Optionally create the sheet if not found
+                            if (!sheet) {
+                                sheet = workbook.addWorksheet(sheetName);
+                            }
+                            return sheet;
+                        };
+
+                        // Map faculty_type to sheet name
+                        const facultyTypeToSheet = (type) => {
+                            if (!type) return null;
+                            const upper = String(type).toUpperCase();
+                            if (upper === "A1") return "GROUP A1";
+                            if (upper === "B") return "GROUP B";
+                            if (upper === "C1") return "GROUP C1";
+                            if (upper === "C2") return "GROUP C2";
+                            if (upper === "C3") return "GROUP C3";
+                            if (upper === "E") return "GROUP E";
+                            return null;
+                        };
+
+                        // Track the next row for each sheet (start after the template header, e.g., row 11)
+                        const sheetNextRow = {};
+                        ["GROUP A1", "GROUP B", "GROUP C1", "GROUP C2", "GROUP C3", "GROUP E"].forEach(sheetName => {
+                            const sheet = getOrCreateSheet(workbook, sheetName);
+                            // Find the starting row for data dynamically by searching for 'START BELOW THIS ROW'
+                            let dataStartRow = -1;
+                            sheet.eachRow((row, rowNumber) => {
+                                let foundMarker = false;
+                                row.eachCell((cell) => {
+                                    if (cell.value && String(cell.value).trim() === "START BELOW THIS ROW") {
+                                        foundMarker = true;
+                                        return false;
+                                    }
+                                });
+                                if (foundMarker) {
+                                    dataStartRow = rowNumber + 1;
+                                    return false;
+                                }
                             });
-                        }
+                            if (dataStartRow === -1) dataStartRow = 11; // fallback
+                            sheetNextRow[sheetName] = dataStartRow;
+                        });
 
-                        // Populate with faculty data
+                        // Now, for each faculty, write to the correct sheet
                         faculties.forEach((faculty, index) => {
-                            const rowNumber = dataStartRow + index;
-                            const row = templateWorksheet.getRow(rowNumber);
+                            const sheetName = facultyTypeToSheet(faculty.faculty_type);
+                            if (!sheetName) return; // skip if no valid type
 
-                            // 1. NAME OF FACULTY (combine last, first, middle initial)
-                            row.getCell(1).value =   faculty.faculty_name || "";
+                            const sheet = getOrCreateSheet(workbook, sheetName);
+                            const rowNumber = sheetNextRow[sheetName]++;
+                            const row = sheet.getRow(rowNumber);
 
-                            // 2. GENERIC FACULTY RANK
-                            row.getCell(2).value = faculty.generic_faculty_rank || "";
+                            row.getCell(1).value = index + 1; // Index column
 
-                            // 3. HOME COLLEGE
-                            row.getCell(3).value = faculty.home_college || "";
-
-                            // 4. HOME DEPT
-                            row.getCell(4).value = faculty.home_dept || "";
-
-                            // 5. IS FACULTY MEMBER TENURED?
-                            row.getCell(5).value = faculty.is_tenured ? "Yes" : "No";
-
-                            // 6. SSL SALARY GRADE
-                            row.getCell(6).value = faculty.ssl_salary_grade || "";
-
-                            // 7. ANNUAL BASIC SALARY
-                            row.getCell(7).value = faculty.annual_basic_salary || "";
-
-                            // 8. ON LEAVE WITHOUT PAY?
-                            row.getCell(8).value = faculty.on_leave_without_pay ? "Yes" : "No";
-
-                            // 9. FULL TIME EQUIVALENT OF FACULTY
-                            row.getCell(9).value = faculty.full_time_equivalent || "";
-
-                            // 10. GENDER OF FACULTY
-                            row.getCell(10).value = faculty.gender || "";
-
-                            // 11. HIGHEST DEGREE ATTAINED
-                            row.getCell(11).value = faculty.highest_degree_attained || "";
-
-                            // 12. ACTIVELY PURSUING NEXT DEGREE?
-                            row.getCell(12).value = faculty.actively_pursuing_next_degree ? "Yes" : "No";
-
-                            // 13. SPECIFIC DISCIPLINE OF PRIMARY TEACHING LOAD
-                            row.getCell(13).value = faculty.primary_teaching_load_discipline_1 || "";
-
-                            // 14. SPECIFIC DISCIPLINE OF SECONDARY TEACHING LOAD
-                            row.getCell(14).value = faculty.primary_teaching_load_discipline_2 || "";
-
-                            // 15. SPECIFIC DISCIPLINE OF BACHELORS DEGREE
-                            row.getCell(15).value = faculty.bachelors_discipline || "";
-
-                            // 16. SPECIFIC DISCIPLINE OF MASTERS DEGREE
-                            row.getCell(16).value = faculty.masters_discipline || "";
-
-                            // 17. SPECIFIC DISCIPLINE OF DOCTORATE
-                            row.getCell(17).value = faculty.doctorate_discipline || "";
-
-                            // 18. MASTERS DEGREE WITH THESIS?
-                            row.getCell(18).value = faculty.masters_with_thesis ? "Yes" : "No";
-
-                            // 19. DOCTORATE WITH DISSERTATION?
-                            row.getCell(19).value = faculty.doctorate_with_dissertation ? "Yes" : "No";
-
-                            // 20-25. Elem & Secondary teaching/contact hours
-                            row.getCell(20).value = faculty.lab_hours_elem_sec || "";
-                            row.getCell(21).value = faculty.lecture_hours_elem_sec || "";
-                            row.getCell(22).value = faculty.total_teaching_hours_elem_sec || "";
-                            row.getCell(23).value = faculty.student_lab_contact_hours_elem_sec || "";
-                            row.getCell(24).value = faculty.student_lecture_contact_hours_elem_sec || "";
-                            row.getCell(25).value = faculty.total_student_contact_hours_elem_sec || "";
-
-                            // 26-31. Tech/Voc teaching/contact hours
-                            row.getCell(26).value = faculty.lab_hours_tech_voc || "";
-                            row.getCell(27).value = faculty.lecture_hours_tech_voc || "";
-                            row.getCell(28).value = faculty.total_teaching_hours_tech_voc || "";
-                            row.getCell(29).value = faculty.student_lab_contact_hours_tech_voc || "";
-                            row.getCell(30).value = faculty.student_lecture_contact_hours_tech_voc || "";
-                            row.getCell(31).value = faculty.total_student_contact_hours_tech_voc || "";
-
-                            // 32-37. Official loads
-                            row.getCell(32).value = faculty.official_research_load || "";
-                            row.getCell(33).value = faculty.official_extension_services_load || "";
-                            row.getCell(34).value = faculty.official_study_load || "";
-                            row.getCell(35).value = faculty.official_load_for_production || "";
-                            row.getCell(36).value = faculty.official_administrative_load || "";
-                            row.getCell(37).value = faculty.other_official_load_credits || "";
-
-                            // 38. TOTAL WORK LOAD
-                            row.getCell(38).value = faculty.total_work_load || "";
+                            row.getCell(2).value = faculty.faculty_name || "";
+                            row.getCell(3).value = faculty.generic_faculty_rank || "";
+                            row.getCell(4).value = faculty.home_college || "";
+                            row.getCell(5).value = faculty.home_dept || "";
+                            row.getCell(6).value = faculty.is_tenured || "";
+                            row.getCell(7).value = faculty.ssl_salary_grade || "";
+                            row.getCell(8).value = faculty.annual_basic_salary || "";
+                            row.getCell(9).value = faculty.on_leave_without_pay || "";
+                            row.getCell(10).value = faculty.full_time_equivalent || "";
+                            row.getCell(11).value = faculty.gender || "";
+                            row.getCell(12).value = faculty.highest_degree_attained || "";
+                            row.getCell(13).value = faculty.actively_pursuing_next_degree || "";
+                            row.getCell(14).value = faculty.primary_teaching_load_discipline_1 || "";
+                            row.getCell(15).value = faculty.primary_teaching_load_discipline_2 || "";
+                            row.getCell(16).value = faculty.bachelors_discipline || "";
+                            row.getCell(17).value = faculty.masters_discipline || "";
+                            row.getCell(18).value = faculty.doctorate_discipline || "";
+                            row.getCell(19).value = faculty.masters_with_thesis || "";
+                            row.getCell(20).value = faculty.doctorate_with_dissertation || "";
+                            row.getCell(21).value = faculty.lab_hours_elem_sec || "";
+                            row.getCell(22).value = faculty.lecture_hours_elem_sec || "";
+                            // row.getCell(23).value = faculty.total_teaching_hours_elem_sec || "";
+                            row.getCell(24).value = faculty.student_lab_contact_hours_elem_sec || "";
+                            row.getCell(25).value = faculty.student_lecture_contact_hours_elem_sec || "";
+                            // row.getCell(26).value = faculty.total_student_contact_hours_elem_sec || "";
+                            row.getCell(27).value = faculty.lab_hours_tech_voc || "";
+                            row.getCell(28).value = faculty.lecture_hours_tech_voc || "";
+                            // row.getCell(29).value = faculty.total_teaching_hours_tech_voc || "";
+                            row.getCell(30).value = faculty.student_lab_contact_hours_tech_voc || "";
+                            row.getCell(31).value = faculty.student_lecture_contact_hours_tech_voc || "";
+                            // row.getCell(32).value = faculty.total_student_contact_hours_tech_voc || "";
+                            row.getCell(33).value = faculty.official_research_load || "";
+                            row.getCell(34).value = faculty.official_extension_services_load || "";
+                            row.getCell(35).value = faculty.official_study_load || "";
+                            row.getCell(36).value = faculty.official_load_for_production || "";
+                            row.getCell(37).value = faculty.official_administrative_load || "";
+                            row.getCell(38).value = faculty.other_official_load_credits || "";
+                            // row.getCell(39).value = faculty.total_work_load || "";
 
                             row.commit();
                         });
@@ -617,39 +581,11 @@ function SucFormE1() {
                                             <option value="ALL">
                                                 All Types
                                             </option>
-                                            <option value="Full Time">
-                                                Full Time
-                                            </option>
-                                            <option value="Part Time">
-                                                Part Time
-                                            </option>
-                                            <option value="Contractual">
-                                                Contractual
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div className="relative w-full sm:w-auto">
-                                        <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <select
-                                            value={filterDegree}
-                                            onChange={(e) =>
-                                                setFilterDegree(e.target.value)
-                                            }
-                                            className="pl-10 pr-8 py-2 w-full sm:w-auto border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer transition-all duration-200"
-                                        >
-                                            <option value="ALL">
-                                                All Degrees
-                                            </option>
-                                            <option value="Doctorate">
-                                                Doctorate
-                                            </option>
-                                            <option value="Masters">
-                                                Masters
-                                            </option>
-                                            <option value="Bachelors">
-                                                Bachelors
-                                            </option>
+                                            {facultyTypeOptions.map((opt) => (
+                                                <option key={opt.code} value={opt.code}>
+                                                    {opt.label}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -929,21 +865,18 @@ function SucFormE1() {
                                                         </div>
                                                         <p className="text-lg font-semibold text-gray-900 mb-2">
                                                             {searchTerm ||
-                                                            filterType !== "ALL" ||
-                                                            filterDegree !== "ALL"
+                                                            filterType !== "ALL"
                                                                 ? "No matching faculty found"
                                                                 : "No Faculty Records Found"}
                                                         </p>
                                                         <p className="text-sm text-gray-600 mb-4">
                                                             {searchTerm ||
-                                                            filterType !== "ALL" ||
-                                                            filterDegree !== "ALL"
+                                                            filterType !== "ALL"
                                                                 ? "Try adjusting your search terms or filters."
                                                                 : "This institution has no faculty records yet."}
                                                         </p>
                                                         {!searchTerm &&
-                                                            filterType === "ALL" &&
-                                                            filterDegree === "ALL" && (
+                                                            filterType === "ALL" && (
                                                                 <button
                                                                     onClick={handleAddFaculty}
                                                                     className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md transition-all duration-200"
@@ -970,6 +903,8 @@ function SucFormE1() {
                             currentPage={currentPage}
                             totalPages={totalPages}
                             onPageChange={handlePageChange}
+                            pageSize={pageSize}
+                            onPageSizeChange={handlePageSizeChange}
                         />
                     </div>
                 )}
@@ -1003,7 +938,7 @@ function SucFormE1() {
                 <FacultyUploadModal
                     isOpen={isUploadModalOpen}
                     onClose={() => setIsUploadModalOpen(false)}
-                    onUpload={fetchFaculties}
+                    onUploadSuccess={fetchFaculties}
                     institutionId={SucDetailId}
                 />
             </div>

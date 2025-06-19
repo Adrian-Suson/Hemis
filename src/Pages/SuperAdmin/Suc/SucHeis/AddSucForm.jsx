@@ -250,17 +250,17 @@ function AddSucForm({ onSave, onCancel, loading = false }) {
         console.log('SUC Details API Response:', checkResponse.data);
 
         // Ensure we're properly handling the response data structure
-        const existingRecords = Array.isArray(checkResponse.data) 
-          ? checkResponse.data 
-          : checkResponse.data?.data 
-            ? checkResponse.data.data 
+        const existingRecords = Array.isArray(checkResponse.data)
+          ? checkResponse.data
+          : checkResponse.data?.data
+            ? checkResponse.data.data
             : [];
 
         console.log('Existing SUC records found:', existingRecords);
 
         // Check if any of the existing records are actually for this HEI and year
-        const duplicateRecord = existingRecords.find(record => 
-          record.hei_uiid === formData.institution_uiid && 
+        const duplicateRecord = existingRecords.find(record =>
+          record.hei_uiid === formData.institution_uiid &&
           record.report_year === formData.report_year &&
           !record.deleted_at // Also check if the record is not soft-deleted
         );
@@ -275,7 +275,7 @@ function AddSucForm({ onSave, onCancel, loading = false }) {
         if (duplicateRecord) {
           console.log('Duplicate record found:', duplicateRecord);
           AlertComponent.showAlert(
-            `A record for ${formData.institution_name} (UIID: ${formData.institution_uiid}) already exists for the year ${formData.report_year}. Please select a different institution or year.`, 
+            `A record for ${formData.institution_name} (UIID: ${formData.institution_uiid}) already exists for the year ${formData.report_year}. Please select a different institution or year.`,
             'error'
           );
           return;
@@ -336,7 +336,7 @@ function AddSucForm({ onSave, onCancel, loading = false }) {
               {errors.heis || locationFetchError}
             </div>
           </div>
-        )}n  
+        )}
 
         <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-100 rounded-xl p-4 border border-blue-200/60 shadow-sm">
           <div className="flex items-center space-x-3 mb-3">
@@ -732,4 +732,4 @@ AddSucForm.propTypes = {
   loading: PropTypes.bool,
 };
 
-export default AddSucForm; 
+export default AddSucForm;
