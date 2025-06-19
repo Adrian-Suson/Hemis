@@ -20,7 +20,7 @@ import Dialog from "../../../../Components/Dialog";
 import AlertComponent from "../../../../Components/AlertComponent";
 import { useLoading } from "../../../../Context/LoadingContext";
 
-function FacultyUploadModal({
+function FacultyE1UploadModal({
     isOpen,
     onClose,
     onUploadSuccess,
@@ -32,7 +32,6 @@ function FacultyUploadModal({
     const { showLoading, hideLoading, updateProgress } = useLoading();
 
     const handleInputChange = (field, value) => {
-        // Clear error when user makes a selection
         if (errors[field]) {
             setErrors((prev) => ({
                 ...prev,
@@ -60,102 +59,22 @@ function FacultyUploadModal({
         return Object.keys(newErrors).length === 0;
     };
 
-    // Parsing helper functions
-    const toNullableInteger = (value) => {
-        if (
-            !value ||
-            value === "N/A" ||
-            value === "" ||
-            value === null ||
-            value === undefined
-        )
-            return 0;
-        const parsed = Number.parseInt(value, 10);
-        return isNaN(parsed) ? 0 : parsed;
+    // Simple parsing functions that return data as-is
+    const parseValue = (value) => {
+        if (value === undefined || value === null) return "";
+        return String(value).trim();
     };
 
-    const parseNumeric = (value, min, max) => {
-        if (
-            value === undefined ||
-            value === "" ||
-            value === null ||
-            isNaN(value)
-        )
-            return 0;
-        const num = Number.parseFloat(value);
-        if (min !== undefined && num < min) return 0;
-        if (max !== undefined && num > max) return max;
-        return num;
-    };
-
-    const parseString = (value) => {
-        if (value === undefined || value === "" || value === null) return "";
-        const str = String(value).trim();
-        return str.length > 255 ? str.substring(0, 255) : str;
-    };
-
-    const parseBoolean = (value) => {
-        if (value === undefined || value === "" || value === null) return 0;
-        const str = String(value).toLowerCase().trim();
-        return str === "true" || str === "1" || str === "yes" || str === "y" ? 1 : 0;
-    };
-
-    const parseTenureStatus = (value) => {
-        if (value === undefined || value === "" || value === null) return "4"; // Default to "No information"
-        const str = String(value).toLowerCase().trim();
-        if (str === "true" || str === "1" || str === "yes" || str === "y" || str === "tenured") return "1";
-        if (str === "not tenured" || str === "2") return "2";
-        if (str === "no plantilla" || str === "3") return "3";
-        return "4";
-    };
-
-    // Faculty type mapping
-    const facultyTypeMapping = {
-        "A1": "A1",
-        "B": "B",
-        "C1": "C1",
-        "C2": "C2",
-        "C3": "C3",
-        "E": "E",
-    };
-
-    // Gender mapping
-    const genderMapping = {
-        M: "1",
-        F: "2",
-        Male: "1",
-        Female: "2",
-        MALE: "1",
-        FEMALE: "2",
-        "1": "1",
-        "2": "2",
-    };
-
-    // Degree mapping
-    const degreeMapping = {
-        "Bachelor": "507",
-        "Bachelors": "507",
-        "Bachelor's": "507",
-        "Masters": "803",
-        "Master's": "803",
-        "Master": "803",
-        "Doctorate": "903",
-        "PhD": "903",
-        "Ph.D.": "903",
-        "Doctoral": "903",
-    };
-
-    const parseDegree = (value) => {
-        if (value === undefined || value === "" || value === null) return "507"; // Default to Bachelor's
-        const str = String(value).trim();
-        return degreeMapping[str] || "507"; // Default to Bachelor's if not found
+    const parseNumeric = (value) => {
+        if (value === undefined || value === null || value === "") return 0;
+        const num = Number(value);
+        return isNaN(num) ? 0 : num;
     };
 
     const handleExcelUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Validate form before processing
         if (!validateForm()) {
             AlertComponent.showAlert(
                 "Please ensure institution and year are properly set before uploading.",
@@ -164,7 +83,6 @@ function FacultyUploadModal({
             return;
         }
 
-        // Validate file type
         const validTypes = [
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel",
@@ -195,28 +113,34 @@ function FacultyUploadModal({
                 type: "array",
             });
 
-            // Process all sheets in the workbook except Reference
-            const facultySheets = workbook.SheetNames
-                .filter(name => !name.toLowerCase().includes('reference'))
-                .map((name) => ({
-                    name,
-                    type: "FACULTY",
-                    description: `Faculty Data from ${name}`,
-                }));
+            const facultySheets = workbook.SheetNames.filter(
+                (name) => !name.toLowerCase().includes("reference")
+            ).map((name) => ({
+                name,
+                type: "FACULTY",
+                description: `Faculty Data from ${name}`,
+            }));
 
             console.log("Found sheets:", facultySheets);
 
             if (facultySheets.length === 0) {
-                throw new Error("No valid faculty sheets found in the Excel file.");
+                throw new Error(
+                    "No valid faculty sheets found in the Excel file."
+                );
             }
 
             await processAllFacultySheets(workbook, facultySheets);
-            AlertComponent.showAlert("Faculty data uploaded successfully!", "success");
-            onClose(); // Close modal after successful upload
+            AlertComponent.showAlert(
+                "Faculty E1 data uploaded successfully!",
+                "success"
+            );
+            onClose();
         } catch (error) {
             console.error("Excel upload error:", error);
             AlertComponent.showAlert(
-                error.response?.data?.message || error.message || "Failed to upload faculty data",
+                error.response?.data?.message ||
+                    error.message ||
+                    "Failed to upload faculty data",
                 "error"
             );
         } finally {
@@ -241,10 +165,11 @@ function FacultyUploadModal({
                 if (facultyRecords && facultyRecords.length > 0) {
                     createdRecords.push(...facultyRecords);
                 } else {
-                    console.log(`No valid faculty records found in sheet ${sheet.name}`);
+                    console.log(
+                        `No valid faculty records found in sheet ${sheet.name}`
+                    );
                 }
                 processedSheets++;
-                // Update progress to 80% after all sheets are processed
                 updateProgress((processedSheets / facultySheets.length) * 80);
             } catch (error) {
                 console.error(`Error processing sheet ${sheet.name}:`, error);
@@ -258,16 +183,13 @@ function FacultyUploadModal({
 
         if (createdRecords.length > 0) {
             try {
-                // Update progress to 90% before API request
                 updateProgress(90);
-
-                // Send to API
                 const token = localStorage.getItem("token");
                 const response = await axios.post(
                     `${config.API_URL}/suc-form-e1/bulk`,
                     {
-                        operation: 'create',
-                        records: createdRecords
+                        operation: "create",
+                        records: createdRecords,
                     },
                     {
                         headers: {
@@ -277,12 +199,8 @@ function FacultyUploadModal({
                     }
                 );
 
-                console.log(
-                    `Faculty upload response:`,
-                    response.data
-                );
+                console.log(`Faculty E1 upload response:`, response.data);
 
-                // Update progress to 100% after successful API request
                 updateProgress(100);
                 onUploadSuccess();
                 setErrors({});
@@ -295,11 +213,7 @@ function FacultyUploadModal({
 
     const processFacultySheet = async (worksheet, sheetName) => {
         try {
-            // Extract faculty type from sheet name
             const facultyType = sheetName.match(/[A-E][1-3]?/)?.[0] || "A1";
-            if (!facultyTypeMapping[facultyType]) {
-                throw new Error(`Invalid faculty type in sheet name: ${facultyType}`);
-            }
 
             const jsonData = XLSX.utils.sheet_to_json(worksheet, {
                 header: 1,
@@ -309,7 +223,6 @@ function FacultyUploadModal({
 
             console.log(`Parsed JSON data from ${sheetName} sheet:`, jsonData);
 
-            // Find the row with "START BELOW THIS ROW"
             let startRowIndex = -1;
             for (let i = 0; i < jsonData.length; i++) {
                 const row = jsonData[i];
@@ -322,13 +235,16 @@ function FacultyUploadModal({
                 }
             }
 
-            // If no "START BELOW THIS ROW" found, look for header row
             if (startRowIndex === -1) {
                 for (let i = 0; i < Math.min(20, jsonData.length); i++) {
                     const row = jsonData[i];
                     if (Array.isArray(row)) {
                         const rowText = row.join(" ").toLowerCase();
-                        if (rowText.includes("name") || rowText.includes("faculty") || rowText.includes("rank")) {
+                        if (
+                            rowText.includes("name") ||
+                            rowText.includes("faculty") ||
+                            rowText.includes("rank")
+                        ) {
                             startRowIndex = i;
                             break;
                         }
@@ -336,15 +252,16 @@ function FacultyUploadModal({
                 }
             }
 
-            // Log the startRowIndex for debugging
             console.log(`Start row index fetched: ${startRowIndex}`);
 
             if (startRowIndex === -1) {
-                console.warn(`Could not find "START BELOW THIS ROW" or header in the ${sheetName} sheet. Using row 0.`);
+                console.warn(
+                    `Could not find "START BELOW THIS ROW" or header in the ${sheetName} sheet. Using row 0.`
+                );
                 startRowIndex = 0;
             }
 
-            const dataStartRow = startRowIndex + 1; // Start extracting data from the row after marker/header
+            const dataStartRow = startRowIndex + 1;
 
             if (dataStartRow >= jsonData.length) {
                 throw new Error(
@@ -355,8 +272,7 @@ function FacultyUploadModal({
             const processedFaculty = jsonData
                 .slice(dataStartRow)
                 .filter((row) => {
-                    // Check for valid faculty name early
-                    const facultyName = parseString(row[1] || row[0]);
+                    const facultyName = parseValue(row[1] || row[0]);
                     if (!facultyName || !facultyName.trim()) {
                         console.log(
                             `Skipping row in ${sheetName} sheet: missing or empty faculty name`
@@ -371,93 +287,56 @@ function FacultyUploadModal({
                 })
                 .map((row, rowIndex) => {
                     try {
-                        // Map columns to faculty fields based on Form E1 structure
                         const faculty = {
                             suc_details_id: parseInt(institutionId),
-                            faculty_name: parseString(row[1] || row[0]), // Name is usually in column A or B
-                            generic_faculty_rank: parseString(row[2]),
-                            home_college: parseString(row[3]),
-                            home_dept: parseString(row[4]),
-                            is_tenured: parseTenureStatus(row[5]),
-                            ssl_salary_grade: toNullableInteger(row[6]),
-                            annual_basic_salary: parseNumeric(row[7], 0),
-                            on_leave_without_pay: parseBoolean(row[8]),
-                            full_time_equivalent: parseNumeric(row[9], 0, 1) || 1.0,
-                            gender: genderMapping[row[10]] || parseNumeric(row[10]) || "1",
-                            highest_degree_attained: parseDegree(row[11]),
-                            actively_pursuing_next_degree: parseBoolean(row[12]),
-                            primary_teaching_load_discipline_1: parseString(row[13]),
-                            primary_teaching_load_discipline_2: parseString(row[14]),
-                            bachelors_discipline: parseString(row[15]),
-                            masters_discipline: parseString(row[16]),
-                            doctorate_discipline: parseString(row[17]),
-                            masters_with_thesis: parseBoolean(row[18]),
-                            doctorate_with_dissertation: parseBoolean(row[19]),
+                            name: parseValue(row[1] || row[0]),
+                            generic_faculty_rank: parseValue(row[2]),
+                            home_college: parseValue(row[3]),
+                            home_department: parseValue(row[4]),
+                            is_tenured: parseValue(row[5]),
+                            ssl_salary_grade: parseNumeric(row[6]),
+                            annual_basic_salary: parseNumeric(row[7]),
+                            on_leave_without_pay: parseValue(row[8]),
+                            full_time_equivalent: parseNumeric(row[9]),
+                            gender: parseValue(row[10]),
+                            highest_degree_attained: parseValue(row[11]),
+                            pursuing_next_degree: parseValue(row[12]),
+                            discipline_teaching_load_1: parseValue(row[13]),
+                            discipline_teaching_load_2: parseValue(row[14]),
+                            discipline_bachelors: parseValue(row[15]),
+                            discipline_masters: parseValue(row[16]),
+                            discipline_doctorate: parseValue(row[17]),
+                            masters_with_thesis: parseValue(row[18]),
+                            doctorate_with_dissertation: parseValue(row[19]),
 
-                            // Elementary/Secondary teaching load
-                            lab_hours_elem_sec: parseNumeric(row[20], 0),
-                            lecture_hours_elem_sec: parseNumeric(row[21], 0),
-                            total_teaching_hours_elem_sec: parseNumeric(row[22], 0),
-                            student_lab_contact_hours_elem_sec: parseNumeric(row[23], 0),
-                            student_lecture_contact_hours_elem_sec: parseNumeric(row[24], 0),
-                            total_student_contact_hours_elem_sec: parseNumeric(row[25], 0),
+                            // Elementary/Secondary teaching load (C1-C6)
+                            elem_sec_lab_hours_per_week: parseNumeric(row[20]),
+                            elem_sec_lecture_hours_per_week: parseNumeric(row[21]),
+                            elem_sec_total_teaching_hours: parseNumeric(row[22]),
+                            elem_sec_lab_contact_hours: parseNumeric(row[23]),
+                            elem_sec_lecture_contact_hours: parseNumeric(row[24]),
+                            elem_sec_total_contact_hours: parseNumeric(row[25]),
 
-                            // Technical/Vocational teaching load
-                            lab_hours_tech_voc: parseNumeric(row[26], 0),
-                            lecture_hours_tech_voc: parseNumeric(row[27], 0),
-                            total_teaching_hours_tech_voc: parseNumeric(row[28], 0),
-                            student_lab_contact_hours_tech_voc: parseNumeric(row[29], 0),
-                            student_lecture_contact_hours_tech_voc: parseNumeric(row[30], 0),
-                            total_student_contact_hours_tech_voc: parseNumeric(row[31], 0),
+                            // Tech/Voc teaching load (D1-D6)
+                            tech_voc_lab_hours_per_week: parseNumeric(row[26]),
+                            tech_voc_lecture_hours_per_week: parseNumeric(row[27]),
+                            tech_voc_total_teaching_hours: parseNumeric(row[28]),
+                            tech_voc_lab_contact_hours: parseNumeric(row[29]),
+                            tech_voc_lecture_contact_hours: parseNumeric(row[30]),
+                            tech_voc_total_contact_hours: parseNumeric(row[31]),
 
-                            // Additional workload
-                            official_research_load: parseNumeric(row[32], 0),
-                            official_extension_services_load: parseNumeric(row[33], 0),
-                            official_study_load: parseNumeric(row[34], 0),
-                            official_load_for_production: parseNumeric(row[35], 0),
-                            official_administrative_load: parseNumeric(row[36], 0),
-                            other_official_load_credits: parseNumeric(row[37], 0),
-                            total_work_load: parseNumeric(row[38], 0),
+                            // Additional workload (E1-E7)
+                            research_load: parseNumeric(row[32]),
+                            extension_services_load: parseNumeric(row[33]),
+                            study_load: parseNumeric(row[34]),
+                            production_load: parseNumeric(row[35]),
+                            administrative_load: parseNumeric(row[36]),
+                            other_load_credits: parseNumeric(row[37]),
+                            total_work_load: parseNumeric(row[38]),
 
-                            // System information
                             report_year: parseInt(selectedYear),
-                            faculty_type: facultyType, // Use the faculty type from sheet name
+                            faculty_type: facultyType,
                         };
-
-                        // Auto-calculate totals if not provided
-                        if (!faculty.total_teaching_hours_elem_sec) {
-                            faculty.total_teaching_hours_elem_sec =
-                                (faculty.lab_hours_elem_sec || 0) +
-                                (faculty.lecture_hours_elem_sec || 0);
-                        }
-
-                        if (!faculty.total_student_contact_hours_elem_sec) {
-                            faculty.total_student_contact_hours_elem_sec =
-                                (faculty.student_lab_contact_hours_elem_sec || 0) +
-                                (faculty.student_lecture_contact_hours_elem_sec || 0);
-                        }
-
-                        if (!faculty.total_teaching_hours_tech_voc) {
-                            faculty.total_teaching_hours_tech_voc =
-                                (faculty.lab_hours_tech_voc || 0) +
-                                (faculty.lecture_hours_tech_voc || 0);
-                        }
-
-                        if (!faculty.total_student_contact_hours_tech_voc) {
-                            faculty.total_student_contact_hours_tech_voc =
-                                (faculty.student_lab_contact_hours_tech_voc || 0) +
-                                (faculty.student_lecture_contact_hours_tech_voc || 0);
-                        }
-
-                        if (!faculty.total_work_load) {
-                            faculty.total_work_load =
-                                (faculty.official_research_load || 0) +
-                                (faculty.official_extension_services_load || 0) +
-                                (faculty.official_study_load || 0) +
-                                (faculty.official_load_for_production || 0) +
-                                (faculty.official_administrative_load || 0) +
-                                (faculty.other_official_load_credits || 0);
-                        }
 
                         return faculty;
                     } catch (error) {
@@ -490,18 +369,20 @@ function FacultyUploadModal({
                 error
             );
 
-            // Extract validation errors if they exist
             const validationErrors = error.response?.data?.errors;
             if (validationErrors) {
                 const errorMessages = Object.entries(validationErrors)
-                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-                    .join('\n');
+                    .map(
+                        ([field, messages]) =>
+                            `${field}: ${messages.join(", ")}`
+                    )
+                    .join("\n");
                 throw new Error(`Validation failed:\n${errorMessages}`);
             }
 
             throw new Error(
                 error.response?.data?.message ||
-                `Failed to process faculty in ${sheetName}: ${error.message}`
+                    `Failed to process faculty in ${sheetName}: ${error.message}`
             );
         }
     };
@@ -517,8 +398,8 @@ function FacultyUploadModal({
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
-            title="Upload Faculty Data"
-            subtitle="Import HEMIS Form E1 or faculty Excel files"
+            title="Upload Faculty E1 Data"
+            subtitle="Import HEMIS Form E1 or faculty Excel files for Elementary, Secondary, and Tech/Voc Levels"
             icon={Upload}
             variant="default"
             size="xl"
@@ -611,11 +492,13 @@ function FacultyUploadModal({
                                 <ul className="space-y-1 ml-2">
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Data starts after &#34;START BELOW THIS ROW&#34; or header row
+                                        Data starts after &#34;START BELOW THIS ROW&#34;
+                                        or header row
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Only rows with a valid Faculty Name are processed
+                                        Only rows with a valid Faculty Name are
+                                        processed
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
@@ -623,7 +506,8 @@ function FacultyUploadModal({
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Column C: Faculty Rank
+                                        Column C: Faculty Rank (e.g., TEACHER,
+                                        INSTRUCTOR)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
@@ -631,19 +515,27 @@ function FacultyUploadModal({
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Columns F-K: Employment details (tenure, salary, gender)
+                                        Columns F-K: Employment details (tenure,
+                                        salary, gender)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Columns L-S: Academic qualifications
+                                        Columns L-T: Academic qualifications
+                                        (degree, disciplines)
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Columns T-AF: Teaching load (Elementary/Secondary & Tech/Voc)
+                                        Columns U-Z: Elementary/Secondary
+                                        teaching load
                                     </li>
                                     <li className="flex items-center">
                                         <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
-                                        Columns AG-AM: Additional workload (research, extension, admin)
+                                        Columns AA-AI: Tech/Voc teaching load
+                                    </li>
+                                    <li className="flex items-center">
+                                        <div className="w-2 h-2 bg-amber-400 rounded-full mr-2"></div>
+                                        Columns AJ-AP: Additional workload
+                                        (research, extension, admin)
                                     </li>
                                 </ul>
                             </div>
@@ -651,9 +543,11 @@ function FacultyUploadModal({
                         <div className="flex items-start space-x-3">
                             <UserCheck className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <div>
-                                <p className="font-medium mb-1">Faculty Type Mapping:</p>
+                                <p className="font-medium mb-1">
+                                    Faculty Type Mapping:
+                                </p>
                                 <ul className="space-y-1 ml-2 text-xs">
-                                    <li>A1: Full-time with Plantilla Items (Elem/Sec/Tech)</li>
+                                    <li>A1: Full-time with Plantilla Items</li>
                                     <li>B: Full-time from PS Items on Leave</li>
                                     <li>C1: Full-time from GAA PS Lump Sums</li>
                                     <li>C2: Full-time from SUC Income</li>
@@ -665,8 +559,7 @@ function FacultyUploadModal({
                         <div className="flex items-start space-x-3">
                             <Database className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <p>
-                                The system will automatically calculate totals for teaching loads
-                                and workload if not provided in the Excel file.
+                                Data will be processed as-is from the Excel file without any transformations.
                             </p>
                         </div>
                         <div className="flex items-start space-x-3">
@@ -780,30 +673,56 @@ function FacultyUploadModal({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="space-y-2">
                             <div className="bg-white/60 rounded-lg p-3 border">
-                                <div className="font-semibold text-blue-800 mb-1">Group A1</div>
-                                <p className="text-gray-700 text-xs">Full-time faculty with their own plantilla items teaching at elementary, secondary and technical/vocational levels</p>
+                                <div className="font-semibold text-blue-800 mb-1">
+                                    Group A1
+                                </div>
+                                <p className="text-gray-700 text-xs">
+                                    Full-time faculty with their own plantilla
+                                    items
+                                </p>
                             </div>
                             <div className="bg-white/60 rounded-lg p-3 border">
-                                <div className="font-semibold text-green-800 mb-1">Group B</div>
-                                <p className="text-gray-700 text-xs">Full-time faculty drawing from PS items of those on leave without pay</p>
+                                <div className="font-semibold text-green-800 mb-1">
+                                    Group B
+                                </div>
+                                <p className="text-gray-700 text-xs">
+                                    Full-time faculty drawing from PS items of
+                                    those on leave
+                                </p>
                             </div>
                             <div className="bg-white/60 rounded-lg p-3 border">
-                                <div className="font-semibold text-purple-800 mb-1">Group C1</div>
-                                <p className="text-gray-700 text-xs">Full-time faculty from GAA PS lump sums</p>
+                                <div className="font-semibold text-purple-800 mb-1">
+                                    Group C1
+                                </div>
+                                <p className="text-gray-700 text-xs">
+                                    Full-time faculty from GAA PS lump sums
+                                </p>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <div className="bg-white/60 rounded-lg p-3 border">
-                                <div className="font-semibold text-orange-800 mb-1">Group C2</div>
-                                <p className="text-gray-700 text-xs">Full-time faculty from SUC income</p>
+                                <div className="font-semibold text-orange-800 mb-1">
+                                    Group C2
+                                </div>
+                                <p className="text-gray-700 text-xs">
+                                    Full-time faculty from SUC income
+                                </p>
                             </div>
                             <div className="bg-white/60 rounded-lg p-3 border">
-                                <div className="font-semibold text-pink-800 mb-1">Group C3</div>
-                                <p className="text-gray-700 text-xs">Full-time faculty from LGU funds</p>
+                                <div className="font-semibold text-pink-800 mb-1">
+                                    Group C3
+                                </div>
+                                <p className="text-gray-700 text-xs">
+                                    Full-time faculty from LGU funds
+                                </p>
                             </div>
                             <div className="bg-white/60 rounded-lg p-3 border">
-                                <div className="font-semibold text-yellow-800 mb-1">Group E</div>
-                                <p className="text-gray-700 text-xs">Part-time lecturers and faculty teaching at elementary, secondary or technical/vocational levels</p>
+                                <div className="font-semibold text-yellow-800 mb-1">
+                                    Group E
+                                </div>
+                                <p className="text-gray-700 text-xs">
+                                    Part-time lecturers and faculty
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -824,7 +743,7 @@ function FacultyUploadModal({
     );
 }
 
-FacultyUploadModal.propTypes = {
+FacultyE1UploadModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     onUploadSuccess: PropTypes.func.isRequired,
@@ -832,4 +751,4 @@ FacultyUploadModal.propTypes = {
         .isRequired,
 };
 
-export default FacultyUploadModal;
+export default FacultyE1UploadModal;

@@ -48,10 +48,12 @@ class SucFormE1 extends Model
         'official_administrative_load',
         'other_official_load_credits',
         'total_work_load',
-        'faculty_type', // Added for completeness
+        'faculty_type',
+        'report_year',
     ];
 
     protected $casts = [
+        'suc_details_id' => 'integer',
         'is_tenured' => 'string',
         'on_leave_without_pay' => 'string',
         'full_time_equivalent' => 'float',
@@ -77,7 +79,10 @@ class SucFormE1 extends Model
         'official_administrative_load' => 'float',
         'other_official_load_credits' => 'float',
         'total_work_load' => 'float',
-        'faculty_type' => 'string'
+        'faculty_type' => 'string',
+        'report_year' => 'integer',
+        'annual_basic_salary' => 'float',
+        'ssl_salary_grade' => 'integer',
     ];
 
     /**
@@ -110,5 +115,29 @@ class SucFormE1 extends Model
     public function scopeByHighestDegree($query, $degree)
     {
         return $query->where('highest_degree_attained', $degree);
+    }
+
+    /**
+     * Scope for filtering by report year.
+     */
+    public function scopeByReportYear($query, $year)
+    {
+        return $query->where('report_year', $year);
+    }
+
+    /**
+     * Scope for filtering by tenure status.
+     */
+    public function scopeByTenureStatus($query, $status)
+    {
+        return $query->where('is_tenured', $status);
+    }
+
+    /**
+     * Scope for filtering by leave status.
+     */
+    public function scopeByLeaveStatus($query, $status)
+    {
+        return $query->where('on_leave_without_pay', $status);
     }
 }

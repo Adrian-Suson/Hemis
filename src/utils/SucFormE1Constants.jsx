@@ -1,26 +1,141 @@
-export const HEAD_TITLE_MAPPING = {
-    1: "President",
-    2: "Chancellor",
-    3: "Executive Director",
-    4: "Dean",
-    5: "Rector",
-    6: "Head",
-    7: "Administrator",
-    8: "Principal",
-    9: "Managing Director",
-    10: "Director",
-    11: "Chair",
-    12: "Others",
-    99: "Not known or not indicated",
+// SUC Form E1 Constants (Short, Easy to Read)
+
+// Faculty Ranks
+export const GENERIC_FACULTY_RANK = {
+    10: "Master Teacher",
+    20: "Instructor",
+    30: "Asst. Prof.",
+    40: "Assoc. Prof.",
+    50: "Full Prof.",
+    9: "Teaching Fellow",
+    11: "Lecturer",
+    12: "Prof. Emeritus",
+    13: "Visiting Prof.",
+    14: "Adjunct Faculty",
+    90: "Others",
 };
 
-export const EDUCATIONAL_LEVEL_MAPPING = {
-    50: "Completed a Baccalaureate Degree (including DVM, DDM, D Opt)",
-    60: "Completed Post-Grad Certificate or diploma Program",
-    70: "Completed MD or LLB (or equivalent)",
-    80: "Completed Masters Degree or Equivalent",
-    90: "Completed Doctorate Degree (or equivalent)",
+// Tenure Status
+export const TENURED_STATUS = {
+    1: "Tenured",
+    2: "Not Tenured (Has Plantilla)",
+    3: "No Plantilla",
+    4: "No Info",
 };
+
+// Salary Grade
+export const SALARY_GRADE = {
+    1: "Grade 1-33",
+    90: "No Grade (Part-time)",
+    99: "No Info",
+};
+
+// Annual Salary
+export const ANNUAL_SALARY = {
+    1: "Below 60k",
+    2: "60k-69,999",
+    3: "70k-79,999",
+    4: "80k-89,999",
+    5: "90k-99,999",
+    6: "100k-149,999",
+    7: "150k-249,999",
+    8: "250k-499,999",
+    9: "500k+",
+    99: "No Info",
+};
+
+// Leave Pay
+export const ON_LEAVE_PAY = {
+    1: "On Leave (No Pay)",
+    2: "Active/On Leave (With Pay)",
+    3: "No Info",
+};
+
+// Full-Time Equivalent
+export const FULL_TIME_EQUIVALENT = {
+    1: "Full Time (1.00)",
+    2: "Half Time (0.50)",
+    3: "Quarter Time (0.25)",
+};
+
+// Gender
+export const GENDER = {
+    1: "Male",
+    2: "Female",
+};
+
+// Highest Degree Attained
+export const HIGHEST_DEGREE = {
+    0: "None",
+    101: "Partial Elem.",
+    102: "Grade 4 Only",
+    103: "Elem. Grad.",
+    201: "Partial HS",
+    202: "HS Grad.",
+    301: "Partial HS",
+    302: "Tech/Voc Grad.",
+    401: "Partial Pre-bacc.",
+    402: "Pre-bacc Grad.",
+    501: "1st Yr College",
+    502: "2nd Yr College",
+    503: "3rd Yr College",
+    504: "4th Yr College",
+    505: "5th Yr College",
+    506: "6th Yr College",
+    507: "Bachelor's",
+    601: "Partial Post-grad Cert.",
+    602: "Post-grad Cert.",
+    701: "1st Yr MD/LLB",
+    702: "2nd Yr MD/LLB",
+    703: "3rd Yr MD/LLB",
+    704: "4th Yr MD/LLB",
+    705: "MD/LLB Grad.",
+    801: "Partial Master's",
+    802: "Master's (No Thesis)",
+    803: "Master's",
+    901: "Partial Doctorate",
+    902: "Doctorate (No Diss.)",
+    903: "Doctorate",
+    980: "Not Faculty",
+    999: "No Record",
+};
+
+// Pursuing Next Degree
+export const PURSUING_NEXT_DEGREE = {
+    1: "Completed Doctorate",
+    2: "Pursuing Doctorate",
+    3: "Stopped Doctorate",
+    4: "Master's Only",
+    5: "Pursuing Master's",
+    6: "Stopped Master's",
+    7: "Bachelor's Only",
+    8: "Not Faculty",
+    9: "No Info",
+};
+
+// Masters Thesis
+export const MASTERS_THESIS = {
+    1: "With Thesis",
+    2: "No Thesis",
+    3: "No Info",
+};
+
+// Doctorate Dissertation
+export const DOCTORATE_DISSERTATION = {
+    1: "With Dissertation",
+    2: "No Dissertation",
+    3: "No Info",
+};
+
+export const facultyTypeOptions = [
+    { code: "A1", label: " A1 - Full-time with Plantilla (Elem/Sec/Tech)" },
+    { code: "B", label: " B - Full-time (Salary from Leave)" },
+    { code: "C1", label: " C1 - Full-time (GAA PS Lump Sum)" },
+    { code: "C2", label: "C2 - Full-time (SUC Income)" },
+    { code: "C3", label: "C3 - Full-time (LGU Funds)" },
+    { code: "E", label: "E - Part-time Lecturer" },
+];
+
 
 export const disciplineOptions = [
     { code: '140101', label: 'Elementary Education' },

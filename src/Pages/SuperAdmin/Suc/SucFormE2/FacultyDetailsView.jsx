@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import PropTypes from "prop-types";
 import Dialog from "../../../../Components/Dialog";
-import { useFacultyFormLogic } from "../../../../Hooks/useFacultyFormLogic";
+import { useFacultyFormLogic } from "../../../../hooks/useFacultyFormLogic";
 
 const annualSalaryOptions = [
     { value: "1", label: "₱60,000 below" },

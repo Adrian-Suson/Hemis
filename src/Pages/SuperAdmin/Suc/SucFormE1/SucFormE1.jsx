@@ -32,11 +32,22 @@ import config from "../../../../utils/config";
 import axios from "axios"; // Ensure axios is imported
 import ExcelJS from "exceljs";
 import Swal from "sweetalert2";
+import {
+    facultyTypeOptions,
+    GENERIC_FACULTY_RANK,
+    HIGHEST_DEGREE,
+    TENURED_STATUS,
+    SALARY_GRADE,
+    ANNUAL_SALARY,
+    ON_LEAVE_PAY,
+    GENDER
+} from "../../../../utils/SucFormE1Constants.jsx";
 
 function SucFormE1() {
     const { SucDetailId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const heiUiid = location.state?.heiName || "Unknown Institution";
     const heiName = location.state?.heiName || "Unknown Institution";
 
     const [faculties, setFaculties] = useState([]);
@@ -153,7 +164,7 @@ function SucFormE1() {
                 if (result.isConfirmed) {
                     try {
                         // Fetch the Form E-1 template
-                        const response = await fetch("/templates/Form-E1-Template.xlsx");
+                        const response = await fetch("/templates/Form-E1-Themeplate.xlsx");
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
                         }
@@ -212,32 +223,89 @@ function SucFormE1() {
                             const rowNumber = dataStartRow + index;
                             const row = templateWorksheet.getRow(rowNumber);
 
-                            // Map faculty data to Excel columns - adjust column numbers based on your template
-                            row.getCell(1).value = index + 1; // Serial Number
-                            row.getCell(2).value = faculty.faculty_name_ln || ""; // Last Name
-                            row.getCell(3).value = faculty.faculty_name_fn || ""; // First Name
-                            row.getCell(4).value = faculty.faculty_name_mn || ""; // Middle Name
-                            row.getCell(5).value = faculty.faculty_name_ext || ""; // Extension
-                            row.getCell(6).value = faculty.gender || ""; // Gender
-                            row.getCell(7).value = faculty.birth_date || ""; // Birth Date
-                            row.getCell(8).value = faculty.is_filipino_citizen ? "Yes" : "No"; // Citizenship
-                            row.getCell(9).value = faculty.faculty_type || ""; // Faculty Type
-                            row.getCell(10).value = faculty.generic_faculty_rank || ""; // Faculty Rank
-                            row.getCell(11).value = faculty.home_college || ""; // Home College
-                            row.getCell(12).value = faculty.home_dept || ""; // Home Department
-                            row.getCell(13).value = faculty.highest_degree_attained || ""; // Highest Degree
-                            row.getCell(14).value = faculty.highest_degree_year || ""; // Year Obtained
-                            row.getCell(15).value = faculty.is_tenured ? "Yes" : "No"; // Tenure Status
-                            row.getCell(16).value = faculty.actively_pursuing_next_degree ? "Yes" : "No"; // Pursuing Degree
-                            row.getCell(17).value = faculty.on_leave_without_pay ? "Yes" : "No"; // On Leave
-                            row.getCell(18).value = faculty.total_work_load || 0; // Total Work Load
-                            row.getCell(19).value = faculty.annual_basic_salary || 0; // Annual Salary
-                            row.getCell(20).value = faculty.ssl_salary_grade || ""; // Salary Grade
-                            row.getCell(21).value = faculty.ssl_step || ""; // Salary Step
-                            row.getCell(22).value = faculty.research_load || 0; // Research Load
-                            row.getCell(23).value = faculty.instruction_load || 0; // Instruction Load
-                            row.getCell(24).value = faculty.extension_load || 0; // Extension Load
-                            row.getCell(25).value = faculty.administration_load || 0; // Administration Load
+                            // 1. NAME OF FACULTY (combine last, first, middle initial)
+                            row.getCell(1).value =   faculty.faculty_name || "";
+
+                            // 2. GENERIC FACULTY RANK
+                            row.getCell(2).value = faculty.generic_faculty_rank || "";
+
+                            // 3. HOME COLLEGE
+                            row.getCell(3).value = faculty.home_college || "";
+
+                            // 4. HOME DEPT
+                            row.getCell(4).value = faculty.home_dept || "";
+
+                            // 5. IS FACULTY MEMBER TENURED?
+                            row.getCell(5).value = faculty.is_tenured ? "Yes" : "No";
+
+                            // 6. SSL SALARY GRADE
+                            row.getCell(6).value = faculty.ssl_salary_grade || "";
+
+                            // 7. ANNUAL BASIC SALARY
+                            row.getCell(7).value = faculty.annual_basic_salary || "";
+
+                            // 8. ON LEAVE WITHOUT PAY?
+                            row.getCell(8).value = faculty.on_leave_without_pay ? "Yes" : "No";
+
+                            // 9. FULL TIME EQUIVALENT OF FACULTY
+                            row.getCell(9).value = faculty.full_time_equivalent || "";
+
+                            // 10. GENDER OF FACULTY
+                            row.getCell(10).value = faculty.gender || "";
+
+                            // 11. HIGHEST DEGREE ATTAINED
+                            row.getCell(11).value = faculty.highest_degree_attained || "";
+
+                            // 12. ACTIVELY PURSUING NEXT DEGREE?
+                            row.getCell(12).value = faculty.actively_pursuing_next_degree ? "Yes" : "No";
+
+                            // 13. SPECIFIC DISCIPLINE OF PRIMARY TEACHING LOAD
+                            row.getCell(13).value = faculty.primary_teaching_load_discipline_1 || "";
+
+                            // 14. SPECIFIC DISCIPLINE OF SECONDARY TEACHING LOAD
+                            row.getCell(14).value = faculty.primary_teaching_load_discipline_2 || "";
+
+                            // 15. SPECIFIC DISCIPLINE OF BACHELORS DEGREE
+                            row.getCell(15).value = faculty.bachelors_discipline || "";
+
+                            // 16. SPECIFIC DISCIPLINE OF MASTERS DEGREE
+                            row.getCell(16).value = faculty.masters_discipline || "";
+
+                            // 17. SPECIFIC DISCIPLINE OF DOCTORATE
+                            row.getCell(17).value = faculty.doctorate_discipline || "";
+
+                            // 18. MASTERS DEGREE WITH THESIS?
+                            row.getCell(18).value = faculty.masters_with_thesis ? "Yes" : "No";
+
+                            // 19. DOCTORATE WITH DISSERTATION?
+                            row.getCell(19).value = faculty.doctorate_with_dissertation ? "Yes" : "No";
+
+                            // 20-25. Elem & Secondary teaching/contact hours
+                            row.getCell(20).value = faculty.lab_hours_elem_sec || "";
+                            row.getCell(21).value = faculty.lecture_hours_elem_sec || "";
+                            row.getCell(22).value = faculty.total_teaching_hours_elem_sec || "";
+                            row.getCell(23).value = faculty.student_lab_contact_hours_elem_sec || "";
+                            row.getCell(24).value = faculty.student_lecture_contact_hours_elem_sec || "";
+                            row.getCell(25).value = faculty.total_student_contact_hours_elem_sec || "";
+
+                            // 26-31. Tech/Voc teaching/contact hours
+                            row.getCell(26).value = faculty.lab_hours_tech_voc || "";
+                            row.getCell(27).value = faculty.lecture_hours_tech_voc || "";
+                            row.getCell(28).value = faculty.total_teaching_hours_tech_voc || "";
+                            row.getCell(29).value = faculty.student_lab_contact_hours_tech_voc || "";
+                            row.getCell(30).value = faculty.student_lecture_contact_hours_tech_voc || "";
+                            row.getCell(31).value = faculty.total_student_contact_hours_tech_voc || "";
+
+                            // 32-37. Official loads
+                            row.getCell(32).value = faculty.official_research_load || "";
+                            row.getCell(33).value = faculty.official_extension_services_load || "";
+                            row.getCell(34).value = faculty.official_study_load || "";
+                            row.getCell(35).value = faculty.official_load_for_production || "";
+                            row.getCell(36).value = faculty.official_administrative_load || "";
+                            row.getCell(37).value = faculty.other_official_load_credits || "";
+
+                            // 38. TOTAL WORK LOAD
+                            row.getCell(38).value = faculty.total_work_load || "";
 
                             row.commit();
                         });
@@ -245,7 +313,7 @@ function SucFormE1() {
                         console.log(`Export completed: ${faculties.length} faculty records exported`);
 
                         // Generate filename
-                        const fileName = `_${heiName.replace(/[^a-zA-Z0-9]/g, '_')}_FormE1_${new Date().toISOString().split('T')[0]}.xlsx`;
+                        const fileName = `${heiUiid}_${heiName.replace(/[^a-zA-Z0-9]/g, '_')}_FormE1_${new Date().toISOString().split('T')[0]}.xlsx`;
 
                         // Save and download the file
                         const buffer = await workbook.xlsx.writeBuffer();
@@ -485,6 +553,16 @@ function SucFormE1() {
         console.log("Institution Name:", heiName);
     }, [heiName]);
 
+    // Helper to get label from object constant
+    const getLabelFromConstant = (value, constant) => {
+        if (!value && value !== 0) return "Not specified";
+        if (Array.isArray(constant)) {
+            const found = constant.find(opt => String(opt.code) === String(value));
+            return found ? found.label : value;
+        }
+        return constant[String(value)] || value;
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
             <div className="p-6 max-w-7xl mx-auto">
@@ -704,11 +782,11 @@ function SucFormE1() {
                                                                 </div>
                                                                 <div className="text-xs text-gray-500 flex items-center">
                                                                     <User className="w-3 h-3 mr-1" />
-                                                                    {faculty.gender || "Not specified"}
+                                                                    {getLabelFromConstant(faculty.gender, GENDER)}
                                                                 </div>
                                                                 <div className="text-xs text-gray-500 flex items-center mt-1">
                                                                     <Award className="w-3 h-3 mr-1" />
-                                                                    {faculty.faculty_type || "Not specified"}
+                                                                    {getLabelFromConstant(faculty.faculty_type, facultyTypeOptions)}
                                                                 </div>
                                                                 <div className="text-xs text-gray-400 flex items-center mt-1">
                                                                     <span className="font-mono">ID: {faculty.id}</span>
@@ -719,7 +797,7 @@ function SucFormE1() {
                                                     <td className="px-4 py-4">
                                                         <div className="space-y-2">
                                                             <div className="text-sm font-medium text-gray-900">
-                                                                {faculty.generic_faculty_rank || "Not assigned"}
+                                                                {getLabelFromConstant(faculty.generic_faculty_rank, GENERIC_FACULTY_RANK) || "Not assigned"}
                                                             </div>
                                                             <div className="text-xs text-gray-600">
                                                                 <div className="flex items-center">
@@ -738,25 +816,25 @@ function SucFormE1() {
                                                             <span
                                                                 className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getDegreeColor(faculty.highest_degree_attained)}`}
                                                             >
-                                                                {faculty.highest_degree_attained || "Not specified"}
+                                                                {getLabelFromConstant(faculty.highest_degree_attained, HIGHEST_DEGREE) || "Not specified"}
                                                             </span>
                                                             <div className="space-y-1">
                                                                 {faculty.is_tenured && (
                                                                     <div className="text-xs text-green-600 flex items-center">
                                                                         <Award className="w-3 h-3 mr-1" />
-                                                                        Tenured
+                                                                        {getLabelFromConstant(faculty.is_tenured, TENURED_STATUS)}
                                                                     </div>
                                                                 )}
                                                                 {faculty.actively_pursuing_next_degree && (
                                                                     <div className="text-xs text-blue-600 flex items-center">
                                                                         <GraduationCap className="w-3 h-3 mr-1" />
-                                                                        Pursuing Degree
+                                                                        {getLabelFromConstant(faculty.actively_pursuing_next_degree, HIGHEST_DEGREE)}
                                                                     </div>
                                                                 )}
                                                                 {faculty.on_leave_without_pay && (
                                                                     <div className="text-xs text-orange-600 flex items-center">
                                                                         <Clock className="w-3 h-3 mr-1" />
-                                                                        On Leave
+                                                                        {getLabelFromConstant(faculty.on_leave_without_pay, ON_LEAVE_PAY)}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -772,11 +850,11 @@ function SucFormE1() {
                                                                 {faculty.annual_basic_salary && (
                                                                     <div className="flex items-center">
                                                                         <PhilippinePeso className="w-3 h-3 mr-1 text-green-500" />
-                                                                        ₱{Number(faculty.annual_basic_salary).toLocaleString()}
+                                                                        {getLabelFromConstant(faculty.annual_basic_salary, ANNUAL_SALARY)}
                                                                     </div>
                                                                 )}
                                                                 <div className="text-xs text-gray-500 mt-1">
-                                                                    Grade: {faculty.ssl_salary_grade || "Not specified"}
+                                                                    Grade: {getLabelFromConstant(faculty.ssl_salary_grade, SALARY_GRADE) || "Not specified"}
                                                                 </div>
                                                             </div>
                                                         </div>
