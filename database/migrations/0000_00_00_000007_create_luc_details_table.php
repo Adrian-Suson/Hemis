@@ -14,6 +14,8 @@ return new class extends Migration {
                 ->references('uiid')
                 ->on('heis')
                 ->onDelete('cascade');
+            $table->string('institutional_form_of_ownership', 255)->nullable();
+            $table->string('institutional_type', 255)->nullable();
             $table->string('region', 255)->nullable();
             $table->string('province', 255)->nullable();
             $table->string('municipality', 255)->nullable();
@@ -44,6 +46,8 @@ return new class extends Migration {
 
             // Add indexes for faster queries
             $table->index('hei_uiid'); // Index for faster lookups and joins
+            $table->index('institutional_form_of_ownership');
+            $table->index('institutional_type');
             $table->index('region'); // Index for filtering by region
             $table->index('province'); // Index for filtering by province
             $table->index('municipality'); // Index for filtering by municipality

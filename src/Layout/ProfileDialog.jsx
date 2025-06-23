@@ -58,7 +58,7 @@ const ProfileDialog = ({ open, onClose, user, fetchUserProfile }) => {
                     ? { password: editUser.password }
                     : {}),
             };
-            await axios.patch(`${config.API_URL}/users/${user.id}`, payload, {
+            await axios.patch(`${config.API_URL}/admin/users/${user.id}`, payload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             await fetchUserProfile();

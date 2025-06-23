@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Plus,
-  Edit,
-  Trash2,
   Search,
   Save,
   X,
@@ -13,12 +11,13 @@ import {
   User,
   Calendar,
   School,
-  Mail,
   Upload,
   RefreshCw,
 } from 'lucide-react';
 import PropTypes from 'prop-types'; // Import PropTypes
 import config from '../../../../utils/config';
+import LucDataTable from './LucDataTable';
+import LucUploadDialog from './LucUploadDialog';
 
 function LucHeiManagement() {
   const [lucData, setLucData] = useState([]);
@@ -312,108 +311,20 @@ function LucHeiManagement() {
           </div>
 
           {/* Data Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leadership</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Established</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredData.map((luc) => (
-                  <tr key={luc.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{luc.institution_name}</div>
-                          <div className="text-sm text-gray-500">{luc.institution_uiid}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{luc.municipality}, {luc.province}</div>
-                      <div className="text-sm text-gray-500">{luc.region}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{luc.head_name}</div>
-                      <div className="text-sm text-gray-500">{luc.head_title}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Phone className="w-3 h-3 mr-1" />
-                        {luc.institutional_telephone}
-                      </div>
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <Mail className="w-3 h-3 mr-1" />
-                        {luc.institutional_email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{luc.year_established}</div>
-                      {luc.year_converted_university && (
-                        <div className="text-sm text-gray-500">Univ: {luc.year_converted_university}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => openModal('edit', luc)}
-                        className="text-green-600 hover:text-green-900 mr-3"
-                        title="Edit LUC"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(luc.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete LUC"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredData.length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
-                      <div className="text-gray-500">
-                        <School className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">No LUCs found</p>
-                        <p className="text-sm">Try adjusting your search terms or add a new LUC.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <LucDataTable
+            data={filteredData}
+            onEdit={(record) => openModal('edit', record)}
+            onDelete={handleDelete}
+          />
         </div>
       </div>
 
       {/* Upload Modal */}
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-5xl shadow-lg rounded-md bg-white">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <School className="w-5 h-5 mr-2" />
-                Upload LUC Data
-              </h3>
-              <button
-                onClick={closeUploadModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            {/* Placeholder for upload form */}
-          </div>
-        </div>
-      )}
+      <LucUploadDialog
+        isOpen={isUploadModalOpen}
+        onClose={closeUploadModal}
+        onUploadSuccess={handleDataImported}
+      />
 
       {/* Form Modal */}
       {isModalOpen && (

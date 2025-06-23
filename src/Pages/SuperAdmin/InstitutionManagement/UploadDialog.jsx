@@ -36,7 +36,7 @@ const UploadDialog = ({
     const [heis, setHeis] = useState([]);
     const [selectedHei, setSelectedHei] = useState(null);
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
     const ACCEPTED_FILE_TYPES = [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-excel",
