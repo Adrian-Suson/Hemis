@@ -1,85 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
-import { ChevronLeft, Home, Database, Users, BarChart3, ChevronDown, ChevronUp, LogOut, Shield } from "lucide-react";
-import PropTypes from "prop-types"; // Import PropTypes at the top
-
-// Define navigation items based on user role
-const getNavItems = (role) => {
-    const items = {
-        "super-admin": [
-            {
-                text: "Dashboard",
-                icon: Home,
-                path: "/super-admin/dashboard",
-            },
-            {
-                text: "Institutions",
-                icon: Database,
-                path: "/super-admin/institutions",
-            },
-            {
-                text: "Statistics",
-                icon: BarChart3,
-                path: "/super-admin/statistics",
-            },
-        ],
-        "hei-admin": [
-            {
-                text: "Dashboard",
-                icon: Home,
-                path: "/hei-admin/dashboard",
-            },
-            {
-                text: "Institutions",
-                icon: Database,
-                path: "/hei-admin/institutions",
-            },
-        ],
-        "hei-staff": [
-            {
-                text: "Dashboard",
-                icon: Home,
-                path: "/hei-staff/dashboard",
-            },
-            {
-                text: "Institutions",
-                icon: Database,
-                path: "/hei-staff/institutions",
-            },
-        ],
-    };
-    return items[role] || [];
-};
-
-// Define admin menu items based on user role
-const getAdminMenuItems = (role) => {
-    const items = {
-        "super-admin": [
-            {
-                text: "User Management",
-                icon: Users,
-                path: "/super-admin/user-management",
-            },
-        ],
-        "hei-admin": [
-            {
-                text: "Staff Management",
-                icon: Users,
-                path: "/hei-admin/staff-management",
-            },
-        ],
-        "hei-staff": [], // No admin menu for HEI Staff
-    };
-    return items[role] || [];
-};
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronDown, ChevronUp, LogOut, LayoutDashboard, Building, Settings, List, Users, BarChart3 } from "lucide-react";
+import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = ({
     isSidebarOpen,
     setIsSidebarOpen,
     isNonMobile = true,
     isMinimized,
-    // Navigation and API functions as props to make component reusable
-    onNavigate = (path) => console.log('Navigate to:', path),
     onLogout = () => console.log('Logout clicked'),
     onFetchUser = () => Promise.resolve({
         id: 1,
@@ -90,17 +19,94 @@ const Sidebar = ({
     }),
 }) => {
     const [active, setActive] = useState("");
-    const [openManagement, setOpenManagement] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState(null);
     const [user, setUser] = useState(null);
+    const navigate = useNavigate();
 
-    const navItems = getNavItems(user?.role);
-    const adminMenuItems = getAdminMenuItems(user?.role);
+    // Navigation items based on user role (copied from Navbar.jsx)
+    const navItems = useMemo(() => {
+        const role = user?.role;
+        const items = {
+            "super-admin": [
+                {
+                    text: "Dashboard",
+                    path: "/super-admin/dashboard",
+                    icon: LayoutDashboard,
+                },
+                {
+                    text: "Institutions",
+                    icon: Building,
+                    dropdown: [
+                        { text: "SUC", path: "/super-admin/institutions/suc" },
+                        { text: "LUC", path: "/super-admin/institutions/luc" },
+                        { text: "PRIVATE", path: "/super-admin/institutions/private" },
+                    ],
+                },
+                {
+                    text: "Admin",
+                    icon: Settings,
+                    dropdown: [
+                        { text: "User Management", path: "/super-admin/user-management", icon: Users },
+                        { text: "System Management", path: "/super-admin/system-management", icon: Settings },
+                        { text: "HEI List", path: "/super-admin/hei-management", icon: List },
+                    ],
+                },
+                {
+                    text: "Statistics",
+                    icon: BarChart3,
+                    path: "/super-admin/statistics",
+                },
+            ],
+            "hei-admin": [
+                {
+                    text: "Dashboard",
+                    path: "/hei-admin/dashboard",
+                    icon: LayoutDashboard,
+                },
+                {
+                    text: "Institutions",
+                    icon: Building,
+                    dropdown: [
+                        { text: "SUC", path: "/hei-admin/institutions/suc" },
+                        { text: "LUC", path: "/hei-admin/institutions/luc" },
+                        { text: "PRIVATE", path: "/hei-admin/institutions/private" },
+                    ],
+                },
+                {
+                    text: "Admin",
+                    icon: Settings,
+                    dropdown: [
+                        { text: "Staff Management", path: "/hei-admin/staff-management", icon: Users },
+                        { text: "System Management", path: "/hei-admin/system-management", icon: Settings },
+                        { text: "HEI List", path: "/hei-admin/hei-list", icon: List },
+                    ],
+                },
+            ],
+            "hei-staff": [
+                {
+                    text: "Dashboard",
+                    path: "/hei-staff/dashboard",
+                    icon: LayoutDashboard,
+                },
+                {
+                    text: "Institutions",
+                    icon: Building,
+                    dropdown: [
+                        { text: "SUC", path: "/hei-staff/institutions/suc" },
+                        { text: "LUC", path: "/hei-staff/institutions/luc" },
+                        { text: "PRIVATE", path: "/hei-staff/institutions/private" },
+                    ],
+                },
+            ],
+        };
+        return items[role] || [];
+    }, [user]);
 
-    const handleNavigation = (path) => {
-        onNavigate(path);
+    const handleNavigation = useCallback((path) => {
+        navigate(path);
         setActive(path);
-        if (!isNonMobile) setIsSidebarOpen(false); // Close sidebar on mobile after navigation
-    };
+        if (!isNonMobile) setIsSidebarOpen(false);
+    }, [navigate, isNonMobile, setIsSidebarOpen]);
 
     const fetchUsers = async () => {
         try {
@@ -123,28 +129,81 @@ const Sidebar = ({
         }
     };
 
-    const renderNavItem = ({ text, icon: IconComponent, path }) => {
-        const isActive = active === path;
+    // Helper to check if a dropdown contains the active path
+    const isDropdownActive = (dropdown) => {
+        return dropdown?.some((item) => item.path === active);
+    };
+
+    // Render a single nav item or dropdown
+    const renderNavItem = (item, index) => {
+        const { text, icon: Icon, path, dropdown } = item;
+        const hasDropdown = dropdown && dropdown.length > 0;
+        const isActive = path ? active === path : isDropdownActive(dropdown);
+        const isOpen = openDropdown === index;
+
+        if (!hasDropdown) {
+            return (
+                <li key={text} className="mb-1">
+                    <button
+                        onClick={() => handleNavigation(path)}
+                        className={`
+                            w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200
+                            ${isActive ? 'bg-blue-500 text-white shadow-md' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'}
+                            ${isMinimized ? 'justify-center px-2' : 'justify-start'}
+                        `}
+                    >
+                        <div className={`flex items-center justify-center ${isMinimized ? '' : 'mr-3'}`}>
+                            {Icon && <Icon size={20} />}
+                        </div>
+                        {!isMinimized && <span className="font-medium">{text}</span>}
+                    </button>
+                </li>
+            );
+        }
+        // Dropdown item
         return (
             <li key={text} className="mb-1">
                 <button
-                    onClick={() => handleNavigation(path)}
+                    onClick={() => setOpenDropdown(isOpen ? null : index)}
                     className={`
                         w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200
-                        ${isActive
-                            ? 'bg-blue-500 text-white shadow-md'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        }
-                        ${isMinimized ? 'justify-center px-2' : 'justify-start'}
+                        text-gray-700 hover:bg-blue-50 hover:text-blue-600
+                        ${isMinimized ? 'justify-center px-2' : 'justify-between'}
+                        ${isActive ? 'bg-blue-100' : ''}
                     `}
                 >
-                    <div className={`flex items-center justify-center ${isMinimized ? '' : 'mr-3'}`}>
-                        <IconComponent size={20} />
+                    <div className={`flex items-center ${isMinimized ? '' : 'mr-3'}`}>
+                        {Icon && <Icon size={20} />}
+                        {!isMinimized && <span className="font-medium ml-2">{text}</span>}
                     </div>
                     {!isMinimized && (
-                        <span className="font-medium">{text}</span>
+                        <span className="ml-auto">
+                            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </span>
                     )}
                 </button>
+                {/* Dropdown content */}
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <ul className={`mt-2 space-y-1 ${isMinimized ? '' : 'ml-4'}`}>
+                        {dropdown.map((dropItem) => (
+                            <li key={dropItem.text}>
+                                <button
+                                    onClick={() => handleNavigation(dropItem.path)}
+                                    className={`
+                                        w-full flex items-center px-4 py-2 rounded-lg transition-all duration-200
+                                        ${active === dropItem.path ? 'bg-blue-500 text-white shadow-md' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'}
+                                        ${isMinimized ? 'justify-center px-2' : 'justify-start'}
+                                    `}
+                                >
+                                    <div className={`flex items-center justify-center ${isMinimized ? '' : 'mr-3'}`}>
+                                        {dropItem.icon ? <dropItem.icon size={18} /> : null}
+                                    </div>
+                                    {!isMinimized && <span className="font-medium">{dropItem.text}</span>}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </li>
         );
     };
@@ -206,46 +265,9 @@ const Sidebar = ({
                 <div className="flex-1 overflow-y-auto py-4">
                     <div className="px-3">
                         <ul className="space-y-1">
-                            {navItems.map(renderNavItem)}
+                            {navItems.map((item, idx) => renderNavItem(item, idx))}
                         </ul>
                     </div>
-
-                    {/* Admin Menu */}
-                    {adminMenuItems.length > 0 && (
-                        <div className="mt-6 px-3">
-                            <div className="border-t border-gray-200 pt-4">
-                                <button
-                                    onClick={() => setOpenManagement(!openManagement)}
-                                    className={`
-                                        w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200
-                                        text-gray-700 hover:bg-gray-50
-                                        ${isMinimized ? 'justify-center px-2' : 'justify-between'}
-                                    `}
-                                >
-                                    <div className={`flex items-center ${isMinimized ? '' : 'space-x-3'}`}>
-                                        <Shield size={20} />
-                                        {!isMinimized && (
-                                            <span className="font-medium">Admin</span>
-                                        )}
-                                    </div>
-                                    {!isMinimized && (
-                                        <div className="ml-auto">
-                                            {openManagement ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </div>
-                                    )}
-                                </button>
-
-                                <div className={`
-                                    overflow-hidden transition-all duration-300 ease-in-out
-                                    ${openManagement ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}
-                                `}>
-                                    <ul className={`mt-2 space-y-1 ${isMinimized ? '' : 'ml-4'}`}>
-                                        {adminMenuItems.map(renderNavItem)}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* User Profile & Logout */}
@@ -305,7 +327,6 @@ Sidebar.propTypes = {
     setIsSidebarOpen: PropTypes.func.isRequired, // Function to toggle sidebar state
     isNonMobile: PropTypes.bool, // Whether the view is non-mobile
     isMinimized: PropTypes.bool.isRequired, // Whether the sidebar is minimized
-    onNavigate: PropTypes.func, // Function to handle navigation
     onLogout: PropTypes.func, // Function to handle logout
     onFetchUser: PropTypes.func, // Function to fetch user data
 };

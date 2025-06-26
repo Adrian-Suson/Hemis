@@ -24,9 +24,7 @@ class LucDeanProfileController extends Controller
     {
         $validatedData = $request->validate([
             'luc_detail_id' => 'required|exists:luc_details,id',
-            'last_name' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
-            'middle_initial' => 'nullable|string|max:10',
+            'name' => 'required|string|max:255',
             'designation' => 'nullable|string|max:255',
             'college_discipline_assignment' => 'nullable|string|max:255',
             'baccalaureate_degree' => 'nullable|string|max:255',
@@ -56,9 +54,7 @@ class LucDeanProfileController extends Controller
 
         $validatedData = $request->validate([
             'luc_detail_id' => 'sometimes|exists:luc_details,id',
-            'last_name' => 'sometimes|string|max:255',
-            'first_name' => 'sometimes|string|max:255',
-            'middle_initial' => 'nullable|string|max:10',
+            'name' => 'sometimes|string|max:255',
             'designation' => 'nullable|string|max:255',
             'college_discipline_assignment' => 'nullable|string|max:255',
             'baccalaureate_degree' => 'nullable|string|max:255',

@@ -47,7 +47,7 @@ function SucFormE1() {
     const { SucDetailId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const heiUiid = location.state?.heiName || "Unknown Institution";
+    const heiUiid = location.state?.heiUiid || "Unknown Institution";
     const heiName = location.state?.heiName || "Unknown Institution";
 
     const [faculties, setFaculties] = useState([]);

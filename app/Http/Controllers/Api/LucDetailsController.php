@@ -23,7 +23,7 @@ class LucDetailsController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'institution_uiid' => 'required|string|max:36',
+            'hei_uiid' => 'required|string|max:36',
             'region' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
             'municipality' => 'nullable|string|max:255',
@@ -70,7 +70,7 @@ class LucDetailsController extends Controller
         $lucDetail = LucDetail::findOrFail($id);
 
         $validatedData = $request->validate([
-            'institution_uiid' => 'sometimes|string|max:36',
+            'hei_uiid' => 'sometimes|string|max:36',
             'region' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:255',
             'municipality' => 'nullable|string|max:255',

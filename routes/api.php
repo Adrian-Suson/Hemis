@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\ResearchTb5Controller;
 use App\Http\Controllers\Api\ResearchTbcController;
 use App\Http\Controllers\Api\SucPcrGraduateListController;
 use App\Http\Controllers\Api\ClusterController;
+use App\Http\Controllers\Api\LucFormerNameController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -90,7 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/luc-prc-graduate', LucPrcGraduateController::class);
     // LUC Dean Profile Routes
     Route::apiResource('/luc-dean-profiles', LucDeanProfileController::class);
-
+    // LUC Former Name Routes
+    Route::apiResource('/luc-former-names', LucFormerNameController::class);
 
     // Private Details Routes
     Route::apiResource('/private-details', PrivateDetailsController::class);

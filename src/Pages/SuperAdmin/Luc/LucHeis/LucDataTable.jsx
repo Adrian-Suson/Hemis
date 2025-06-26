@@ -5,20 +5,26 @@ import {
     MoreHorizontal,
     Edit,
     Trash,
+    User,
 } from "lucide-react";
 import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import Popper from "../../../../Components/Popper";
 import Pagination from "../../../../Components/Pagination";
+import LucDetailsView from './LucDetailsView';
+import { useNavigate } from "react-router-dom";
+import { HEAD_TITLE_MAPPING } from '../../../../utils/LucFormAConstants';
 
 function LucDataTable({ data, onEdit, onDelete }) {
     const [selectedLuc, setSelectedLuc] = useState(null);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const navigate = useNavigate();
 
     useEffect(() => {
         setCurrentPage(1);
+        console.log(data)
     }, [data]);
 
     // Sort data alphabetically by institution name
@@ -51,6 +57,25 @@ function LucDataTable({ data, onEdit, onDelete }) {
     const handleCloseDetailsModal = () => {
         setIsDetailsModalOpen(false);
         setSelectedLuc(null);
+    };
+
+    // Add handleView function similar to SucDataTable
+    const handleView = (luc, type) => {
+        const LucDetailId = luc.id;
+        if (!LucDetailId) {
+            console.error(`No LUC ID found for ${type}:`, luc);
+            return;
+        }
+        const routes = {
+            formerNames: `/super-admin/institutions/luc/former-names/${LucDetailId}`,
+            deanProfiles: `/super-admin/institutions/luc/dean-profiles/${LucDetailId}`,
+        };
+        navigate(routes[type], {
+            state: {
+                heiName: luc.hei?.name || luc.institution_name,
+                heiUiid: luc.hei?.uiid || luc.institution_uiid,
+            },
+        });
     };
 
     return (
@@ -108,7 +133,7 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                             {luc.head_name}
                                         </div>
                                         <div className="text-sm text-gray-500 truncate">
-                                            {luc.head_title}
+                                            {HEAD_TITLE_MAPPING[String(luc.head_title)] || luc.head_title}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -146,7 +171,7 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                                 </button>
                                             }
                                             placement="bottom-end"
-                                            className="w-40 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]"
+                                            className="w-48 bg-white border border-gray-200 rounded-md shadow-lg z-[9999]"
                                             offset={[0, 4]}
                                         >
                                             <div className="py-1">
@@ -170,6 +195,22 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                                     Edit LUC
                                                 </button>
                                                 <button
+                                                    onClick={() => handleView(luc, 'formerNames')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <School className="w-4 h-4 mr-3 text-blue-700 group-hover:text-blue-800" />
+                                                    View Former Names
+                                                </button>
+                                                <button
+                                                    onClick={() => handleView(luc, 'deanProfiles')}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:bg-indigo-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <User className="w-4 h-4 mr-3 text-indigo-700 group-hover:text-indigo-800" />
+                                                    View Dean Profiles
+                                                </button>
+                                                <button
                                                     onClick={() => onDelete(luc.id)}
                                                     className="flex items-center w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 focus:outline-none focus:bg-red-50 transition-colors duration-150 group"
                                                     role="menuitem"
@@ -177,6 +218,36 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                                     <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
                                                     Delete LUC
                                                 </button>
+
+                                                <div className="border-t border-gray-100 my-1"></div>
+
+                                                {/* Forms Section (commented out for now, add if LUC forms exist) */}
+                                                {/* <div className="px-2 py-1 text-xs font-medium text-gray-500">
+                                                    Forms
+                                                </div>
+                                                <button
+                                                    onClick={() => {}}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <Building2 className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                    Campuses (Form A2)
+                                                </button> */}
+
+                                                {/* <div className="border-t border-gray-100 my-1"></div> */}
+
+                                                {/* Additional Data Section (commented out for now) */}
+                                                {/* <div className="px-2 py-1 text-xs font-medium text-gray-500">
+                                                    Additional Data
+                                                </div>
+                                                <button
+                                                    onClick={() => {}}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                >
+                                                    <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
+                                                    Manage Research
+                                                </button> */}
                                             </div>
                                         </Popper>
                                     </td>
@@ -210,14 +281,11 @@ function LucDataTable({ data, onEdit, onDelete }) {
                     />
                 </div>
             </div>
-            {/* Details Modal placeholder (implement as needed) */}
-            {/* {isDetailsModalOpen && (
-                <LucDetailsView
-                    isOpen={isDetailsModalOpen}
-                    onClose={handleCloseDetailsModal}
-                    lucData={selectedLuc}
-                />
-            )} */}
+            <LucDetailsView
+                isOpen={isDetailsModalOpen}
+                onClose={handleCloseDetailsModal}
+                lucData={selectedLuc}
+            />
         </>
     );
 }
@@ -250,4 +318,4 @@ LucDataTable.propTypes = {
     onDelete: PropTypes.func.isRequired,
 };
 
-export default LucDataTable; 
+export default LucDataTable;

@@ -19,6 +19,7 @@ import SucFormE2 from "./Pages/SuperAdmin/Suc/SucFormE2/SucFormE2";
 import SucFormGH from "./Pages/SuperAdmin/Suc/SucFormGH/SucFormGH";
 import HeiManagement from "./Pages/SuperAdmin/HeisManagement/HeiManagement";
 import ResearchManagement from "./Pages/SuperAdmin/Suc/Research/ResearchManagement";
+import LucDeanProfiles from "./Pages/SuperAdmin/Luc/LucDeanProfiles/LucDeanProfiles";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -26,6 +27,7 @@ import Layout from "./Layout/Layout";
 import NotFound from "./utils/NotFound";
 import UserManagement from "./Pages/SuperAdmin/UserManagment/UserManagement";
 import SucPcrGraduates from "./Pages/SuperAdmin/Suc/SucPcrGraduates/SucPcrGraduates";
+import LucFormerNames from "./Pages/SuperAdmin/Luc/LucFormerNames/LucFormerNames";
 
 
 function ExternalRedirect({ to }) {
@@ -65,6 +67,7 @@ function App() {
                         <Route path="super-admin/dashboard" element={<Dashboard />} />
                         <Route path="/super-admin/institutions/suc" element={<SucHeiManagement />} />
                         <Route path="/super-admin/institutions/luc" element={<LucHeiManagement />} />
+                        <Route path="/super-admin/institutions/luc/former-names/:lucDetailId" element={<LucFormerNames />} />
                         <Route path="/super-admin/institutions/private" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/institutions/suc/campuses/:SucDetailId" element={<SucCampuses />} />
                         <Route path="/super-admin/institutions/suc/programs/:SucDetailId" element={<SucPrograms />} />
@@ -77,6 +80,7 @@ function App() {
                         <Route path="/super-admin/institutions/private/campuses/:privateDetailId" element={<PrivateHeiManagement />} />
                         <Route path="/super-admin/user-management" element={<UserManagement />} />
                         <Route path="/super-admin/hei-management" element={<HeiManagement />} />
+                        <Route path="/super-admin/institutions/luc/dean-profiles/:lucDetailId" element={<LucDeanProfiles />} />
                     </Route>
 
                     {/* HEI Admin Routes under /hei-admin/* */}

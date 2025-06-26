@@ -10,9 +10,7 @@ class LucDeanProfile extends Model
 
     protected $fillable = [
         'luc_detail_id',
-        'last_name',
-        'first_name',
-        'middle_initial',
+        'name',
         'designation',
         'college_discipline_assignment',
         'baccalaureate_degree',

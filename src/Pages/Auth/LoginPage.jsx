@@ -312,7 +312,7 @@ const LoginPage = () => {
                   <input
                     id="email"
                     type="email"
-                    className="bg-white/90 border border-white/30 text-black text-sm rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 block w-full pl-10 p-4 shadow-lg transition-all placeholder-black"
+                    className="bg-white/90 border border-white/30 text-black text-sm rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 block w-full pl-10 p-4 shadow-lg transition-all placeholder-gray"
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -350,7 +350,7 @@ const LoginPage = () => {
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    className="bg-white/90 border border-white/30 text-black text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 block w-full pl-10 pr-10 p-4 shadow-lg transition-all placeholder-black"
+                    className="bg-white/90 border border-white/30 text-black text-sm rounded-lg focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 block w-full pl-10 pr-10 p-4 shadow-lg transition-all placeholder-gray"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
