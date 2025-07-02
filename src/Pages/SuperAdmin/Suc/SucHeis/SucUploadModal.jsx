@@ -30,7 +30,7 @@ function SucUploadModal({ isOpen, onClose, onDataImported }) {
 
   // Create heiOptions from heis state for react-select
   const heiOptions = Array.isArray(heis)
-    ? heis.map((hei) => ({
+    ? heis.filter(hei => hei.type === 'SUC' && hei.campus_type === 'Main' && hei.status === 'open').map((hei) => ({
         value: hei.uiid,
         label: `${hei.name} (${hei.uiid})`,
         name: hei.name,

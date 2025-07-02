@@ -20,6 +20,7 @@ import SucFormGH from "./Pages/SuperAdmin/Suc/SucFormGH/SucFormGH";
 import HeiManagement from "./Pages/SuperAdmin/HeisManagement/HeiManagement";
 import ResearchManagement from "./Pages/SuperAdmin/Suc/Research/ResearchManagement";
 import LucDeanProfiles from "./Pages/SuperAdmin/Luc/LucDeanProfiles/LucDeanProfiles";
+import PublicDashboard from "./Pages/Public/PublicDashboard";
 
 // Utility Components
 import ProtectedRoute from "./utils/ProtectedRoute";
@@ -55,6 +56,9 @@ function App() {
 
                 {/* Public Route: Login */}
                 <Route path="/login" element={<LoginPage />} />
+
+                {/* Public Route: Dashboard */}
+                <Route path="/dashboard" element={<PublicDashboard />} />
 
                 {/* Protected Routes with Layout */}
                 <Route element={<Layout />}>

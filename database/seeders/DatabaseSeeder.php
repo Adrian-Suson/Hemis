@@ -18,6 +18,12 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             SucDetailsSeeder::class,
+            LucDeanProfileSeeder::class,
+            LucDetailSeeder::class,
+            LucFormBCSeeder::class,
+            LucFormE5Seeder::class,
+            LucFormerNameSeeder::class,
+            LucPrcGraduateSeeder::class,
         ]);
     }
 }

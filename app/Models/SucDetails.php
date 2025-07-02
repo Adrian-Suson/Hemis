@@ -41,6 +41,8 @@ class SucDetails extends Model
         'year_converted_university' => 'integer'
     ];
 
+    protected $appends = ['total_students'];
+
     // Relationships
     public function hei()
     {
@@ -65,5 +67,16 @@ class SucDetails extends Model
     public function incomes()
     {
         return $this->hasMany(Income::class, 'suc_details_id');
+    }
+
+    public function formBs()
+    {
+        return $this->hasMany(SucFormB::class, 'suc_details_id');
+    }
+
+    public function getTotalStudentsAttribute()
+    {
+        // Sums the grand_total field from all related SucFormB records
+        return $this->formBs()->sum('grand_total');
     }
 } 

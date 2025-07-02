@@ -64,6 +64,18 @@ function HeiDetailsModal({ isOpen, onClose, hei }) {
                                     {hei.cluster?.name || "Not assigned"}
                                 </p>
                             </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Status</p>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${hei.status === 'open' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'}`}>
+                                    {hei.status ? hei.status.charAt(0).toUpperCase() + hei.status.slice(1) : 'N/A'}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500">Campus Type</p>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-300">
+                                    {hei.campus_type ? hei.campus_type : 'N/A'}
+                                </span>
+                            </div>
                         </div>
 
                         <div className="border-t border-gray-200 pt-4">
@@ -109,7 +121,9 @@ HeiDetailsModal.propTypes = {
             id: PropTypes.number,
             name: PropTypes.string,
             regionID: PropTypes.number
-        })
+        }),
+        status: PropTypes.string,
+        campus_type: PropTypes.string
     })
 };
 

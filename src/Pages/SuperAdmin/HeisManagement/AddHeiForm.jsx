@@ -2,13 +2,17 @@ import { useState } from "react";
 import PropTypes from 'prop-types';
 import Dialog from "../../../Components/Dialog";
 import { Building2 } from "lucide-react";
+import Select from 'react-select';
 
-function AddHeiForm({ isOpen, onClose, onSave, loading, clusters }) {
+function AddHeiForm({ isOpen, onClose, onSave, loading, clusters, heis }) {
     const [formData, setFormData] = useState({
         uiid: "",
         name: "",
         type: "SUC",
         cluster_id: "",
+        status: "open",
+        campus_type: "Main",
+        parent_uiid: "",
     });
     const [errors, setErrors] = useState({});
 
@@ -38,6 +42,15 @@ function AddHeiForm({ isOpen, onClose, onSave, loading, clusters }) {
         if (!formData.cluster_id) {
             newErrors.cluster_id = "Cluster is required";
         }
+        if (!formData.status) {
+            newErrors.status = "Status is required";
+        }
+        if (!formData.campus_type) {
+            newErrors.campus_type = "Campus type is required";
+        }
+        if (formData.campus_type === "Extension" && !formData.parent_uiid) {
+            newErrors.parent_uiid = "Main campus is required for extensions";
+        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -51,6 +64,9 @@ function AddHeiForm({ isOpen, onClose, onSave, loading, clusters }) {
                 name: "",
                 type: "SUC",
                 cluster_id: "",
+                status: "open",
+                campus_type: "Main",
+                parent_uiid: "",
             });
         }
     };
@@ -184,6 +200,59 @@ function AddHeiForm({ isOpen, onClose, onSave, loading, clusters }) {
                             <p className="mt-1 text-sm text-red-600">{errors.cluster_id}</p>
                         )}
                     </div>
+
+                    <div>
+                        <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                            id="status"
+                            name="status"
+                            value={formData.status}
+                            onChange={handleChange}
+                            className={`mt-1 block w-full rounded-md border ${errors.status ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"} shadow-sm p-2`}
+                        >
+                            <option value="open">Open</option>
+                            <option value="close">Close</option>
+                        </select>
+                        {errors.status && (
+                            <p className="mt-1 text-sm text-red-600">{errors.status}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label htmlFor="campus_type" className="block text-sm font-medium text-gray-700">Campus Type</label>
+                        <select
+                            id="campus_type"
+                            name="campus_type"
+                            value={formData.campus_type}
+                            onChange={handleChange}
+                            className={`mt-1 block w-full rounded-md border ${errors.campus_type ? "border-red-300 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"} shadow-sm p-2`}
+                        >
+                            <option value="Main">Main</option>
+                            <option value="Extension">Extension</option>
+                        </select>
+                        {errors.campus_type && (
+                            <p className="mt-1 text-sm text-red-600">{errors.campus_type}</p>
+                        )}
+                    </div>
+
+                    {formData.campus_type === "Extension" && (
+                        <div>
+                            <label htmlFor="parent_uiid" className="block text-sm font-medium text-gray-700">Main Campus</label>
+                            <Select
+                                options={heis.filter((hei) => hei.campus_type === "Main").map((hei) => ({ value: hei.uiid, label: hei.name }))}
+                                value={heis.filter((hei) => hei.campus_type === "Main").map((hei) => ({ value: hei.uiid, label: hei.name })).find(option => option.value === formData.parent_uiid) || null}
+                                onChange={(selected) => handleChange({ target: { name: 'parent_uiid', value: selected ? selected.value : '' } })}
+                                placeholder="Select Main Campus"
+                                isClearable
+                                isSearchable
+                                className="text-sm"
+                                classNamePrefix="select"
+                            />
+                            {errors.parent_uiid && (
+                                <p className="mt-1 text-sm text-red-600">{errors.parent_uiid}</p>
+                            )}
+                        </div>
+                    )}
                 </form>
             </div>
         </Dialog>
@@ -195,7 +264,8 @@ AddHeiForm.propTypes = {
     onClose: PropTypes.func.isRequired,
     onSave: PropTypes.func.isRequired,
     loading: PropTypes.bool.isRequired,
-    clusters: PropTypes.array.isRequired
+    clusters: PropTypes.array.isRequired,
+    heis: PropTypes.array.isRequired
 };
 
 export default AddHeiForm;

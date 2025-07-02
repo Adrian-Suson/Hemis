@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\ResearchTbcController;
 use App\Http\Controllers\Api\SucPcrGraduateListController;
 use App\Http\Controllers\Api\ClusterController;
 use App\Http\Controllers\Api\LucFormerNameController;
+use App\Http\Controllers\Api\PublicDashboardController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication Routes
@@ -153,3 +154,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('clusters', ClusterController::class);
     Route::get('clusters/{cluster}/heis', [ClusterController::class, 'getHeis']);
 });
+
+// Public Dashboard Route
+Route::get('/public/dashboard', [PublicDashboardController::class, 'index']);

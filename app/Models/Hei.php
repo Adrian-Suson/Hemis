@@ -10,11 +10,18 @@ class Hei extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $primaryKey = 'uiid';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'uiid',
         'name',
         'type',
-        'cluster_id'
+        'cluster_id',
+        'status',
+        'campus_type',
+        'parent_uiid',
     ];
 
     /**

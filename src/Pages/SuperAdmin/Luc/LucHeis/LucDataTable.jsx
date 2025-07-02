@@ -14,6 +14,10 @@ import Pagination from "../../../../Components/Pagination";
 import LucDetailsView from './LucDetailsView';
 import { useNavigate } from "react-router-dom";
 import { HEAD_TITLE_MAPPING } from '../../../../utils/LucFormAConstants';
+import ExcelJS from "exceljs";
+import axios from "axios";
+import config from "../../../../utils/config";
+import AlertComponent from "../../../../Components/AlertComponent";
 
 function LucDataTable({ data, onEdit, onDelete }) {
     const [selectedLuc, setSelectedLuc] = useState(null);
@@ -21,10 +25,11 @@ function LucDataTable({ data, onEdit, onDelete }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const navigate = useNavigate();
+    const [loading, setLoading] = useState({ exportFormA: false });
 
     useEffect(() => {
         setCurrentPage(1);
-        console.log(data)
+        console.log(data);
     }, [data]);
 
     // Sort data alphabetically by institution name
@@ -59,7 +64,6 @@ function LucDataTable({ data, onEdit, onDelete }) {
         setSelectedLuc(null);
     };
 
-    // Add handleView function similar to SucDataTable
     const handleView = (luc, type) => {
         const LucDetailId = luc.id;
         if (!LucDetailId) {
@@ -78,6 +82,164 @@ function LucDataTable({ data, onEdit, onDelete }) {
         });
     };
 
+    // Helper for head title
+    const getHeadTitle = (value) => {
+        return HEAD_TITLE_MAPPING[String(value)] || value || "";
+    };
+
+    // Export to Form A handler
+    const handleExportToFormA = async (luc) => {
+        AlertComponent.showConfirmation(
+            `Do you want to export Form A for ${luc.institution_name}?`,
+            async () => {
+                setLoading((prev) => ({ ...prev, exportFormA: true }));
+                try {
+                    // Download the LUC Form A template
+                    const response = await fetch("/templates/Luc-Form-A-Themeplate.xlsx");
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    const arrayBuffer = await response.arrayBuffer();
+
+                    const workbook = new ExcelJS.Workbook();
+                    await workbook.xlsx.load(arrayBuffer);
+
+                    // Access the worksheets using exact names from the template
+                    const sheetAInstProfile = workbook.getWorksheet("A Inst Profile");
+                    const sheetADeanProfile = workbook.getWorksheet("A Dean Profile");
+
+                    // --- A Inst Profile: Map all required fields ---
+                    const aInstFields = [
+                        { row: 4, cell: 3, key: "institution_name" },
+                        { row: 5, cell: 3, key: "form_of_ownership" },
+                        { row: 6, cell: 3, key: "institutional_type" },
+                        { row: 7, cell: 3, key: "address_street" },
+                        { row: 8, cell: 3, key: "municipality_city" },
+                        { row: 9, cell: 3, key: "province" },
+                        { row: 10, cell: 3, key: "region" },
+                        { row: 11, cell: 3, key: "postal_code" },
+                        { row: 12, cell: 3, key: "institutional_telephone" },
+                        { row: 13, cell: 3, key: "institutional_fax" },
+                        { row: 14, cell: 3, key: "head_telephone" },
+                        { row: 15, cell: 3, key: "institutional_email" },
+                        { row: 16, cell: 3, key: "institutional_website" },
+                        { row: 17, cell: 3, key: "year_established" },
+                        { row: 18, cell: 3, key: "sec_registration" },
+                        { row: 19, cell: 3, key: "year_granted_approved" },
+                        { row: 20, cell: 3, key: "year_converted_college" },
+                        { row: 21, cell: 3, key: "year_converted_university" },
+                        { row: 22, cell: 3, key: "head_name" },
+                        { row: 23, cell: 3, key: "head_title", transform: getHeadTitle },
+                        { row: 24, cell: 3, key: "head_education" },
+                        { row: 25, cell: 3, key: "x_coordinate" },
+                        { row: 26, cell: 3, key: "y_coordinate" },
+                    ];
+
+                    aInstFields.forEach(({ row, cell, key, transform }) => {
+                        let value = luc[key] || luc[key.replace("address_", "")]; // Fallback for street/address_street
+                        if (!value && key === "municipality_city") value = luc["municipality"];
+                        if (transform && value) value = transform(value);
+                        sheetAInstProfile.getRow(row).getCell(cell).value = value || "";
+                    });
+
+                    // --- A Inst Profile: Former Names Table ---
+                    const token = localStorage.getItem("token");
+                    let formerNames = [];
+                    try {
+                        const { data: formerNamesResp } = await axios.get(
+                            `${config.API_URL}/luc-former-names?luc_detail_id=${luc.id}`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        formerNames = Array.isArray(formerNamesResp) ? formerNamesResp : formerNamesResp.data || [];
+                    } catch {
+                        formerNames = [];
+                    }
+
+                    // Write former names starting at row 30 (as per template: Name, Year)
+                    let formerStartRow = 31;
+                    if (formerNames.length === 0) {
+                        sheetAInstProfile.getRow(formerStartRow).getCell(1).value = "N/A";
+                        sheetAInstProfile.getRow(formerStartRow).getCell(3).value = "N/A";
+                    } else {
+                        formerNames.forEach((item, idx) => {
+                            const row = sheetAInstProfile.getRow(formerStartRow + idx);
+                            row.getCell(1).value = item.former_name || "N/A";
+                            row.getCell(3).value = item.year_used || "N/A";
+                        });
+                    }
+
+                    // --- A Dean Profile: Dean Profile Table ---
+                    let deanProfiles = [];
+                    try {
+                        const { data: deanResp } = await axios.get(
+                            `${config.API_URL}/luc-dean-profiles?luc_detail_id=${luc.id}`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        deanProfiles = Array.isArray(deanResp) ? deanResp : deanResp.data || [];
+                    } catch {
+                        deanProfiles = [];
+                    }
+
+                    // Write Dean Profile table starting at row 3 (as per template)
+                    let deanStartRow = 3;
+                    const deanHeader = [
+                        "Name of Dean (Last Name, First Name Middle Initial)",
+                        "Designation (e.g. Program Dean, College Head)",
+                        "College/Discipline Assignment (e.g. College of Liberal Arts)",
+                        "Baccalaureate",
+                        "Masters",
+                        "Doctoral",
+                    ];
+                    deanHeader.forEach((header, idx) => {
+                        sheetADeanProfile.getRow(deanStartRow).getCell(idx + 1).value = header;
+                    });
+
+                    if (deanProfiles.length === 0) {
+                        const row = sheetADeanProfile.getRow(deanStartRow + 1);
+                        row.getCell(1).value = "N/A";
+                        row.getCell(2).value = "N/A";
+                        row.getCell(3).value = "N/A";
+                        row.getCell(4).value = "N/A";
+                        row.getCell(5).value = "N/A";
+                        row.getCell(6).value = "N/A";
+                        row.commit();
+                    } else {
+                        deanProfiles.forEach((dean, idx) => {
+                            const row = sheetADeanProfile.getRow(deanStartRow + 1 + idx);
+                            row.getCell(1).value = dean.name || dean.last_name || "N/A";
+                            row.getCell(2).value = dean.designation || "N/A";
+                            row.getCell(3).value = dean.college_discipline_assignment || "N/A";
+                            row.getCell(4).value = dean.baccalaureate_degree || "N/A";
+                            row.getCell(5).value = dean.masters_degree || "N/A";
+                            row.getCell(6).value = dean.doctorate_degree || "N/A";
+                            row.commit();
+                        });
+                    }
+
+                    // --- Download the filled Excel file ---
+                    const fileName = `${luc.institution_uiid || "0000"}_${luc.institution_name || "Unknown"}_LUC_${new Date().toISOString().split("T")[0]}.xlsx`;
+                    const buffer = await workbook.xlsx.writeBuffer();
+                    const blob = new Blob([buffer], {
+                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    AlertComponent.showAlert("Form A exported successfully.", "success");
+                } catch (error) {
+                    console.error("Error exporting Form A:", error);
+                    AlertComponent.showAlert("Failed to export Form A. Please try again.", "error");
+                } finally {
+                    setLoading((prev) => ({ ...prev, exportFormA: false }));
+                }
+            }
+        );
+    };
+
     return (
         <>
             <div className="relative w-full px-4 py-2">
@@ -94,7 +256,7 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                 <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                     Leadership
                                 </th>
-                                <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                <th className="w-[20%] px-6(py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                                     Contact
                                 </th>
                                 <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -137,7 +299,7 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900 flex items-center">
+                                        <div className="text-sm text-gray-900 flexrape items-center">
                                             <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
                                             <span className="truncate">
                                                 {luc.institutional_telephone}
@@ -218,36 +380,17 @@ function LucDataTable({ data, onEdit, onDelete }) {
                                                     <Trash className="w-4 h-4 mr-3 text-red-700 group-hover:text-red-600" />
                                                     Delete LUC
                                                 </button>
+                                                <button
+                                                    onClick={() => handleExportToFormA(luc)}
+                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-orange-700 hover:bg-orange-50 focus:outline-none focus:bg-orange-50 transition-colors duration-150 group"
+                                                    role="menuitem"
+                                                    disabled={loading.exportFormA}
+                                                >
+                                                    <School className="w-4 h-4 mr-3 text-orange-700 group-hover:text-orange-800" />
+                                                    Export to Form A
+                                                </button>
 
                                                 <div className="border-t border-gray-100 my-1"></div>
-
-                                                {/* Forms Section (commented out for now, add if LUC forms exist) */}
-                                                {/* <div className="px-2 py-1 text-xs font-medium text-gray-500">
-                                                    Forms
-                                                </div>
-                                                <button
-                                                    onClick={() => {}}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <Building2 className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                    Campuses (Form A2)
-                                                </button> */}
-
-                                                {/* <div className="border-t border-gray-100 my-1"></div> */}
-
-                                                {/* Additional Data Section (commented out for now) */}
-                                                {/* <div className="px-2 py-1 text-xs font-medium text-gray-500">
-                                                    Additional Data
-                                                </div>
-                                                <button
-                                                    onClick={() => {}}
-                                                    className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 focus:outline-none focus:bg-blue-50 transition-colors duration-150 group"
-                                                    role="menuitem"
-                                                >
-                                                    <BookOpen className="w-4 h-4 mr-3 text-blue-500 group-hover:text-blue-600" />
-                                                    Manage Research
-                                                </button> */}
                                             </div>
                                         </Popper>
                                     </td>
@@ -293,8 +436,7 @@ function LucDataTable({ data, onEdit, onDelete }) {
 LucDataTable.propTypes = {
     data: PropTypes.arrayOf(
         PropTypes.shape({
-            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-                .isRequired,
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
             institution_name: PropTypes.string,
             institution_uiid: PropTypes.string,
             region: PropTypes.string,
@@ -302,16 +444,10 @@ LucDataTable.propTypes = {
             municipality: PropTypes.string,
             institutional_telephone: PropTypes.string,
             institutional_email: PropTypes.string,
-            year_established: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
+            year_established: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
             head_name: PropTypes.string,
             head_title: PropTypes.string,
-            year_converted_university: PropTypes.oneOfType([
-                PropTypes.string,
-                PropTypes.number,
-            ]),
+            year_converted_university: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         })
     ).isRequired,
     onEdit: PropTypes.func.isRequired,

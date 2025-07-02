@@ -27,7 +27,10 @@ class HeiController extends Controller
             'uiid' => 'required|string|max:36|unique:heis',
             'name' => 'required|string|max:255',
             'type' => 'required|in:SUC,LUC,Private',
-            'cluster_id' => 'required|exists:clusters,id'
+            'cluster_id' => 'required|exists:clusters,id',
+            'status' => 'required|in:open,close',
+            'campus_type' => 'required|in:Main,Extension',
+            'parent_uiid' => 'nullable|string|exists:heis,uiid',
         ]);
 
         if ($validator->fails()) {
@@ -54,7 +57,10 @@ class HeiController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
             'type' => 'in:SUC,LUC,Private',
-            'cluster_id' => 'exists:clusters,id'
+            'cluster_id' => 'exists:clusters,id',
+            'status' => 'in:open,close',
+            'campus_type' => 'in:Main,Extension',
+            'parent_uiid' => 'nullable|string|exists:heis,uiid',
         ]);
 
         if ($validator->fails()) {

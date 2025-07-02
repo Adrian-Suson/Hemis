@@ -134,7 +134,7 @@ function AddSucForm({ onSave, onCancel, loading = false }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const uiidOptions = Array.isArray(heis) ? heis.map((hei) => ({
+  const uiidOptions = Array.isArray(heis) ? heis.filter(hei => hei.type === 'SUC' && hei.campus_type === 'Main' && hei.status === 'open').map((hei) => ({
     value: hei.uiid,
     label: `${hei.name} (${hei.uiid})`,
     name: hei.name,
